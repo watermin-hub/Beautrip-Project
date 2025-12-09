@@ -1,0 +1,68 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Header from "./Header";
+import BottomNavigation from "./BottomNavigation";
+import CommunityHeader from "./CommunityHeader";
+import PostList from "./PostList";
+import ReviewList from "./ReviewList";
+import CommunityCategoriesPage from "./CommunityCategoriesPage";
+import CommunityFloatingButton from "./CommunityFloatingButton";
+import ReviewTabPage from "./ReviewTabPage";
+
+type CommunityTab =
+  | "categories"
+  | "recommended"
+  | "latest"
+  | "popular"
+  | "review";
+
+export default function CommunityPage() {
+  const searchParams = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState<CommunityTab>("categories");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab") as CommunityTab | null;
+    if (
+      tab &&
+      ["categories", "recommended", "latest", "popular", "review"].includes(tab)
+    ) {
+      setActiveTab(tab);
+      // 탭 변경 시 상단으로 스크롤
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: CommunityTab) => {
+    setActiveTab(tab);
+    // 탭 변경 시 상단으로 스크롤
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  return (
+    <div className="min-h-screen bg-white max-w-md mx-auto w-full">
+      <Header />
+      <CommunityHeader activeTab={activeTab} onTabChange={handleTabChange} />
+
+      {/* Content */}
+      <div className="mt-4">
+        {activeTab === "categories" ? (
+          <CommunityCategoriesPage />
+        ) : activeTab === "review" ? (
+          <ReviewTabPage />
+        ) : (
+          <PostList activeTab={activeTab} />
+        )}
+      </div>
+
+      <div className="pb-20">
+        <BottomNavigation />
+      </div>
+
+      {/* 커뮤니티 플로팅 버튼 (글 쓰기 / 내 글 관리) */}
+      <CommunityFloatingButton />
+    </div>
+  );
+}
