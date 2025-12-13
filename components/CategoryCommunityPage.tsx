@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FiChevronRight } from "react-icons/fi";
 
-// 홈페이지와 동일한 대분류 카테고리 10개
+// 홈페이지와 동일한 대분류 카테고리 10개 (전체 포함)
 const MAIN_CATEGORIES = [
+  { id: null, name: "전체", icon: null },
   { id: "eyes", name: "눈성형", icon: "👀" },
   { id: "lifting", name: "리프팅", icon: "✨" },
   { id: "botox", name: "보톡스", icon: "💉" },
@@ -20,8 +21,15 @@ const MAIN_CATEGORIES = [
 
 export default function CategoryCommunityPage() {
   const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const handleCategoryClick = (categoryId: string) => {
+  const handleCategoryClick = (categoryId: string | null) => {
+    if (categoryId === null) {
+      // 전체 선택 시 모든 게시글 표시
+      setSelectedCategory(null);
+      return;
+    }
+    setSelectedCategory(categoryId);
     router.push(`/community/posts?category=${categoryId}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -37,24 +45,44 @@ export default function CategoryCommunityPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {MAIN_CATEGORIES.map((category) => (
+      {/* 카테고리 필터 - 이모지 카드 형식 (ALL 위에 따로) */}
+      <div className="mb-6">
+        {/* "ALL 전체" 버튼 - 위에 따로 배치 */}
+        <div className="mb-3">
           <button
-            key={category.id}
-            onClick={() => handleCategoryClick(category.id)}
-            className="bg-white border-2 border-gray-200 rounded-xl p-5 hover:border-primary-main hover:shadow-md transition-all group"
+            onClick={() => handleCategoryClick(null)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              selectedCategory === null
+                ? "bg-primary-main text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
           >
-            <div className="flex flex-col items-center gap-3">
-              <span className="text-4xl">{category.icon}</span>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-semibold text-gray-900 group-hover:text-primary-main transition-colors">
+            <span className="font-bold">ALL</span> 전체
+          </button>
+        </div>
+
+        {/* 카테고리 버튼들 - 이모지 카드 형식 5개씩 2줄 그리드 */}
+        <div className="grid grid-cols-5 gap-2">
+          {MAIN_CATEGORIES.filter((cat) => cat.id !== null).map((category) => {
+            const isSelected = selectedCategory === category.id;
+            return (
+              <button
+                key={category.id || "all"}
+                onClick={() => handleCategoryClick(category.id)}
+                className={`flex flex-col items-center justify-center w-full aspect-square rounded-xl border text-xs transition-colors ${
+                  isSelected
+                    ? "bg-primary-main/10 border-primary-main text-primary-main"
+                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-xl mb-1">{category.icon}</span>
+                <span className="text-[10px] leading-tight text-center px-1">
                   {category.name}
                 </span>
-                <FiChevronRight className="text-gray-400 group-hover:text-primary-main transition-colors" />
-              </div>
-            </div>
-          </button>
-        ))}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

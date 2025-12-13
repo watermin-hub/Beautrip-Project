@@ -235,6 +235,42 @@ export default function TreatmentDetailPage({
   const handleAddToSchedule = async (date: string) => {
     if (!currentTreatment) return;
 
+    // 해당 날짜의 기존 일정 개수 확인 (시술 + 회복 기간 합쳐서)
+    const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
+    const formatDate = (dateStr: string): string => {
+      return dateStr; // 이미 YYYY-MM-DD 형식
+    };
+
+    // 해당 날짜의 시술 및 회복 기간 카드 개수 계산
+    let countOnDate = 0;
+    schedules.forEach((s: any) => {
+      const procDate = new Date(s.procedureDate);
+      const procDateStr = formatDate(s.procedureDate);
+      
+      // 시술 날짜
+      if (procDateStr === date) {
+        countOnDate++;
+      }
+      
+      // 회복 기간 날짜들 (시술 당일 제외)
+      for (let i = 1; i <= (s.recoveryDays || 0); i++) {
+        const recoveryDate = new Date(procDate);
+        recoveryDate.setDate(recoveryDate.getDate() + i);
+        const recoveryDateStr = formatDate(
+          `${recoveryDate.getFullYear()}-${String(recoveryDate.getMonth() + 1).padStart(2, "0")}-${String(recoveryDate.getDate()).padStart(2, "0")}`
+        );
+        if (recoveryDateStr === date) {
+          countOnDate++;
+        }
+      }
+    });
+
+    // 최대 3개 제한 체크
+    if (countOnDate >= 3) {
+      alert("일정이 꽉 찼습니다! 3개 이하로 정리 후 다시 시도해 주세요.");
+      return;
+    }
+
     // category_mid로 회복 기간 정보 가져오기 (소분류_리스트와 매칭)
     let recoveryDays = 0;
     let recoveryText: string | null = null;
@@ -253,8 +289,6 @@ export default function TreatmentDetailPage({
     if (recoveryDays === 0) {
       recoveryDays = parseRecoveryPeriod(currentTreatment.downtime) || 0;
     }
-
-    const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
     // 새로운 일정 데이터 생성
     const newSchedule = {

@@ -70,6 +70,7 @@ export interface HospitalMaster {
   hospital_doctors?: string; // JSON 문자열 또는 배열
   opening_hours?: string;
   hospital_img?: string; // 곧 추가될 예정
+  hospital_img_url?: string; // 병원 썸네일 이미지 URL
   [key: string]: any;
 }
 
@@ -184,7 +185,29 @@ export async function loadTreatmentsPaginated(
     }
 
     if (filters?.categoryLarge) {
-      query = query.eq("category_large", filters.categoryLarge);
+      // 카테고리 매핑을 사용하여 여러 카테고리를 OR 조건으로 검색
+      const mappedCategories = CATEGORY_MAPPING[filters.categoryLarge] || [
+        filters.categoryLarge,
+      ];
+
+      if (mappedCategories.length === 0) {
+        // "전체"인 경우 필터링하지 않음
+        // (빈 배열이면 모든 데이터 반환)
+      } else if (mappedCategories.length === 1) {
+        // 단일 카테고리인 경우 정확한 일치 또는 부분 일치 검색
+        query = query.ilike("category_large", `%${mappedCategories[0]}%`);
+      } else {
+        // 여러 카테고리인 경우 OR 조건으로 검색
+        const orConditions = mappedCategories
+          .map((cat) => `category_large.ilike.%${cat}%`)
+          .join(",");
+        query = query.or(orConditions);
+      }
+
+      console.log(
+        `[loadTreatmentsPaginated] 대분류 필터: "${filters.categoryLarge}" -> 매핑된 카테고리:`,
+        mappedCategories
+      );
     }
 
     if (filters?.categoryMid) {
@@ -300,6 +323,8 @@ export async function getRecoveryInfoByCategoryMid(
   recoveryMin: number;
   recoveryMax: number;
   recoveryText: string | null;
+  procedureTimeMin: number;
+  procedureTimeMax: number;
 } | null> {
   try {
     if (!categoryMid) return null;
@@ -354,11 +379,13 @@ export async function getRecoveryInfoByCategoryMid(
       return null;
     }
 
-    // 실제 컬럼명: 회복기간_min(일), 회복기간_max(일)
+    // 실제 컬럼명: 회복기간_min(일), 회복기간_max(일), 시술시간_min(분), 시술시간_max(분)
     console.log("🔍 매칭된 객체의 모든 키:", Object.keys(matched));
     console.log("🔍 매칭된 객체에서 회복기간 값 확인:", {
       "회복기간_max(일)": matched["회복기간_max(일)"],
       "회복기간_min(일)": matched["회복기간_min(일)"],
+      "시술시간_max(분)": matched["시술시간_max"],
+      "시술시간_min(분)": matched["시술시간_min"],
       타입_max: typeof matched["회복기간_max(일)"],
       타입_min: typeof matched["회복기간_min(일)"],
     });
@@ -366,6 +393,14 @@ export async function getRecoveryInfoByCategoryMid(
     const recoveryMax =
       matched["회복기간_max(일)"] || matched["회복기간_min(일)"] || 0;
     const recoveryMin = matched["회복기간_min(일)"] || 0;
+    const procedureTimeMax =
+      matched["시술시간_max(분)"] ||
+      matched["시술시간_min(분)"] ||
+      matched["시술시간_max"] ||
+      matched["시술시간_min"] ||
+      0;
+    const procedureTimeMin =
+      matched["시술시간_min(분)"] || matched["시술시간_min"] || 0;
 
     console.log(
       `✅ 매칭 성공! category_mid: "${categoryMidTrimmed}", 회복기간_max: ${recoveryMax}, 회복기간_min: ${recoveryMin}`
@@ -395,6 +430,8 @@ export async function getRecoveryInfoByCategoryMid(
       recoveryMin,
       recoveryMax,
       recoveryText,
+      procedureTimeMin,
+      procedureTimeMax,
     };
   } catch (error) {
     console.error("회복 기간 정보 로드 실패:", error);
@@ -552,10 +589,12 @@ export async function loadHospitalsPaginated(
     }
 
     const cleanedData = cleanData<HospitalMaster>(data);
+    // 플랫폼 우선순위로 정렬 (gangnamunni 우선, babitalk/yeoti 후순위)
+    const sortedData = sortHospitalsByPlatform(cleanedData);
     const total = count || 0;
     const hasMore = to < total - 1;
 
-    return { data: cleanedData, total, hasMore };
+    return { data: sortedData, total, hasMore };
   } catch (error) {
     console.error("병원 데이터 페이지네이션 로드 실패:", error);
     throw error;
@@ -948,11 +987,16 @@ export interface ScheduleBasedRecommendation {
   categoryMid: string;
   treatments: Treatment[];
   averageRecoveryPeriod: number;
+  averageRecoveryPeriodMin: number;
+  averageRecoveryPeriodMax: number;
   averageProcedureTime: number;
+  averageProcedureTimeMin: number;
+  averageProcedureTimeMax: number;
 }
 
 // 대분류 카테고리 매핑 (사용자 선택 카테고리 -> API 카테고리)
-const CATEGORY_MAPPING: Record<string, string[]> = {
+// 이 매핑은 UI에서 사용하는 카테고리 이름을 실제 데이터베이스의 category_large 값으로 변환합니다.
+export const CATEGORY_MAPPING: Record<string, string[]> = {
   눈성형: ["눈", "눈성형"],
   리프팅: ["리프팅", "윤곽", "볼륨"],
   보톡스: ["보톡스", "주사"],
@@ -967,12 +1011,12 @@ const CATEGORY_MAPPING: Record<string, string[]> = {
   전체: [], // 모든 카테고리 포함
 };
 
-export function getScheduleBasedRecommendations(
+export async function getScheduleBasedRecommendations(
   treatments: Treatment[],
   categoryLarge: string,
   startDate: string,
   endDate: string
-): ScheduleBasedRecommendation[] {
+): Promise<ScheduleBasedRecommendation[]> {
   // 여행 일수 계산
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -1214,10 +1258,8 @@ export function getScheduleBasedRecommendations(
   }
 
   // 중분류별로 추천 데이터 생성
-  const recommendations: ScheduleBasedRecommendation[] = Array.from(
-    midCategoryMap.entries()
-  )
-    .map(([uniqueKey, treatmentList]) => {
+  const recommendationsPromises = Array.from(midCategoryMap.entries()).map(
+    async ([uniqueKey, treatmentList]) => {
       // uniqueKey에서 중분류 이름만 추출 (대분류::중분류 형식)
       const categoryMid = uniqueKey.split("::")[1] || "기타";
       // 여행 기간에 맞는 시술만 필터링
@@ -1248,7 +1290,49 @@ export function getScheduleBasedRecommendations(
               })
               .slice(0, 20); // 최대 20개
 
-      // 평균 회복 기간 계산
+      // 회복 기간 및 시술 시간 정보 가져오기 (category_mid 기반)
+      let recoveryMin = 0;
+      let recoveryMax = 0;
+      let procedureTimeMin = 0;
+      let procedureTimeMax = 0;
+      try {
+        const recoveryInfo = await getRecoveryInfoByCategoryMid(categoryMid);
+        if (recoveryInfo) {
+          recoveryMin = recoveryInfo.recoveryMin;
+          recoveryMax = recoveryInfo.recoveryMax;
+          procedureTimeMin = recoveryInfo.procedureTimeMin;
+          procedureTimeMax = recoveryInfo.procedureTimeMax;
+        }
+      } catch (error) {
+        console.warn(
+          `회복 기간 정보 로드 실패 (category_mid: ${categoryMid}):`,
+          error
+        );
+      }
+
+      // 회복 기간 정보가 없으면 downtime에서 계산
+      if (recoveryMin === 0 && recoveryMax === 0) {
+        const recoveryPeriods = finalTreatments
+          .map((t) => parseRecoveryPeriod(t.downtime))
+          .filter((r) => r > 0);
+        if (recoveryPeriods.length > 0) {
+          recoveryMin = Math.min(...recoveryPeriods);
+          recoveryMax = Math.max(...recoveryPeriods);
+        }
+      }
+
+      // 시술 시간 정보가 없으면 surgery_time에서 계산
+      if (procedureTimeMin === 0 && procedureTimeMax === 0) {
+        const procedureTimes = finalTreatments
+          .map((t) => parseProcedureTime(t.surgery_time))
+          .filter((t) => t > 0);
+        if (procedureTimes.length > 0) {
+          procedureTimeMin = Math.min(...procedureTimes);
+          procedureTimeMax = Math.max(...procedureTimes);
+        }
+      }
+
+      // 평균 회복 기간 계산 (표시용)
       const recoveryPeriods = finalTreatments
         .map((t) => parseRecoveryPeriod(t.downtime))
         .filter((r) => r > 0);
@@ -1256,9 +1340,11 @@ export function getScheduleBasedRecommendations(
         recoveryPeriods.length > 0
           ? recoveryPeriods.reduce((sum, r) => sum + r, 0) /
             recoveryPeriods.length
+          : recoveryMax > 0
+          ? (recoveryMin + recoveryMax) / 2
           : 0;
 
-      // 평균 시술 시간 계산
+      // 평균 시술 시간 계산 (표시용)
       const procedureTimes = finalTreatments
         .map((t) => parseProcedureTime(t.surgery_time))
         .filter((t) => t > 0);
@@ -1266,6 +1352,8 @@ export function getScheduleBasedRecommendations(
         procedureTimes.length > 0
           ? procedureTimes.reduce((sum, t) => sum + t, 0) /
             procedureTimes.length
+          : procedureTimeMax > 0
+          ? (procedureTimeMin + procedureTimeMax) / 2
           : 0;
 
       // 추천 점수로 정렬
@@ -1280,9 +1368,18 @@ export function getScheduleBasedRecommendations(
         categoryMid,
         treatments: sortedTreatments,
         averageRecoveryPeriod: Math.round(averageRecoveryPeriod * 10) / 10,
+        averageRecoveryPeriodMin: recoveryMin,
+        averageRecoveryPeriodMax: recoveryMax,
         averageProcedureTime: Math.round(averageProcedureTime),
+        averageProcedureTimeMin: procedureTimeMin,
+        averageProcedureTimeMax: procedureTimeMax,
       };
-    })
+    }
+  );
+
+  const recommendations = await Promise.all(recommendationsPromises);
+
+  return recommendations
     .filter((rec) => rec.treatments.length > 0) // 치료가 있는 중분류만
     .sort((a, b) => {
       // 회복 기간이 짧은 순으로 정렬 (여행에 적합한 순서)
@@ -1294,8 +1391,6 @@ export function getScheduleBasedRecommendations(
       const scoreB = b.treatments[0]?.recommendationScore || 0;
       return scoreB - scoreA;
     });
-
-  return recommendations;
 }
 
 // 플랫폼 우선순위 (높을수록 우선)
@@ -1308,6 +1403,21 @@ const PLATFORM_PRIORITY: Record<string, number> = {
 // 플랫폼 우선순위에 따라 정렬 (gangnamunni → yeoti → babitalk 순서)
 export function sortTreatmentsByPlatform(treatments: Treatment[]): Treatment[] {
   return [...treatments].sort((a, b) => {
+    const platformA = (a.platform || "").toLowerCase();
+    const platformB = (b.platform || "").toLowerCase();
+    const priorityA = PLATFORM_PRIORITY[platformA] || 0;
+    const priorityB = PLATFORM_PRIORITY[platformB] || 0;
+
+    // 우선순위가 높은 것이 앞에 오도록 (내림차순)
+    return priorityB - priorityA;
+  });
+}
+
+// 병원 데이터도 플랫폼 우선순위에 따라 정렬
+export function sortHospitalsByPlatform(
+  hospitals: HospitalMaster[]
+): HospitalMaster[] {
+  return [...hospitals].sort((a, b) => {
     const platformA = (a.platform || "").toLowerCase();
     const platformB = (b.platform || "").toLowerCase();
     const priorityA = PLATFORM_PRIORITY[platformA] || 0;

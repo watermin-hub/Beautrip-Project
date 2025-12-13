@@ -229,24 +229,25 @@ export default function MySchedulePage() {
     };
   }, []);
 
-  // 시술 날짜와 회복 기간 계산
+  // 시술 날짜와 회복 기간 계산 (당일 포함)
   const procedureDates = useMemo(() => {
     const dates: { [key: string]: ProcedureSchedule[] } = {};
     savedSchedules.forEach((proc) => {
       const procDate = new Date(proc.procedureDate);
-      const recoveryEnd = new Date(procDate);
-      recoveryEnd.setDate(recoveryEnd.getDate() + proc.recoveryDays);
-
+      
       // 시술 날짜
       const procDateStr = formatDate(procDate);
       if (!dates[procDateStr]) dates[procDateStr] = [];
       dates[procDateStr].push(proc);
 
-      // 회복 기간 날짜들
+      // 회복 기간 날짜들 (시술 당일 제외)
+      // recoveryDays가 3이면: 다음날(1), 그다음날(2), 마지막날(3) = 총 3일 (당일 제외)
+      // 시술 당일은 시술로만 표시, 회복 기간은 다음날부터 표시
       for (let i = 1; i <= proc.recoveryDays; i++) {
         const recoveryDate = new Date(procDate);
         recoveryDate.setDate(recoveryDate.getDate() + i);
         const recoveryDateStr = formatDate(recoveryDate);
+        
         if (!dates[recoveryDateStr]) dates[recoveryDateStr] = [];
         dates[recoveryDateStr].push({ ...proc, isRecovery: true });
       }
@@ -304,6 +305,45 @@ export default function MySchedulePage() {
     return procedureDates[dateStr]?.some((p) => p.isRecovery) || false;
   };
 
+  // 회복 기간이 여행 일정 밖인지 확인
+  const isRecoveryOutsideTravel = (date: Date): boolean => {
+    if (!travelStart || !travelEnd) return false;
+    const dateStr = formatDate(date);
+    const recoveryItems = procedureDates[dateStr]?.filter((p) => p.isRecovery) || [];
+    if (recoveryItems.length === 0) return false;
+
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const startOnly = new Date(
+      travelStart.getFullYear(),
+      travelStart.getMonth(),
+      travelStart.getDate()
+    );
+    const endOnly = new Date(
+      travelEnd.getFullYear(),
+      travelEnd.getMonth(),
+      travelEnd.getDate()
+    );
+    
+    // 회복 기간 날짜가 여행 기간 밖에 있으면 true
+    return dateOnly < startOnly || dateOnly > endOnly;
+  };
+
+  // 특정 날짜의 시술 목록 가져오기 (최대 3개)
+  const getProceduresForDateLimited = (date: Date): ProcedureSchedule[] => {
+    const dateStr = formatDate(date);
+    return (procedureDates[dateStr]?.filter((p) => !p.isRecovery) || []).slice(0, 3);
+  };
+
+  // 특정 날짜의 회복 기간 목록 가져오기
+  const getRecoveryForDate = (date: Date): ProcedureSchedule[] => {
+    const dateStr = formatDate(date);
+    return procedureDates[dateStr]?.filter((p) => p.isRecovery) || [];
+  };
+
   // 날짜의 시술 정보 가져오기
   const getProceduresForDate = (date: Date): ProcedureSchedule[] => {
     const dateStr = formatDate(date);
@@ -359,14 +399,20 @@ export default function MySchedulePage() {
 
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
-  const selectedProcedures = selectedDate
-    ? getProceduresForDate(
-        new Date(
-          parseInt(selectedDate.split("-")[0]),
-          parseInt(selectedDate.split("-")[1]) - 1,
-          parseInt(selectedDate.split("-")[2])
-        )
+  const selectedDateObj = selectedDate
+    ? new Date(
+        parseInt(selectedDate.split("-")[0]),
+        parseInt(selectedDate.split("-")[1]) - 1,
+        parseInt(selectedDate.split("-")[2])
       )
+    : null;
+
+  const selectedProcedures = selectedDateObj
+    ? getProceduresForDate(selectedDateObj)
+    : [];
+
+  const selectedRecovery = selectedDateObj
+    ? getRecoveryForDate(selectedDateObj)
     : [];
 
   return (
@@ -505,34 +551,31 @@ export default function MySchedulePage() {
                 const isTravel = isTravelPeriod(date);
                 const isProcedure = isProcedureDate(date);
                 const isRecovery = isRecoveryPeriod(date);
+                const isRecoveryOutside = isRecoveryOutsideTravel(date);
                 const isTodayDate = isToday(date);
                 const isSelectedDate = isSelected(date);
 
-                // 오늘 날짜는 배경색 없이 글자색만 강조
-                // 여행 기간은 하늘색 배경
-                // 시술 날짜는 빨간색 배경
-                // 회복 기간은 주황색 배경
+                // 날짜별 시술/회복 목록 가져오기
+                const proceduresOnDate = getProceduresForDateLimited(date);
+                const recoveryOnDate = getRecoveryForDate(date);
+
+                // 배경색 결정 우선순위: 여행일정 > 오늘 > 선택된 날짜
                 let bgClass = "";
                 let textClass = "";
 
                 if (!isCurrentMonth) {
                   bgClass = "bg-gray-50";
                   textClass = "text-gray-300";
+                } else if (isTravel) {
+                  // 여행 기간은 시술/회복과 상관없이 항상 색칠
+                  bgClass = "bg-sky-100";
+                  textClass = "text-sky-700";
                 } else if (isTodayDate) {
                   bgClass = "";
                   textClass = "text-primary-main font-bold";
                 } else if (isSelectedDate) {
                   bgClass = "bg-primary-main/20";
                   textClass = "text-primary-main font-semibold";
-                } else if (isProcedure) {
-                  bgClass = "bg-red-100";
-                  textClass = "text-red-700 font-semibold";
-                } else if (isRecovery) {
-                  bgClass = "bg-orange-100";
-                  textClass = "text-orange-700";
-                } else if (isTravel) {
-                  bgClass = "bg-sky-100";
-                  textClass = "text-sky-700";
                 } else {
                   bgClass = "";
                   textClass = "text-gray-700";
@@ -542,15 +585,37 @@ export default function MySchedulePage() {
                   <button
                     key={index}
                     onClick={() => handleDateClick(date)}
-                    className={`aspect-square border-r border-b border-gray-100 p-1 transition-colors relative ${bgClass} ${textClass} hover:bg-gray-50`}
+                    className={`aspect-square border-r border-b border-gray-100 p-0.5 transition-colors relative ${bgClass} ${textClass} hover:bg-gray-50`}
                   >
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <span className="text-sm">{date.getDate()}</span>
-                      {isProcedure && isCurrentMonth && (
-                        <span className="w-2 h-2 bg-red-500 rounded-full mt-0.5"></span>
-                      )}
-                      {isRecovery && !isProcedure && isCurrentMonth && (
-                        <span className="w-2 h-2 bg-orange-400 rounded-full mt-0.5"></span>
+                    <div className="flex flex-col items-start justify-start h-full w-full p-0.5">
+                      <span className="text-xs font-medium">{date.getDate()}</span>
+                      
+                      {/* 시술 표시 (최대 3줄, 붉은 톤) */}
+                      <div className="flex flex-col gap-0.5 w-full mt-0.5">
+                        {proceduresOnDate.slice(0, 3).map((proc, idx) => (
+                          <div
+                            key={proc.id}
+                            className="w-full h-1.5 bg-red-400 rounded-sm"
+                            title={proc.procedureName}
+                          />
+                        ))}
+                      </div>
+
+                      {/* 회복 기간 표시 (초록색, 여행 밖이면 노란색) */}
+                      {recoveryOnDate.length > 0 && proceduresOnDate.length < 3 && (
+                        <div className="flex flex-col gap-0.5 w-full mt-0.5">
+                          {recoveryOnDate.slice(0, 3 - proceduresOnDate.length).map((rec, idx) => (
+                            <div
+                              key={`recovery-${rec.id}-${idx}`}
+                              className={`w-full h-1.5 rounded-sm ${
+                                isRecoveryOutside
+                                  ? "bg-yellow-400"
+                                  : "bg-green-400"
+                              }`}
+                              title={`${rec.procedureName} 회복 기간`}
+                            />
+                          ))}
+                        </div>
                       )}
                     </div>
                   </button>
@@ -566,25 +631,31 @@ export default function MySchedulePage() {
               <span className="text-gray-600">여행 기간</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-red-100 border border-red-300 rounded"></div>
-              <span className="text-gray-600">시술 날짜</span>
+              <div className="w-3 h-1.5 bg-red-400 rounded-sm"></div>
+              <span className="text-gray-600">시술</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-orange-100 border border-orange-300 rounded"></div>
+              <div className="w-3 h-1.5 bg-green-400 rounded-sm"></div>
               <span className="text-gray-600">회복 기간</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-1.5 bg-yellow-400 rounded-sm"></div>
+              <span className="text-gray-600">회복 기간 (여행 밖)</span>
             </div>
           </div>
 
           {/* 선택된 날짜의 시술 정보 */}
-          {selectedDate && selectedProcedures.length > 0 && (
+          {selectedDate && (selectedProcedures.length > 0 || selectedRecovery.length > 0) && (
             <div className="mt-6 space-y-3">
               <h3 className="text-lg font-bold text-gray-900">
-                {selectedDate} 시술 정보
+                {selectedDate} 일정 정보
               </h3>
+              
+              {/* 시술 카드 (붉은 톤 배경) */}
               {selectedProcedures.map((proc) => (
                 <div
                   key={proc.id}
-                  className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+                  className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -592,45 +663,107 @@ export default function MySchedulePage() {
                         {proc.procedureName}
                       </h4>
                       <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                        <FiMapPin className="text-primary-main" />
+                        <FiMapPin className="text-red-600" />
                         <span>{proc.hospital}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                        <FiTag className="text-primary-main" />
+                        <FiTag className="text-red-600" />
                         <span>{proc.category}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-primary-main font-medium mb-1">
-                        <FiClock className="text-primary-main" />
+                      <div className="flex items-center gap-1 text-sm text-red-700 font-medium mb-1">
+                        <FiClock className="text-red-600" />
                         <span>회복 기간: {proc.recoveryDays}일</span>
                       </div>
-                      {/* 회복 기간 텍스트 표시 */}
+                      {/* 회복 가이드 표시 */}
                       {proc.recoveryText && (
-                        <div className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2 mt-2">
-                          <p className="font-medium text-gray-700 mb-1">
+                        <div className="text-xs text-gray-700 bg-white/60 rounded-lg p-3 mt-2 border border-red-100">
+                          <p className="font-semibold text-red-800 mb-1.5">
                             회복 가이드
                           </p>
-                          <p className="text-gray-600 whitespace-pre-line">
+                          <p className="text-gray-700 whitespace-pre-line leading-relaxed">
                             {proc.recoveryText}
                           </p>
                         </div>
                       )}
                     </div>
                     {proc.procedureTime && (
-                      <div className="text-sm font-semibold text-primary-main">
+                      <div className="text-sm font-semibold text-red-700">
                         {proc.procedureTime}
                       </div>
                     )}
                   </div>
                 </div>
               ))}
+
+              {/* 회복 기간 카드 (녹색 톤 배경) */}
+              {selectedRecovery.map((rec, idx) => {
+                const isOutsideTravel = selectedDateObj && isRecoveryOutsideTravel(selectedDateObj);
+                return (
+                  <div
+                    key={`recovery-${rec.id}-${idx}`}
+                    className={`border rounded-xl p-4 shadow-sm ${
+                      isOutsideTravel
+                        ? "bg-yellow-50 border-yellow-200"
+                        : "bg-green-50 border-green-200"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="text-base font-semibold text-gray-900">
+                            {rec.procedureName}
+                          </h4>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            isOutsideTravel
+                              ? "bg-yellow-200 text-yellow-800"
+                              : "bg-green-200 text-green-800"
+                          }`}>
+                            회복 기간
+                          </span>
+                          {isOutsideTravel && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-yellow-300 text-yellow-900">
+                              ⚠️ 여행 기간 밖
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                          <FiMapPin className={isOutsideTravel ? "text-yellow-600" : "text-green-600"} />
+                          <span>{rec.hospital}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                          <FiTag className={isOutsideTravel ? "text-yellow-600" : "text-green-600"} />
+                          <span>{rec.category}</span>
+                        </div>
+                        {/* 회복 가이드 표시 */}
+                        {rec.recoveryText && (
+                          <div className={`text-xs text-gray-700 rounded-lg p-3 mt-2 border ${
+                            isOutsideTravel
+                              ? "bg-white/60 border-yellow-100"
+                              : "bg-white/60 border-green-100"
+                          }`}>
+                            <p className={`font-semibold mb-1.5 ${
+                              isOutsideTravel ? "text-yellow-800" : "text-green-800"
+                            }`}>
+                              회복 가이드
+                            </p>
+                            <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                              {rec.recoveryText}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {selectedDate && selectedProcedures.length === 0 && (
+          {selectedDate && selectedProcedures.length === 0 && selectedRecovery.length === 0 && (
             <div className="mt-6 text-center py-8">
               <FiCalendar className="text-gray-300 text-4xl mx-auto mb-2" />
               <p className="text-gray-500 text-sm">
-                선택한 날짜에 시술 일정이 없습니다.
+                선택한 날짜에 일정이 없습니다.
               </p>
             </div>
           )}

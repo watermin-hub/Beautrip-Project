@@ -103,6 +103,40 @@ export default function HotConcernsSection() {
   const handleDateSelect = async (date: string) => {
     if (!selectedTreatment) return;
 
+    // 해당 날짜의 기존 일정 개수 확인 (시술 + 회복 기간 합쳐서)
+    const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
+    const formatDate = (dateStr: string): string => {
+      return dateStr;
+    };
+
+    let countOnDate = 0;
+    schedules.forEach((s: any) => {
+      const procDate = new Date(s.procedureDate);
+      const procDateStr = formatDate(s.procedureDate);
+      
+      if (procDateStr === date) {
+        countOnDate++;
+      }
+      
+      for (let i = 1; i <= (s.recoveryDays || 0); i++) {
+        const recoveryDate = new Date(procDate);
+        recoveryDate.setDate(recoveryDate.getDate() + i);
+        const recoveryDateStr = formatDate(
+          `${recoveryDate.getFullYear()}-${String(recoveryDate.getMonth() + 1).padStart(2, "0")}-${String(recoveryDate.getDate()).padStart(2, "0")}`
+        );
+        if (recoveryDateStr === date) {
+          countOnDate++;
+        }
+      }
+    });
+
+    if (countOnDate >= 3) {
+      alert("일정이 꽉 찼습니다! 3개 이하로 정리 후 다시 시도해 주세요.");
+      setIsScheduleModalOpen(false);
+      setSelectedTreatment(null);
+      return;
+    }
+
     // category_mid로 회복 기간 정보 가져오기 (소분류_리스트와 매칭)
     let recoveryDays = 0;
     let recoveryText: string | null = null;
@@ -121,8 +155,6 @@ export default function HotConcernsSection() {
     if (recoveryDays === 0) {
       recoveryDays = parseRecoveryPeriod(selectedTreatment.downtime) || 0;
     }
-
-    const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
     const newSchedule = {
       id: Date.now(),
@@ -230,7 +262,7 @@ export default function HotConcernsSection() {
                     {discountRate}
                   </div>
                 )}
-                {/* 찜 버튼 */}
+                {/* 찜 버튼 (위) */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -244,13 +276,13 @@ export default function HotConcernsSection() {
                     }`}
                   />
                 </button>
-                {/* 달력 버튼 */}
+                {/* 달력 버튼 (아래) */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleScheduleClick(treatment, e);
                   }}
-                  className="absolute bottom-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 transition-colors shadow-sm z-10"
+                  className="absolute top-11 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 transition-colors shadow-sm z-10"
                 >
                   <FiCalendar className="text-sm text-primary-main" />
                 </button>

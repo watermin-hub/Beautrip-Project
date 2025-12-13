@@ -270,11 +270,26 @@ export default function HospitalDetailPage({
       <div className="pb-40">
         {/* 메인 이미지 */}
         <div className="relative w-full aspect-[2/1] bg-gray-100">
-          {hospital.hospital_img ? (
+          {hospital.hospital_img_url || hospital.hospital_img ? (
             <img
-              src={hospital.hospital_img}
+              src={hospital.hospital_img_url || hospital.hospital_img}
               alt={hospital.hospital_name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                // 이미 fallback을 시도했다면 더 이상 시도하지 않음
+                if (
+                  target.src.includes("data:image") ||
+                  target.dataset.fallback === "true"
+                ) {
+                  target.style.display = "none";
+                  return;
+                }
+                // data URI로 빈 이미지 사용 (에러 방지)
+                target.src =
+                  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="48"%3E🏥%3C/text%3E%3C/svg%3E';
+                target.dataset.fallback = "true";
+              }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-light/20 to-primary-main/30">

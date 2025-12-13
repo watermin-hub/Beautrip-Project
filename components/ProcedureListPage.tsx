@@ -40,7 +40,7 @@ export default function ProcedureListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 50; // 한 번에 로드할 개수
+  const pageSize = 12; // 한 번에 로드할 개수 (3칸 x 4줄)
 
   // 필터 상태
   const [searchTerm, setSearchTerm] = useState("");
@@ -99,7 +99,8 @@ export default function ProcedureListPage() {
   // 자동완성 데이터 로드
   useEffect(() => {
     const loadAutocomplete = async () => {
-      if (searchTerm.length < 1) {
+      // 최소 2글자 이상 완성된 글자만 자동완성 검색
+      if (searchTerm.length < 2) {
         setAutocompleteSuggestions([]);
         return;
       }
@@ -136,13 +137,12 @@ export default function ProcedureListPage() {
         categoryMid: categoryMid || undefined,
       });
 
-      // 랜덤으로 섞기
-      const shuffledData = [...result.data].sort(() => Math.random() - 0.5);
+      // 플랫폼 정렬은 loadTreatmentsPaginated에서 이미 적용됨 (gangnamunni 우선, babitalk/yeoti 후순위)
 
       if (reset) {
-        setTreatments(shuffledData);
+        setTreatments(result.data);
       } else {
-        setTreatments((prev) => [...prev, ...shuffledData]);
+        setTreatments((prev) => [...prev, ...result.data]);
       }
 
       setTotalCount(result.total);
@@ -158,17 +158,40 @@ export default function ProcedureListPage() {
     }
   };
 
+  // 검색 실행 상태 (자동완성 선택 또는 엔터 입력 시에만 true)
+  const [shouldExecuteSearch, setShouldExecuteSearch] = useState(false);
+
   // 초기 데이터 로드 및 필터 변경 시 재로드
   useEffect(() => {
-    // 검색어가 1글자 이하일 때는 검색하지 않음
-    if (searchTerm && searchTerm.trim().length === 1) {
+    // 검색어가 없을 때는 초기 데이터 로드 (검색어 없이 전체 데이터)
+    if (!searchTerm || searchTerm.trim().length === 0) {
+      loadData(1, true);
+      setShouldExecuteSearch(false);
+      return;
+    }
+
+    // 검색어가 2글자 미만일 때는 검색하지 않음 (한글 조합 중 방지)
+    if (searchTerm.trim().length < 2) {
       setTreatments([]);
       setTotalCount(0);
       setHasMore(false);
+      setShouldExecuteSearch(false);
       return;
     }
-    loadData(1, true);
-  }, [searchTerm, categoryLarge, categoryMid]);
+
+    // 검색 실행 플래그가 true일 때만 검색 실행 (자동완성 선택 또는 엔터 입력 시)
+    if (shouldExecuteSearch) {
+      loadData(1, true);
+      setShouldExecuteSearch(false); // 검색 실행 후 플래그 리셋
+    }
+  }, [shouldExecuteSearch, searchTerm, categoryLarge, categoryMid]);
+
+  // 카테고리 변경 시에는 자동으로 검색 실행
+  useEffect(() => {
+    if (categoryLarge || categoryMid) {
+      setShouldExecuteSearch(true);
+    }
+  }, [categoryLarge, categoryMid]);
 
   // URL 쿼리 파라미터에서 검색어 읽기
   useEffect(() => {
@@ -348,6 +371,21 @@ export default function ProcedureListPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
+    // 검색어 입력 중에는 검색하지 않음 (자동완성만 보여줌)
+    setShouldExecuteSearch(false);
+  };
+
+  // 자동완성 선택 시 검색 실행
+  const handleSuggestionSelect = (suggestion: string) => {
+    setSearchTerm(suggestion);
+    setShouldExecuteSearch(true);
+  };
+
+  // 엔터 입력 시 검색 실행
+  const handleSearchEnter = () => {
+    if (searchTerm && searchTerm.trim().length >= 2) {
+      setShouldExecuteSearch(true);
+    }
   };
 
   return (
@@ -360,9 +398,8 @@ export default function ProcedureListPage() {
             onChange={handleSearchChange}
             placeholder="시술명/수술명을 입력해 주세요."
             suggestions={autocompleteSuggestions}
-            onSuggestionSelect={(suggestion) => {
-              setSearchTerm(suggestion);
-            }}
+            onSuggestionSelect={handleSuggestionSelect}
+            onEnter={handleSearchEnter}
           />
           <div className="flex gap-2">
             <select

@@ -24,6 +24,7 @@ export default function AutocompleteInput({
 }: AutocompleteInputProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [isComposing, setIsComposing] = useState(false); // 한글 입력 조합 중인지 추적
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -44,19 +45,43 @@ export default function AutocompleteInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 자동완성 선택으로 인한 value 변경인지 추적
+  const isSuggestionSelectedRef = useRef(false);
+
   // 검색어가 변경되면 자동완성 표시
   useEffect(() => {
+    // 자동완성 선택으로 인한 value 변경이면 자동완성을 다시 열지 않음
+    if (isSuggestionSelectedRef.current) {
+      isSuggestionSelectedRef.current = false;
+      return;
+    }
     setShowSuggestions(value.length > 0 && suggestions.length > 0);
     setFocusedIndex(-1);
   }, [value, suggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 항상 onChange 호출 (입력 필드가 업데이트되도록)
     onChange(e.target.value);
   };
 
+  // 한글 입력 조합 시작
+  const handleCompositionStart = () => {
+    setIsComposing(true);
+  };
+
+  // 한글 입력 조합 종료
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    setIsComposing(false);
+    // 조합이 완료되면 최종 값을 onChange로 전달 (이미 handleInputChange에서 호출되지만 확실히 하기 위해)
+    onChange(e.currentTarget.value);
+  };
+
   const handleSuggestionClick = (suggestion: string) => {
-    onChange(suggestion);
+    // 자동완성 선택 플래그 설정 (value 변경으로 인해 자동완성이 다시 열리지 않도록)
+    isSuggestionSelectedRef.current = true;
+    // 먼저 자동완성을 닫고, 그 다음에 onChange 호출
     setShowSuggestions(false);
+    onChange(suggestion);
     if (onSuggestionSelect) {
       onSuggestionSelect(suggestion);
     }
@@ -69,8 +94,8 @@ export default function AutocompleteInput({
         // 자동완성 항목이 선택된 경우
         e.preventDefault();
         handleSuggestionClick(suggestions[focusedIndex]);
-      } else if (onEnter) {
-        // 자동완성 항목이 선택되지 않은 경우 Enter 키 처리
+      } else if (onEnter && value.trim().length >= 2) {
+        // 자동완성 항목이 선택되지 않은 경우 Enter 키 처리 (2글자 이상일 때만)
         e.preventDefault();
         onEnter();
       }
@@ -103,6 +128,8 @@ export default function AutocompleteInput({
           type="text"
           value={value}
           onChange={handleInputChange}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           onKeyDown={handleKeyDown}
           onFocus={() => {
             if (value.length > 0 && suggestions.length > 0) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TravelScheduleData } from "./TravelScheduleForm";
@@ -501,21 +501,40 @@ export default function ProcedureRecommendation({
     async function fetchData() {
       try {
         setLoading(true);
+        // selectedCategoryId를 한국어 카테고리 이름으로 변환
+        let categoryForLoad: string | undefined;
+        if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
+          const selectedCategory = mainCategories.find(
+            (cat) => cat.id === selectedCategoryId
+          );
+          categoryForLoad = selectedCategory?.name || selectedCategoryId;
+        } else if (scheduleData.procedureCategory !== "전체") {
+          categoryForLoad = scheduleData.procedureCategory;
+        }
+
         // 필요한 만큼만 로드 (200개 - 일정 기반 추천에 충분)
         const result = await loadTreatmentsPaginated(1, 200, {
-          categoryLarge:
-            scheduleData.procedureCategory !== "전체"
-              ? scheduleData.procedureCategory
-              : undefined,
+          categoryLarge: categoryForLoad,
         });
         const treatments = result.data;
         setAllTreatments(treatments);
 
         // 일정 기반 추천 데이터 생성
         if (scheduleData.travelPeriod.start && scheduleData.travelPeriod.end) {
-          const scheduleBasedRecs = getScheduleBasedRecommendations(
+          // selectedCategoryId를 한국어 카테고리 이름으로 변환
+          let categoryToUse: string;
+          if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
+            // mainCategories에서 선택된 카테고리의 name을 찾기
+            const selectedCategory = mainCategories.find(
+              (cat) => cat.id === selectedCategoryId
+            );
+            categoryToUse = selectedCategory?.name || selectedCategoryId;
+          } else {
+            categoryToUse = scheduleData.procedureCategory || "전체";
+          }
+          const scheduleBasedRecs = await getScheduleBasedRecommendations(
             treatments,
-            scheduleData.procedureCategory,
+            categoryToUse,
             scheduleData.travelPeriod.start,
             scheduleData.travelPeriod.end
           );
@@ -529,7 +548,7 @@ export default function ProcedureRecommendation({
     }
 
     fetchData();
-  }, [scheduleData]);
+  }, [scheduleData, selectedCategoryId]);
 
   // 일정 추가 핸들러
   const handleDateSelect = async (date: string) => {
@@ -594,15 +613,87 @@ export default function ProcedureRecommendation({
         ) + 1
       : 0;
 
-  // TODO: API 연동 후 실제 필터링 로직 구현
-  // const filteredRecommendations = recommendations.filter((rec) => {
-  //   // 필터 조건에 맞는 시술만 필터링
-  //   return true; // 임시로 모든 시술 표시
-  // });
+  // 필터링된 추천 데이터
+  const filteredRecommendations = useMemo(() => {
+    let filtered = recommendations;
+
+    // 필터 적용
+    if (filter.duration) {
+      filtered = filtered
+        .map((rec) => {
+          const filteredTreatments = rec.treatments.filter((treatment) => {
+            const procedureTime = parseProcedureTime(treatment.surgery_time);
+            switch (filter.duration) {
+              case "same-day":
+                return procedureTime <= 30; // 30분 이하
+              case "half-day":
+                return procedureTime > 30 && procedureTime <= 120; // 30분~2시간
+              case "1-day":
+                return procedureTime > 120 && procedureTime <= 480; // 2시간~8시간
+              case "2-3-days":
+                return procedureTime > 480; // 8시간 이상
+              case "surgery":
+                return procedureTime >= 60; // 1시간 이상 (수술 포함)
+              default:
+                return true;
+            }
+          });
+          return { ...rec, treatments: filteredTreatments };
+        })
+        .filter((rec) => rec.treatments.length > 0);
+    }
+
+    if (filter.recovery) {
+      filtered = filtered
+        .map((rec) => {
+          const filteredTreatments = rec.treatments.filter((treatment) => {
+            const recoveryPeriod = parseRecoveryPeriod(treatment.downtime);
+            switch (filter.recovery) {
+              case "same-day":
+                return recoveryPeriod === 0 || recoveryPeriod <= 1;
+              case "1-3-days":
+                return recoveryPeriod >= 1 && recoveryPeriod <= 3;
+              case "4-7-days":
+                return recoveryPeriod >= 4 && recoveryPeriod <= 7;
+              case "1-week-plus":
+                return recoveryPeriod >= 8;
+              default:
+                return true;
+            }
+          });
+          return { ...rec, treatments: filteredTreatments };
+        })
+        .filter((rec) => rec.treatments.length > 0);
+    }
+
+    if (filter.budget) {
+      filtered = filtered
+        .map((rec) => {
+          const filteredTreatments = rec.treatments.filter((treatment) => {
+            const price = treatment.selling_price || 0;
+            switch (filter.budget) {
+              case "under-50":
+                return price < 500000; // 50만원 미만
+              case "50-100":
+                return price >= 500000 && price < 1000000; // 50~100만원
+              case "100-200":
+                return price >= 1000000 && price < 2000000; // 100~200만원
+              case "200-plus":
+                return price >= 2000000; // 200만원 이상
+              default:
+                return true;
+            }
+          });
+          return { ...rec, treatments: filteredTreatments };
+        })
+        .filter((rec) => rec.treatments.length > 0);
+    }
+
+    return filtered;
+  }, [recommendations, filter]);
 
   const handleFilterApply = (newFilter: ProcedureFilter) => {
     setFilter(newFilter);
-    // TODO: 필터 적용 후 리스트 재계산
   };
 
   const hasActiveFilters =
@@ -681,7 +772,7 @@ export default function ProcedureRecommendation({
   return (
     <div className="px-4 py-6 space-y-6">
       {/* Header with Filter Button */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-bold text-gray-900">
           {t("procedure.customRecommendations")}
         </h3>
@@ -707,11 +798,21 @@ export default function ProcedureRecommendation({
         </button>
       </div>
 
-      {/* 대분류 카테고리 선택 */}
+      {/* 여행 기간 정보 - 맞춤 시술 추천 바로 아래 */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <FiCalendar className="text-primary-main" />
+          <span className="text-sm text-gray-700">
+            {t("procedure.travelPeriod")}: {travelDays - 1}박 {travelDays}일
+          </span>
+        </div>
+      </div>
+
+      {/* 대분류 카테고리 선택 - 통합된 2줄 그리드 */}
       {mainCategories.length > 0 && (
         <div className="mb-4">
-          {/* ALL 버튼 - 작게 따로 배치 */}
-          <div className="mb-3">
+          {/* "ALL 전체" 버튼 - 위에 따로 배치 */}
+          <div className="mb-2">
             <button
               onClick={() => handleCategoryClick(null)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -732,14 +833,16 @@ export default function ProcedureRecommendation({
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  className={`flex flex-col items-center justify-center w-full aspect-square rounded-xl border text-xs transition-colors ${
+                  className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-colors ${
                     isActive
-                      ? "bg-primary-main/10 border-primary-main text-primary-main"
-                      : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                      ? "bg-primary-main/10 text-primary-main font-bold border border-primary-main"
+                      : "bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  <span className="text-xl mb-1">{category.icon}</span>
-                  <span className="text-[10px] leading-tight text-center px-1">
+                  <span className="text-base leading-none">
+                    {category.icon}
+                  </span>
+                  <span className="text-[10px] leading-tight">
                     {category.name}
                   </span>
                 </button>
@@ -749,52 +852,34 @@ export default function ProcedureRecommendation({
         </div>
       )}
 
-      {/* 소요시간 기반 일정표 */}
-      <div className="bg-gray-50 rounded-xl p-4 mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <FiCalendar className="text-primary-main" />
-          <h4 className="font-semibold text-gray-900">
-            {t("procedure.travelInfo")}
-          </h4>
-        </div>
-        <div className="space-y-2 text-sm text-gray-700">
-          <div className="flex justify-between">
-            <span>{t("procedure.travelPeriod")}:</span>
-            <span className="font-medium">
-              {travelDays - 1}박 {travelDays}일
-            </span>
+      {/* 필터로 선택한 항목들 표시 */}
+      {hasActiveFilters && (
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-1.5">
+            {filter.duration && (
+              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
+                {DURATION_OPTIONS.find((opt) => opt.value === filter.duration)
+                  ?.label || filter.duration}
+              </span>
+            )}
+            {filter.recovery && (
+              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
+                {RECOVERY_OPTIONS.find((opt) => opt.value === filter.recovery)
+                  ?.label || filter.recovery}
+              </span>
+            )}
+            {filter.budget && (
+              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
+                {BUDGET_OPTIONS.find((opt) => opt.value === filter.budget)
+                  ?.label || filter.budget}
+              </span>
+            )}
           </div>
         </div>
-
-        {/* 필터로 선택한 항목들 표시 */}
-        {hasActiveFilters && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <div className="flex flex-wrap gap-1.5">
-              {filter.duration && (
-                <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
-                  {DURATION_OPTIONS.find((opt) => opt.value === filter.duration)
-                    ?.label || filter.duration}
-                </span>
-              )}
-              {filter.recovery && (
-                <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
-                  {RECOVERY_OPTIONS.find((opt) => opt.value === filter.recovery)
-                    ?.label || filter.recovery}
-                </span>
-              )}
-              {filter.budget && (
-                <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
-                  {BUDGET_OPTIONS.find((opt) => opt.value === filter.budget)
-                    ?.label || filter.budget}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* 중분류별 시술 추천 - 각 중분류마다 카드 스와이프 */}
-      {recommendations.slice(0, visibleCategoriesCount).map((rec) => {
+      {filteredRecommendations.slice(0, visibleCategoriesCount).map((rec) => {
         const scrollState = scrollPositions[rec.categoryMid] || {
           left: 0,
           canScrollLeft: false,
@@ -840,10 +925,26 @@ export default function ProcedureRecommendation({
                   {rec.categoryMid}
                 </h4>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {t("procedure.avgTime")} {rec.averageProcedureTime}
-                  {t("procedure.procedureTime")} ·{" "}
-                  {t("procedure.recoveryPeriod")} {rec.averageRecoveryPeriod}
-                  {t("procedure.recoveryDays")}
+                  평균 시술시간{" "}
+                  {rec.averageProcedureTimeMin > 0 ||
+                  rec.averageProcedureTimeMax > 0
+                    ? rec.averageProcedureTimeMin ===
+                      rec.averageProcedureTimeMax
+                      ? `${rec.averageProcedureTimeMax}분`
+                      : `${rec.averageProcedureTimeMin}~${rec.averageProcedureTimeMax}분`
+                    : rec.averageProcedureTime > 0
+                    ? `${rec.averageProcedureTime}분`
+                    : "정보 없음"}{" "}
+                  · 회복기간{" "}
+                  {rec.averageRecoveryPeriodMin > 0 ||
+                  rec.averageRecoveryPeriodMax > 0
+                    ? rec.averageRecoveryPeriodMin ===
+                      rec.averageRecoveryPeriodMax
+                      ? `${rec.averageRecoveryPeriodMax}일`
+                      : `${rec.averageRecoveryPeriodMin}~${rec.averageRecoveryPeriodMax}일`
+                    : rec.averageRecoveryPeriod > 0
+                    ? `${rec.averageRecoveryPeriod}일`
+                    : "정보 없음"}
                 </p>
               </div>
             </div>
@@ -903,7 +1004,7 @@ export default function ProcedureRecommendation({
                     return (
                       <div
                         key={treatment.treatment_id}
-                        className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow flex-shrink-0 w-[150px] cursor-pointer"
+                        className="flex-shrink-0 w-[150px] cursor-pointer"
                         onClick={() => {
                           if (treatment.treatment_id) {
                             router.push(`/treatment/${treatment.treatment_id}`);
@@ -919,14 +1020,14 @@ export default function ProcedureRecommendation({
                           />
                           {/* 할인율 배지 */}
                           {treatment.dis_rate && treatment.dis_rate > 0 && (
-                            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded z-20">
                               {treatment.dis_rate}%
                             </div>
                           )}
-                          {/* 찜 버튼 */}
+                          {/* 찜 버튼 (위) */}
                           <button
                             onClick={handleFavoriteClick}
-                            className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 transition-colors shadow-sm"
+                            className="absolute top-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 transition-colors shadow-sm z-20"
                           >
                             <FiHeart
                               className={`text-sm ${
@@ -936,14 +1037,14 @@ export default function ProcedureRecommendation({
                               }`}
                             />
                           </button>
-                          {/* 달력 버튼 */}
+                          {/* 달력 버튼 (아래) */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedTreatment(treatment);
                               setIsScheduleModalOpen(true);
                             }}
-                            className="absolute bottom-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 transition-colors shadow-sm"
+                            className="absolute bottom-2 right-2 bg-white/90 hover:bg-white rounded-full p-1.5 transition-colors shadow-sm z-20"
                           >
                             <FiCalendar className="text-sm text-primary-main" />
                           </button>
