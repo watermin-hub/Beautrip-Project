@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FiHeart, FiMapPin, FiStar, FiPhone, FiClock, FiGlobe } from "react-icons/fi";
+import {
+  FiHeart,
+  FiMapPin,
+  FiStar,
+  FiPhone,
+  FiClock,
+  FiGlobe,
+} from "react-icons/fi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FavoriteItem {
@@ -24,10 +31,14 @@ export default function FavoritesPage() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  
+
   // URL 쿼리 파라미터에서 type 읽기, 없으면 기본값 "procedure"
-  const initialTab = (searchParams.get("type") === "clinic" ? "clinic" : "procedure") as "procedure" | "clinic";
-  const [activeTab, setActiveTab] = useState<"procedure" | "clinic">(initialTab);
+  const initialTab = (
+    searchParams.get("type") === "clinic" ? "clinic" : "procedure"
+  ) as "procedure" | "clinic";
+  const [activeTab, setActiveTab] = useState<"procedure" | "clinic">(
+    initialTab
+  );
 
   useEffect(() => {
     const savedFavorites = JSON.parse(
@@ -109,7 +120,7 @@ export default function FavoritesPage() {
       <div className="space-y-4">
         {displayedItems.map((item) => (
           <div
-            key={item.id}
+            key={`${item.type}-${item.id}`}
             className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex items-start justify-between mb-3">
@@ -141,7 +152,9 @@ export default function FavoritesPage() {
                       </div>
                     )}
                     {item.address && (
-                      <p className="text-sm text-gray-600 mb-2">{item.address}</p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {item.address}
+                      </p>
                     )}
                     {item.phone && (
                       <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">

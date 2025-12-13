@@ -3,7 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { FiArrowLeft, FiX, FiCamera, FiStar } from "react-icons/fi";
 import Image from "next/image";
-import { loadTreatmentsPaginated, Treatment } from "@/lib/api/beautripApi";
+import {
+  loadTreatmentsPaginated,
+  Treatment,
+  saveProcedureReview,
+  getTreatmentAutocomplete,
+} from "@/lib/api/beautripApi";
+import { supabase } from "@/lib/supabase";
 
 interface ProcedureReviewFormProps {
   onBack: () => void;
@@ -21,6 +27,9 @@ export default function ProcedureReviewForm({
   const [procedureSearchTerm, setProcedureSearchTerm] = useState("");
   const [showProcedureSuggestions, setShowProcedureSuggestions] =
     useState(false);
+  const [procedureSuggestions, setProcedureSuggestions] = useState<string[]>(
+    []
+  );
   const [cost, setCost] = useState("");
   const [procedureRating, setProcedureRating] = useState(0);
   const [hospitalRating, setHospitalRating] = useState(0);
@@ -28,7 +37,6 @@ export default function ProcedureReviewForm({
   const [ageGroup, setAgeGroup] = useState("");
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
-  const [allTreatments, setAllTreatments] = useState<Treatment[]>([]);
 
   // 대분류 카테고리 10개 (고정)
   const categories = [
@@ -45,212 +53,114 @@ export default function ProcedureReviewForm({
   ];
   const ageGroups = ["20대", "30대", "40대", "50대"];
 
-  // 시술명 자동완성 데이터 로드
+  // 한국어 완성형 글자 체크 (자음만 입력 방지)
+  const hasCompleteCharacter = (text: string): boolean => {
+    // 완성형 한글(가-힣), 영문, 숫자가 1자 이상 포함되어 있는지 확인
+    return /[가-힣a-zA-Z0-9]/.test(text);
+  };
+
+  // 시술명 자동완성 데이터 로드 (서버 사이드 검색)
   useEffect(() => {
-    const loadData = async () => {
+    const loadAutocomplete = async () => {
+      if (!procedureSearchTerm || procedureSearchTerm.trim().length < 1) {
+        setProcedureSuggestions([]);
+        setShowProcedureSuggestions(false);
+        return;
+      }
+
+      // 완성형 글자가 1자 이상 있어야 자동완성 표시 (자음만 입력 방지)
+      if (!hasCompleteCharacter(procedureSearchTerm)) {
+        setProcedureSuggestions([]);
+        setShowProcedureSuggestions(false);
+        return;
+      }
+
       try {
-        // 리뷰 작성 폼은 자동완성용으로만 사용하므로 최소한만 로드
-        const result = await loadTreatmentsPaginated(1, 100);
-        setAllTreatments(result.data);
+        // 카테고리가 선택되었으면 해당 카테고리의 시술 데이터를 로드해서 category_small 추출
+        if (category) {
+          // category_small 검색을 위해 직접 Supabase 쿼리 사용
+          let query = supabase
+            .from("treatment_master")
+            .select("category_small")
+            .eq("category_large", category)
+            .not("category_small", "is", null);
 
-        // 디버깅: 데이터 확인
-        console.log("📊 전체 데이터 개수:", treatments.length);
-        if (treatments.length > 0) {
-          const sample = treatments[0];
-          console.log("📋 샘플 데이터 필드:", Object.keys(sample));
-          console.log("📋 샘플 데이터 (전체):", sample);
+          const { data, error } = await query.limit(1000);
 
-          // 실제 테이블 컬럼명 확인
-          const allKeys = new Set<string>();
-          treatments.slice(0, 100).forEach((t) => {
-            Object.keys(t).forEach((key) => allKeys.add(key));
-          });
-          console.log(
-            "📋 실제 테이블 컬럼명 목록:",
-            Array.from(allKeys).sort()
-          );
-
-          // category_small 필드 확인 (다양한 가능한 필드명 체크)
-          const categorySmallVariations = [
-            "category_small",
-            "categorySmall",
-            "category_small_name",
-            "small_category",
-          ];
-          let categorySmallField: string | null = null;
-          for (const field of categorySmallVariations) {
-            if (sample[field as keyof typeof sample]) {
-              categorySmallField = field;
-              break;
-            }
-          }
-          console.log(
-            "📌 category_small 필드명:",
-            categorySmallField || "없음"
-          );
-
-          // "눈" 관련 데이터 확인 (모든 가능한 필드에서)
-          const eyeData = treatments.filter((t) => {
-            const large =
-              t.category_large ||
-              (t as any).category_large_name ||
-              (t as any).categoryLarge;
-            const mid =
-              t.category_mid ||
-              (t as any).category_mid_name ||
-              (t as any).categoryMid;
-            const small =
-              t.category_small ||
-              (t as any).category_small_name ||
-              (t as any).categorySmall ||
-              (t as any)[categorySmallField || ""];
-            const name =
-              t.treatment_name ||
-              (t as any).treatment_name_name ||
-              (t as any).treatmentName;
-
-            return (
-              large?.includes("눈") ||
-              mid?.includes("눈") ||
-              small?.includes("눈") ||
-              name?.includes("눈")
-            );
-          });
-          console.log("👁️ '눈' 관련 데이터 개수:", eyeData.length);
-          if (eyeData.length > 0) {
-            console.log(
-              "👁️ '눈' 관련 샘플 (최대 10개):",
-              eyeData.slice(0, 10).map((t) => ({
-                treatment_name: t.treatment_name,
-                category_large: t.category_large,
-                category_mid: t.category_mid,
-                category_small:
-                  t.category_small ||
-                  (t as any)[categorySmallField || ""] ||
-                  "없음",
-              }))
-            );
+          if (error) {
+            throw new Error(`Supabase 오류: ${error.message}`);
           }
 
-          // category_small 필드가 있는 데이터 확인
-          const hasCategorySmall = treatments.filter((t) => {
-            if (categorySmallField) {
-              return !!(t as any)[categorySmallField];
-            }
-            return !!(
-              t.category_small ||
-              (t as any).category_small_name ||
-              (t as any).categorySmall
-            );
-          });
-          console.log(
-            "📌 category_small 필드가 있는 데이터 개수:",
-            hasCategorySmall.length
+          // category_small 추출 및 중복 제거
+          const allCategorySmall: string[] = Array.from(
+            new Set(
+              (data || [])
+                .map((t: any) => t.category_small)
+                .filter(
+                  (small: any): small is string =>
+                    typeof small === "string" && small.trim() !== ""
+                )
+            )
           );
-          if (hasCategorySmall.length > 0) {
-            const getSmallValue = (t: Treatment) => {
-              if (categorySmallField) return (t as any)[categorySmallField];
-              return (
-                t.category_small ||
-                (t as any).category_small_name ||
-                (t as any).categorySmall
-              );
-            };
-            const uniqueSmall = new Set(
-              hasCategorySmall.map(getSmallValue).filter(Boolean)
-            );
+
+          // 검색어로 필터링
+          const searchTermLower = procedureSearchTerm.toLowerCase();
+          const suggestions: string[] = allCategorySmall
+            .filter((small: string) =>
+              small.toLowerCase().includes(searchTermLower)
+            )
+            .slice(0, 10);
+
+          setProcedureSuggestions(suggestions);
+          // 검색 결과가 있으면 자동완성 표시
+          if (suggestions.length > 0) {
+            setShowProcedureSuggestions(true);
+          }
+
+          console.log("🔍 검색어:", procedureSearchTerm);
+          console.log("🔍 선택된 카테고리:", category);
+          console.log("🔍 전체 데이터 개수:", allCategorySmall.length);
+          console.log("🔍 검색 결과 개수:", suggestions.length);
+          if (suggestions.length > 0) {
+            console.log("🔍 검색 결과:", suggestions);
+          } else {
             console.log(
-              "📌 고유한 category_small 값들 (최대 20개):",
-              Array.from(uniqueSmall).slice(0, 20)
+              "🔍 해당 카테고리의 모든 category_small:",
+              allCategorySmall
             );
+          }
+        } else {
+          // 카테고리가 선택되지 않았으면 기존 함수 사용
+          const result = await getTreatmentAutocomplete(
+            procedureSearchTerm,
+            10
+          );
+
+          setProcedureSuggestions(result.treatmentNames);
+          // 검색 결과가 있으면 자동완성 표시
+          if (result.treatmentNames.length > 0) {
+            setShowProcedureSuggestions(true);
+          }
+
+          console.log("🔍 검색어:", procedureSearchTerm);
+          console.log("🔍 선택된 카테고리: 전체");
+          console.log("🔍 검색 결과 개수:", result.treatmentNames.length);
+          if (result.treatmentNames.length > 0) {
+            console.log("🔍 검색 결과:", result.treatmentNames);
           }
         }
       } catch (error) {
-        console.error("시술 데이터 로드 실패:", error);
+        console.error("자동완성 데이터 로드 실패:", error);
+        setProcedureSuggestions([]);
       }
     };
-    loadData();
-  }, []);
 
-  // 선택된 카테고리에 맞는 소분류(category_small) 필터링
-  const procedureSuggestions = useMemo(() => {
-    if (!procedureSearchTerm || procedureSearchTerm.length < 1) return [];
+    const debounceTimer = setTimeout(() => {
+      loadAutocomplete();
+    }, 300);
 
-    const searchTermLower = procedureSearchTerm.toLowerCase();
-
-    // category_small 필드명 찾기 (다양한 가능한 필드명 체크)
-    let categorySmallField: string | null = null;
-    if (allTreatments.length > 0) {
-      const sample = allTreatments[0];
-      const possibleFields = [
-        "category_small",
-        "categorySmall",
-        "category_small_name",
-        "small_category",
-      ];
-      for (const field of possibleFields) {
-        if ((sample as any)[field]) {
-          categorySmallField = field;
-          break;
-        }
-      }
-    }
-
-    const getCategorySmall = (t: Treatment): string | undefined => {
-      if (categorySmallField) {
-        return (t as any)[categorySmallField];
-      }
-      return (
-        t.category_small ||
-        (t as any).category_small_name ||
-        (t as any).categorySmall
-      );
-    };
-
-    const filtered = allTreatments
-      .filter((t) => {
-        // 카테고리가 선택되었으면 해당 카테고리만, 아니면 전체
-        const categoryLarge =
-          t.category_large ||
-          (t as any).category_large_name ||
-          (t as any).categoryLarge;
-        const categoryMatch = !category || categoryLarge === category;
-
-        // 소분류(category_small)에 검색어가 포함되어 있는지
-        const categorySmall = getCategorySmall(t);
-        const smallMatch = categorySmall
-          ?.toLowerCase()
-          .includes(searchTermLower);
-
-        return categoryMatch && smallMatch;
-      })
-      .map(getCategorySmall)
-      .filter((small): small is string => !!small && small.trim() !== "")
-      .filter((small, index, self) => self.indexOf(small) === index) // 중복 제거
-      .slice(0, 10); // 최대 10개만 표시
-
-    // 디버깅: 검색 결과 로그
-    if (procedureSearchTerm) {
-      console.log("🔍 검색어:", procedureSearchTerm);
-      console.log("🔍 선택된 카테고리:", category);
-      console.log(
-        "🔍 category_small 필드명:",
-        categorySmallField || "category_small (기본)"
-      );
-      console.log("🔍 검색 결과 개수:", filtered.length);
-      if (filtered.length > 0) {
-        console.log("🔍 검색 결과:", filtered);
-      } else {
-        console.log("🔍 전체 데이터 개수:", allTreatments.length);
-        const hasCategorySmall = allTreatments.filter((t) =>
-          getCategorySmall(t)
-        ).length;
-        console.log("🔍 category_small 필드가 있는 데이터:", hasCategorySmall);
-      }
-    }
-
-    return filtered;
-  }, [procedureSearchTerm, category, allTreatments]);
+    return () => clearTimeout(debounceTimer);
+  }, [procedureSearchTerm, category]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -264,12 +174,57 @@ export default function ProcedureReviewForm({
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
-    if (!category || !procedureName || !cost || content.length < 10) {
+  const handleSubmit = async () => {
+    // 필수 항목 검증
+    // procedureName은 procedureSearchTerm에서 가져오거나 직접 입력된 값 사용
+    const finalProcedureName = procedureName || procedureSearchTerm;
+    if (!category || !finalProcedureName || !cost || content.length < 10) {
       alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
       return;
     }
-    onSubmit();
+
+    // 성별, 연령대 검증
+    if (!gender || !ageGroup) {
+      alert("성별과 연령대를 선택해주세요.");
+      return;
+    }
+
+    // 만족도 검증
+    if (procedureRating === 0 || hospitalRating === 0) {
+      alert("시술 만족도와 병원 만족도를 모두 선택해주세요.");
+      return;
+    }
+
+    try {
+      // 이미지 URL 배열 생성 (현재는 로컬 URL이므로 추후 Supabase Storage 업로드 필요)
+      const imageUrls = images.length > 0 ? images : undefined;
+
+      // 데이터 저장
+      const result = await saveProcedureReview({
+        category,
+        procedure_name: finalProcedureName,
+        hospital_name: hospitalName || undefined,
+        cost: parseInt(cost),
+        procedure_rating: procedureRating,
+        hospital_rating: hospitalRating,
+        gender,
+        age_group: ageGroup,
+        surgery_date: surgeryDate || undefined,
+        content,
+        images: imageUrls,
+        user_id: 0, // 현재는 로그인 기능이 없으므로 0으로 통일
+      });
+
+      if (result.success) {
+        alert("시술후기가 성공적으로 작성되었습니다!");
+        onSubmit();
+      } else {
+        alert(`시술후기 작성에 실패했습니다: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error("시술후기 저장 오류:", error);
+      alert(`시술후기 작성 중 오류가 발생했습니다: ${error.message}`);
+    }
   };
 
   const StarRating = ({
@@ -330,6 +285,8 @@ export default function ProcedureReviewForm({
             setCategory(e.target.value);
             setProcedureSearchTerm(""); // 카테고리 변경 시 검색어 초기화
             setProcedureName("");
+            setShowProcedureSuggestions(false); // 자동완성 닫기
+            setProcedureSuggestions([]); // 자동완성 목록 초기화
           }}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         >
@@ -351,43 +308,61 @@ export default function ProcedureReviewForm({
           type="text"
           value={procedureSearchTerm}
           onChange={(e) => {
-            setProcedureSearchTerm(e.target.value);
-            setShowProcedureSuggestions(true);
-            if (!e.target.value) {
-              setProcedureName("");
+            const value = e.target.value;
+            setProcedureSearchTerm(value);
+            // 완성형 글자가 있을 때만 자동완성 표시
+            if (hasCompleteCharacter(value)) {
+              setShowProcedureSuggestions(true);
+            } else {
+              setShowProcedureSuggestions(false);
+            }
+            // 자동완성에서 선택되지 않은 값이면 procedureName도 업데이트 (직접 입력 허용)
+            if (value && !procedureSuggestions.includes(value)) {
+              setProcedureName(value);
             }
           }}
-          onFocus={() => setShowProcedureSuggestions(true)}
+          onFocus={() => {
+            if (
+              procedureSearchTerm &&
+              hasCompleteCharacter(procedureSearchTerm)
+            ) {
+              setShowProcedureSuggestions(true);
+            }
+          }}
           onBlur={() => {
             // 약간의 지연을 두어 클릭 이벤트가 먼저 발생하도록
-            setTimeout(() => setShowProcedureSuggestions(false), 200);
+            setTimeout(() => {
+              setShowProcedureSuggestions(false);
+              // blur 시 현재 입력값을 procedureName에 저장 (선택된 값이 없을 때)
+              if (procedureSearchTerm && !procedureName) {
+                setProcedureName(procedureSearchTerm);
+              }
+            }, 200);
           }}
-          placeholder="소분류를 입력하세요 (자동완성)"
+          placeholder="시술명을 입력해 주세요."
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
-        {showProcedureSuggestions && procedureSuggestions.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-            {procedureSuggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => {
-                  setProcedureName(suggestion);
-                  setProcedureSearchTerm(suggestion);
-                  setShowProcedureSuggestions(false);
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        )}
-        {procedureName && (
-          <p className="text-xs text-gray-500 mt-1">
-            선택된 소분류: {procedureName}
-          </p>
-        )}
+        {showProcedureSuggestions &&
+          procedureSearchTerm &&
+          hasCompleteCharacter(procedureSearchTerm) &&
+          procedureSuggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              {procedureSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setProcedureName(suggestion);
+                    setProcedureSearchTerm(suggestion);
+                    setShowProcedureSuggestions(false);
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
       </div>
 
       {/* 시술, 수술 비용 (만원) */}

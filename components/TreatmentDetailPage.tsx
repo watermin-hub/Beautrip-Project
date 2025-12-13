@@ -19,6 +19,7 @@ import {
   loadTreatmentById,
   loadRelatedTreatments,
   loadHospitalTreatments,
+  loadHospitalsPaginated,
   Treatment,
   getThumbnailUrl,
   parseRecoveryPeriod,
@@ -45,6 +46,9 @@ export default function TreatmentDetailPage({
   const [isInquiryDropdownOpen, setIsInquiryDropdownOpen] = useState(false);
   const [isAddToScheduleModalOpen, setIsAddToScheduleModalOpen] =
     useState(false);
+  const [hospitalIdMap, setHospitalIdMap] = useState<Map<string, number>>(
+    new Map()
+  );
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inquiryButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -130,6 +134,18 @@ export default function TreatmentDetailPage({
           (i: any) => i.treatmentId === treatmentId
         );
         setInquiryCount(treatmentInquiries.length);
+
+        // 병원명으로 hospital_id 매핑 생성
+        if (treatment.hospital_name) {
+          const hospitalsResult = await loadHospitalsPaginated(1, 1000);
+          const idMap = new Map<string, number>();
+          hospitalsResult.data.forEach((h) => {
+            if (h.hospital_name && h.hospital_id) {
+              idMap.set(h.hospital_name, h.hospital_id);
+            }
+          });
+          setHospitalIdMap(idMap);
+        }
       } catch (error) {
         console.error("데이터 로드 실패:", error);
       } finally {
@@ -334,7 +350,7 @@ export default function TreatmentDetailPage({
         </div>
       </div>
 
-      <div className="pb-20">
+      <div className="pb-40">
         {/* 메인 이미지 - 2:1 비율 */}
         <div className="relative w-full aspect-[2/1] bg-gray-100">
           <img
@@ -494,12 +510,21 @@ export default function TreatmentDetailPage({
               </div>
               <button
                 onClick={() => {
-                  // 병원 정보 페이지로 이동 (추후 구현)
-                  router.push(
-                    `/explore?hospital=${encodeURIComponent(
-                      currentTreatment.hospital_name || ""
-                    )}`
-                  );
+                  if (currentTreatment.hospital_name) {
+                    const hospitalId = hospitalIdMap.get(
+                      currentTreatment.hospital_name
+                    );
+                    if (hospitalId) {
+                      router.push(`/hospital/${hospitalId}`);
+                    } else {
+                      // hospital_id를 찾을 수 없으면 explore 페이지로 이동
+                      router.push(
+                        `/explore?hospital=${encodeURIComponent(
+                          currentTreatment.hospital_name
+                        )}`
+                      );
+                    }
+                  }
                 }}
                 className="flex items-center gap-1 text-primary-main text-sm font-medium"
               >
@@ -614,7 +639,39 @@ export default function TreatmentDetailPage({
           </div>
         )}
 
-        {/* 병원 상세 정보 */}
+        {/* 리뷰 섹션 (별점, 리뷰 수만) */}
+        <div className="px-4 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-900">리뷰</h3>
+            <button
+              onClick={() => {
+                // 후기 작성 모달 열기 (추후 구현)
+                alert("후기 작성 기능은 준비 중입니다.");
+              }}
+              className="text-primary-main text-sm font-medium"
+            >
+              후기 작성
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <FiStar className="text-yellow-400 fill-yellow-400 text-2xl" />
+                <span className="text-2xl font-bold text-gray-900">
+                  {rating.toFixed(1)}
+                </span>
+              </div>
+            </div>
+            <div className="text-gray-600">
+              <span className="font-semibold">{reviewCount}개</span> 리뷰
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            리뷰 내용은 추후 구현 예정입니다.
+          </p>
+        </div>
+
+        {/* 병원 정보 */}
         {currentTreatment.hospital_name && (
           <div className="px-4 py-4 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -628,16 +685,6 @@ export default function TreatmentDetailPage({
                 </div>
                 <p className="text-sm text-gray-500 pl-6">
                   {currentTreatment.hospital_name}
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <FiStar className="text-gray-400" />
-                  <span className="font-medium">평점 / 후기</span>
-                </div>
-                <p className="text-sm text-gray-500 pl-6">
-                  {rating.toFixed(1)}점 ({reviewCount}개 리뷰)
                 </p>
               </div>
 
@@ -669,91 +716,106 @@ export default function TreatmentDetailPage({
           </div>
         )}
 
-        {/* 하단 고정 버튼 */}
+        {/* 하단 고정 버튼 영역 */}
         <div className="fixed bottom-[56px] left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 z-40">
-          {/* 메인 버튼 영역 */}
-          <div className="flex items-center gap-3 px-4 py-3">
-            <button
-              onClick={handleFavoriteToggle}
-              className="flex flex-col items-center gap-1 p-2"
-            >
-              <FiHeart
-                className={`text-xl ${
-                  isFavorite ? "text-red-500 fill-red-500" : "text-gray-400"
-                }`}
-              />
-              <span className="text-xs text-gray-500">{favoriteCount}</span>
-            </button>
+          <div className="px-4 py-3">
+            {/* 별점 및 리뷰 수 표시 */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-1">
+                <FiStar className="text-yellow-400 fill-yellow-400" />
+                <span className="text-gray-900 font-semibold">
+                  {rating.toFixed(1)}
+                </span>
+              </div>
+              <span className="text-gray-500 text-sm">
+                ({reviewCount}개 리뷰)
+              </span>
+            </div>
 
-            <button
-              onClick={() => {
-                setIsInquiryDropdownOpen(!isInquiryDropdownOpen);
-              }}
-              className="flex flex-col items-center gap-1 p-2"
-            >
-              <FiMessageCircle className="text-xl text-gray-400" />
-              <span className="text-xs text-gray-500">{inquiryCount}</span>
-            </button>
+            {/* 버튼 영역 */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleFavoriteToggle}
+                className="flex flex-col items-center gap-1 p-2"
+              >
+                <FiHeart
+                  className={`text-xl ${
+                    isFavorite ? "text-red-500 fill-red-500" : "text-gray-400"
+                  }`}
+                />
+                <span className="text-xs text-gray-500">{favoriteCount}</span>
+              </button>
 
-            <button
-              onClick={() => setIsAddToScheduleModalOpen(true)}
-              className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
-            >
-              <FiCalendar className="text-lg" />
-              일정에 추가
-            </button>
+              <button
+                onClick={() => {
+                  setIsInquiryDropdownOpen(!isInquiryDropdownOpen);
+                }}
+                className="flex flex-col items-center gap-1 p-2"
+              >
+                <FiMessageCircle className="text-xl text-gray-400" />
+                <span className="text-xs text-gray-500">{inquiryCount}</span>
+              </button>
 
-            <button
-              ref={inquiryButtonRef}
-              onClick={() => setIsInquiryDropdownOpen(!isInquiryDropdownOpen)}
-              className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors relative"
-            >
-              문의하기
-              {/* 문의 옵션 드롭다운 - 번역 버튼처럼 작은 팝업 */}
-              {isInquiryDropdownOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-[39]"
-                    onClick={() => setIsInquiryDropdownOpen(false)}
-                  />
-                  <div
-                    ref={dropdownRef}
-                    className="absolute right-0 bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[41] min-w-[180px]"
-                  >
-                    <button
-                      onClick={() => {
-                        handleInquiry("chat");
-                        setIsInquiryDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
+              <button
+                onClick={() => setIsAddToScheduleModalOpen(true)}
+                className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <FiCalendar className="text-lg" />
+                일정에 추가
+              </button>
+
+              <button
+                ref={inquiryButtonRef}
+                onClick={() => setIsInquiryDropdownOpen(!isInquiryDropdownOpen)}
+                className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors relative"
+              >
+                문의하기
+                {/* 문의 옵션 드롭다운 */}
+                {isInquiryDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-[39]"
+                      onClick={() => setIsInquiryDropdownOpen(false)}
+                    />
+                    <div
+                      ref={dropdownRef}
+                      className="absolute right-0 bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[41] min-w-[180px]"
                     >
-                      <FiMessageCircle className="text-gray-500" />
-                      AI 채팅 문의
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleInquiry("phone");
-                        setIsInquiryDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
-                    >
-                      <FiPhone className="text-gray-500" />
-                      전화 문의
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleInquiry("email");
-                        setIsInquiryDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
-                    >
-                      <FiMail className="text-gray-500" />
-                      메일 문의
-                    </button>
-                  </div>
-                </>
-              )}
-            </button>
+                      <button
+                        onClick={() => {
+                          handleInquiry("chat");
+                          setIsInquiryDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
+                      >
+                        <FiMessageCircle className="text-gray-500" />
+                        AI 채팅 문의
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleInquiry("phone");
+                          setIsInquiryDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
+                      >
+                        <FiPhone className="text-gray-500" />
+                        전화 문의
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleInquiry("email");
+                          setIsInquiryDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
+                      >
+                        <FiMail className="text-gray-500" />
+                        메일 문의
+                      </button>
+                    </div>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

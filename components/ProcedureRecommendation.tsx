@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TravelScheduleData } from "./TravelScheduleForm";
 import {
@@ -424,6 +425,7 @@ export default function ProcedureRecommendation({
   onCategoryChange,
   mainCategories = [],
 }: ProcedureRecommendationProps) {
+  const router = useRouter();
   const { t } = useLanguage();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState<ProcedureFilter>({
@@ -901,7 +903,12 @@ export default function ProcedureRecommendation({
                     return (
                       <div
                         key={treatment.treatment_id}
-                        className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow flex-shrink-0 w-[150px]"
+                        className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow flex-shrink-0 w-[150px] cursor-pointer"
+                        onClick={() => {
+                          if (treatment.treatment_id) {
+                            router.push(`/treatment/${treatment.treatment_id}`);
+                          }
+                        }}
                       >
                         {/* 이미지 + 할인율 오버레이 - 2:1 비율 */}
                         <div className="w-full aspect-[2/1] bg-gray-100 rounded-lg mb-3 overflow-hidden relative">

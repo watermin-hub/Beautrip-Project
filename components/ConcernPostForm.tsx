@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FiArrowLeft } from "react-icons/fi";
+import { saveConcernPost } from "@/lib/api/beautripApi";
 
 interface ConcernPostFormProps {
   onBack: () => void;
@@ -27,12 +28,32 @@ export default function ConcernPostForm({
     "기타",
   ];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // 필수 항목 검증
     if (!title || !concernCategory || content.length < 10) {
       alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
       return;
     }
-    onSubmit();
+
+    try {
+      // 데이터 저장
+      const result = await saveConcernPost({
+        title,
+        concern_category: concernCategory,
+        content,
+        user_id: 0, // 현재는 로그인 기능이 없으므로 0으로 통일
+      });
+
+      if (result.success) {
+        alert("고민글이 성공적으로 작성되었습니다!");
+        onSubmit();
+      } else {
+        alert(`고민글 작성에 실패했습니다: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error("고민글 저장 오류:", error);
+      alert(`고민글 작성 중 오류가 발생했습니다: ${error.message}`);
+    }
   };
 
   return (

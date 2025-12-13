@@ -25,36 +25,8 @@ export default function TravelScheduleBar({
   );
   const [selectedEndDate, setSelectedEndDate] = useState<string | null>(null);
 
-  // localStorage에서 기존 여행 기간 로드 (한 번만 실행)
-  useEffect(() => {
-    const loadTravelPeriod = () => {
-      const saved = localStorage.getItem("travelPeriod");
-      if (saved) {
-        try {
-          const period = JSON.parse(saved);
-          if (period.start && period.end) {
-            setSelectedStartDate(period.start);
-            setSelectedEndDate(period.end);
-            // 부모 컴포넌트에도 알림 (한 번만)
-            if (onScheduleChange) {
-              onScheduleChange(period.start, period.end);
-            }
-          }
-        } catch (error) {
-          console.error("여행 기간 로드 실패:", error);
-        }
-      }
-    };
-
-    loadTravelPeriod();
-
-    // 여행 기간 업데이트 이벤트 리스너
-    window.addEventListener("travelPeriodUpdated", loadTravelPeriod);
-    return () => {
-      window.removeEventListener("travelPeriodUpdated", loadTravelPeriod);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 한 번만 실행
+  // localStorage에서 기존 여행 기간 로드하지 않음 (홈 화면에서는 항상 초기 상태로 시작)
+  // useEffect 제거 - 홈 화면에서는 날짜를 선택하라는 버튼으로 표시
 
   const handleModalOpen = () => {
     setIsModalOpen(true);

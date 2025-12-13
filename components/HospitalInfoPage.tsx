@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   FiHeart,
   FiStar,
@@ -22,6 +23,7 @@ import CommunityWriteModal from "./CommunityWriteModal";
 import AutocompleteInput from "./AutocompleteInput";
 
 export default function HospitalInfoPage() {
+  const router = useRouter();
   const [hospitals, setHospitals] = useState<HospitalMaster[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -30,7 +32,7 @@ export default function HospitalInfoPage() {
   const [inquiryModalOpen, setInquiryModalOpen] = useState<string | null>(null);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
-  
+
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -40,9 +42,11 @@ export default function HospitalInfoPage() {
   // 검색 및 필터 상태
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  
+
   // 자동완성 상태
-  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([]);
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<
+    string[]
+  >([]);
 
   // 리뷰 작성 여부 확인
   useEffect(() => {
@@ -313,7 +317,8 @@ export default function HospitalInfoPage() {
         ) : (
           <>
             <div className="text-sm text-gray-600 mb-4">
-              총 {totalCount}개의 병원 {hospitals.length > 0 && `(표시: ${hospitals.length}개)`}
+              총 {totalCount}개의 병원{" "}
+              {hospitals.length > 0 && `(표시: ${hospitals.length}개)`}
             </div>
 
             {/* 그리드 레이아웃 (3열 4행) - 상세 정보 포함 */}
@@ -352,9 +357,11 @@ export default function HospitalInfoPage() {
                 return (
                   <div
                     key={hospital.hospital_id || hospitalName}
-                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all"
+                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer"
                     onClick={() => {
-                      // TODO: 병원 PDP 페이지로 이동
+                      if (hospital.hospital_id) {
+                        router.push(`/hospital/${hospital.hospital_id}`);
+                      }
                     }}
                   >
                     {/* 썸네일 - 2:1 비율 */}
@@ -367,18 +374,24 @@ export default function HospitalInfoPage() {
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             // 이미 fallback을 시도했다면 더 이상 시도하지 않음
-                            if (target.src.includes('data:image') || target.dataset.fallback === 'true') {
-                              target.style.display = 'none';
+                            if (
+                              target.src.includes("data:image") ||
+                              target.dataset.fallback === "true"
+                            ) {
+                              target.style.display = "none";
                               return;
                             }
                             // data URI로 빈 이미지 사용 (에러 방지)
-                            target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
-                            target.dataset.fallback = 'true';
+                            target.src =
+                              'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
+                            target.dataset.fallback = "true";
                           }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">이미지 없음</span>
+                          <span className="text-gray-400 text-xs">
+                            이미지 없음
+                          </span>
                         </div>
                       )}
                       <button

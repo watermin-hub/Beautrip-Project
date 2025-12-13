@@ -5,22 +5,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import RankingBanner from "./RankingBanner";
 import Header from "./Header";
 import TravelScheduleBar from "./TravelScheduleBar";
-import SearchSection from "./SearchSection";
 import HotConcernsSection from "./HotConcernsSection";
-import KBeautyByCountry from "./KBeautyByCountry";
 import AIAnalysisBanner from "./AIAnalysisBanner";
 import PromotionBanner from "./PromotionBanner";
 import AISkinAnalysisButton from "./AISkinAnalysisButton";
-import RecentEventsSection from "./RecentEventsSection";
 import PopularReviewsSection from "./PopularReviewsSection";
 import OverlayBar from "./OverlayBar";
 import BottomNavigation from "./BottomNavigation";
 import ProcedureRecommendation from "./ProcedureRecommendation";
-import MissionSection from "./MissionSection";
 import CountryPainPointSection from "./CountryPainPointSection";
 import CommunityWriteModal from "./CommunityWriteModal";
 import InformationalContentSection from "./InformationalContentSection";
-// import DDayBanner from "./DDayBanner"; // 제거됨
 import type { TravelScheduleData } from "./TravelScheduleForm";
 
 export default function HomePage() {

@@ -52,10 +52,11 @@ export default function CommunityWriteModal({
   };
 
   const handleSubmit = () => {
-    // TODO: 실제 제출 로직 구현
-    alert("글이 작성되었습니다!");
+    // 각 폼에서 이미 성공 메시지를 표시하므로 여기서는 alert 제거
     setSelectedOption(null);
     onClose();
+    // 후기 목록 새로고침을 위한 이벤트 발생
+    window.dispatchEvent(new CustomEvent("reviewAdded"));
   };
 
   return (

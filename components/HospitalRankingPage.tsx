@@ -1,17 +1,28 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { FiHeart, FiStar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { loadTreatmentsPaginated, extractHospitalInfo, HospitalInfo, getThumbnailUrl } from "@/lib/api/beautripApi";
+import {
+  loadTreatmentsPaginated,
+  extractHospitalInfo,
+  HospitalInfo,
+  getThumbnailUrl,
+  loadHospitalsPaginated,
+} from "@/lib/api/beautripApi";
 
 const ITEMS_PER_PAGE = 20;
 
 export default function HospitalRankingPage() {
+  const router = useRouter();
   const [allTreatments, setAllTreatments] = useState<any[]>([]);
   const [hospitals, setHospitals] = useState<HospitalInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+  const [hospitalIdMap, setHospitalIdMap] = useState<Map<string, number>>(
+    new Map()
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -19,12 +30,25 @@ export default function HospitalRankingPage() {
         setLoading(true);
         // 필요한 만큼만 로드 (300개)
         // 랭킹 페이지는 플랫폼 우선순위 정렬 없이 원본 데이터 순서로 로드
-        const result = await loadTreatmentsPaginated(1, 300, { skipPlatformSort: true });
-        const data = result.data;
+        const [treatmentsResult, hospitalsResult] = await Promise.all([
+          loadTreatmentsPaginated(1, 300, { skipPlatformSort: true }),
+          loadHospitalsPaginated(1, 1000),
+        ]);
+
+        const data = treatmentsResult.data;
         setAllTreatments(data);
         const hospitalData = extractHospitalInfo(data);
         // 평점 높은 순으로 정렬 (이미 extractHospitalInfo에서 정렬되어 있음)
         setHospitals(hospitalData);
+
+        // 병원명으로 hospital_id 매핑 생성
+        const idMap = new Map<string, number>();
+        hospitalsResult.data.forEach((h) => {
+          if (h.hospital_name && h.hospital_id) {
+            idMap.set(h.hospital_name, h.hospital_id);
+          }
+        });
+        setHospitalIdMap(idMap);
       } catch (error) {
         console.error("데이터 로드 실패:", error);
       } finally {
@@ -121,9 +145,7 @@ export default function HospitalRankingPage() {
   return (
     <div className="min-h-screen bg-white">
       <div className="px-4 py-6">
-        <h3 className="text-lg font-bold mb-2 text-gray-900">
-          추천 병원 랭킹
-        </h3>
+        <h3 className="text-lg font-bold mb-2 text-gray-900">추천 병원 랭킹</h3>
         <p className="text-sm text-gray-600 mb-6">
           평점과 리뷰를 기반으로 한 추천 병원 랭킹입니다.
         </p>
@@ -138,7 +160,8 @@ export default function HospitalRankingPage() {
               총 {hospitals.length}개의 병원을 찾았습니다.
               {hospitals.length > ITEMS_PER_PAGE && (
                 <span className="ml-2 text-gray-500">
-                  ({startIndex + 1}-{Math.min(endIndex, hospitals.length)} / {hospitals.length})
+                  ({startIndex + 1}-{Math.min(endIndex, hospitals.length)} /{" "}
+                  {hospitals.length})
                 </span>
               )}
             </div>
@@ -150,12 +173,19 @@ export default function HospitalRankingPage() {
                 const firstTreatment = hospital.treatments[0];
                 const thumbnailUrl = firstTreatment
                   ? getThumbnailUrl(firstTreatment)
-                  : '';
+                  : "";
+
+                const hospitalId = hospitalIdMap.get(hospital.hospital_name);
 
                 return (
                   <div
                     key={hospital.hospital_name}
-                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
+                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      if (hospitalId) {
+                        router.push(`/hospital/${hospitalId}`);
+                      }
+                    }}
                   >
                     <div className="flex gap-4 p-4">
                       {/* Rank Badge */}
@@ -171,12 +201,13 @@ export default function HospitalRankingPage() {
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
-                            if (target.dataset.fallback === 'true') {
-                              target.style.display = 'none';
+                            if (target.dataset.fallback === "true") {
+                              target.style.display = "none";
                               return;
                             }
-                            target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3E🏥%3C/text%3E%3C/svg%3E';
-                            target.dataset.fallback = 'true';
+                            target.src =
+                              'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3E🏥%3C/text%3E%3C/svg%3E';
+                            target.dataset.fallback = "true";
                           }}
                         />
                       </div>
@@ -221,14 +252,16 @@ export default function HospitalRankingPage() {
                         {/* Categories */}
                         {hospital.categories.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-2">
-                            {hospital.categories.slice(0, 3).map((category, idx) => (
-                              <span
-                                key={idx}
-                                className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium"
-                              >
-                                {category}
-                              </span>
-                            ))}
+                            {hospital.categories
+                              .slice(0, 3)
+                              .map((category, idx) => (
+                                <span
+                                  key={idx}
+                                  className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium"
+                                >
+                                  {category}
+                                </span>
+                              ))}
                           </div>
                         )}
 
@@ -311,4 +344,3 @@ export default function HospitalRankingPage() {
     </div>
   );
 }
-

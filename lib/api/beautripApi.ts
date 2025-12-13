@@ -1317,3 +1317,250 @@ export function sortTreatmentsByPlatform(treatments: Treatment[]): Treatment[] {
     return priorityB - priorityA;
   });
 }
+
+// ============================================
+// 후기 작성 관련 API 함수
+// ============================================
+
+// 시술후기 데이터 인터페이스
+export interface ProcedureReviewData {
+  id?: string; // UUID
+  category: string;
+  procedure_name: string;
+  hospital_name?: string;
+  cost: number;
+  procedure_rating: number;
+  hospital_rating: number;
+  gender: "여" | "남";
+  age_group: string;
+  surgery_date?: string;
+  content: string;
+  images?: string[];
+  user_id?: number; // 선택사항, 기본값 0
+  created_at?: string; // ISO timestamp
+  updated_at?: string; // ISO timestamp
+}
+
+// 병원후기 데이터 인터페이스
+export interface HospitalReviewData {
+  id?: string; // UUID
+  hospital_name: string;
+  category_large: string;
+  procedure_name?: string;
+  visit_date?: string;
+  overall_satisfaction?: number;
+  hospital_kindness?: number;
+  has_translation?: boolean;
+  translation_satisfaction?: number;
+  content: string;
+  images?: string[];
+  user_id?: number; // 선택사항, 기본값 0
+  created_at?: string; // ISO timestamp
+  updated_at?: string; // ISO timestamp
+}
+
+// 고민글 데이터 인터페이스
+export interface ConcernPostData {
+  id?: string; // UUID
+  title: string;
+  concern_category: string;
+  content: string;
+  user_id?: number; // 선택사항, 기본값 0
+  created_at?: string; // ISO timestamp
+  updated_at?: string; // ISO timestamp
+}
+
+// 시술후기 저장
+export async function saveProcedureReview(
+  data: ProcedureReviewData
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const reviewData = {
+      user_id: data.user_id ?? 0,
+      category: data.category,
+      procedure_name: data.procedure_name,
+      hospital_name: data.hospital_name || null,
+      cost: data.cost,
+      procedure_rating: data.procedure_rating,
+      hospital_rating: data.hospital_rating,
+      gender: data.gender,
+      age_group: data.age_group,
+      surgery_date: data.surgery_date || null,
+      content: data.content,
+      images: data.images && data.images.length > 0 ? data.images : null,
+    };
+
+    const { data: insertedData, error } = await supabase
+      .from("procedure_reviews")
+      .insert([reviewData])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("시술후기 저장 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: insertedData?.id };
+  } catch (error: any) {
+    console.error("시술후기 저장 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "시술후기 저장에 실패했습니다.",
+    };
+  }
+}
+
+// 병원후기 저장
+export async function saveHospitalReview(
+  data: HospitalReviewData
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const reviewData = {
+      user_id: data.user_id ?? 0,
+      hospital_name: data.hospital_name,
+      category_large: data.category_large,
+      procedure_name: data.procedure_name || null,
+      visit_date: data.visit_date || null,
+      overall_satisfaction: data.overall_satisfaction || null,
+      hospital_kindness: data.hospital_kindness || null,
+      has_translation: data.has_translation ?? false,
+      translation_satisfaction:
+        data.has_translation && data.translation_satisfaction
+          ? data.translation_satisfaction
+          : null,
+      content: data.content,
+      images: data.images && data.images.length > 0 ? data.images : null,
+    };
+
+    const { data: insertedData, error } = await supabase
+      .from("hospital_reviews")
+      .insert([reviewData])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("병원후기 저장 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: insertedData?.id };
+  } catch (error: any) {
+    console.error("병원후기 저장 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "병원후기 저장에 실패했습니다.",
+    };
+  }
+}
+
+// 고민글 저장
+export async function saveConcernPost(
+  data: ConcernPostData
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const postData = {
+      user_id: data.user_id ?? 0,
+      title: data.title,
+      concern_category: data.concern_category,
+      content: data.content,
+    };
+
+    const { data: insertedData, error } = await supabase
+      .from("concern_posts")
+      .insert([postData])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("고민글 저장 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: insertedData?.id };
+  } catch (error: any) {
+    console.error("고민글 저장 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "고민글 저장에 실패했습니다.",
+    };
+  }
+}
+
+// 시술 후기 목록 가져오기 (최신순)
+export async function loadProcedureReviews(
+  limit: number = 50
+): Promise<ProcedureReviewData[]> {
+  try {
+    const { data, error } = await supabase
+      .from("procedure_reviews")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return data as ProcedureReviewData[];
+  } catch (error) {
+    console.error("시술 후기 로드 실패:", error);
+    return [];
+  }
+}
+
+// 병원 후기 목록 가져오기 (최신순)
+export async function loadHospitalReviews(
+  limit: number = 50
+): Promise<HospitalReviewData[]> {
+  try {
+    const { data, error } = await supabase
+      .from("hospital_reviews")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return data as HospitalReviewData[];
+  } catch (error) {
+    console.error("병원 후기 로드 실패:", error);
+    return [];
+  }
+}
+
+// 고민글 목록 가져오기 (최신순)
+export async function loadConcernPosts(
+  limit: number = 50
+): Promise<ConcernPostData[]> {
+  try {
+    const { data, error } = await supabase
+      .from("concern_posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return data as ConcernPostData[];
+  } catch (error) {
+    console.error("고민글 로드 실패:", error);
+    return [];
+  }
+}
