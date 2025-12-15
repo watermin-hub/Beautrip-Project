@@ -292,7 +292,7 @@ export async function getTreatmentAutocomplete(
     const treatmentNames = Array.from(
       new Set(
         data
-          .map((t) => t.category_small)
+          .map((t: { category_small: string | null }) => t.category_small)
           .filter((name) => name && name.toLowerCase().includes(term))
       )
     ).slice(0, limit);
@@ -300,7 +300,7 @@ export async function getTreatmentAutocomplete(
     const hospitalNames = Array.from(
       new Set(
         data
-          .map((t) => t.hospital_name)
+          .map((t: { hospital_name: string | null }) => t.hospital_name)
           .filter((name) => name && name.toLowerCase().includes(term))
       )
     ).slice(0, limit);
