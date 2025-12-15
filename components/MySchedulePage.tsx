@@ -885,7 +885,10 @@ export default function MySchedulePage() {
 
               {/* 회복 기간 카드 (녹색 톤 배경) */}
               {selectedRecovery.map((rec, idx) => {
-                const isOutsideTravel = selectedDateObj && isRecoveryOutsideTravel(selectedDateObj);
+                // 선택한 날짜가 여행 일정 밖인지 여부를 boolean으로 변환
+                const isOutsideTravel = !!(
+                  selectedDateObj && isRecoveryOutsideTravel(selectedDateObj)
+                );
                 return (
                   <RecoveryCardComponent
                     key={`recovery-${rec.id}-${idx}`}
