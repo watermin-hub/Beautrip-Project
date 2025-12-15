@@ -557,19 +557,26 @@ export default function ProcedureRecommendation({
     // category_mid로 회복 기간 정보 가져오기 (소분류_리스트와 매칭)
     let recoveryDays = 0;
     let recoveryText: string | null = null;
+    let recommendedStayDays = 0;
+    let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
     if (selectedTreatment.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
         selectedTreatment.category_mid
       );
       if (recoveryInfo) {
-        recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
+        recommendedStayDays = recoveryInfo.recommendedStayDays || 0;
+        recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준 (fallback)
         recoveryText = recoveryInfo.recoveryText;
+        recoveryGuides = recoveryInfo.recoveryGuides;
       }
     }
 
-    // recoveryInfo가 없으면 기존 downtime 사용 (fallback)
-    if (recoveryDays === 0) {
+    // 권장체류일수가 있으면 우선 사용
+    if (recommendedStayDays > 0) {
+      recoveryDays = recommendedStayDays;
+    } else if (recoveryDays === 0) {
+      // recoveryInfo가 없으면 기존 downtime 사용 (fallback)
       recoveryDays = parseRecoveryPeriod(selectedTreatment.downtime) || 0;
     }
 
@@ -588,6 +595,7 @@ export default function ProcedureRecommendation({
       categoryMid: selectedTreatment.category_mid || null,
       recoveryDays,
       recoveryText, // 회복 기간 텍스트 추가
+      recoveryGuides,
       procedureTime: parseProcedureTime(selectedTreatment.surgery_time) || 0,
       price: selectedTreatment.selling_price || null,
       rating: selectedTreatment.rating || 0,

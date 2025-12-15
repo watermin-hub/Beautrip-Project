@@ -82,6 +82,26 @@ export interface KeywordMonthlyTrend {
   [key: string]: any;
 }
 
+// ---------------------------
+// 캐시 및 유틸
+// ---------------------------
+// category_mid -> 회복정보 캐시 (중복 호출/로그 폭주 방지)
+const recoveryInfoCache = new Map<
+  string,
+  {
+    recoveryMin: number;
+    recoveryMax: number;
+    recoveryText: string | null;
+    procedureTimeMin: number;
+    procedureTimeMax: number;
+    recommendedStayDays: number;
+    recoveryGuides: Record<string, string | null>;
+  } | null
+>();
+
+// 이미 매칭 로그를 찍은 category_mid 모음 (콘솔 스팸 방지)
+const recoveryLogPrinted = new Set<string>();
+
 // 공통 데이터 정리 함수 (NaN을 null로 변환)
 function cleanData<T>(data: any[]): T[] {
   return data.map((item: any) => {
@@ -325,82 +345,193 @@ export async function getRecoveryInfoByCategoryMid(
   recoveryText: string | null;
   procedureTimeMin: number;
   procedureTimeMax: number;
+  recommendedStayDays: number; // 권장체류일수(일)
+  recoveryGuides: Record<string, string | null>;
 } | null> {
   try {
     if (!categoryMid) return null;
 
-    const recoveryData = await loadCategoryTreatTimeRecovery();
-
     const categoryMidTrimmed = categoryMid.trim();
 
-    // 디버깅: 첫 번째 항목의 중분류 확인
-    if (recoveryData.length > 0) {
-      console.log("🔍 디버깅 - 첫 번째 recoveryData 항목:", {
-        중분류: recoveryData[0].중분류,
-        "회복기간_max(일)": recoveryData[0]["회복기간_max(일)"],
-        "회복기간_min(일)": recoveryData[0]["회복기간_min(일)"],
-        모든키: Object.keys(recoveryData[0]),
+    // 캐시 (중복 호출/로그 스팸 방지) - trim된 키 사용
+    if (recoveryInfoCache.has(categoryMidTrimmed)) {
+      return recoveryInfoCache.get(categoryMidTrimmed) ?? null;
+    }
+
+    const recoveryData = await loadCategoryTreatTimeRecovery();
+
+    // 키/샘플 확인 (디버깅용)
+    console.log(
+      "🔑 recovery 첫 행 keys:",
+      recoveryData?.[0] ? Object.keys(recoveryData[0]) : null
+    );
+    console.log(
+      "🔎 sample 중분류:",
+      recoveryData
+        ?.slice(0, 5)
+        .map((x: any) => x["중분류"] ?? x.중분류 ?? x.category_mid)
+    );
+
+    const getMid = (item: any) =>
+      String(
+        item["중분류"] ??
+          item.중분류 ??
+          item["category_mid"] ??
+          item.category_mid ??
+          item["categoryMid"] ??
+          item.categoryMid ??
+          ""
+      );
+
+    // 정규화 함수: NFC + zero-width 제거 + 공백 제거 + 소문자 + 특수문자 제거
+    const normalize = (str: string) =>
+      str
+        .normalize("NFC")
+        .replace(/[\u200B-\u200D\uFEFF]/g, "")
+        .replace(/\s+/g, "")
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]/gu, "");
+
+    // 정상화된 중분류 목록을 미리 만들어 정확/부분 일치에 사용
+    const normalizedCategoryMid = normalize(categoryMidTrimmed);
+    const normalizedRecoveryData = recoveryData.map((item: any) => {
+      const mid = getMid(item).trim();
+      return {
+        ...item,
+        _mid: mid,
+        _normalized: normalize(mid),
+      };
+    });
+
+    // 디버깅: 매칭 시도 전 로그 (한번만 찍기)
+    if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+      console.log(`🔍 [매칭 시도] category_mid: "${categoryMidTrimmed}"`);
+      console.log(`🔍 [매칭 시도] 정규화된 값: "${normalizedCategoryMid}"`);
+      console.log(`🔍 [전체 데이터] 총 ${recoveryData.length}개 항목`);
+    }
+
+    // "V라인" 또는 입력값이 포함된 모든 중분류 찾기 (디버깅용)
+    const relatedItems = normalizedRecoveryData.filter((item) => {
+      if (!item._normalized) return false;
+      return (
+        item._normalized.includes(normalizedCategoryMid) ||
+        normalizedCategoryMid.includes(item._normalized)
+      );
+    });
+
+    if (
+      relatedItems.length > 0 &&
+      !recoveryLogPrinted.has(categoryMidTrimmed)
+    ) {
+      console.log(
+        `🔍 [관련 항목 발견] ${relatedItems.length}개 항목 발견:`,
+        relatedItems.map((item) => ({
+          중분류: item.중분류,
+          정규화: normalize(item.중분류 || ""),
+          "권장체류일수(일)":
+            (item as any)["권장체류일수(일)"] ?? (item as any).권장체류일수,
+        }))
+      );
+    }
+
+    // 중분류 컬럼과 category_mid를 매칭 (더 강력한 매칭 로직)
+    // 1) 정규화된 정확 일치 우선
+    let matched = normalizedRecoveryData.find(
+      (item) => item._normalized && item._normalized === normalizedCategoryMid
+    );
+
+    // 2) 원본 문자열 정확 일치
+    if (!matched) {
+      matched = normalizedRecoveryData.find(
+        (item) => item._mid === categoryMidTrimmed
+      );
+    }
+
+    // 3) 정규화된 부분 일치
+    if (!matched) {
+      matched = normalizedRecoveryData.find((item) => {
+        if (!item._normalized) return false;
+        return (
+          item._normalized.includes(normalizedCategoryMid) ||
+          normalizedCategoryMid.includes(item._normalized)
+        );
       });
     }
 
-    // 중분류 컬럼과 category_mid를 매칭
-    const matched = recoveryData.find((item) => {
-      const 중분류 = (item.중분류 || "").trim();
-
-      if (!중분류) return false;
-
-      // 정확히 일치하는 경우
-      if (중분류 === categoryMidTrimmed) {
-        console.log(`✅ 정확 일치: "${categoryMidTrimmed}" === "${중분류}"`);
-        return true;
-      }
-
-      // 부분 일치도 확인 (대소문자 무시)
-      const partialMatch =
-        중분류.toLowerCase().includes(categoryMidTrimmed.toLowerCase()) ||
-        categoryMidTrimmed.toLowerCase().includes(중분류.toLowerCase());
-      if (partialMatch) {
-        console.log(`⚠️ 부분 일치: "${categoryMidTrimmed}" <-> "${중분류}"`);
-      }
-      return partialMatch;
-    });
+    // 4) 원본 부분 일치
+    if (!matched) {
+      matched = normalizedRecoveryData.find((item) => {
+        const mid = item._mid;
+        if (!mid) return false;
+        return (
+          mid.includes(categoryMidTrimmed) || categoryMidTrimmed.includes(mid)
+        );
+      });
+    }
 
     if (!matched) {
-      console.warn(
-        `⚠️ 회복 기간 정보를 찾을 수 없습니다. category_mid: "${categoryMidTrimmed}"`
-      );
-      console.log(
-        "🔍 사용 가능한 중분류 샘플:",
-        recoveryData
-          .slice(0, 10)
-          .map((item) => item.중분류)
-          .filter(Boolean)
-      );
+      if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+        console.error(
+          `❌ [매칭 실패] category_mid: "${categoryMidTrimmed}" (정규화: "${normalize(
+            categoryMidTrimmed
+          )}")`
+        );
+      }
+
+      // "V라인"이 포함된 모든 항목 찾기
+      const vlineItems = recoveryData.filter((item) => {
+        const 중분류 = (item.중분류 || "").trim();
+        return (
+          중분류 &&
+          (중분류.includes("V라인") ||
+            중분류.includes("v라인") ||
+            중분류.includes("V 라인"))
+        );
+      });
+
+      if (
+        vlineItems.length > 0 &&
+        !recoveryLogPrinted.has(categoryMidTrimmed)
+      ) {
+        console.log(
+          `🔍 [V라인 관련 항목] ${vlineItems.length}개 발견:`,
+          vlineItems.map((item) => ({
+            중분류: item.중분류,
+            정규화: normalize(item.중분류 || ""),
+            "권장체류일수(일)": item["권장체류일수(일)"] ?? item.권장체류일수,
+          }))
+        );
+      }
+
+      recoveryLogPrinted.add(categoryMidTrimmed);
+      recoveryInfoCache.set(categoryMidTrimmed, null);
       return null;
     }
 
     // 실제 컬럼명: 회복기간_min(일), 회복기간_max(일), 시술시간_min(분), 시술시간_max(분)
-    console.log("🔍 매칭된 객체의 모든 키:", Object.keys(matched));
-    console.log("🔍 매칭된 객체에서 회복기간 값 확인:", {
-      "회복기간_max(일)": matched["회복기간_max(일)"],
-      "회복기간_min(일)": matched["회복기간_min(일)"],
-      "시술시간_max(분)": matched["시술시간_max"],
-      "시술시간_min(분)": matched["시술시간_min"],
-      타입_max: typeof matched["회복기간_max(일)"],
-      타입_min: typeof matched["회복기간_min(일)"],
-    });
+    if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+      console.log("🔍 매칭된 객체의 모든 키:", Object.keys(matched));
+      console.log("🔍 매칭된 객체에서 회복기간 값 확인:", {
+        "회복기간_max(일)": matched["회복기간_max(일)"],
+        "회복기간_min(일)": matched["회복기간_min(일)"],
+        "시술시간_max(분)": matched["시술시간_max"],
+        "시술시간_min(분)": matched["시술시간_min"],
+        타입_max: typeof matched["회복기간_max(일)"],
+        타입_min: typeof matched["회복기간_min(일)"],
+      });
+    }
 
-    const recoveryMax =
-      matched["회복기간_max(일)"] || matched["회복기간_min(일)"] || 0;
-    const recoveryMin = matched["회복기간_min(일)"] || 0;
+    const m: any = matched;
+
+    const recoveryMax = m["회복기간_max(일)"] || m["회복기간_min(일)"] || 0;
+    const recoveryMin = m["회복기간_min(일)"] || 0;
     const procedureTimeMax =
-      matched["시술시간_max(분)"] ||
-      matched["시술시간_min(분)"] ||
-      matched["시술시간_max"] ||
-      matched["시술시간_min"] ||
+      m["시술시간_max(분)"] ||
+      m["시술시간_min(분)"] ||
+      m["시술시간_max"] ||
+      m["시술시간_min"] ||
       0;
-    const procedureTimeMin =
-      matched["시술시간_min(분)"] || matched["시술시간_min"] || 0;
+    const procedureTimeMin = m["시술시간_min(분)"] || m["시술시간_min"] || 0;
 
     console.log(
       `✅ 매칭 성공! category_mid: "${categoryMidTrimmed}", 회복기간_max: ${recoveryMax}, 회복기간_min: ${recoveryMin}`
@@ -414,25 +545,88 @@ export async function getRecoveryInfoByCategoryMid(
       console.warn("🔍 사용 가능한 모든 키:", Object.keys(matched));
     }
 
-    // 회복 기간에 맞는 텍스트 컬럼 선택 (회복기간_max 기준)
+    // 회복 기간 텍스트 가이드 (전체 범위 저장)
+    const recoveryGuides: Record<string, string | null> = {
+      "1~3": matched["1~3"] || null,
+      "4~7": matched["4~7"] || null,
+      "8~14": matched["8~14"] || null,
+      "15~21": matched["15~21"] || null,
+    };
+
+    // 회복 기간에 맞는 대표 텍스트 컬럼 선택 (회복기간_max 기준)
     let recoveryText: string | null = null;
     if (recoveryMax >= 1 && recoveryMax <= 3) {
-      recoveryText = matched["1~3"] || null;
+      recoveryText = recoveryGuides["1~3"];
     } else if (recoveryMax >= 4 && recoveryMax <= 7) {
-      recoveryText = matched["4~7"] || null;
+      recoveryText = recoveryGuides["4~7"];
     } else if (recoveryMax >= 8 && recoveryMax <= 14) {
-      recoveryText = matched["8~14"] || null;
+      recoveryText = recoveryGuides["8~14"];
     } else if (recoveryMax >= 15 && recoveryMax <= 21) {
-      recoveryText = matched["15~21"] || null;
+      recoveryText = recoveryGuides["15~21"];
     }
 
-    return {
-      recoveryMin,
-      recoveryMax,
+    // 권장체류일수(일) 가져오기 - 컬럼명 변형까지 대응
+    const recommendedStayDays = (() => {
+      const direct =
+        m["권장체류일수(일)"] ?? m["권장체류일수"] ?? m.권장체류일수;
+      if (typeof direct === "number" && !isNaN(direct) && direct > 0) {
+        if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+          console.log(`✅ [권장체류일수] 직접 매칭: ${direct}일`);
+        }
+        return direct;
+      }
+
+      const dynamicKey = Object.keys(m).find((k) =>
+        k.replace(/\s+/g, "").includes("권장체류")
+      );
+      if (dynamicKey) {
+        const value = m[dynamicKey];
+        if (typeof value === "number" && !isNaN(value) && value > 0) {
+          if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+            console.log(
+              `✅ [권장체류일수] 동적 키 매칭 (${dynamicKey}): ${value}일`
+            );
+          }
+          return value;
+        }
+      }
+
+      if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+        console.warn(
+          `⚠️ [권장체류일수] 찾을 수 없음. category_mid: "${categoryMidTrimmed}"`
+        );
+        console.log("🔍 [매칭된 객체의 모든 키]:", Object.keys(matched));
+      }
+      return 0;
+    })();
+
+    // 권장체류일수가 있으면 recoveryMax로 사용 (회복 기간 표시용)
+    const finalRecoveryMax =
+      recommendedStayDays > 0 ? recommendedStayDays : recoveryMax;
+    const finalRecoveryMin =
+      recommendedStayDays > 0 ? recommendedStayDays : recoveryMin;
+
+    if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+      console.log(
+        `✅ [최종 회복 기간] category_mid: "${categoryMidTrimmed}", 권장체류일수: ${recommendedStayDays}일, 회복기간_max: ${recoveryMax}일, 최종 사용: ${finalRecoveryMax}일`
+      );
+    }
+
+    const result = {
+      recoveryMin: finalRecoveryMin,
+      recoveryMax: finalRecoveryMax,
       recoveryText,
       procedureTimeMin,
       procedureTimeMax,
+      recommendedStayDays,
+      recoveryGuides,
     };
+
+    // 캐시 & 로그 기록
+    recoveryInfoCache.set(categoryMidTrimmed, result);
+    recoveryLogPrinted.add(categoryMidTrimmed);
+
+    return result;
   } catch (error) {
     console.error("회복 기간 정보 로드 실패:", error);
     return null;
@@ -1262,21 +1456,56 @@ export async function getScheduleBasedRecommendations(
     async ([uniqueKey, treatmentList]) => {
       // uniqueKey에서 중분류 이름만 추출 (대분류::중분류 형식)
       const categoryMid = uniqueKey.split("::")[1] || "기타";
-      // 여행 기간에 맞는 시술만 필터링
-      // 회복 기간이 여행 일수보다 작거나 같은 시술만 선택
-      const suitableTreatments = treatmentList.filter((treatment) => {
-        const recoveryPeriod = parseRecoveryPeriod(treatment.downtime);
-        // 회복기간 정보가 없으면 포함 (기본적으로 표시)
-        if (recoveryPeriod === 0) return true;
-        // 여행 일수에서 최소 1일은 여유를 둠 (시술 당일 제외)
-        return recoveryPeriod <= travelDays - 1;
-      });
 
-      // 필터링 결과가 없거나 회복기간 정보가 없으면 전체 시술 표시 (최대 10개)
-      // 회복기간 정보가 있는 경우에만 필터링 적용
-      const hasRecoveryData = treatmentList.some(
-        (t) => parseRecoveryPeriod(t.downtime) > 0
-      );
+      // 먼저 category_treattime_recovery 테이블에서 권장체류일수 가져오기
+      let recommendedStayDays = 0;
+      let recoveryMin = 0;
+      let recoveryMax = 0;
+      let procedureTimeMin = 0;
+      let procedureTimeMax = 0;
+      try {
+        const recoveryInfo = await getRecoveryInfoByCategoryMid(categoryMid);
+        if (recoveryInfo) {
+          recoveryMin = recoveryInfo.recoveryMin;
+          recoveryMax = recoveryInfo.recoveryMax;
+          procedureTimeMin = recoveryInfo.procedureTimeMin;
+          procedureTimeMax = recoveryInfo.procedureTimeMax;
+          recommendedStayDays = recoveryInfo.recommendedStayDays;
+        }
+      } catch (error) {
+        console.warn(
+          `회복 기간 정보 로드 실패 (category_mid: ${categoryMid}):`,
+          error
+        );
+      }
+
+      // 권장체류일수를 사용하여 여행 기간에 맞는 시술만 필터링
+      // 권장체류일수가 있으면 그것을 사용하고, 없으면 기존 로직(downtime) 사용
+      let suitableTreatments: Treatment[];
+      if (recommendedStayDays > 0) {
+        // 권장체류일수가 여행 일수보다 작거나 같으면 포함
+        if (recommendedStayDays <= travelDays) {
+          suitableTreatments = treatmentList;
+        } else {
+          // 권장체류일수가 여행 일수보다 크면 제외
+          suitableTreatments = [];
+        }
+      } else {
+        // 권장체류일수가 없으면 기존 로직 사용 (downtime 기반)
+        suitableTreatments = treatmentList.filter((treatment) => {
+          const recoveryPeriod = parseRecoveryPeriod(treatment.downtime);
+          // 회복기간 정보가 없으면 포함 (기본적으로 표시)
+          if (recoveryPeriod === 0) return true;
+          // 여행 일수에서 최소 1일은 여유를 둠 (시술 당일 제외)
+          return recoveryPeriod <= travelDays - 1;
+        });
+      }
+
+      // 필터링 결과가 없거나 회복기간 정보가 없으면 전체 시술 표시 (최대 20개)
+      // 권장체류일수나 회복기간 정보가 있는 경우에만 필터링 적용
+      const hasRecoveryData =
+        recommendedStayDays > 0 ||
+        treatmentList.some((t) => parseRecoveryPeriod(t.downtime) > 0);
 
       const finalTreatments =
         hasRecoveryData && suitableTreatments.length > 0
@@ -1289,26 +1518,6 @@ export async function getScheduleBasedRecommendations(
                 return scoreB - scoreA;
               })
               .slice(0, 20); // 최대 20개
-
-      // 회복 기간 및 시술 시간 정보 가져오기 (category_mid 기반)
-      let recoveryMin = 0;
-      let recoveryMax = 0;
-      let procedureTimeMin = 0;
-      let procedureTimeMax = 0;
-      try {
-        const recoveryInfo = await getRecoveryInfoByCategoryMid(categoryMid);
-        if (recoveryInfo) {
-          recoveryMin = recoveryInfo.recoveryMin;
-          recoveryMax = recoveryInfo.recoveryMax;
-          procedureTimeMin = recoveryInfo.procedureTimeMin;
-          procedureTimeMax = recoveryInfo.procedureTimeMax;
-        }
-      } catch (error) {
-        console.warn(
-          `회복 기간 정보 로드 실패 (category_mid: ${categoryMid}):`,
-          error
-        );
-      }
 
       // 회복 기간 정보가 없으면 downtime에서 계산
       if (recoveryMin === 0 && recoveryMax === 0) {

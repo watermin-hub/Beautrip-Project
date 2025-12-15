@@ -100,7 +100,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("지역");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<string[]>([]);
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<
+    string[]
+  >([]);
 
   // localStorage에서 최근 검색어 불러오기
   useEffect(() => {
@@ -314,12 +316,15 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm transition-colors"
                 >
                   <span>{search}</span>
-                  <button
-                    onClick={(e) => removeRecentSearch(search, e)}
-                    className="hover:bg-gray-300 rounded-full p-0.5 transition-colors"
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeRecentSearch(search, e);
+                    }}
+                    className="hover:bg-gray-300 rounded-full p-0.5 transition-colors cursor-pointer"
                   >
                     <IoClose className="text-gray-500 text-sm" />
-                  </button>
+                  </span>
                 </button>
               ))}
             </div>

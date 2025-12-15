@@ -17,6 +17,7 @@ import { IoCheckmarkCircle } from "react-icons/io5";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
+import { getRecoveryInfoByCategoryMid } from "@/lib/api/beautripApi";
 
 interface TravelPeriod {
   start: string; // YYYY-MM-DD
@@ -32,8 +33,10 @@ interface ProcedureSchedule {
   categoryMid?: string | null; // 중분류 (회복 기간 정보 가져오기용)
   recoveryDays: number; // 회복 기간 (일) - 회복기간_max 기준
   recoveryText?: string | null; // 회복 기간 텍스트 (1~3, 4~7, 8~14, 15~21)
+  recoveryGuides?: Record<string, string | null>; // 회복 가이드 범위별 텍스트
   procedureTime?: string;
   isRecovery?: boolean; // 회복 기간 표시용
+  recoveryDayIndex?: number; // 회복 기간 며칠째인지 (1 기반)
 }
 
 // 예시 데이터: 일주일 여행 일정 (현재 연도 기준)
@@ -120,6 +123,131 @@ const clinics = [
     image: "",
   },
 ];
+
+// 회복 카드 컴포넌트 (categoryMid로 recoveryText 동적 로드)
+function RecoveryCardComponent({
+  rec,
+  isOutsideTravel,
+}: {
+  rec: ProcedureSchedule;
+  isOutsideTravel: boolean;
+}) {
+  const [recoveryText, setRecoveryText] = useState<string | null>(rec.recoveryText || null);
+  const [loadingRecoveryText, setLoadingRecoveryText] = useState(false);
+
+  // 회복일차 범위별 텍스트 선택
+  const getGuideForDay = (day?: number) => {
+    if (!rec.recoveryGuides) return null;
+    if (!day || day < 1) return null;
+    if (day <= 3) return rec.recoveryGuides["1~3"] || null;
+    if (day <= 7) return rec.recoveryGuides["4~7"] || null;
+    if (day <= 14) return rec.recoveryGuides["8~14"] || null;
+    if (day <= 21) return rec.recoveryGuides["15~21"] || null;
+    return null;
+  };
+
+  // recoveryText가 없고 categoryMid가 있으면 동적으로 가져오기
+  useEffect(() => {
+    if (!recoveryText && rec.categoryMid && !loadingRecoveryText) {
+      setLoadingRecoveryText(true);
+      getRecoveryInfoByCategoryMid(rec.categoryMid)
+        .then((recoveryInfo) => {
+          if (recoveryInfo?.recoveryText) {
+            setRecoveryText(recoveryInfo.recoveryText);
+          }
+          if (recoveryInfo?.recoveryGuides && !rec.recoveryGuides) {
+            rec.recoveryGuides = recoveryInfo.recoveryGuides;
+          }
+        })
+        .catch((error) => {
+          console.warn("회복 기간 정보 로드 실패:", error);
+        })
+        .finally(() => {
+          setLoadingRecoveryText(false);
+        });
+    }
+  }, [rec.categoryMid, recoveryText, loadingRecoveryText]);
+
+  return (
+    <div
+      className={`border rounded-xl p-4 shadow-sm ${
+        isOutsideTravel
+          ? "bg-amber-50 border-amber-200"
+          : "bg-green-50 border-green-200"
+      }`}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="text-base font-semibold text-gray-900">
+              {rec.procedureName}
+            </h4>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                isOutsideTravel
+                  ? "bg-amber-200 text-amber-800"
+                  : "bg-green-200 text-green-800"
+              }`}
+            >
+              회복 기간
+            </span>
+            {isOutsideTravel && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-300 text-amber-900">
+                ⚠️ 여행 기간 밖
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+            <FiMapPin
+              className={isOutsideTravel ? "text-amber-600" : "text-green-600"}
+            />
+            <span>{rec.hospital}</span>
+          </div>
+          <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+            <FiTag
+              className={isOutsideTravel ? "text-amber-600" : "text-green-600"}
+            />
+            <span>{rec.category}</span>
+          </div>
+          {/* 회복 일수 정보 표시 */}
+          {rec.recoveryDays > 0 && (
+            <div
+              className={`flex items-center gap-1 text-sm font-medium mb-2 ${
+                isOutsideTravel ? "text-amber-700" : "text-green-700"
+              }`}
+            >
+              <FiClock
+                className={isOutsideTravel ? "text-amber-600" : "text-green-600"}
+              />
+              <span>회복 기간: {rec.recoveryDays}일</span>
+            </div>
+          )}
+          {/* 회복 가이드 표시 (해당 일차에 맞는 텍스트 우선) */}
+          {(getGuideForDay(rec.recoveryDayIndex) || recoveryText) && (
+            <div
+              className={`text-xs text-gray-700 rounded-lg p-3 mt-2 border ${
+                isOutsideTravel
+                  ? "bg-white/60 border-amber-100"
+                  : "bg-white/60 border-green-100"
+              }`}
+            >
+              <p
+                className={`font-semibold mb-1.5 ${
+                  isOutsideTravel ? "text-amber-800" : "text-green-800"
+                }`}
+              >
+                회복 가이드
+              </p>
+              <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                {getGuideForDay(rec.recoveryDayIndex) || recoveryText}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function MySchedulePage() {
   const [activeTab, setActiveTab] = useState<"schedule" | "map">("schedule");
@@ -212,6 +340,7 @@ export default function MySchedulePage() {
           categoryMid: s.categoryMid || null,
           recoveryDays: s.recoveryDays || 0,
           recoveryText: s.recoveryText || null, // 회복 기간 텍스트
+          recoveryGuides: s.recoveryGuides || undefined, // 회복 가이드 범위별 텍스트
           procedureTime: s.procedureTime ? `${s.procedureTime}분` : undefined,
         })
       );
@@ -228,6 +357,61 @@ export default function MySchedulePage() {
       window.removeEventListener("scheduleAdded", loadSchedules);
     };
   }, []);
+
+  // 저장된 일정에 회복정보가 비어있을 때 category_mid로 보강 (권장체류일수/회복가이드)
+  useEffect(() => {
+    const needsUpdate = savedSchedules.some(
+      (s) =>
+        s.categoryMid &&
+        (s.recoveryDays === 0 || !s.recoveryText || !s.recoveryGuides)
+    );
+    if (!needsUpdate) return;
+
+    let cancelled = false;
+    (async () => {
+      const updated = await Promise.all(
+        savedSchedules.map(async (s) => {
+          if (
+            s.categoryMid &&
+            (s.recoveryDays === 0 || !s.recoveryText || !s.recoveryGuides)
+          ) {
+            const info = await getRecoveryInfoByCategoryMid(s.categoryMid);
+            if (info) {
+              return {
+                ...s,
+                recoveryDays:
+                  info.recommendedStayDays > 0
+                    ? info.recommendedStayDays
+                    : info.recoveryMax || s.recoveryDays,
+                recoveryText: s.recoveryText ?? info.recoveryText,
+                recoveryGuides: s.recoveryGuides ?? info.recoveryGuides,
+              };
+            }
+          }
+          return s;
+        })
+      );
+
+      if (cancelled) return;
+
+      const changed = updated.some(
+        (s, idx) =>
+          s.recoveryDays !== savedSchedules[idx]?.recoveryDays ||
+          s.recoveryText !== savedSchedules[idx]?.recoveryText
+      );
+
+      if (changed) {
+        setSavedSchedules(updated);
+        localStorage.setItem("schedules", JSON.stringify(updated));
+        // 회복 정보 업데이트 이벤트
+        window.dispatchEvent(new Event("scheduleAdded"));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [savedSchedules]);
 
   // 시술 날짜와 회복 기간 계산 (당일 포함)
   const procedureDates = useMemo(() => {
@@ -249,7 +433,11 @@ export default function MySchedulePage() {
         const recoveryDateStr = formatDate(recoveryDate);
         
         if (!dates[recoveryDateStr]) dates[recoveryDateStr] = [];
-        dates[recoveryDateStr].push({ ...proc, isRecovery: true });
+        dates[recoveryDateStr].push({
+          ...proc,
+          isRecovery: true,
+          recoveryDayIndex: i,
+        });
       }
     });
     return dates;
@@ -590,18 +778,18 @@ export default function MySchedulePage() {
                     <div className="flex flex-col items-start justify-start h-full w-full p-0.5">
                       <span className="text-xs font-medium">{date.getDate()}</span>
                       
-                      {/* 시술 표시 (최대 3줄, 붉은 톤) */}
+                      {/* 시술 표시 (최대 3줄) */}
                       <div className="flex flex-col gap-0.5 w-full mt-0.5">
                         {proceduresOnDate.slice(0, 3).map((proc, idx) => (
                           <div
                             key={proc.id}
-                            className="w-full h-1.5 bg-red-400 rounded-sm"
+                            className="w-full h-1.5 bg-purple-400 rounded-sm"
                             title={proc.procedureName}
                           />
                         ))}
                       </div>
 
-                      {/* 회복 기간 표시 (초록색, 여행 밖이면 노란색) */}
+                      {/* 회복 기간 표시 (초록색, 여행 밖이면 주황색) */}
                       {recoveryOnDate.length > 0 && proceduresOnDate.length < 3 && (
                         <div className="flex flex-col gap-0.5 w-full mt-0.5">
                           {recoveryOnDate.slice(0, 3 - proceduresOnDate.length).map((rec, idx) => (
@@ -609,7 +797,7 @@ export default function MySchedulePage() {
                               key={`recovery-${rec.id}-${idx}`}
                               className={`w-full h-1.5 rounded-sm ${
                                 isRecoveryOutside
-                                  ? "bg-yellow-400"
+                                  ? "bg-amber-400"
                                   : "bg-green-400"
                               }`}
                               title={`${rec.procedureName} 회복 기간`}
@@ -631,7 +819,7 @@ export default function MySchedulePage() {
               <span className="text-gray-600">여행 기간</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1.5 bg-red-400 rounded-sm"></div>
+              <div className="w-3 h-1.5 bg-purple-400 rounded-sm"></div>
               <span className="text-gray-600">시술</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -639,7 +827,7 @@ export default function MySchedulePage() {
               <span className="text-gray-600">회복 기간</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1.5 bg-yellow-400 rounded-sm"></div>
+              <div className="w-3 h-1.5 bg-amber-400 rounded-sm"></div>
               <span className="text-gray-600">회복 기간 (여행 밖)</span>
             </div>
           </div>
@@ -651,11 +839,11 @@ export default function MySchedulePage() {
                 {selectedDate} 일정 정보
               </h3>
               
-              {/* 시술 카드 (붉은 톤 배경) */}
+              {/* 시술 카드 (보라 톤 배경) */}
               {selectedProcedures.map((proc) => (
                 <div
                   key={proc.id}
-                  className="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm"
+                  className="bg-purple-50 border border-purple-200 rounded-xl p-4 shadow-sm"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -663,21 +851,21 @@ export default function MySchedulePage() {
                         {proc.procedureName}
                       </h4>
                       <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                        <FiMapPin className="text-red-600" />
+                        <FiMapPin className="text-purple-600" />
                         <span>{proc.hospital}</span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                        <FiTag className="text-red-600" />
+                        <FiTag className="text-purple-600" />
                         <span>{proc.category}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-red-700 font-medium mb-1">
-                        <FiClock className="text-red-600" />
+                      <div className="flex items-center gap-1 text-sm text-purple-700 font-medium mb-1">
+                        <FiClock className="text-purple-600" />
                         <span>회복 기간: {proc.recoveryDays}일</span>
                       </div>
                       {/* 회복 가이드 표시 */}
                       {proc.recoveryText && (
-                        <div className="text-xs text-gray-700 bg-white/60 rounded-lg p-3 mt-2 border border-red-100">
-                          <p className="font-semibold text-red-800 mb-1.5">
+                        <div className="text-xs text-gray-700 bg-white/60 rounded-lg p-3 mt-2 border border-purple-100">
+                          <p className="font-semibold text-purple-800 mb-1.5">
                             회복 가이드
                           </p>
                           <p className="text-gray-700 whitespace-pre-line leading-relaxed">
@@ -687,7 +875,7 @@ export default function MySchedulePage() {
                       )}
                     </div>
                     {proc.procedureTime && (
-                      <div className="text-sm font-semibold text-red-700">
+                      <div className="text-sm font-semibold text-purple-700">
                         {proc.procedureTime}
                       </div>
                     )}
@@ -699,61 +887,11 @@ export default function MySchedulePage() {
               {selectedRecovery.map((rec, idx) => {
                 const isOutsideTravel = selectedDateObj && isRecoveryOutsideTravel(selectedDateObj);
                 return (
-                  <div
+                  <RecoveryCardComponent
                     key={`recovery-${rec.id}-${idx}`}
-                    className={`border rounded-xl p-4 shadow-sm ${
-                      isOutsideTravel
-                        ? "bg-yellow-50 border-yellow-200"
-                        : "bg-green-50 border-green-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="text-base font-semibold text-gray-900">
-                            {rec.procedureName}
-                          </h4>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            isOutsideTravel
-                              ? "bg-yellow-200 text-yellow-800"
-                              : "bg-green-200 text-green-800"
-                          }`}>
-                            회복 기간
-                          </span>
-                          {isOutsideTravel && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-yellow-300 text-yellow-900">
-                              ⚠️ 여행 기간 밖
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                          <FiMapPin className={isOutsideTravel ? "text-yellow-600" : "text-green-600"} />
-                          <span>{rec.hospital}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                          <FiTag className={isOutsideTravel ? "text-yellow-600" : "text-green-600"} />
-                          <span>{rec.category}</span>
-                        </div>
-                        {/* 회복 가이드 표시 */}
-                        {rec.recoveryText && (
-                          <div className={`text-xs text-gray-700 rounded-lg p-3 mt-2 border ${
-                            isOutsideTravel
-                              ? "bg-white/60 border-yellow-100"
-                              : "bg-white/60 border-green-100"
-                          }`}>
-                            <p className={`font-semibold mb-1.5 ${
-                              isOutsideTravel ? "text-yellow-800" : "text-green-800"
-                            }`}>
-                              회복 가이드
-                            </p>
-                            <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-                              {rec.recoveryText}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                    rec={rec}
+                    isOutsideTravel={isOutsideTravel}
+                  />
                 );
               })}
             </div>

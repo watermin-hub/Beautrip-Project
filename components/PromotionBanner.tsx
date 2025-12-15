@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import AISkinAnalysisConsentModal from "./AISkinAnalysisConsentModal";
 import AISkinAnalysisCameraModal from "./AISkinAnalysisCameraModal";
@@ -8,14 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface BannerSlide {
   id: number;
-  brandKey: string;
-  brandSubtitle?: string;
-  headlineKey: string;
-  subheadlineKey: string;
-  descriptionKey: string;
-  regulatory?: string;
-  regulatory2?: string;
-  gradient: string;
+  image: string;
   onClick?: () => void;
   isAIBanner?: boolean;
 }
@@ -29,52 +23,35 @@ export default function PromotionBanner() {
   const bannerSlides: BannerSlide[] = [
     {
       id: 1,
-      brandKey: "banner.ai.brand",
-      headlineKey: "banner.ai.headline",
-      subheadlineKey: "banner.ai.subheadline",
-      descriptionKey: "banner.ai.description",
-      gradient: "from-blue-100 via-cyan-100 to-blue-200",
-      isAIBanner: true,
+      image: "/banners/banner-1.png",
     },
     {
       id: 2,
-      brandKey: "banner.kbeauty.brand",
-      headlineKey: "banner.kbeauty.headline",
-      subheadlineKey: "banner.kbeauty.subheadline",
-      descriptionKey: "banner.kbeauty.description",
-      gradient: "from-pink-400 to-rose-500",
+      image: "/banners/banner-2.png",
     },
     {
       id: 3,
-      brandKey: "banner.premium.brand",
-      headlineKey: "banner.premium.headline",
-      subheadlineKey: "banner.premium.subheadline",
-      descriptionKey: "banner.premium.description",
-      gradient: "from-blue-400 to-indigo-500",
+      image: "/banners/banner-3.png",
     },
     {
       id: 4,
-      brandKey: "banner.summer.brand",
-      headlineKey: "banner.summer.headline",
-      subheadlineKey: "banner.summer.subheadline",
-      descriptionKey: "banner.summer.description",
-      gradient: "from-cyan-400 to-teal-500",
+      image: "/banners/banner-4.png",
     },
     {
       id: 5,
-      brandKey: "banner.vip.brand",
-      headlineKey: "banner.vip.headline",
-      subheadlineKey: "banner.vip.subheadline",
-      descriptionKey: "banner.vip.description",
-      gradient: "from-purple-400 to-pink-500",
+      image: "/banners/banner-5.png",
     },
     {
       id: 6,
-      brandKey: "banner.weekend.brand",
-      headlineKey: "banner.weekend.headline",
-      subheadlineKey: "banner.weekend.subheadline",
-      descriptionKey: "banner.weekend.description",
-      gradient: "from-orange-400 to-red-500",
+      image: "/banners/banner-6.png",
+    },
+    {
+      id: 7,
+      image: "/banners/banner-7.png",
+    },
+    {
+      id: 8,
+      image: "/banners/banner-8.png",
     },
   ];
 
@@ -122,81 +99,19 @@ export default function PromotionBanner() {
           {bannerSlides.map((slide, index) => (
             <div
               key={slide.id}
-              className={`absolute inset-0 bg-gradient-to-r ${
-                slide.gradient
-              } transition-opacity duration-500 cursor-pointer ${
+              className={`absolute inset-0 transition-opacity duration-500 cursor-pointer ${
                 index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
               }`}
               onClick={slide.isAIBanner ? handleAIBannerClick : slide.onClick}
             >
-              <div
-                className={`p-6 h-full flex flex-col justify-between ${
-                  slide.isAIBanner ? "text-gray-900" : "text-white"
-                }`}
-              >
-                {/* Brand info */}
-                <div>
-                  <div className="mb-3">
-                    <p
-                      className={`text-xs font-semibold ${
-                        slide.isAIBanner ? "text-blue-600" : ""
-                      }`}
-                    >
-                      {t(slide.brandKey)}
-                    </p>
-                    {slide.brandSubtitle && (
-                      <p
-                        className={`text-xs ${
-                          slide.isAIBanner ? "text-gray-600" : "opacity-90"
-                        }`}
-                      >
-                        {slide.brandSubtitle}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Headline */}
-                  <h2
-                    className={`text-2xl font-bold mb-2 ${
-                      slide.isAIBanner ? "text-gray-900" : ""
-                    }`}
-                  >
-                    {t(slide.headlineKey)}
-                  </h2>
-                  <h3
-                    className={`text-xl font-semibold mb-3 ${
-                      slide.isAIBanner ? "text-gray-800" : ""
-                    }`}
-                  >
-                    {t(slide.subheadlineKey)}
-                  </h3>
-
-                  {/* Description */}
-                  <p
-                    className={`text-sm mb-4 ${
-                      slide.isAIBanner
-                        ? "text-gray-700 font-medium"
-                        : "opacity-90"
-                    }`}
-                  >
-                    {t(slide.descriptionKey)}
-                  </p>
-                </div>
-
-                {/* Regulatory info */}
-                {(slide.regulatory || slide.regulatory2) && (
-                  <div>
-                    {slide.regulatory && (
-                      <p className="text-xs opacity-75 mb-2">
-                        {slide.regulatory}
-                      </p>
-                    )}
-                    {slide.regulatory2 && (
-                      <p className="text-xs opacity-75">{slide.regulatory2}</p>
-                    )}
-                  </div>
-                )}
-              </div>
+              <Image
+                src={slide.image}
+                alt={`배너 ${slide.id}`}
+                fill
+                className="object-cover rounded-xl"
+                priority={index === 0}
+                unoptimized
+              />
             </div>
           ))}
 

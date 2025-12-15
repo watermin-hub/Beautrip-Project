@@ -119,6 +119,9 @@ export default function HomePage() {
         {/* 배너 슬라이더 (AI/이벤트/블프...) */}
         <PromotionBanner />
 
+        {/* 정보성 컨텐츠 섹션 (커뮤니티에 추가 예정) */}
+        <InformationalContentSection />
+
         {/* 미션 (출석, 활동) - 주석 처리 (나중에 사용 가능) */}
         {/* <MissionSection /> */}
 
@@ -136,9 +139,6 @@ export default function HomePage() {
 
         {/* 인기 급상승 비포&애프터 리뷰 - 숨김 처리 */}
         {/* <RecentEventsSection /> */}
-
-        {/* 정보성 컨텐츠 섹션 (커뮤니티에 추가 예정) */}
-        <InformationalContentSection />
 
         {/* 리뷰 작성 버튼 */}
         <div className="mb-4">
