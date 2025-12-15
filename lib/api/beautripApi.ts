@@ -289,19 +289,25 @@ export async function getTreatmentAutocomplete(
     }
 
     // category_small만 반환 (소분류 기준)
-    const treatmentNames = Array.from(
-      new Set(
+    const treatmentNames: string[] = Array.from(
+      new Set<string>(
         data
           .map((t: { category_small: string | null }) => t.category_small)
-          .filter((name) => name && name.toLowerCase().includes(term))
+          .filter(
+            (name: string | null): name is string =>
+              name !== null && name.toLowerCase().includes(term)
+          )
       )
     ).slice(0, limit);
 
-    const hospitalNames = Array.from(
-      new Set(
+    const hospitalNames: string[] = Array.from(
+      new Set<string>(
         data
           .map((t: { hospital_name: string | null }) => t.hospital_name)
-          .filter((name) => name && name.toLowerCase().includes(term))
+          .filter(
+            (name: string | null): name is string =>
+              name !== null && name.toLowerCase().includes(term)
+          )
       )
     ).slice(0, limit);
 
@@ -821,7 +827,11 @@ export async function getHospitalAutocomplete(
     }
 
     return Array.from(
-      new Set(data.map((h) => h.hospital_name).filter(Boolean))
+      new Set(
+        data
+          .map((h: { hospital_name: string | null }) => h.hospital_name)
+          .filter((name: string | null): name is string => !!name)
+      )
     );
   } catch (error) {
     console.error("병원 자동완성 데이터 로드 실패:", error);

@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 
-type LanguageCode = "KR" | "EN" | "JP" | "CN";
+export type LanguageCode = "KR" | "EN" | "JP" | "CN";
 
 interface LanguageContextType {
   language: LanguageCode;
@@ -121,7 +121,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Home Page
     "home.selectSchedule": "여행 일정을 선택해 주세요.",
-    "home.selectScheduleFirst": "여행 시작일과 종료일을 먼저 선택하면 카테고리를 고를 수 있어요.",
+    "home.selectScheduleFirst":
+      "여행 시작일과 종료일을 먼저 선택하면 카테고리를 고를 수 있어요.",
     "home.reviewButton": "리뷰 쓰고 더 많은 정보 얻기",
     "home.reviewAlert": "리뷰 작성 기능은 추후 구현 예정입니다.",
     "home.category.skin": "피부관리",
@@ -152,8 +153,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "procedure.viewHospitalInfo": "병원 상세정보 보기",
     "procedure.loading": "추천 시술을 불러오는 중...",
     "procedure.error": "추천 시술을 불러오는 데 실패했습니다.",
-    "procedure.noResults": "선택하신 여행 기간과 카테고리에 맞는 시술을 찾을 수 없습니다. 일정을 조정하거나 다른 카테고리를 선택해보세요.",
-    "procedure.hospitalRecommendation": "입력하신 정보를 기반으로 최적의 병원을 추천해드립니다.",
+    "procedure.noResults":
+      "선택하신 여행 기간과 카테고리에 맞는 시술을 찾을 수 없습니다. 일정을 조정하거나 다른 카테고리를 선택해보세요.",
+    "procedure.hospitalRecommendation":
+      "입력하신 정보를 기반으로 최적의 병원을 추천해드립니다.",
     "home.hotConcerns": "인기 시술",
     "home.seeMore": "더보기",
     "home.seeLess": "접기",
@@ -189,7 +192,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "dday.title": "D-Day",
     "dday.daysUntil": "시술까지",
     "community.warmCommunity": "함께 만드는 따뜻한 커뮤니티",
-    "community.warmCommunityDesc": "서로를 존중하고 배려하는 마음으로 소통해요. 여러분의 경험이 누군가에게 큰 도움이 됩니다",
+    "community.warmCommunityDesc":
+      "서로를 존중하고 배려하는 마음으로 소통해요. 여러분의 경험이 누군가에게 큰 도움이 됩니다",
     "community.section.recommended": "추천 게시글",
     "community.section.popular": "최근 인기 게시글",
     "community.section.recovery": "수술 회복 수다",
@@ -206,7 +210,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.item.askItinerary": "여행일정 질문하기",
     "community.hospitalInfo": "병원정보 이동",
     "community.storySharing": "여러분의 이야기를 들려주세요",
-    "community.storySharingDesc": "후기를 공유하면 다른 분들에게 큰 도움이 됩니다",
+    "community.storySharingDesc":
+      "후기를 공유하면 다른 분들에게 큰 도움이 됩니다",
     "community.photoReviewWrite": "포토 후기 작성",
     "community.writePost": "글 작성하기",
     "community.noItems": "등록된 항목이 없습니다.",
@@ -224,7 +229,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Recovery guide page
     "recovery.headerTitle": "시술별 회복기간과 주의사항",
-    "recovery.headerSubtitle": "각 시술의 회복 기간과 회복 과정을 상세히 안내합니다.",
+    "recovery.headerSubtitle":
+      "각 시술의 회복 기간과 회복 과정을 상세히 안내합니다.",
     "recovery.selectTitle": "보고 싶은 정보를 선택하세요.",
     "recovery.selectSubtitle":
       "각 카드는 회복 패턴이 비슷한 시술·수술들을 한데 모은 그룹입니다.🍀",
@@ -334,7 +340,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Home Page
     "home.selectSchedule": "Please select your travel schedule.",
-    "home.selectScheduleFirst": "Please select travel start and end dates first to choose a category.",
+    "home.selectScheduleFirst":
+      "Please select travel start and end dates first to choose a category.",
     "home.reviewButton": "Write a Review & Get More Information",
     "home.reviewAlert": "Review writing feature will be implemented soon.",
     "home.category.skin": "Skin Care",
@@ -365,8 +372,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "procedure.viewHospitalInfo": "View Hospital Details",
     "procedure.loading": "Loading recommendations...",
     "procedure.error": "Failed to load recommendations.",
-    "procedure.noResults": "No procedures found matching your travel period and category. Please adjust your schedule or try a different category.",
-    "procedure.hospitalRecommendation": "We recommend the best hospital based on the information you provided.",
+    "procedure.noResults":
+      "No procedures found matching your travel period and category. Please adjust your schedule or try a different category.",
+    "procedure.hospitalRecommendation":
+      "We recommend the best hospital based on the information you provided.",
     "home.hotConcerns": "Hot Concerns & Procedure Recommendations",
     "home.seeMore": "See More",
     "home.seeLess": "See Less",
@@ -402,7 +411,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "dday.title": "D-Day",
     "dday.daysUntil": "days until procedure",
     "community.warmCommunity": "A Warm Community We Make Together",
-    "community.warmCommunityDesc": "Let's communicate with respect and consideration for each other. Your experience is a great help to others",
+    "community.warmCommunityDesc":
+      "Let's communicate with respect and consideration for each other. Your experience is a great help to others",
     "community.section.recommended": "Recommended Posts",
     "community.section.popular": "Recently Popular Posts",
     "community.section.recovery": "Surgery Recovery Stories",
@@ -410,12 +420,14 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.section.skinConcerns": "Skin Concern Posts by Condition",
     "community.section.travel": "Share Travel Itinerary",
     "community.item.byCategory": "Popular Posts by Category",
-    "community.item.photoReview": "(Procedure/Surgery) Photo & Reviews by Category",
+    "community.item.photoReview":
+      "(Procedure/Surgery) Photo & Reviews by Category",
     "community.item.surgeryDone": "I Had Surgery",
     "community.item.recoveryChat": "Surgery Recovery Stories",
     "community.item.askSurgery": "Ask About Surgery",
     "community.item.skinDiseases": "Skin Concern Posts by Condition",
-    "community.item.popularItinerary": "Popular Travel Itineraries by Procedure",
+    "community.item.popularItinerary":
+      "Popular Travel Itineraries by Procedure",
     "community.item.askItinerary": "Ask About Travel Itinerary",
     "community.hospitalInfo": "Hospital Info",
     "community.storySharing": "Share Your Story",
@@ -426,7 +438,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.section.ranking": "Popular Rankings by Category",
     "explore.section.rankingDesc": "Top 10 Procedure Rankings",
     "explore.section.recommendation": "Custom Recommendations",
-    "explore.section.recommendationDesc": "Procedures matched to your schedule and concerns",
+    "explore.section.recommendationDesc":
+      "Procedures matched to your schedule and concerns",
     "explore.section.procedure": "Procedure List",
     "explore.section.procedureDesc": "Top 10 Popular Procedures",
     "explore.section.hospital": "Hospital List",
@@ -546,7 +559,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Home Page
     "home.selectSchedule": "旅行日程を選択してください。",
-    "home.selectScheduleFirst": "旅行の開始日と終了日を先に選択すると、カテゴリを選択できます。",
+    "home.selectScheduleFirst":
+      "旅行の開始日と終了日を先に選択すると、カテゴリを選択できます。",
     "home.reviewButton": "レビューを書いてより多くの情報を取得",
     "home.reviewAlert": "レビュー作成機能は今後実装予定です。",
     "home.category.skin": "スキンケア",
@@ -577,8 +591,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "procedure.viewHospitalInfo": "病院詳細情報を見る",
     "procedure.loading": "推奨施術を読み込んでいます...",
     "procedure.error": "推奨施術の読み込みに失敗しました。",
-    "procedure.noResults": "選択した旅行期間とカテゴリに一致する施術が見つかりません。日程を調整するか、別のカテゴリを選択してください。",
-    "procedure.hospitalRecommendation": "入力された情報に基づいて最適な病院を推奨します。",
+    "procedure.noResults":
+      "選択した旅行期間とカテゴリに一致する施術が見つかりません。日程を調整するか、別のカテゴリを選択してください。",
+    "procedure.hospitalRecommendation":
+      "入力された情報に基づいて最適な病院を推奨します。",
     "home.hotConcerns": "人気の悩み & 施術推奨",
     "home.seeMore": "もっと見る",
     "home.seeLess": "折りたたむ",
@@ -614,7 +630,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "dday.title": "D-Day",
     "dday.daysUntil": "施術まで",
     "community.warmCommunity": "一緒に作る温かいコミュニティ",
-    "community.warmCommunityDesc": "お互いを尊重し、思いやりの心でコミュニケーションしましょう。あなたの経験が誰かの大きな助けになります",
+    "community.warmCommunityDesc":
+      "お互いを尊重し、思いやりの心でコミュニケーションしましょう。あなたの経験が誰かの大きな助けになります",
     "community.section.recommended": "おすすめの投稿",
     "community.section.popular": "最近人気の投稿",
     "community.section.recovery": "手術回復の話",
@@ -631,7 +648,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.item.askItinerary": "旅行日程について質問",
     "community.hospitalInfo": "病院情報へ",
     "community.storySharing": "あなたの話を聞かせてください",
-    "community.storySharingDesc": "レビューを共有すると他の方に大きな助けになります",
+    "community.storySharingDesc":
+      "レビューを共有すると他の方に大きな助けになります",
     "community.photoReviewWrite": "フォトレビュー作成",
     "community.writePost": "投稿作成",
     "community.noItems": "登録された項目がありません。",
@@ -788,7 +806,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "procedure.viewHospitalInfo": "查看医院详情",
     "procedure.loading": "正在加载推荐...",
     "procedure.error": "加载推荐失败。",
-    "procedure.noResults": "找不到与您的旅行期间和类别匹配的疗程。请调整您的日程或尝试其他类别。",
+    "procedure.noResults":
+      "找不到与您的旅行期间和类别匹配的疗程。请调整您的日程或尝试其他类别。",
     "procedure.hospitalRecommendation": "我们将根据您提供的信息推荐最佳医院。",
     "home.hotConcerns": "热门关注 & 疗程推荐",
     "home.seeMore": "查看更多",
@@ -825,7 +844,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "dday.title": "D-Day",
     "dday.daysUntil": "距离疗程",
     "community.warmCommunity": "共同创造的温暖社区",
-    "community.warmCommunityDesc": "让我们以相互尊重和关怀的心沟通。您的经验对他人有很大帮助",
+    "community.warmCommunityDesc":
+      "让我们以相互尊重和关怀的心沟通。您的经验对他人有很大帮助",
     "community.section.recommended": "推荐帖子",
     "community.section.popular": "最近热门帖子",
     "community.section.recovery": "手术恢复故事",
@@ -860,11 +880,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Recovery guide page
     "recovery.headerTitle": "各疗程的恢复期与注意事项",
-    "recovery.headerSubtitle":
-      "为每一种疗程提供详细的恢复时间与恢复过程指引。",
+    "recovery.headerSubtitle": "为每一种疗程提供详细的恢复时间与恢复过程指引。",
     "recovery.selectTitle": "请选择想看的信息。",
-    "recovery.selectSubtitle":
-      "每张卡片汇集了恢复模式相似的手术和疗程。🍀",
+    "recovery.selectSubtitle": "每张卡片汇集了恢复模式相似的手术和疗程。🍀",
     "recovery.currentGroup": "当前选择的分组",
     "recovery.week.tipsTitle": "✔ 本周有帮助的小贴士",
     "recovery.week.cautionsTitle": "⚠ 需要注意的事项",
