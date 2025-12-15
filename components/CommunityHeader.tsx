@@ -4,7 +4,7 @@ import { FiSend, FiEdit3 } from "react-icons/fi";
 import { useState } from "react";
 import ReviewFilterModal from "./ReviewFilterModal";
 
-type CommunityTab = "info" | "popular" | "latest" | "category" | "consultation";
+type CommunityTab = "popular" | "latest" | "info" | "consultation";
 
 interface CommunityHeaderProps {
   activeTab: CommunityTab;
@@ -17,10 +17,9 @@ export default function CommunityHeader({
 }: CommunityHeaderProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const tabs = [
-    { id: "info" as const, label: "정보컨텐츠" },
     { id: "popular" as const, label: "인기글" },
     { id: "latest" as const, label: "최신글" },
-    { id: "category" as const, label: "카테고리별" },
+    { id: "info" as const, label: "정보컨텐츠" },
     { id: "consultation" as const, label: "고민상담소" },
   ];
 

@@ -274,6 +274,7 @@ export default function TreatmentDetailPage({
     // category_mid로 회복 기간 정보 가져오기 (소분류_리스트와 매칭)
     let recoveryDays = 0;
     let recoveryText: string | null = null;
+    let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
     if (currentTreatment.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
@@ -282,6 +283,8 @@ export default function TreatmentDetailPage({
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
         recoveryText = recoveryInfo.recoveryText;
+        // 회복 가이드 전체 맵도 일정에 저장해 두어, 각 회복일 카드에서 공통으로 사용
+        recoveryGuides = recoveryInfo.recoveryGuides;
       }
     }
 
@@ -303,7 +306,8 @@ export default function TreatmentDetailPage({
         "기타",
       categoryMid: currentTreatment.category_mid || null,
       recoveryDays,
-      recoveryText, // 회복 기간 텍스트 추가
+      recoveryText, // 대표 회복 기간 텍스트
+      recoveryGuides, // 각 구간별 회복 가이드 텍스트
       procedureTime: parseProcedureTime(currentTreatment.surgery_time) || 0,
       price: currentTreatment.selling_price || null,
       rating: currentTreatment.rating || 0,
@@ -804,51 +808,57 @@ export default function TreatmentDetailPage({
                 className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors relative"
               >
                 문의하기
-                {/* 문의 옵션 드롭다운 */}
-                {isInquiryDropdownOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-[39]"
-                      onClick={() => setIsInquiryDropdownOpen(false)}
-                    />
-                    <div
-                      ref={dropdownRef}
-                      className="absolute right-0 bottom-full mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[41] min-w-[180px]"
-                    >
-                      <button
-                        onClick={() => {
-                          handleInquiry("chat");
-                          setIsInquiryDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
-                      >
-                        <FiMessageCircle className="text-gray-500" />
-                        AI 채팅 문의
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleInquiry("phone");
-                          setIsInquiryDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
-                      >
-                        <FiPhone className="text-gray-500" />
-                        전화 문의
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleInquiry("email");
-                          setIsInquiryDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700"
-                      >
-                        <FiMail className="text-gray-500" />
-                        메일 문의
-                      </button>
-                    </div>
-                  </>
-                )}
               </button>
+              {/* 문의 옵션 드롭다운 (별도 레이어, 버튼 내부에 중첩 버튼 없음) */}
+              {isInquiryDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[39]"
+                    onClick={() => setIsInquiryDropdownOpen(false)}
+                  />
+                  <div
+                    ref={dropdownRef}
+                    className="absolute right-4 bottom-[88px] mb-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[41] min-w-[180px]"
+                  >
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        handleInquiry("chat");
+                        setIsInquiryDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                    >
+                      <FiMessageCircle className="text-gray-500" />
+                      AI 채팅 문의
+                    </div>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        handleInquiry("phone");
+                        setIsInquiryDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                    >
+                      <FiPhone className="text-gray-500" />
+                      전화 문의
+                    </div>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        handleInquiry("email");
+                        setIsInquiryDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
+                    >
+                      <FiMail className="text-gray-500" />
+                      메일 문의
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

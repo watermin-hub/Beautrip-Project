@@ -36,6 +36,15 @@ export default function MyPage() {
     const checkAuth = async () => {
       // Supabase 세션 먼저 확인 (가장 확실한 방법)
       const { supabase } = await import("@/lib/supabase");
+      if (!supabase) {
+        console.warn(
+          "[MyPage] Supabase 클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요."
+        );
+        setIsLoggedIn(false);
+        setUserInfo(null);
+        setShowLogin(true);
+        return;
+      }
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -102,6 +111,12 @@ export default function MyPage() {
     // Auth 상태 변경 감지 (로그아웃 포함)
     const setupAuthListener = async () => {
       const { supabase } = await import("@/lib/supabase");
+      if (!supabase) {
+        console.warn(
+          "[MyPage] Supabase 클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요."
+        );
+        return;
+      }
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange(

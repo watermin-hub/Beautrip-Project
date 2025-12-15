@@ -762,14 +762,6 @@ export default function ProcedureRecommendation({
     );
   }
 
-  if (recommendations.length === 0) {
-    return (
-      <div className="px-4 py-6">
-        <p className="text-center text-gray-500">{t("procedure.noResults")}</p>
-      </div>
-    );
-  }
-
   // 카테고리 변경 핸들러
   const handleCategoryClick = (categoryId: string | null) => {
     if (onCategoryChange) {
@@ -833,7 +825,7 @@ export default function ProcedureRecommendation({
             </button>
           </div>
 
-          {/* 카테고리 버튼들 - 5개씩 2줄 그리드 */}
+          {/* 카테고리 버튼들 - 5개씩 2줄 그리드 (아이콘 위, 텍스트 아래 / 5:3 정도의 낮은 카드 비율) */}
           <div className="grid grid-cols-5 gap-2">
             {mainCategories.map((category) => {
               const isActive = selectedCategoryId === category.id;
@@ -841,16 +833,14 @@ export default function ProcedureRecommendation({
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-medium transition-colors ${
+                  className={`flex flex-col items-center justify-center gap-1 py-1.5 px-1 rounded-xl text-[11px] font-medium transition-colors aspect-[5/3] ${
                     isActive
-                      ? "bg-primary-main/10 text-primary-main font-bold border border-primary-main"
-                      : "bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                      ? "bg-primary-main/10 text-primary-main font-bold border border-primary-main shadow-[0_0_0_1px_rgba(45,184,160,0.3)]"
+                      : "bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-100"
                   }`}
                 >
-                  <span className="text-base leading-none">
-                    {category.icon}
-                  </span>
-                  <span className="text-[10px] leading-tight">
+                  <span className="text-lg leading-none">{category.icon}</span>
+                  <span className="leading-tight whitespace-nowrap">
                     {category.name}
                   </span>
                 </button>
@@ -887,6 +877,12 @@ export default function ProcedureRecommendation({
       )}
 
       {/* 중분류별 시술 추천 - 각 중분류마다 카드 스와이프 */}
+      {filteredRecommendations.length === 0 && (
+        <p className="text-center text-gray-500 text-sm">
+          {t("procedure.noResults")}
+        </p>
+      )}
+
       {filteredRecommendations.slice(0, visibleCategoriesCount).map((rec) => {
         const scrollState = scrollPositions[rec.categoryMid] || {
           left: 0,

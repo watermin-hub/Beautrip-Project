@@ -48,6 +48,12 @@ export default function LoginModal({
   // Supabase Auth 상태 감지 (OAuth 콜백 처리)
   useEffect(() => {
     if (!isOpen) return; // 모달이 닫혀있으면 실행하지 않음
+    if (!supabase) {
+      console.warn(
+        "[LoginModal] Supabase 클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요."
+      );
+      return;
+    }
 
     let isProcessing = false; // 중복 처리 방지
 

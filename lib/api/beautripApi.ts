@@ -391,8 +391,10 @@ export async function getRecoveryInfoByCategoryMid(
     const categoryMidTrimmed = categoryMid.trim();
 
     // 캐시 (중복 호출/로그 스팸 방지) - trim된 키 사용
+    // ❗ null(매칭 실패)은 캐시하지 않고, 성공한 값만 캐시합니다.
     if (recoveryInfoCache.has(categoryMidTrimmed)) {
-      return recoveryInfoCache.get(categoryMidTrimmed) ?? null;
+      const cached = recoveryInfoCache.get(categoryMidTrimmed);
+      if (cached) return cached;
     }
 
     const recoveryData = await loadCategoryTreatTimeRecovery();
@@ -420,14 +422,14 @@ export async function getRecoveryInfoByCategoryMid(
           ""
       );
 
-    // 정규화 함수: NFC + zero-width 제거 + 공백 제거 + 소문자 + 특수문자 제거
+    // 정규화 함수: NFC + zero-width 제거 + 공백 제거 + 소문자
+    // (슬래시(`/`) 같은 구분 문자는 그대로 둬서 "유두/유륜성형" 등의 매칭을 보존)
     const normalize = (str: string) =>
       str
         .normalize("NFC")
         .replace(/[\u200B-\u200D\uFEFF]/g, "")
         .replace(/\s+/g, "")
-        .toLowerCase()
-        .replace(/[^\p{L}\p{N}]/gu, "");
+        .toLowerCase();
 
     // 정상화된 중분류 목록을 미리 만들어 정확/부분 일치에 사용
     const normalizedCategoryMid = normalize(categoryMidTrimmed);
@@ -541,7 +543,6 @@ export async function getRecoveryInfoByCategoryMid(
       }
 
       recoveryLogPrinted.add(categoryMidTrimmed);
-      recoveryInfoCache.set(categoryMidTrimmed, null);
       return null;
     }
 
@@ -659,7 +660,7 @@ export async function getRecoveryInfoByCategoryMid(
       recoveryGuides,
     };
 
-    // 캐시 & 로그 기록
+    // 캐시 & 로그 기록 (성공한 경우에만 캐시)
     recoveryInfoCache.set(categoryMidTrimmed, result);
     recoveryLogPrinted.add(categoryMidTrimmed);
 
@@ -1281,6 +1282,11 @@ export async function getScheduleBasedRecommendations(
   const travelDays =
     Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1; // n박 n일
 
+  // 아주 짧은 일정(당일 or 1박 2일)일 때는,
+  // 회복친화적인 3일짜리 시술까지는 보여주기 위해
+  // 필터 기준을 최소 3일로 완화
+  const effectiveTravelDays = travelDays <= 2 ? 3 : travelDays;
+
   // 대분류 카테고리로 필터링
   const mappedCategories = CATEGORY_MAPPING[categoryLarge] || [categoryLarge];
 
@@ -1517,11 +1523,14 @@ export async function getScheduleBasedRecommendations(
 
   // 중분류별로 추천 데이터 생성
   const recommendationsPromises = Array.from(midCategoryMap.entries()).map(
-    async ([uniqueKey, treatmentList]) => {
+    async ([
+      uniqueKey,
+      treatmentList,
+    ]): Promise<ScheduleBasedRecommendation | null> => {
       // uniqueKey에서 중분류 이름만 추출 (대분류::중분류 형식)
       const categoryMid = uniqueKey.split("::")[1] || "기타";
 
-      // 먼저 category_treattime_recovery 테이블에서 권장체류일수 가져오기
+      // 먼저 category_treattime_recovery 테이블에서 권장체류일수 및 회복기간 범위 가져오기
       let recommendedStayDays = 0;
       let recoveryMin = 0;
       let recoveryMax = 0;
@@ -1543,17 +1552,21 @@ export async function getScheduleBasedRecommendations(
         );
       }
 
-      // 권장체류일수를 사용하여 여행 기간에 맞는 시술만 필터링
-      // 권장체류일수가 있으면 그것을 사용하고, 없으면 기존 로직(downtime) 사용
+      // 권장체류일수(일)만 사용하여 여행 기간에 맞는 시술만 필터링
+      // - 결정 기준은 category_treattime_recovery 테이블의 "권장체류일수(일)" 컬럼
+      // - 이 값이 없을 때만 기존 로직(downtime)으로 fallback
+      const groupStayDays = recommendedStayDays;
+
+      // 권장체류일수가 여행 일수보다 크면, 이 중분류 전체를 추천에서 제외
+      // 단, 당일/1박 2일은 effectiveTravelDays=3으로 간주하여 3일짜리 시술까지 허용
+      if (groupStayDays > 0 && groupStayDays > effectiveTravelDays) {
+        return null;
+      }
+
       let suitableTreatments: Treatment[];
-      if (recommendedStayDays > 0) {
-        // 권장체류일수가 여행 일수보다 작거나 같으면 포함
-        if (recommendedStayDays <= travelDays) {
-          suitableTreatments = treatmentList;
-        } else {
-          // 권장체류일수가 여행 일수보다 크면 제외
-          suitableTreatments = [];
-        }
+      if (groupStayDays > 0) {
+        // 권장체류일수가 여행 일수 이내면 해당 중분류 전체를 포함
+        suitableTreatments = treatmentList;
       } else {
         // 권장체류일수가 없으면 기존 로직 사용 (downtime 기반)
         suitableTreatments = treatmentList.filter((treatment) => {
@@ -1561,12 +1574,13 @@ export async function getScheduleBasedRecommendations(
           // 회복기간 정보가 없으면 포함 (기본적으로 표시)
           if (recoveryPeriod === 0) return true;
           // 여행 일수에서 최소 1일은 여유를 둠 (시술 당일 제외)
-          return recoveryPeriod <= travelDays - 1;
+          // 당일/1박 2일의 경우 effectiveTravelDays=3이므로 2일까지 허용
+          return recoveryPeriod <= effectiveTravelDays - 1;
         });
       }
 
       // 필터링 결과가 없거나 회복기간 정보가 없으면 전체 시술 표시 (최대 20개)
-      // 권장체류일수나 회복기간 정보가 있는 경우에만 필터링 적용
+      // 권장체류일수 또는 개별 downtime 정보가 있는 경우에만 필터링 적용
       const hasRecoveryData =
         recommendedStayDays > 0 ||
         treatmentList.some((t) => parseRecoveryPeriod(t.downtime) > 0);
@@ -1650,19 +1664,26 @@ export async function getScheduleBasedRecommendations(
     }
   );
 
-  const recommendations = await Promise.all(recommendationsPromises);
+  const recommendations = (await Promise.all(recommendationsPromises)).filter(
+    (rec): rec is ScheduleBasedRecommendation => rec !== null
+  );
 
   return recommendations
-    .filter((rec) => rec.treatments.length > 0) // 치료가 있는 중분류만
+    .filter((rec) => rec.treatments.length > 0) // 시술이 있는 중분류만
     .sort((a, b) => {
-      // 회복 기간이 짧은 순으로 정렬 (여행에 적합한 순서)
+      // 1순위: 인기 점수(가장 상위 시술의 recommendationScore) 높은 순
+      const scoreA = a.treatments[0]?.recommendationScore || 0;
+      const scoreB = b.treatments[0]?.recommendationScore || 0;
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+
+      // 2순위: 평균 회복 기간이 짧은 순 (동점일 때 여행 친화적인 순서)
       if (a.averageRecoveryPeriod !== b.averageRecoveryPeriod) {
         return a.averageRecoveryPeriod - b.averageRecoveryPeriod;
       }
-      // 추천 점수 순으로 정렬
-      const scoreA = a.treatments[0]?.recommendationScore || 0;
-      const scoreB = b.treatments[0]?.recommendationScore || 0;
-      return scoreB - scoreA;
+
+      return 0;
     });
 }
 

@@ -438,6 +438,7 @@ export default function CategoryRankingPage() {
     // 회복 기간 정보 가져오기
     let recoveryDays = 0;
     let recoveryText: string | null = null;
+    let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
     if (selectedTreatmentForSchedule.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
@@ -446,6 +447,7 @@ export default function CategoryRankingPage() {
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax;
         recoveryText = recoveryInfo.recoveryText;
+        recoveryGuides = recoveryInfo.recoveryGuides;
       }
     }
 
@@ -467,6 +469,7 @@ export default function CategoryRankingPage() {
       categoryMid: selectedTreatmentForSchedule.category_mid || null,
       recoveryDays,
       recoveryText,
+      recoveryGuides,
       procedureTime: parseProcedureTime(selectedTreatmentForSchedule.surgery_time) || 0,
       price: selectedTreatmentForSchedule.selling_price || null,
       rating: selectedTreatmentForSchedule.rating || 0,

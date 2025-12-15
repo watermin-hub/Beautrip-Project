@@ -8,21 +8,20 @@ import CommunityHeader from "./CommunityHeader";
 import PostList from "./PostList";
 import CommunityFloatingButton from "./CommunityFloatingButton";
 import InformationalContentSection from "./InformationalContentSection";
-import CategoryCommunityPage from "./CategoryCommunityPage";
 import ConsultationPage from "./ConsultationPage";
 
-type CommunityTab = "info" | "popular" | "latest" | "category" | "consultation";
+type CommunityTab = "popular" | "latest" | "info" | "consultation";
 
 export default function CommunityPage() {
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<CommunityTab>("info");
+  const [activeTab, setActiveTab] = useState<CommunityTab>("popular");
 
   useEffect(() => {
     const tab = searchParams.get("tab") as CommunityTab | null;
     if (
       tab &&
-      ["info", "popular", "latest", "category", "consultation"].includes(tab)
+      ["popular", "latest", "info", "consultation"].includes(tab)
     ) {
       setActiveTab(tab);
       // 탭 변경 시 상단으로 스크롤
@@ -42,17 +41,15 @@ export default function CommunityPage() {
       <CommunityHeader activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Content */}
-      <div className="mt-4">
-        {activeTab === "info" ? (
-          <div className="px-4">
-            <InformationalContentSection />
-          </div>
-        ) : activeTab === "popular" ? (
+      <div className="mt-1">
+        {activeTab === "popular" ? (
           <PostList activeTab="popular" />
         ) : activeTab === "latest" ? (
           <PostList activeTab="latest" />
-        ) : activeTab === "category" ? (
-          <CategoryCommunityPage />
+        ) : activeTab === "info" ? (
+          <div className="px-4">
+            <InformationalContentSection />
+          </div>
         ) : activeTab === "consultation" ? (
           <ConsultationPage />
         ) : null}

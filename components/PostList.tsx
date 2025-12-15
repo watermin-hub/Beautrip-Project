@@ -212,6 +212,127 @@ const latestPosts: Post[] = [
   },
 ];
 
+// 고민상담소 더미 데이터 (카테고리별 5~10개 정도)
+const concernDummyPosts: Post[] = [
+  {
+    id: "concern-1",
+    category: "피부 고민",
+    username: "트러블폭발",
+    avatar: "🌋",
+    content:
+      "여드름 흉터가 너무 심한데 해외에서 잠깐 들어오는 동안 할 수 있는 치료가 있을까요? 다운타임이 길지 않았으면 좋겠어요.",
+    timestamp: "3시간 전",
+    upvotes: 12,
+    comments: 8,
+    views: 324,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-2",
+    category: "피부 고민",
+    username: "건성인간",
+    avatar: "💧",
+    content:
+      "겨울만 되면 각질+당김이 너무 심해요. 레이저를 해야 할지, 관리 위주로 가야 할지 헷갈립니다. 비슷한 분들 어떤 시술 받으셨나요?",
+    timestamp: "5시간 전",
+    upvotes: 7,
+    comments: 5,
+    views: 198,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-3",
+    category: "시술 고민",
+    username: "첫보톡스도전",
+    avatar: "😳",
+    content:
+      "이마+미간 보톡스를 처음 맞아보려는데 표정이 너무 안 어색했으면 좋겠어요. 용량이나 병원 고를 때 꼭 봐야 할 포인트가 있을까요?",
+    timestamp: "1일 전",
+    upvotes: 15,
+    comments: 21,
+    views: 512,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-4",
+    category: "시술 고민",
+    username: "리프팅궁금",
+    avatar: "✨",
+    content:
+      "인모드랑 슈링크 중에 어떤 걸 먼저 해보는 게 좋을까요? 통증이랑 붓기, 효과 지속기간 차이가 궁금합니다.",
+    timestamp: "2일 전",
+    upvotes: 9,
+    comments: 11,
+    views: 389,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-5",
+    category: "병원 선택",
+    username: "어디가좋을까",
+    avatar: "📍",
+    content:
+      "강남/신사 쪽 리프팅 잘하는 병원 어디가 괜찮을까요? 후기를 봐도 다 좋아 보여서 실제로 받아보신 분들 의견이 궁금해요.",
+    timestamp: "6시간 전",
+    upvotes: 6,
+    comments: 9,
+    views: 245,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-6",
+    category: "가격 문의",
+    username: "예산50",
+    avatar: "💸",
+    content:
+      "50만 원 안쪽으로 할 수 있는 시술 추천 부탁드려요! 얼굴 전체 분위기만 조금 상큼해졌으면 좋겠어요.",
+    timestamp: "8시간 전",
+    upvotes: 4,
+    comments: 6,
+    views: 173,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-7",
+    category: "회복 기간",
+    username: "직장인휴가3일",
+    avatar: "🏃",
+    content:
+      "휴가가 딱 3일인데, 이 기간 안에 회복 가능한 시술이 뭐가 있을까요? 붓기 심한 건 피하고 싶어요.",
+    timestamp: "12시간 전",
+    upvotes: 10,
+    comments: 13,
+    views: 301,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-8",
+    category: "부작용",
+    username: "붓기안빠짐",
+    avatar: "😥",
+    content:
+      "턱 보톡스를 맞은 지 2주가 지났는데 아직도 씹을 때 불편한 느낌이 있어요. 이런 경우 병원에 다시 가봐야 할까요?",
+    timestamp: "3일 전",
+    upvotes: 5,
+    comments: 14,
+    views: 267,
+    reviewType: "concern",
+  },
+  {
+    id: "concern-9",
+    category: "기타",
+    username: "해외거주자",
+    avatar: "✈️",
+    content:
+      "해외에서 들어와서 시술+여행 같이 하려는데, 공항에서 가까운 지역 추천해주실 수 있나요? 일정 짜는 팁도 궁금해요.",
+    timestamp: "4일 전",
+    upvotes: 8,
+    comments: 7,
+    views: 221,
+    reviewType: "concern",
+  },
+];
+
 const popularPosts: Post[] = [
   {
     id: 1,
@@ -321,8 +442,10 @@ const formatTimeAgo = (dateString?: string): string => {
 
 export default function PostList({
   activeTab,
+  concernCategory,
 }: {
-  activeTab: "recommended" | "latest" | "popular";
+  activeTab: "recommended" | "latest" | "popular" | "consultation";
+  concernCategory?: string | null;
 }) {
   const [supabaseReviews, setSupabaseReviews] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -511,6 +634,61 @@ export default function PostList({
     }
   }, [activeTab]);
 
+  // 고민상담소: Supabase 실제 데이터 + 더미 데이터 함께 사용
+  // - Supabase에서 고민글을 불러오고
+  // - 아직 데이터가 적거나 없으면 concernDummyPosts를 뒤에 붙여서 보여줌
+  useEffect(() => {
+    if (activeTab === "consultation") {
+      const fetchConcernPosts = async () => {
+        try {
+          setLoading(true);
+
+          let formattedConcernPosts: Post[] = [];
+          try {
+            const concernPosts = await loadConcernPosts(100);
+            formattedConcernPosts = concernPosts.map(
+              (post: ConcernPostData) => ({
+                id: post.id || `concern-${Math.random()}`,
+                category: post.concern_category || "고민글",
+                username: `사용자${post.user_id || 0}`,
+                avatar: "👤",
+                content: post.content,
+                timestamp: formatTimeAgo(post.created_at),
+                upvotes: 0,
+                comments: 0,
+                views: 0,
+                reviewType: "concern" as const,
+              })
+            );
+          } catch (error) {
+            console.warn(
+              "고민상담소 Supabase 데이터 로드 실패, 더미 데이터만 사용:",
+              error
+            );
+          }
+
+          // 실제 고민글 + 더미데이터를 함께 사용 (실제 데이터가 먼저, 부족한 부분은 더미로 보완)
+          const combinedConcernPosts: Post[] = [
+            ...formattedConcernPosts,
+            ...concernDummyPosts,
+          ];
+
+          const filteredConcernPosts = combinedConcernPosts.filter((post) => {
+            if (concernCategory === null) return true; // "전체" 선택 시 모두 표시
+            if (!concernCategory) return true;
+            return post.category === concernCategory;
+          });
+
+          setSupabaseReviews(filteredConcernPosts);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchConcernPosts();
+    }
+  }, [activeTab, concernCategory]);
+
   let posts: Post[] = [];
   let procedurePosts: Post[] = [];
   let hospitalPosts: Post[] = [];
@@ -528,12 +706,17 @@ export default function PostList({
     hospitalPosts = supabaseReviews.filter((p) => p.reviewType === "hospital");
     // 기존 하드코딩된 인기글도 추가 (섹션 구분 없이)
     posts = [...supabaseReviews, ...popularPosts];
+  } else if (activeTab === "consultation") {
+    // 고민상담소: 고민글만 표시 (이미 필터링되어 있음)
+    posts = supabaseReviews;
   }
 
-  if (loading && activeTab === "latest") {
+  if (loading && (activeTab === "latest" || activeTab === "consultation")) {
     return (
       <div className="px-4 py-8 text-center text-gray-500">
-        최신글을 불러오는 중...
+        {activeTab === "consultation"
+          ? "고민글을 불러오는 중..."
+          : "최신글을 불러오는 중..."}
       </div>
     );
   }

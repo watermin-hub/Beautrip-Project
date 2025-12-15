@@ -139,10 +139,48 @@ function RecoveryCardComponent({
   const getGuideForDay = (day?: number) => {
     if (!rec.recoveryGuides) return null;
     if (!day || day < 1) return null;
-    if (day <= 3) return rec.recoveryGuides["1~3"] || null;
-    if (day <= 7) return rec.recoveryGuides["4~7"] || null;
-    if (day <= 14) return rec.recoveryGuides["8~14"] || null;
-    if (day <= 21) return rec.recoveryGuides["15~21"] || null;
+
+    const guides = rec.recoveryGuides;
+
+    // 기본 구간: 1~3, 4~7, 8~14, 15~21
+    // 일부 카테고리는 특정 구간 텍스트만 있는 경우가 있어
+    // 해당 구간이 비어 있으면 인접 구간 텍스트를 순차적으로 fallback 합니다.
+    if (day <= 3) {
+      return (
+        guides["1~3"] ||
+        guides["4~7"] ||
+        guides["8~14"] ||
+        guides["15~21"] ||
+        null
+      );
+    }
+    if (day <= 7) {
+      return (
+        guides["4~7"] ||
+        guides["1~3"] ||
+        guides["8~14"] ||
+        guides["15~21"] ||
+        null
+      );
+    }
+    if (day <= 14) {
+      return (
+        guides["8~14"] ||
+        guides["4~7"] ||
+        guides["1~3"] ||
+        guides["15~21"] ||
+        null
+      );
+    }
+    if (day <= 21) {
+      return (
+        guides["15~21"] ||
+        guides["8~14"] ||
+        guides["4~7"] ||
+        guides["1~3"] ||
+        null
+      );
+    }
     return null;
   };
 
@@ -862,17 +900,7 @@ export default function MySchedulePage() {
                         <FiClock className="text-purple-600" />
                         <span>회복 기간: {proc.recoveryDays}일</span>
                       </div>
-                      {/* 회복 가이드 표시 */}
-                      {proc.recoveryText && (
-                        <div className="text-xs text-gray-700 bg-white/60 rounded-lg p-3 mt-2 border border-purple-100">
-                          <p className="font-semibold text-purple-800 mb-1.5">
-                            회복 가이드
-                          </p>
-                          <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-                            {proc.recoveryText}
-                          </p>
-                        </div>
-                      )}
+                      {/* 시술 당일 카드에서는 회복 가이드는 노출하지 않음 (회복일 카드에서만 안내) */}
                     </div>
                     {proc.procedureTime && (
                       <div className="text-sm font-semibold text-purple-700">
