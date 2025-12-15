@@ -2,12 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 
 // Supabase 클라이언트 생성
 // 환경 변수에서 URL과 API Key를 가져옵니다
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://jkvwtdjkylzxjzvgbwud.supabase.co";
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imprdnd0ZGpreWx6eGp6dmdid3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0NDMwNzgsImV4cCI6MjA4MTAxOTA3OH0.XdyU1XtDFY2Vauj_ddQ1mKqAjxjnNJts5pdW_Ob1TDI";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
@@ -15,4 +11,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 환경 변수가 없을 때는 createClient를 호출하지 않아 런타임 에러를 막고,
+// 대신 supabase를 null(any)로 내보냅니다. 실제 Supabase 기능을 쓰려면
+// NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY를 반드시 설정해야 합니다.
+export const supabase =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : (null as any);

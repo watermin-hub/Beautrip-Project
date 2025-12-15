@@ -221,6 +221,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking.category": "카테고리별",
     "explore.ranking.kbeauty": "K-beauty",
     "explore.ranking.hospital": "추천 병원",
+
+    // Recovery guide page
+    "recovery.headerTitle": "시술별 회복기간과 주의사항",
+    "recovery.headerSubtitle": "각 시술의 회복 기간과 회복 과정을 상세히 안내합니다.",
+    "recovery.selectTitle": "보고 싶은 정보를 선택하세요.",
+    "recovery.selectSubtitle":
+      "각 카드는 회복 패턴이 비슷한 시술·수술들을 한데 모은 그룹입니다.🍀",
+    "recovery.currentGroup": "지금 선택한 그룹",
+    "recovery.week.tipsTitle": "✔ 이 주차에 도움 되는 팁",
+    "recovery.week.cautionsTitle": "⚠ 권고사항",
   },
   EN: {
     // Header
@@ -424,6 +434,17 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking.category": "By Category",
     "explore.ranking.kbeauty": "K-beauty",
     "explore.ranking.hospital": "Recommended Hospitals",
+
+    // Recovery guide page
+    "recovery.headerTitle": "Recovery Timeline and Precautions by Procedure",
+    "recovery.headerSubtitle":
+      "A detailed guide to the recovery period and process for each procedure.",
+    "recovery.selectTitle": "Choose the information you want to see.",
+    "recovery.selectSubtitle":
+      "Each card groups together procedures and surgeries with similar recovery patterns.🍀",
+    "recovery.currentGroup": "Currently selected group",
+    "recovery.week.tipsTitle": "✔ Tips that help in this week",
+    "recovery.week.cautionsTitle": "⚠ What to be careful about",
   },
   JP: {
     // Header
@@ -625,6 +646,17 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking.category": "カテゴリ別",
     "explore.ranking.kbeauty": "K-beauty",
     "explore.ranking.hospital": "おすすめ病院",
+
+    // Recovery guide page
+    "recovery.headerTitle": "施術別 回復期間と注意事項",
+    "recovery.headerSubtitle":
+      "各施術の回復期間と回復プロセスを分かりやすく案内します。",
+    "recovery.selectTitle": "見たい情報を選んでください。",
+    "recovery.selectSubtitle":
+      "各カードは、回復パターンが似ている施術・手術をまとめたグループです。🍀",
+    "recovery.currentGroup": "現在選択中のグループ",
+    "recovery.week.tipsTitle": "✔ この週に役立つポイント",
+    "recovery.week.cautionsTitle": "⚠ 注意してほしいこと",
   },
   CN: {
     // Header
@@ -825,6 +857,17 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking.category": "按类别",
     "explore.ranking.kbeauty": "K-beauty",
     "explore.ranking.hospital": "推荐医院",
+
+    // Recovery guide page
+    "recovery.headerTitle": "各疗程的恢复期与注意事项",
+    "recovery.headerSubtitle":
+      "为每一种疗程提供详细的恢复时间与恢复过程指引。",
+    "recovery.selectTitle": "请选择想看的信息。",
+    "recovery.selectSubtitle":
+      "每张卡片汇集了恢复模式相似的手术和疗程。🍀",
+    "recovery.currentGroup": "当前选择的分组",
+    "recovery.week.tipsTitle": "✔ 本周有帮助的小贴士",
+    "recovery.week.cautionsTitle": "⚠ 需要注意的事项",
   },
 };
 

@@ -4,6 +4,7 @@
 
 ### 📋 작업 개요
 
+- **후기 테이블 API 연결 및 글 입력-출력 기능 구현** ⭐⭐⭐
 - 랭킹 페이지 API 연결 및 중분류 필터링 개선
 - 일정 페이지 업그레이드 (회복 기간 계산, 일정 제한, 카드 색상)
 - 카테고리 필터 UI 개선 (2줄 표시, 이모지 카드)
@@ -16,7 +17,55 @@
 
 ### ✅ 완료된 작업
 
-#### 1. 랭킹 페이지 API 연결 및 중분류 필터링 개선
+#### 1. 후기 테이블 API 연결 및 글 입력-출력 기능 구현 ⭐⭐⭐
+
+**수정 파일:**
+
+- `lib/api/beautripApi.ts`
+- `components/ProcedureReviewForm.tsx`
+- `components/HospitalReviewForm.tsx`
+- `components/ReviewList.tsx`
+
+**주요 기능:**
+
+- **Supabase 후기 테이블 연동**
+
+  - `procedure_reviews` 테이블: 시술 후기 저장 및 조회
+  - `hospital_reviews` 테이블: 병원 후기 저장 및 조회
+  - `concern_posts` 테이블: 고민글 저장 및 조회 (추정)
+
+- **후기 저장 API 함수**
+
+  - `saveProcedureReview()`: 시술 후기를 Supabase에 저장
+  - `saveHospitalReview()`: 병원 후기를 Supabase에 저장
+  - 저장 성공 시 생성된 ID 반환
+
+- **후기 조회 API 함수**
+
+  - `loadProcedureReviews()`: 시술 후기 목록을 최신순으로 조회
+  - `loadHospitalReviews()`: 병원 후기 목록을 최신순으로 조회
+  - `loadConcernPosts()`: 고민글 목록 조회
+
+- **데이터 인터페이스 정의**
+
+  - `ProcedureReviewData`: 시술 후기 데이터 구조
+  - `HospitalReviewData`: 병원 후기 데이터 구조
+  - `ConcernPostData`: 고민글 데이터 구조
+
+- **글 입력-출력 연동**
+  - 후기 작성 폼에서 작성한 내용이 Supabase에 저장
+  - 저장된 후기가 목록에 실시간으로 표시
+  - 로컬스토리지와 Supabase 동시 사용 (점진적 마이그레이션)
+
+**기술적 개선:**
+
+- Supabase `insert()` 및 `select()` 쿼리 사용
+- 에러 핸들링 및 성공/실패 응답 처리
+- 최신순 정렬 (`order("created_at", { ascending: false })`)
+
+---
+
+#### 2. 랭킹 페이지 API 연결 및 중분류 필터링 개선
 
 **수정 파일:**
 
@@ -133,14 +182,17 @@
 ### 🔧 기술적 개선사항
 
 1. **API 최적화**
+
    - API 사이드 필터링으로 클라이언트 부하 감소
    - 비동기 처리 최적화 (`Promise.all` 사용)
 
 2. **데이터 정확성**
+
    - `category_treattime_recovery` 테이블의 정확한 컬럼명 사용
    - 회복기간 min/max, 시술시간 min/max 정확히 표시
 
 3. **사용자 경험**
+
    - 일정 제한으로 일정 관리 용이성 향상
    - 카드 색상 구분으로 시각적 구분 명확화
    - 필터 적용으로 원하는 시술 빠르게 찾기

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiBook, FiChevronRight } from "react-icons/fi";
 
@@ -60,6 +61,7 @@ const informationalContents: ContentItem[] = [
 
 export default function InformationalContentSection() {
   const { t } = useLanguage();
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const categories = ["all", "가이드", "정보"];
@@ -103,6 +105,11 @@ export default function InformationalContentSection() {
         {filteredContents.map((content) => (
           <button
             key={content.id}
+            onClick={() => {
+              if (content.id === 2) {
+                router.push("/community/info/recovery-guide");
+              }
+            }}
             className="w-full bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all text-left"
           >
             <div className="flex items-start gap-4">
