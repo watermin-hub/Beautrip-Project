@@ -40,7 +40,7 @@ export default function ProcedureListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 12; // 한 번에 로드할 개수 (3칸 x 4줄)
+  const pageSize = 10; // 한 번에 로드할 개수 (2칸 x 5줄)
 
   // 필터 상태
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,6 +57,7 @@ export default function ProcedureListPage() {
   );
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [isSearchExecuted, setIsSearchExecuted] = useState(false); // 검색 실행 여부
 
   // URL 쿼리 파라미터에서 검색어 읽기
   useEffect(() => {
@@ -68,9 +69,26 @@ export default function ProcedureListPage() {
 
   // 리뷰 작성 여부 확인
   useEffect(() => {
-    const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-    setHasWrittenReview(reviews.length > 0);
-  }, []);
+    try {
+      const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+      const hasReview = Array.isArray(reviews) && reviews.length > 0;
+      setHasWrittenReview(hasReview);
+      // 디버깅: 리뷰 작성 여부 확인
+      console.log(
+        "[ProcedureListPage] 리뷰 작성 여부:",
+        hasReview,
+        "리뷰 개수:",
+        reviews.length,
+        "treatments.length:",
+        treatments.length,
+        "loading:",
+        loading
+      );
+    } catch (error) {
+      console.error("[ProcedureListPage] localStorage 읽기 오류:", error);
+      setHasWrittenReview(false);
+    }
+  }, [treatments.length, loading]);
 
   // 카테고리 옵션 (정적 데이터로 관리 - 필요시 별도 API 호출)
   const largeCategories = useMemo(() => {
@@ -98,6 +116,12 @@ export default function ProcedureListPage() {
 
   // 자동완성 데이터 로드
   useEffect(() => {
+    // 검색이 실행된 후에는 자동완성 로드하지 않음
+    if (isSearchExecuted) {
+      setAutocompleteSuggestions([]);
+      return;
+    }
+
     const loadAutocomplete = async () => {
       // 최소 2글자 이상 완성된 글자만 자동완성 검색
       if (searchTerm.length < 2) {
@@ -118,7 +142,7 @@ export default function ProcedureListPage() {
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [searchTerm]);
+  }, [searchTerm, isSearchExecuted]);
 
   // 데이터 로드 (페이지네이션)
   const loadData = async (page: number = 1, reset: boolean = false) => {
@@ -126,6 +150,10 @@ export default function ProcedureListPage() {
       if (reset) {
         setLoading(true);
         setCurrentPage(1);
+        // 검색 실행 플래그 설정 (자동완성 숨기기)
+        if (searchTerm && searchTerm.trim().length >= 2) {
+          setIsSearchExecuted(true);
+        }
       } else {
         setLoadingMore(true);
       }
@@ -135,6 +163,7 @@ export default function ProcedureListPage() {
         searchTerm: searchTerm || undefined,
         categoryLarge: categoryLarge || undefined,
         categoryMid: categoryMid || undefined,
+        randomOrder: true, // 랜덤 정렬
       });
 
       // 플랫폼 정렬은 loadTreatmentsPaginated에서 이미 적용됨 (gangnamunni 우선, babitalk/yeoti 후순위)
@@ -198,6 +227,8 @@ export default function ProcedureListPage() {
     const searchQuery = searchParams.get("search");
     if (searchQuery) {
       setSearchTerm(searchQuery);
+      // URL 파라미터로 들어온 검색어는 자동으로 검색 실행
+      setShouldExecuteSearch(true);
     }
   }, [searchParams]);
 
@@ -373,6 +404,10 @@ export default function ProcedureListPage() {
     setSearchTerm(value);
     // 검색어 입력 중에는 검색하지 않음 (자동완성만 보여줌)
     setShouldExecuteSearch(false);
+    // 검색어가 변경되거나 비워지면 검색 실행 플래그 리셋 (자동완성 다시 표시)
+    if (isSearchExecuted) {
+      setIsSearchExecuted(false);
+    }
   };
 
   // 자동완성 선택 시 검색 실행
@@ -397,7 +432,7 @@ export default function ProcedureListPage() {
             value={searchTerm}
             onChange={handleSearchChange}
             placeholder="시술명/수술명을 입력해 주세요."
-            suggestions={autocompleteSuggestions}
+            suggestions={isSearchExecuted ? [] : autocompleteSuggestions}
             onSuggestionSelect={handleSuggestionSelect}
             onEnter={handleSearchEnter}
           />
@@ -450,13 +485,8 @@ export default function ProcedureListPage() {
           </div>
         ) : (
           <>
-            <div className="text-sm text-gray-600 mb-4">
-              총 {totalCount}개의 시술{" "}
-              {treatments.length > 0 && `(표시: ${treatments.length}개)`}
-            </div>
-
-            {/* 그리드 레이아웃 (3열 4행) - 상세 정보 포함 */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            {/* 그리드 레이아웃 (2열 4행) - 상세 정보 포함 */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
               {sortedTreatments.map((treatment) => {
                 const treatmentId = treatment.treatment_id || 0;
                 const isFavorite = favorites.has(treatmentId);
@@ -519,35 +549,35 @@ export default function ProcedureListPage() {
                     </div>
 
                     {/* 상세 정보 */}
-                    <div className="p-2">
+                    <div className="p-3">
                       {/* 병원명 */}
-                      <p className="text-[10px] text-gray-500 mb-0.5 line-clamp-1">
+                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">
                         {treatment.hospital_name} · {location}
                       </p>
                       {/* 시술명 */}
-                      <h5 className="text-xs font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[28px]">
+                      <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[40px]">
                         {treatment.treatment_name}
                       </h5>
                       {/* 가격 */}
-                      <div className="mb-1">
-                        <span className="text-sm font-bold text-primary-main">
+                      <div className="mb-2">
+                        <span className="text-base font-bold text-primary-main">
                           {sellingPrice}
                         </span>
                         {treatment.vat_info && (
-                          <span className="text-[9px] text-gray-500 ml-0.5">
+                          <span className="text-xs text-gray-500 ml-1">
                             {treatment.vat_info}
                           </span>
                         )}
                       </div>
                       {/* 평점 */}
                       {rating > 0 && (
-                        <div className="flex items-center gap-0.5">
-                          <FiStar className="text-yellow-400 fill-yellow-400 text-[9px]" />
-                          <span className="text-[10px] font-semibold text-gray-700">
+                        <div className="flex items-center gap-1">
+                          <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                          <span className="text-xs font-semibold text-gray-700">
                             {rating.toFixed(1)}
                           </span>
                           {reviewCount > 0 && (
-                            <span className="text-[9px] text-gray-400">
+                            <span className="text-xs text-gray-400">
                               ({reviewCount})
                             </span>
                           )}
@@ -573,7 +603,7 @@ export default function ProcedureListPage() {
             )}
 
             {/* 글 작성 유도 섹션 (리뷰 미작성 시에만 표시) */}
-            {!hasWrittenReview && treatments.length >= 12 && (
+            {!hasWrittenReview && !loading && treatments.length > 0 && (
               <div className="mt-6 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-primary-main/30 text-center">
                 <FiEdit3 className="text-primary-main text-2xl mx-auto mb-2" />
                 <p className="text-sm font-semibold text-gray-900 mb-1">

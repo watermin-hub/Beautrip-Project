@@ -37,7 +37,7 @@ export default function HospitalInfoPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 12; // 한 번에 로드할 개수 (3칸 x 4줄)
+  const pageSize = 10; // 한 번에 로드할 개수 (2칸 x 5줄)
 
   // 검색 및 필터 상태
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,9 +50,26 @@ export default function HospitalInfoPage() {
 
   // 리뷰 작성 여부 확인
   useEffect(() => {
-    const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-    setHasWrittenReview(reviews.length > 0);
-  }, []);
+    try {
+      const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+      const hasReview = Array.isArray(reviews) && reviews.length > 0;
+      setHasWrittenReview(hasReview);
+      // 디버깅: 리뷰 작성 여부 확인
+      console.log(
+        "[HospitalInfoPage] 리뷰 작성 여부:",
+        hasReview,
+        "리뷰 개수:",
+        reviews.length,
+        "hospitals.length:",
+        hospitals.length,
+        "loading:",
+        loading
+      );
+    } catch (error) {
+      console.error("[HospitalInfoPage] localStorage 읽기 오류:", error);
+      setHasWrittenReview(false);
+    }
+  }, [hospitals.length, loading]);
 
   // 자동완성 데이터 로드
   useEffect(() => {
@@ -88,6 +105,7 @@ export default function HospitalInfoPage() {
       const result = await loadHospitalsPaginated(page, pageSize, {
         searchTerm: searchTerm || undefined,
         category: filterCategory || undefined,
+        randomOrder: true, // 랜덤 정렬
       });
 
       // 플랫폼 정렬은 loadHospitalsPaginated에서 이미 적용됨 (gangnamunni 우선, babitalk/yeoti 후순위)
@@ -131,7 +149,7 @@ export default function HospitalInfoPage() {
       setShouldExecuteSearch(false);
       return;
     }
-    
+
     // 검색 실행 플래그가 true일 때만 검색 실행 (자동완성 선택 또는 엔터 입력 시)
     if (shouldExecuteSearch) {
       loadData(1, true);
@@ -353,19 +371,15 @@ export default function HospitalInfoPage() {
           </div>
         ) : (
           <>
-            <div className="text-sm text-gray-600 mb-4">
-              총 {totalCount}개의 병원{" "}
-              {hospitals.length > 0 && `(표시: ${hospitals.length}개)`}
-            </div>
-
-            {/* 그리드 레이아웃 (3열 4행) - 상세 정보 포함 */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            {/* 그리드 레이아웃 (2열 4행) - 상세 정보 포함 */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
               {hospitals.map((hospital: HospitalMaster) => {
                 const hospitalName = hospital.hospital_name || "병원명 없음";
                 const isFavorite = favorites.has(hospitalName);
 
                 // hospital_img_url 우선 사용, 없으면 hospital_img 사용
-                const thumbnailUrl = hospital.hospital_img_url || hospital.hospital_img || null;
+                const thumbnailUrl =
+                  hospital.hospital_img_url || hospital.hospital_img || null;
 
                 // hospital_departments에서 첫 번째 진료과를 대표 시술로 사용
                 let topDepartment = "진료과 정보 없음";
@@ -453,23 +467,23 @@ export default function HospitalInfoPage() {
                     </div>
 
                     {/* 상세 정보 */}
-                    <div className="p-2">
+                    <div className="p-3">
                       {/* 병원명 / 위치 */}
-                      <h5 className="text-xs font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[28px]">
+                      <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[40px]">
                         {hospitalName} · {location.split(" ")[0] || location}
                       </h5>
                       {/* 대표 진료과 */}
-                      <p className="text-[10px] text-gray-600 mb-1 line-clamp-1">
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">
                         {topDepartment}
                       </p>
                       {/* 평점 */}
                       {(hospital.hospital_rating || 0) > 0 && (
-                        <div className="flex items-center gap-0.5">
-                          <FiStar className="text-yellow-400 fill-yellow-400 text-[9px]" />
-                          <span className="text-[10px] font-semibold text-gray-700">
+                        <div className="flex items-center gap-1">
+                          <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                          <span className="text-xs font-semibold text-gray-700">
                             {(hospital.hospital_rating || 0).toFixed(1)}
                           </span>
-                          <span className="text-[9px] text-gray-400">
+                          <span className="text-xs text-gray-400">
                             ({hospital.review_count || 0})
                           </span>
                         </div>
@@ -494,7 +508,7 @@ export default function HospitalInfoPage() {
             )}
 
             {/* 글 작성 유도 섹션 (리뷰 미작성 시에만 표시) */}
-            {!hasWrittenReview && hospitals.length >= 12 && (
+            {!hasWrittenReview && !loading && hospitals.length > 0 && (
               <div className="mt-6 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-primary-main/30 text-center">
                 <FiEdit3 className="text-primary-main text-2xl mx-auto mb-2" />
                 <p className="text-sm font-semibold text-gray-900 mb-1">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { IoChevronUp } from "react-icons/io5";
 import { FiX } from "react-icons/fi";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -25,6 +26,7 @@ const rankings: RankingItem[] = [
 ];
 
 export default function RankingBanner() {
+  const router = useRouter();
   const { t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -123,8 +125,14 @@ export default function RankingBanner() {
               <div
                 key={index}
                 className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded transition-colors cursor-pointer"
-                onClick={() => {
-                  setCurrentIndex(index);
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // 탐색 페이지로 이동
+                  router.push(
+                    `/explore?section=procedure&search=${encodeURIComponent(
+                      item.name
+                    )}`
+                  );
                   setIsDropdownOpen(false);
                 }}
               >

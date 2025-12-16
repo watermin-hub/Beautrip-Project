@@ -19,6 +19,7 @@ import {
   parseProcedureTime,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+import { useRankingData } from "@/contexts/RankingDataContext";
 
 // 홈페이지와 동일한 대분류 카테고리 10개
 const MAIN_CATEGORIES = [
@@ -37,7 +38,10 @@ const MAIN_CATEGORIES = [
 
 export default function CategoryRankingPage() {
   const router = useRouter();
-  const [treatments, setTreatments] = useState<Treatment[]>([]);
+
+  // ✅ 캐시된 전체 데이터 사용
+  const { allTreatments, loading: contextLoading } = useRankingData();
+
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // null = 전체
   const [selectedMidCategory, setSelectedMidCategory] = useState<string | null>(
@@ -51,42 +55,51 @@ export default function CategoryRankingPage() {
   const [selectedTreatmentForSchedule, setSelectedTreatmentForSchedule] =
     useState<Treatment | null>(null);
 
-  // 대분류/중분류 선택 시 API에서 해당 데이터 로드
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        // 중분류가 선택된 경우 해당 중분류의 데이터만 로드 (더 정확한 필터링)
-        // 대분류만 선택된 경우 해당 대분류의 데이터 로드
-        // 전체 선택 시에는 더 많은 데이터 로드 (1000개)
-        let pageSize = 1000;
-        if (selectedMidCategory) {
-          pageSize = 300; // 중분류 선택 시 적은 양만 필요
-        } else if (selectedCategory) {
-          pageSize = 500; // 대분류만 선택 시
-        }
+  // ✅ 캐시된 데이터에서 필터링 (API 호출 없이)
+  const treatments = useMemo(() => {
+    if (contextLoading || allTreatments.length === 0) {
+      return [];
+    }
 
-        const result = await loadTreatmentsPaginated(1, pageSize, {
-          skipPlatformSort: true,
-          categoryLarge: selectedCategory || undefined,
-          categoryMid: selectedMidCategory || undefined,
-        });
-        const data = result.data;
-        setTreatments(data);
-        console.log(
-          `[CategoryRankingPage] 대분류 "${selectedCategory || "전체"}"${
-            selectedMidCategory ? `, 중분류 "${selectedMidCategory}"` : ""
-          } 데이터 로드 완료: ${data.length}개`
+    let filtered = allTreatments;
+
+    // 대분류 필터링
+    if (selectedCategory !== null) {
+      filtered = filtered.filter((t) => {
+        const categoryLarge = t.category_large || "";
+        return (
+          categoryLarge === selectedCategory ||
+          categoryLarge.includes(selectedCategory) ||
+          selectedCategory.includes(categoryLarge)
         );
-      } catch (error) {
-        console.error("데이터 로드 실패:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      });
+    }
 
-    loadData();
-  }, [selectedCategory, selectedMidCategory]);
+    // 중분류 필터링
+    if (selectedMidCategory !== null) {
+      filtered = filtered.filter((t) => {
+        const categoryMid = t.category_mid || "";
+        return (
+          categoryMid === selectedMidCategory ||
+          categoryMid.includes(selectedMidCategory) ||
+          selectedMidCategory.includes(categoryMid)
+        );
+      });
+    }
+
+    console.log(
+      `[CategoryRankingPage] 대분류 "${selectedCategory || "전체"}"${
+        selectedMidCategory ? `, 중분류 "${selectedMidCategory}"` : ""
+      } 필터링 완료: ${filtered.length}개 (전체 ${allTreatments.length}개 중)`
+    );
+
+    return filtered;
+  }, [allTreatments, selectedCategory, selectedMidCategory, contextLoading]);
+
+  // 로딩 상태 동기화
+  useEffect(() => {
+    setLoading(contextLoading);
+  }, [contextLoading]);
 
   useEffect(() => {
     const savedFavorites = JSON.parse(
@@ -103,6 +116,7 @@ export default function CategoryRankingPage() {
   // 여기서는 단순히 중분류만 추출하면 됩니다.
   const midCategories = useMemo(() => {
     const midCategorySet = new Set<string>();
+
     treatments.forEach((t) => {
       if (t.category_mid) {
         midCategorySet.add(t.category_mid);
@@ -122,6 +136,60 @@ export default function CategoryRankingPage() {
     );
     return sorted;
   }, [treatments, selectedCategory]);
+
+  // =========================
+  // Ranking Config & Utilities
+  // =========================
+  const DEDUPE_LIMIT_PER_NAME = 2; // 같은 시술명 최대 노출 개수(추천: 2)
+
+  // 0~1 정규화
+  const normalize01 = (v: number, min: number, max: number) => {
+    if (max <= min) return 0;
+    return (v - min) / (max - min);
+  };
+
+  // 같은 key(시술명) 도배 방지: 리스트에서 key별 최대 limit개만 남김 (원래 순서 유지)
+  const limitByKey = <T,>(
+    items: T[],
+    getKey: (item: T) => string,
+    limit: number
+  ) => {
+    const counts = new Map<string, number>();
+    const result: T[] = [];
+
+    for (const item of items) {
+      const key = (getKey(item) || "").trim();
+      const c = counts.get(key) || 0;
+
+      if (!key) {
+        // key가 없는 데이터는 그대로 포함(혹은 제외 정책도 가능)
+        result.push(item);
+        continue;
+      }
+
+      if (c < limit) {
+        result.push(item);
+        counts.set(key, c + 1);
+      }
+    }
+    return result;
+  };
+
+  // 데이터 전체 평균 평점(베이지안 보정에서 사용하는 기준)
+  const globalAvgRating = useMemo(() => {
+    const arr = treatments
+      .map((t) => t.rating)
+      .filter((r): r is number => typeof r === "number" && r > 0);
+    if (arr.length === 0) return 0;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+  }, [treatments]);
+
+  // 베이지안 평점: 리뷰 적은 고평점 과대평가 방지
+  const bayesianRating = (R: number, v: number, C: number, m = 20) => {
+    const vv = Math.max(0, v);
+    const RR = Math.max(0, R);
+    return (vv / (vv + m)) * RR + (m / (vv + m)) * C;
+  };
 
   // 중분류 선택 시 해당 중분류의 소분류별 랭킹 생성
   const smallCategoryRankings = useMemo(() => {
@@ -175,47 +243,110 @@ export default function CategoryRankingPage() {
     }> = [];
 
     smallCategoryMap.forEach((treatmentList, categorySmall) => {
-      // 평점과 리뷰 수 기준으로 정렬
+      // ✅ 개선된 정렬: 베이지안 보정 평점 + 리뷰 수(로그)
       const sorted = [...treatmentList].sort((a, b) => {
-        const scoreA = (a.rating || 0) * 0.7 + (a.review_count || 0) * 0.3;
-        const scoreB = (b.rating || 0) * 0.7 + (b.review_count || 0) * 0.3;
+        const va = a.review_count || 0;
+        const vb = b.review_count || 0;
+
+        // 카드 내부도 "리뷰 적은 고평점" 방지: 베이지안 보정 평점 사용
+        const adjA = bayesianRating(a.rating || 0, va, globalAvgRating, 20);
+        const adjB = bayesianRating(b.rating || 0, vb, globalAvgRating, 20);
+
+        const scoreA = adjA * 0.6 + Math.log10(va + 1) * 0.4;
+        const scoreB = adjB * 0.6 + Math.log10(vb + 1) * 0.4;
+
         return scoreB - scoreA;
       });
 
+      // ✅ 캐러셀에서도 같은 시술명 도배 방지
+      const dedupedSorted = limitByKey(
+        sorted,
+        (t) => t.treatment_name || "",
+        DEDUPE_LIMIT_PER_NAME
+      );
+
       const averageRating =
-        sorted.reduce((sum, t) => sum + (t.rating || 0), 0) / sorted.length ||
-        0;
-      const totalReviews = sorted.reduce(
+        dedupedSorted.reduce((sum, t) => sum + (t.rating || 0), 0) /
+          dedupedSorted.length || 0;
+      const totalReviews = dedupedSorted.reduce(
         (sum, t) => sum + (t.review_count || 0),
         0
       );
 
       rankings.push({
         categorySmall,
-        treatments: sorted,
+        treatments: dedupedSorted,
         averageRating,
         totalReviews,
       });
     });
 
-    // 평균 평점, 리뷰 수, 시술 개수를 종합한 랭킹 정렬
+    // ✅ 개선된 소분류 랭킹 정렬: 베이지안 보정 평점 + 로그 스케일 정규화
+    // 리뷰 수와 시술 개수는 로그 스케일 + 정규화로 안정적으로 반영
+    const reviewLogs = rankings.map((r) =>
+      Math.log10((r.totalReviews || 0) + 1)
+    );
+    const countLogs = rankings.map((r) =>
+      Math.log10((r.treatments.length || 0) + 1)
+    );
+
+    const rMin = Math.min(...reviewLogs, 0);
+    const rMax = Math.max(...reviewLogs, 1);
+    const cMin = Math.min(...countLogs, 0);
+    const cMax = Math.max(...countLogs, 1);
+
     rankings.sort((a, b) => {
       const treatmentCountA = a.treatments.length;
       const treatmentCountB = b.treatments.length;
+      const reviewCountA = a.totalReviews || 0;
+      const reviewCountB = b.totalReviews || 0;
+      const avgRatingA = a.averageRating || 0;
+      const avgRatingB = b.averageRating || 0;
 
-      // 시술 개수 점수 (로그 스케일 사용)
-      const countScoreA = Math.log10(treatmentCountA + 1) * 5;
-      const countScoreB = Math.log10(treatmentCountB + 1) * 5;
+      // 1) 베이지안 보정 평균 평점 (리뷰 적은 소분류 과대평가 방지)
+      const adjRatingA = bayesianRating(
+        avgRatingA,
+        reviewCountA,
+        globalAvgRating,
+        20
+      );
+      const adjRatingB = bayesianRating(
+        avgRatingB,
+        reviewCountB,
+        globalAvgRating,
+        20
+      );
 
-      // 종합 점수 계산
-      const scoreA =
-        a.averageRating * 0.5 +
-        (a.totalReviews / 100) * 0.3 +
-        countScoreA * 0.2;
-      const scoreB =
-        b.averageRating * 0.5 +
-        (b.totalReviews / 100) * 0.3 +
-        countScoreB * 0.2;
+      // ✅ 리뷰가 너무 적은 경우(5개 미만) 강한 페널티 부여
+      const reviewPenaltyA =
+        reviewCountA < 5 ? Math.pow(reviewCountA / 5, 2) : 1;
+      const reviewPenaltyB =
+        reviewCountB < 5 ? Math.pow(reviewCountB / 5, 2) : 1;
+
+      // ✅ 시술 개수가 너무 적은 경우(3개 미만) 강한 페널티 부여
+      const countPenaltyA =
+        treatmentCountA < 3 ? Math.pow(treatmentCountA / 3, 1.5) : 1;
+      const countPenaltyB =
+        treatmentCountB < 3 ? Math.pow(treatmentCountB / 3, 1.5) : 1;
+
+      // 2) 리뷰 수(로그+정규화) - 페널티 적용
+      const revScoreA =
+        normalize01(Math.log10(reviewCountA + 1), rMin, rMax) * reviewPenaltyA;
+      const revScoreB =
+        normalize01(Math.log10(reviewCountB + 1), rMin, rMax) * reviewPenaltyB;
+
+      // 3) 시술 개수(로그+정규화) - 보편성/신뢰도 지표 + 페널티 적용
+      const countLogA = Math.log10(treatmentCountA + 1);
+      const countLogB = Math.log10(treatmentCountB + 1);
+      const countScoreA =
+        Math.pow(normalize01(countLogA, cMin, cMax), 0.7) * countPenaltyA;
+      const countScoreB =
+        Math.pow(normalize01(countLogB, cMin, cMax), 0.7) * countPenaltyB;
+
+      // 종합 점수 계산 (가중치: 보정 평점 40%, 리뷰 수 30%, 시술 개수 30%)
+      // 리뷰 1-2개, 시술 1-2개인 항목은 페널티로 인해 하위로 밀려남
+      const scoreA = adjRatingA * 0.4 + revScoreA * 0.3 + countScoreA * 0.3;
+      const scoreB = adjRatingB * 0.4 + revScoreB * 0.3 + countScoreB * 0.3;
 
       return scoreB - scoreA;
     });
@@ -264,13 +395,26 @@ export default function CategoryRankingPage() {
     }> = [];
 
     midCategoryMap.forEach((treatmentList, midCategory) => {
-      // 평점과 리뷰 수 기준으로 정렬
+      // ✅ 개선된 정렬: 베이지안 보정 평점 + 리뷰 수(로그)
       const sorted = [...treatmentList].sort((a, b) => {
-        const scoreA = (a.rating || 0) * 0.7 + (a.review_count || 0) * 0.3;
-        const scoreB = (b.rating || 0) * 0.7 + (b.review_count || 0) * 0.3;
+        const va = a.review_count || 0;
+        const vb = b.review_count || 0;
+
+        // 카드 내부도 "리뷰 적은 고평점" 방지: 베이지안 보정 평점 사용
+        const adjA = bayesianRating(a.rating || 0, va, globalAvgRating, 20);
+        const adjB = bayesianRating(b.rating || 0, vb, globalAvgRating, 20);
+
+        const scoreA = adjA * 0.6 + Math.log10(va + 1) * 0.4;
+        const scoreB = adjB * 0.6 + Math.log10(vb + 1) * 0.4;
+
         return scoreB - scoreA;
       });
 
+      // ⚠️ 중분류 랭킹에서는 도배 방지 제거: 중분류 내의 모든 시술들을 표시해야 함
+      // 도배 방지는 시술명 기준 정렬 시(중분류 선택 후)에만 적용되어야 함
+      // 여기서는 정렬된 리스트 그대로 사용 (모든 시술 표시)
+
+      // 평균 평점과 총 리뷰 수는 전체 시술 기준으로 계산
       const averageRating =
         sorted.reduce((sum, t) => sum + (t.rating || 0), 0) / sorted.length ||
         0;
@@ -281,31 +425,114 @@ export default function CategoryRankingPage() {
 
       rankings.push({
         categoryMid: midCategory,
-        treatments: sorted,
+        treatments: sorted, // 도배 방지 없이 모든 시술 표시
         averageRating,
         totalReviews,
       });
     });
 
-    // 평균 평점, 리뷰 수, 시술 개수를 종합한 랭킹 정렬
-    // 가중치: 평점 50%, 리뷰 수 30%, 시술 개수 20%
+    // 디버깅: 중분류별 시술 개수 확인
+    if (selectedCategory) {
+      console.log(
+        `🔍 [중분류 랭킹] 대분류 "${selectedCategory}" - 중분류별 시술 개수:`,
+        rankings.slice(0, 10).map((r) => ({
+          중분류: r.categoryMid,
+          시술개수: r.treatments.length,
+          리뷰수: r.totalReviews,
+        }))
+      );
+    }
+
+    // 디버깅: 눈성형 관련 중분류 확인
+    if (!selectedCategory || selectedCategory === null) {
+      const eyeRelated = rankings.filter((r) => {
+        const mid = (r.categoryMid || "").toLowerCase();
+        return (
+          mid.includes("눈") ||
+          mid.includes("eye") ||
+          mid.includes("안검") ||
+          mid.includes("쌍수")
+        );
+      });
+      if (eyeRelated.length > 0) {
+        console.log(
+          `🔍 [중분류 랭킹] 눈성형 관련 중분류 ${eyeRelated.length}개 발견:`,
+          eyeRelated.slice(0, 5).map((r) => ({
+            중분류: r.categoryMid,
+            시술개수: r.treatments.length,
+            리뷰수: r.totalReviews,
+            평균평점: r.averageRating.toFixed(2),
+          }))
+        );
+      }
+    }
+
+    // ✅ 개선된 중분류 랭킹 정렬: 베이지안 보정 평점 + 로그 스케일 정규화
+    // 리뷰 수와 시술 개수는 로그 스케일 + 정규화로 안정적으로 반영
+    const reviewLogs = rankings.map((r) =>
+      Math.log10((r.totalReviews || 0) + 1)
+    );
+    const countLogs = rankings.map((r) =>
+      Math.log10((r.treatments.length || 0) + 1)
+    );
+
+    const rMin = Math.min(...reviewLogs, 0);
+    const rMax = Math.max(...reviewLogs, 1);
+    const cMin = Math.min(...countLogs, 0);
+    const cMax = Math.max(...countLogs, 1);
+
     rankings.sort((a, b) => {
       const treatmentCountA = a.treatments.length;
       const treatmentCountB = b.treatments.length;
+      const reviewCountA = a.totalReviews || 0;
+      const reviewCountB = b.totalReviews || 0;
+      const avgRatingA = a.averageRating || 0;
+      const avgRatingB = b.averageRating || 0;
 
-      // 시술 개수 점수 (로그 스케일 사용, 최대 20점)
-      const countScoreA = Math.log10(treatmentCountA + 1) * 5;
-      const countScoreB = Math.log10(treatmentCountB + 1) * 5;
+      // 1) 베이지안 보정 평균 평점 (리뷰 적은 중분류 과대평가 방지)
+      const adjRatingA = bayesianRating(
+        avgRatingA,
+        reviewCountA,
+        globalAvgRating,
+        20
+      );
+      const adjRatingB = bayesianRating(
+        avgRatingB,
+        reviewCountB,
+        globalAvgRating,
+        20
+      );
 
-      // 종합 점수 계산
-      const scoreA =
-        a.averageRating * 0.5 +
-        (a.totalReviews / 100) * 0.3 +
-        countScoreA * 0.2;
-      const scoreB =
-        b.averageRating * 0.5 +
-        (b.totalReviews / 100) * 0.3 +
-        countScoreB * 0.2;
+      // ✅ 리뷰가 너무 적은 경우(5개 미만) 강한 페널티 부여
+      const reviewPenaltyA =
+        reviewCountA < 5 ? Math.pow(reviewCountA / 5, 2) : 1;
+      const reviewPenaltyB =
+        reviewCountB < 5 ? Math.pow(reviewCountB / 5, 2) : 1;
+
+      // ✅ 시술 개수가 너무 적은 경우(3개 미만) 강한 페널티 부여
+      const countPenaltyA =
+        treatmentCountA < 3 ? Math.pow(treatmentCountA / 3, 1.5) : 1;
+      const countPenaltyB =
+        treatmentCountB < 3 ? Math.pow(treatmentCountB / 3, 1.5) : 1;
+
+      // 2) 리뷰 수(로그+정규화) - 페널티 적용
+      const revScoreA =
+        normalize01(Math.log10(reviewCountA + 1), rMin, rMax) * reviewPenaltyA;
+      const revScoreB =
+        normalize01(Math.log10(reviewCountB + 1), rMin, rMax) * reviewPenaltyB;
+
+      // 3) 시술 개수(로그+정규화) - 보편성/신뢰도 지표 + 페널티 적용
+      const countLogA = Math.log10(treatmentCountA + 1);
+      const countLogB = Math.log10(treatmentCountB + 1);
+      const countScoreA =
+        Math.pow(normalize01(countLogA, cMin, cMax), 0.7) * countPenaltyA;
+      const countScoreB =
+        Math.pow(normalize01(countLogB, cMin, cMax), 0.7) * countPenaltyB;
+
+      // 종합 점수 계산 (가중치 조정: 보정 평점 40%, 리뷰 수 30%, 시술 개수 30%)
+      // 리뷰 1-2개, 시술 1-2개인 항목은 페널티로 인해 하위로 밀려남
+      const scoreA = adjRatingA * 0.4 + revScoreA * 0.3 + countScoreA * 0.3;
+      const scoreB = adjRatingB * 0.4 + revScoreB * 0.3 + countScoreB * 0.3;
 
       return scoreB - scoreA;
     });
@@ -532,22 +759,94 @@ export default function CategoryRankingPage() {
     return iconMap[categoryId] || "📋";
   };
 
-  // 중분류별 설명 텍스트 매핑
+  // 중분류별 설명 텍스트 매핑 (시술 설명 스타일)
   const getCategoryDescription = (categoryMid: string): string => {
     const descriptions: Record<string, string> = {
       주름보톡스:
         "주름이 많은 부위에 주사하여 톡! 하고 주름을 펴주고 주름 예방 효과도 기대할 수 있어요.",
+      근육보톡스:
+        "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.",
       백옥주사:
         "글루타치온 성분이 피부를 밝게 해주며, 항산화 작용을 동반하여 노화 방지에도 효과적이에요.",
       리프팅:
         "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.",
+      초음파리프팅:
+        "초음파 에너지를 이용해 피부 깊숙이 열을 가하여 콜라겐을 재생하고 피부를 탄력 있게 만들어요.",
+      레이저리프팅:
+        "레이저를 이용해 피부 표면과 깊은 부분을 동시에 개선하여 주름을 완화하고 피부 톤을 개선해요.",
+      실리프팅:
+        "실을 이용해 처진 피부를 당겨올려 즉각적인 리프팅 효과를 주는 시술이에요.",
       필러: "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.",
       보톡스: "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있습니다.",
+      쌍꺼풀:
+        "눈의 아름다운 라인을 만들어주는 시술로, 자연스러운 쌍꺼풀을 만들어 눈매를 더욱 선명하게 해줍니다.",
+      눈매교정:
+        "눈의 모양과 각도를 교정하여 더욱 밝고 선명한 눈매를 만들어주는 시술이에요.",
+      눈지방성형:
+        "눈 주변의 지방을 재배치하거나 제거하여 눈밑 주름과 다크서클을 개선하는 시술입니다.",
+      하안검성형:
+        "눈밑 처짐과 주름을 개선하여 더욱 밝고 젊은 눈매를 만들어주는 시술이에요.",
+      상안검성형:
+        "눈꺼풀 처짐을 개선하고 눈을 더 크고 선명하게 보이게 해주는 시술입니다.",
+      코재수술:
+        "이전 코성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 코 모양을 만들어줍니다.",
+      "V라인 교정":
+        "턱선을 날카롭고 V자 형태로 만들어주는 시술로, 얼굴 윤곽을 더욱 세련되게 만들어요.",
+      광대교정:
+        "돌출된 광대뼈를 줄이거나 조절하여 얼굴 윤곽을 부드럽고 자연스럽게 만드는 시술입니다.",
+      근육묶기:
+        "턱 근육을 묶어 사각턱을 완화하고 얼굴 라인을 더욱 부드럽게 만들어주는 시술이에요.",
+      얼굴제모:
+        "얼굴의 불필요한 털을 제거하여 더욱 깔끔하고 매끄러운 피부를 만들어주는 시술입니다.",
+      바디제모:
+        "몸의 불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.",
+      바디리프팅:
+        "몸의 처진 피부를 당겨올려 탄력 있고 탄탄한 몸매를 만들어주는 시술입니다.",
+      리프팅거상:
+        "리프팅과 거상을 함께 진행하여 얼굴 전체의 처짐을 개선하고 더욱 젊어 보이게 해주는 시술이에요.",
+      가슴모양교정:
+        "가슴의 모양과 위치를 개선하여 더욱 아름답고 균형 잡힌 가슴 라인을 만들어주는 시술입니다.",
+      가슴재수술:
+        "이전 가슴성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 결과를 만들어줍니다.",
     };
-    return (
-      descriptions[categoryMid] ||
-      `${categoryMid} 시술로 피부와 외모를 개선할 수 있어요.`
-    );
+
+    // 매핑된 설명이 있으면 사용
+    if (descriptions[categoryMid]) {
+      return descriptions[categoryMid];
+    }
+
+    // 매핑되지 않은 중분류는 동적으로 구체적인 설명 생성
+    // 기본 템플릿 대신 중분류명을 분석하여 구체적인 설명 생성
+    const mid = categoryMid.toLowerCase();
+
+    // 패턴 매칭으로 구체적인 설명 생성
+    if (mid.includes("보톡스") || mid.includes("보톡")) {
+      return "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.";
+    }
+    if (mid.includes("필러")) {
+      return "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.";
+    }
+    if (mid.includes("리프팅")) {
+      return "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.";
+    }
+    if (mid.includes("제모")) {
+      return "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.";
+    }
+    if (mid.includes("성형") || mid.includes("수술")) {
+      return "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.";
+    }
+    if (mid.includes("교정")) {
+      return "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.";
+    }
+    if (mid.includes("주사")) {
+      return "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.";
+    }
+    if (mid.includes("레이저")) {
+      return "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.";
+    }
+
+    // 패턴 매칭 실패 시에도 기본 템플릿 대신 더 구체적인 설명
+    return `${categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.`;
   };
 
   return (

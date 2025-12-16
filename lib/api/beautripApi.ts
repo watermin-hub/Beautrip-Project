@@ -195,6 +195,16 @@ export async function loadTreatments(): Promise<Treatment[]> {
   }
 }
 
+// Fisher-Yates 셔플 알고리즘 (랜덤 정렬)
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // 시술 데이터 페이지네이션 로드 (초기 일부만 로드)
 export async function loadTreatmentsPaginated(
   page: number = 1,
@@ -204,6 +214,7 @@ export async function loadTreatmentsPaginated(
     categoryLarge?: string;
     categoryMid?: string;
     skipPlatformSort?: boolean; // 랭킹 페이지용: 플랫폼 정렬 건너뛰기
+    randomOrder?: boolean; // 랜덤 정렬 옵션
   }
 ): Promise<{ data: Treatment[]; total: number; hasMore: boolean }> {
   try {
@@ -257,29 +268,106 @@ export async function loadTreatmentsPaginated(
       query = query.eq("category_mid", filters.categoryMid);
     }
 
-    // 페이지네이션
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+    let data, error, count;
 
-    const { data, error, count } = await query.range(from, to);
+    // 랜덤 정렬인 경우: Supabase에서 랜덤 정렬 후 페이지네이션
+    // PostgreSQL의 RANDOM() 함수를 사용하여 서버에서 처리
+    if (filters?.randomOrder) {
+      try {
+        // Supabase는 PostgreSQL 기반이므로 RPC 함수나 직접 쿼리로 랜덤 정렬 가능
+        // 하지만 JS 클라이언트에서는 직접 지원하지 않으므로,
+        // 전체 데이터를 로드하되 클라이언트(브라우저)에서 실행되므로 서버 메모리 사용 없음
+        // 필터가 있으면 필터링된 결과만 로드
+        const result = await query;
+        data = result.data;
+        error = result.error;
+        count = result.count;
+      } catch (fetchError) {
+        // 네트워크 오류 처리
+        if (
+          fetchError instanceof TypeError &&
+          fetchError.message === "Failed to fetch"
+        ) {
+          console.error(
+            "네트워크 오류: Supabase 서버에 연결할 수 없습니다.",
+            fetchError
+          );
+          return { data: [], total: 0, hasMore: false };
+        }
+        throw fetchError;
+      }
 
-    if (error) {
-      throw new Error(`Supabase 오류: ${error.message}`);
+      if (error) {
+        console.error("Supabase 쿼리 오류:", error);
+        throw new Error(`Supabase 오류: ${error.message}`);
+      }
+
+      if (!data) {
+        return { data: [], total: 0, hasMore: false };
+      }
+
+      const cleanedData = cleanData<Treatment>(data);
+      // 전체 데이터 랜덤 정렬 (클라이언트에서 실행되므로 서버 메모리 사용 없음)
+      const shuffledData = shuffleArray(cleanedData);
+
+      // 클라이언트에서 페이지네이션
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize;
+      const paginatedData = shuffledData.slice(from, to);
+      const total = count || shuffledData.length;
+      const hasMore = to < shuffledData.length;
+
+      return { data: paginatedData, total, hasMore };
+    } else {
+      // 일반 정렬: 서버에서 페이지네이션
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      try {
+        const result = await query.range(from, to);
+        data = result.data;
+        error = result.error;
+        count = result.count;
+      } catch (fetchError) {
+        // 네트워크 오류 처리
+        if (
+          fetchError instanceof TypeError &&
+          fetchError.message === "Failed to fetch"
+        ) {
+          console.error(
+            "네트워크 오류: Supabase 서버에 연결할 수 없습니다.",
+            fetchError
+          );
+          return { data: [], total: 0, hasMore: false };
+        }
+        throw fetchError;
+      }
+
+      if (error) {
+        console.error("Supabase 쿼리 오류:", error);
+        throw new Error(`Supabase 오류: ${error.message}`);
+      }
+
+      if (!data) {
+        return { data: [], total: 0, hasMore: false };
+      }
+
+      const cleanedData = cleanData<Treatment>(data);
+
+      let sortedData: Treatment[];
+      if (filters?.skipPlatformSort) {
+        // 랭킹 페이지는 플랫폼 정렬을 건너뛰고 원본 순서 유지 (랭킹 알고리즘이 정렬함)
+        sortedData = cleanedData;
+      } else {
+        // 플랫폼 우선순위 정렬
+        sortedData = sortTreatmentsByPlatform(cleanedData);
+      }
+
+      const total = count || 0;
+      const hasMore = to < total - 1;
+
+      return { data: sortedData, total, hasMore };
     }
-
-    if (!data) {
-      return { data: [], total: 0, hasMore: false };
-    }
-
-    const cleanedData = cleanData<Treatment>(data);
-    // 랭킹 페이지는 플랫폼 정렬을 건너뛰고 원본 순서 유지 (랭킹 알고리즘이 정렬함)
-    const sortedData = filters?.skipPlatformSort
-      ? cleanedData
-      : sortTreatmentsByPlatform(cleanedData);
-    const total = count || 0;
-    const hasMore = to < total - 1;
-
-    return { data: sortedData, total, hasMore };
   } catch (error) {
     console.error("시술 데이터 페이지네이션 로드 실패:", error);
     throw error;
@@ -802,6 +890,7 @@ export async function loadHospitalsPaginated(
   filters?: {
     searchTerm?: string;
     category?: string;
+    randomOrder?: boolean; // 랜덤 정렬 옵션
   }
 ): Promise<{ data: HospitalMaster[]; total: number; hasMore: boolean }> {
   try {
@@ -823,27 +912,65 @@ export async function loadHospitalsPaginated(
       return { data: [], total: 0, hasMore: false };
     }
 
-    // 페이지네이션
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+    let data, error, count;
 
-    const { data, error, count } = await query.range(from, to);
+    // 랜덤 정렬인 경우: 전체 데이터를 로드한 후 클라이언트에서 페이지네이션
+    // 클라이언트(브라우저)에서 실행되므로 서버 메모리 사용 없음
+    if (filters?.randomOrder) {
+      // 전체 데이터 로드 (페이지네이션 없이)
+      // 필터가 있으면 필터링된 결과만 로드
+      const result = await query;
+      data = result.data;
+      error = result.error;
+      count = result.count;
 
-    if (error) {
-      throw new Error(`Supabase 오류: ${error.message}`);
+      if (error) {
+        throw new Error(`Supabase 오류: ${error.message}`);
+      }
+
+      if (!data) {
+        return { data: [], total: 0, hasMore: false };
+      }
+
+      const cleanedData = cleanData<HospitalMaster>(data);
+      // 전체 데이터 랜덤 정렬 (클라이언트에서 실행되므로 서버 메모리 사용 없음)
+      const shuffledData = shuffleArray(cleanedData);
+
+      // 클라이언트에서 페이지네이션
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize;
+      const paginatedData = shuffledData.slice(from, to);
+      const total = count || shuffledData.length;
+      const hasMore = to < shuffledData.length;
+
+      return { data: paginatedData, total, hasMore };
+    } else {
+      // 일반 정렬: 서버에서 페이지네이션
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const result = await query.range(from, to);
+      data = result.data;
+      error = result.error;
+      count = result.count;
+
+      if (error) {
+        throw new Error(`Supabase 오류: ${error.message}`);
+      }
+
+      if (!data) {
+        return { data: [], total: 0, hasMore: false };
+      }
+
+      const cleanedData = cleanData<HospitalMaster>(data);
+      // 플랫폼 우선순위 정렬
+      const sortedData = sortHospitalsByPlatform(cleanedData);
+
+      const total = count || 0;
+      const hasMore = to < total - 1;
+
+      return { data: sortedData, total, hasMore };
     }
-
-    if (!data) {
-      return { data: [], total: 0, hasMore: false };
-    }
-
-    const cleanedData = cleanData<HospitalMaster>(data);
-    // 플랫폼 우선순위로 정렬 (gangnamunni 우선, babitalk/yeoti 후순위)
-    const sortedData = sortHospitalsByPlatform(cleanedData);
-    const total = count || 0;
-    const hasMore = to < total - 1;
-
-    return { data: sortedData, total, hasMore };
   } catch (error) {
     console.error("병원 데이터 페이지네이션 로드 실패:", error);
     throw error;

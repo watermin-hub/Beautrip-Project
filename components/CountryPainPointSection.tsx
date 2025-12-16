@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiHeart, FiStar, FiX } from "react-icons/fi";
-import { 
-  loadTreatmentsPaginated, 
+import {
+  loadTreatmentsPaginated,
   getThumbnailUrl,
   calculateRecommendationScore,
-  type Treatment
+  type Treatment,
 } from "@/lib/api/beautripApi";
 
 // 고민 키워드와 시술 매핑
@@ -26,7 +26,9 @@ export default function CountryPainPointSection() {
   const { t } = useLanguage();
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [selectedConcern, setSelectedConcern] = useState<string | null>(null);
-  const [recommendedTreatments, setRecommendedTreatments] = useState<Treatment[]>([]);
+  const [recommendedTreatments, setRecommendedTreatments] = useState<
+    Treatment[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
@@ -172,7 +174,20 @@ export default function CountryPainPointSection() {
         {currentPainPoints.map((point, index) => (
           <button
             key={index}
-            onClick={() => handleConcernClick(point)}
+            onClick={(e) => {
+              // Ctrl/Cmd 키를 누르지 않은 경우에만 탐색 페이지로 이동
+              if (!e.ctrlKey && !e.metaKey) {
+                // 탐색 페이지로 이동하고 검색어와 section 파라미터 전달
+                router.push(
+                  `/explore?section=procedure&search=${encodeURIComponent(
+                    point
+                  )}`
+                );
+              } else {
+                // Ctrl/Cmd 키를 누른 경우 기존 동작 (현재 페이지에서 추천 표시)
+                handleConcernClick(point);
+              }
+            }}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
               selectedConcern === point
                 ? "bg-primary-main text-white border-primary-main"
@@ -222,7 +237,9 @@ export default function CountryPainPointSection() {
                   : "가격 문의";
                 const rating = treatment.rating || 0;
                 const reviewCount = treatment.review_count || 0;
-                const discountRate = treatment.dis_rate ? `${treatment.dis_rate}%` : "";
+                const discountRate = treatment.dis_rate
+                  ? `${treatment.dis_rate}%`
+                  : "";
 
                 return (
                   <div
@@ -242,12 +259,13 @@ export default function CountryPainPointSection() {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          if (target.dataset.fallback === 'true') {
-                            target.style.display = 'none';
+                          if (target.dataset.fallback === "true") {
+                            target.style.display = "none";
                             return;
                           }
-                          target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
-                          target.dataset.fallback = 'true';
+                          target.src =
+                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
+                          target.dataset.fallback = "true";
                         }}
                       />
                       {/* 할인율 배지 */}
@@ -292,7 +310,9 @@ export default function CountryPainPointSection() {
                       {rating > 0 && (
                         <div className="flex items-center gap-1 mb-2">
                           <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                          <span className="text-xs font-semibold">{rating.toFixed(1)}</span>
+                          <span className="text-xs font-semibold">
+                            {rating.toFixed(1)}
+                          </span>
                           {reviewCount > 0 && (
                             <span className="text-xs text-gray-400">
                               ({reviewCount.toLocaleString()})
