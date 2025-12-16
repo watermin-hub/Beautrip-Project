@@ -418,11 +418,17 @@ export default function TreatmentDetailPage({
           )}
         </div>
 
-        {/* 시술명 및 평점 */}
+        {/* 시술명, category_small, 평점 */}
         <div className="px-4 py-4 border-b border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             {currentTreatment.treatment_name}
           </h2>
+          {/* category_small - 시술명과 별점 사이에 배치 */}
+          {currentTreatment?.category_small && (
+            <p className="text-base font-medium text-gray-700 mb-2">
+              {currentTreatment.category_small}
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <FiStar className="text-yellow-400 fill-yellow-400" />
@@ -433,46 +439,6 @@ export default function TreatmentDetailPage({
             <span className="text-gray-500">({reviewCount}개 리뷰)</span>
           </div>
         </div>
-
-        {/* 옵션 정보 - 단일 옵션만 표시 (category_small) */}
-        {currentTreatment?.category_small && (
-          <div className="px-4 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">옵션</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {currentTreatment.category_small}
-                </p>
-              </div>
-            </div>
-
-            {/* 현재 옵션 정보 */}
-            <div className="bg-gray-50 rounded-lg p-3 mb-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  옵션 {relatedOptions.length + 1} / {relatedOptions.length + 1}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {currentTreatment.category_mid || "기본"}
-                </span>
-              </div>
-              <div className="space-y-1 text-sm text-gray-600">
-                {surgeryTime > 0 && (
-                  <div className="flex items-center gap-2">
-                    <FiClock className="text-gray-400" />
-                    <span>시술 소요 시간: 약 {surgeryTime}분</span>
-                  </div>
-                )}
-                {downtime > 0 && (
-                  <div className="flex items-center gap-2">
-                    <FiCalendar className="text-gray-400" />
-                    <span>회복 시간: 약 {downtime}일</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 가격 정보 */}
         <div className="px-4 py-4 border-b border-gray-100">

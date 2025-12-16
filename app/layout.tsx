@@ -26,6 +26,18 @@ export default function RootLayout({
             })(window,document,'script','dataLayer','GTM-NSNM597H');
           `}
         </Script>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-H9Y2PPYJHH"
+          strategy="afterInteractive"
+        />
+        <Script id="ga" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-H9Y2PPYJHH');
+          `}
+        </Script>
         <Script id="hotjar-cs" strategy="afterInteractive">
           {`
             (function (c, s, q, u, a, r, e) {

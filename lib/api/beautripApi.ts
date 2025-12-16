@@ -1474,8 +1474,8 @@ export async function getScheduleBasedRecommendations(
       return !isInOtherCategory;
     }
 
-    // 일반 카테고리: category_large를 우선적으로 확인
-    // category_large가 매핑된 카테고리 중 하나와 일치하는지 확인
+    // 일반 카테고리: category_large와 category_mid 모두 확인
+    // category_large 또는 category_mid가 매핑된 카테고리 중 하나와 일치하는 경우 포함
     const categoryLargeLower = (t.category_large || "").toLowerCase();
     const categoryMidLower = (t.category_mid || "").toLowerCase();
 
@@ -1489,13 +1489,16 @@ export async function getScheduleBasedRecommendations(
       return true;
     }
 
-    // category_large가 매칭되지 않으면, category_mid만으로는 선택하지 않음
-    // (이렇게 하면 다른 대분류의 시술이 잘못 필터링되는 것을 방지)
-    //
-    // TODO: 데이터가 10,000개 이상일 때는 더 엄격한 필터링 필요
-    // - category_large와 category_mid 모두 정확히 매칭되어야 함
-    // - 키워드 포함 검사 대신 정확한 문자열 매칭 사용
-    // - 예: category_large === mapped (정확히 일치) && category_mid가 매핑된 중분류와 일치
+    // category_mid도 확인 (예: "피부관리" 중분류는 "피부" 대분류 선택 시 포함되어야 함)
+    const matchesMid = mappedCategories.some((mapped) => {
+      const mappedLower = mapped.toLowerCase();
+      return categoryMidLower.includes(mappedLower);
+    });
+
+    if (matchesMid) {
+      return true;
+    }
+
     return false;
   });
 
