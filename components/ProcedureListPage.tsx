@@ -615,6 +615,7 @@ export default function ProcedureListPage() {
           }}
           onDateSelect={handleDateSelect}
           treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          categoryMid={selectedTreatment.category_mid || null}
         />
       )}
     </div>

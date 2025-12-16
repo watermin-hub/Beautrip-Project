@@ -113,16 +113,21 @@ export default function HotConcernsSection() {
     schedules.forEach((s: any) => {
       const procDate = new Date(s.procedureDate);
       const procDateStr = formatDate(s.procedureDate);
-      
+
       if (procDateStr === date) {
         countOnDate++;
       }
-      
+
       for (let i = 1; i <= (s.recoveryDays || 0); i++) {
         const recoveryDate = new Date(procDate);
         recoveryDate.setDate(recoveryDate.getDate() + i);
         const recoveryDateStr = formatDate(
-          `${recoveryDate.getFullYear()}-${String(recoveryDate.getMonth() + 1).padStart(2, "0")}-${String(recoveryDate.getDate()).padStart(2, "0")}`
+          `${recoveryDate.getFullYear()}-${String(
+            recoveryDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(recoveryDate.getDate()).padStart(
+            2,
+            "0"
+          )}`
         );
         if (recoveryDateStr === date) {
           countOnDate++;
@@ -335,6 +340,7 @@ export default function HotConcernsSection() {
           }}
           onDateSelect={handleDateSelect}
           treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          categoryMid={selectedTreatment.category_mid || null}
         />
       )}
     </div>

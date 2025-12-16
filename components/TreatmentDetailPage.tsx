@@ -246,18 +246,23 @@ export default function TreatmentDetailPage({
     schedules.forEach((s: any) => {
       const procDate = new Date(s.procedureDate);
       const procDateStr = formatDate(s.procedureDate);
-      
+
       // 시술 날짜
       if (procDateStr === date) {
         countOnDate++;
       }
-      
+
       // 회복 기간 날짜들 (시술 당일 제외)
       for (let i = 1; i <= (s.recoveryDays || 0); i++) {
         const recoveryDate = new Date(procDate);
         recoveryDate.setDate(recoveryDate.getDate() + i);
         const recoveryDateStr = formatDate(
-          `${recoveryDate.getFullYear()}-${String(recoveryDate.getMonth() + 1).padStart(2, "0")}-${String(recoveryDate.getDate()).padStart(2, "0")}`
+          `${recoveryDate.getFullYear()}-${String(
+            recoveryDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(recoveryDate.getDate()).padStart(
+            2,
+            "0"
+          )}`
         );
         if (recoveryDateStr === date) {
           countOnDate++;
@@ -873,6 +878,7 @@ export default function TreatmentDetailPage({
           onClose={() => setIsAddToScheduleModalOpen(false)}
           onDateSelect={handleAddToSchedule}
           treatmentName={currentTreatment.treatment_name || "시술명 없음"}
+          categoryMid={currentTreatment.category_mid || null}
         />
       )}
     </div>
