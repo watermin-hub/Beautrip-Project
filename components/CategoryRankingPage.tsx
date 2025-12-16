@@ -1123,7 +1123,7 @@ export default function CategoryRankingPage() {
                             return (
                               <div
                                 key={treatmentId}
-                                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex-shrink-0 w-[160px] cursor-pointer"
+                                className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex-shrink-0 w-[160px] cursor-pointer flex flex-col"
                                 onClick={() => {
                                   router.push(`/treatment/${treatmentId}`);
                                 }}
@@ -1144,30 +1144,34 @@ export default function CategoryRankingPage() {
                                 </div>
 
                                 {/* 카드 내용 */}
-                                <div className="p-3 space-y-1.5">
-                                  <h5 className="font-bold text-gray-900 text-sm line-clamp-2">
-                                    {treatment.treatment_name}
-                                  </h5>
-                                  {/* category_small - treatment_name과 별점 사이에 배치 */}
-                                  {treatment.category_small && (
-                                    <p className="text-sm font-medium text-gray-700 line-clamp-1">
-                                      {treatment.category_small}
-                                    </p>
-                                  )}
-                                  {/* 별점/리뷰, 가격과 버튼 */}
-                                  <div className="flex items-end justify-between">
+                                <div className="p-3 flex flex-col h-full">
+                                  <div>
+                                    <h5 className="font-bold text-gray-900 text-sm line-clamp-2 mb-1">
+                                      {treatment.treatment_name}
+                                    </h5>
+                                    {/* category_small - treatment_name과 별점 사이에 배치 */}
+                                    {treatment.category_small && (
+                                      <p className="text-sm font-medium text-gray-700 line-clamp-1 mb-1">
+                                        {treatment.category_small}
+                                      </p>
+                                    )}
+                                    {/* 별점/리뷰 */}
+                                    <div className="flex items-center gap-1 text-[11px] text-gray-600 mb-1">
+                                      <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
+                                      <span className="font-semibold">
+                                        {treatment.rating
+                                          ? treatment.rating.toFixed(1)
+                                          : "-"}
+                                      </span>
+                                      <span>
+                                        ({treatment.review_count || 0}개 리뷰)
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* 가격/병원명과 버튼 - 하단 고정 */}
+                                  <div className="flex items-end justify-between mt-auto">
                                     <div className="flex-1">
-                                      <div className="flex items-center gap-1 text-[11px] text-gray-600 mb-1">
-                                        <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
-                                        <span className="font-semibold">
-                                          {treatment.rating
-                                            ? treatment.rating.toFixed(1)
-                                            : "-"}
-                                        </span>
-                                        <span>
-                                          ({treatment.review_count || 0}개 리뷰)
-                                        </span>
-                                      </div>
                                       <div className="flex items-center gap-1">
                                         <span className="text-sm font-bold text-primary-main">
                                           {price}
@@ -1178,7 +1182,7 @@ export default function CategoryRankingPage() {
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-[11px] text-gray-600 line-clamp-1 mt-1">
+                                      <p className="text-[11px] text-gray-600 line-clamp-1 mt-0.5">
                                         {treatment.hospital_name ||
                                           "병원명 없음"}{" "}
                                         · 서울
@@ -1357,7 +1361,7 @@ export default function CategoryRankingPage() {
                           return (
                             <div
                               key={treatmentId}
-                              className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex-shrink-0 w-[160px] cursor-pointer"
+                              className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex-shrink-0 w-[160px] cursor-pointer flex flex-col"
                               onClick={() => {
                                 router.push(`/treatment/${treatmentId}`);
                               }}
@@ -1383,37 +1387,39 @@ export default function CategoryRankingPage() {
                               </div>
 
                               {/* 카드 내용 */}
-                              <div className="p-3 space-y-1.5">
-                                {/* 시술명 */}
-                                <h5 className="font-bold text-gray-900 text-sm line-clamp-2">
-                                  {treatment.treatment_name}
-                                </h5>
+                              <div className="p-3 flex flex-col h-full">
+                                <div>
+                                  {/* 시술명 */}
+                                  <h5 className="font-bold text-gray-900 text-sm line-clamp-2 mb-1">
+                                    {treatment.treatment_name}
+                                  </h5>
 
-                                {/* category_small - treatment_name과 별점 사이에 배치 */}
-                                {treatment.category_small && (
-                                  <p className="text-sm font-medium text-gray-700 line-clamp-1">
-                                    {treatment.category_small}
-                                  </p>
-                                )}
+                                  {/* category_small - treatment_name과 별점 사이에 배치 */}
+                                  {treatment.category_small && (
+                                    <p className="text-sm font-medium text-gray-700 line-clamp-1 mb-1">
+                                      {treatment.category_small}
+                                    </p>
+                                  )}
 
-                                {/* 별점/리뷰 */}
-                                <div className="flex items-center gap-1 text-[11px] text-gray-600">
-                                  <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
-                                  <span className="font-semibold">
-                                    {treatment.rating
-                                      ? treatment.rating.toFixed(1)
-                                      : "-"}
-                                  </span>
-                                  <span>
-                                    ({treatment.review_count || 0}개 리뷰)
-                                  </span>
+                                  {/* 별점/리뷰 */}
+                                  <div className="flex items-center gap-1 text-[11px] text-gray-600 mb-1">
+                                    <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
+                                    <span className="font-semibold">
+                                      {treatment.rating
+                                        ? treatment.rating.toFixed(1)
+                                        : "-"}
+                                    </span>
+                                    <span>
+                                      ({treatment.review_count || 0}개 리뷰)
+                                    </span>
+                                  </div>
                                 </div>
 
-                                {/* 가격/평점과 버튼 */}
-                                <div className="flex items-center justify-between">
+                                {/* 가격/병원명과 버튼 - 하단 고정 */}
+                                <div className="flex items-end justify-between mt-auto">
                                   <div className="flex-1">
                                     {/* 가격 / 부가세 */}
-                                    <div className="flex items-center gap-1 mb-1">
+                                    <div className="flex items-center gap-1">
                                       <span className="text-sm font-bold text-primary-main">
                                         {price}
                                       </span>
@@ -1425,7 +1431,7 @@ export default function CategoryRankingPage() {
                                     </div>
 
                                     {/* 병원명 / 위치(예시) */}
-                                    <p className="text-[11px] text-gray-600 line-clamp-1">
+                                    <p className="text-[11px] text-gray-600 line-clamp-1 mt-0.5">
                                       {treatment.hospital_name || "병원명 없음"}{" "}
                                       · 서울
                                     </p>

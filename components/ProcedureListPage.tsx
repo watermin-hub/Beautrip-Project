@@ -507,7 +507,7 @@ export default function ProcedureListPage() {
                 return (
                   <div
                     key={treatmentId}
-                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer"
+                    className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer flex flex-col"
                     onClick={() => {
                       router.push(`/treatment/${treatmentId}`);
                     }}
@@ -534,20 +534,37 @@ export default function ProcedureListPage() {
                     </div>
 
                     {/* 상세 정보 */}
-                    <div className="p-3">
-                      {/* 병원명 */}
-                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">
-                        {treatment.hospital_name} · {location}
-                      </p>
-                      {/* 시술명 */}
-                      <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[40px]">
-                        {treatment.treatment_name}
-                      </h5>
-                      {/* 가격/평점과 버튼 */}
-                      <div className="flex items-end justify-between">
+                    <div className="p-3 flex flex-col h-full">
+                      <div>
+                        {/* 병원명 */}
+                        <p className="text-xs text-gray-500 mb-1 line-clamp-1">
+                          {treatment.hospital_name} · {location}
+                        </p>
+                        {/* 시술명 */}
+                        <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                          {treatment.treatment_name}
+                        </h5>
+                        {/* 평점 */}
+                        {rating > 0 && (
+                          <div className="flex items-center gap-1 mb-1">
+                            <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                            <span className="text-xs font-semibold text-gray-700">
+                              {rating.toFixed(1)}
+                            </span>
+                            {reviewCount > 0 && (
+                              <span className="text-xs text-gray-400">
+                                ({reviewCount})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 가격과 버튼 - 하단 고정 */}
+                      <div className="flex items-end justify-between mt-auto">
                         <div className="flex-1">
                           {/* 가격 */}
-                          <div className="mb-1">
+                          <div>
                             <span className="text-base font-bold text-primary-main">
                               {sellingPrice}
                             </span>
@@ -557,20 +574,6 @@ export default function ProcedureListPage() {
                               </span>
                             )}
                           </div>
-                          {/* 평점 */}
-                          {rating > 0 && (
-                            <div className="flex items-center gap-1">
-                              <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                              <span className="text-xs font-semibold text-gray-700">
-                                {rating.toFixed(1)}
-                              </span>
-                              {reviewCount > 0 && (
-                                <span className="text-xs text-gray-400">
-                                  ({reviewCount})
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </div>
 
                         {/* 하트/달력 버튼 - 세로 배치 */}

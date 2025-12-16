@@ -244,7 +244,7 @@ export default function CountryPainPointSection() {
                 return (
                   <div
                     key={treatment.treatment_id}
-                    className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                    className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                     onClick={() => {
                       if (treatment.treatment_id) {
                         router.push(`/treatment/${treatment.treatment_id}`);
@@ -277,36 +277,39 @@ export default function CountryPainPointSection() {
                     </div>
 
                     {/* 카드 내용 */}
-                    <div className="p-3">
-                      {/* 병원명 */}
-                      {treatment.hospital_name && (
-                        <p className="text-xs text-gray-500 mb-1 truncate">
-                          {treatment.hospital_name}
-                        </p>
-                      )}
+                    <div className="p-3 flex flex-col h-full">
+                      <div>
+                        {/* 병원명 */}
+                        {treatment.hospital_name && (
+                          <p className="text-xs text-gray-500 mb-1 truncate">
+                            {treatment.hospital_name}
+                          </p>
+                        )}
 
-                      {/* 시술명 */}
-                      <h4 className="font-semibold text-gray-900 mb-2 text-sm line-clamp-2 min-h-[2.5rem]">
-                        {treatment.treatment_name}
-                      </h4>
+                        {/* 시술명 */}
+                        <h4 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-2">
+                          {treatment.treatment_name}
+                        </h4>
 
-                      {/* 가격/평점과 버튼 */}
-                      <div className="flex items-end justify-between">
-                        <div className="flex-1">
-                          {/* 평점 */}
-                          {rating > 0 && (
-                            <div className="flex items-center gap-1 mb-1">
-                              <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                              <span className="text-xs font-semibold">
-                                {rating.toFixed(1)}
+                        {/* 평점 */}
+                        {rating > 0 && (
+                          <div className="flex items-center gap-1 mb-1">
+                            <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                            <span className="text-xs font-semibold">
+                              {rating.toFixed(1)}
+                            </span>
+                            {reviewCount > 0 && (
+                              <span className="text-xs text-gray-400">
+                                ({reviewCount.toLocaleString()})
                               </span>
-                              {reviewCount > 0 && (
-                                <span className="text-xs text-gray-400">
-                                  ({reviewCount.toLocaleString()})
-                                </span>
-                              )}
-                            </div>
-                          )}
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 가격과 버튼 - 하단 고정 */}
+                      <div className="flex items-end justify-between mt-auto">
+                        <div className="flex-1">
                           {/* 가격 */}
                           <p className="text-sm font-bold text-primary-main">
                             {price}

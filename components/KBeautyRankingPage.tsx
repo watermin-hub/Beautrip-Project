@@ -242,37 +242,39 @@ export default function KBeautyRankingPage() {
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
-                              {treatment.treatment_name || "시술명 없음"}
-                            </h3>
-                            <p className="text-sm text-gray-600 truncate">
-                              {treatment.hospital_name || "병원명 없음"}
-                            </p>
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        <div>
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                                {treatment.treatment_name || "시술명 없음"}
+                              </h3>
+                              <p className="text-sm text-gray-600 truncate">
+                                {treatment.hospital_name || "병원명 없음"}
+                              </p>
+                            </div>
                           </div>
+
+                          {/* Categories */}
+                          {(treatment.category_large ||
+                            treatment.category_mid) && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {treatment.category_large && (
+                                <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium">
+                                  {treatment.category_large}
+                                </span>
+                              )}
+                              {treatment.category_mid && (
+                                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
+                                  {treatment.category_mid}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
-                        {/* Categories */}
-                        {(treatment.category_large ||
-                          treatment.category_mid) && (
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {treatment.category_large && (
-                              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium">
-                                {treatment.category_large}
-                              </span>
-                            )}
-                            {treatment.category_mid && (
-                              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
-                                {treatment.category_mid}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Price & Rating with buttons */}
-                        <div className="flex items-end justify-between">
+                        {/* Price/Rating and buttons - 하단 고정 */}
+                        <div className="flex items-end justify-between mt-auto">
                           <div className="flex-1">
                             {price && (
                               <p className="text-gray-900 font-bold mb-1">

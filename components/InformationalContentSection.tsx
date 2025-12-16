@@ -62,7 +62,16 @@ export default function InformationalContentSection() {
 
   const filteredContents =
     selectedCategory === "all"
-      ? allContents
+      ? (() => {
+          // 전체 탭에서는 회복 가이드를 5개만 표시
+          const recoveryGuides = allContents.filter(
+            (item) => item.category === "회복 가이드"
+          );
+          const otherContents = allContents.filter(
+            (item) => item.category !== "회복 가이드"
+          );
+          return [...otherContents, ...recoveryGuides.slice(0, 5)];
+        })()
       : selectedCategory === "회복 가이드🍀"
       ? allContents.filter((item) => item.category === "회복 가이드")
       : allContents.filter((item) => item.category === selectedCategory);
@@ -87,7 +96,7 @@ export default function InformationalContentSection() {
       </div>
 
       {/* 컨텐츠 리스트 */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {filteredContents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
             {selectedCategory === "회복 가이드🍀" ||
@@ -96,68 +105,103 @@ export default function InformationalContentSection() {
               : "컨텐츠가 없습니다."}
           </div>
         ) : (
-          filteredContents.map((content) => (
-            <button
-              key={content.id}
-              onClick={() => {
-                // 회복 가이드인 경우 상세 페이지로 이동
-                if (content.category === "회복 가이드" && content.slug) {
-                  router.push(`/community/recovery-guide/${content.slug}`);
-                } else {
-                  // 다른 컨텐츠는 추후 구현
-                  console.log("Navigate to:", content.id);
-                }
-              }}
-              className="w-full bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all text-left"
-            >
-              <div className="flex items-start gap-4">
-                {/* 썸네일 - 1:1 비율 */}
-                <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-primary-light/20 to-primary-main/30 rounded-lg overflow-hidden">
-                  {content.thumbnail ? (
-                    <img
-                      src={content.thumbnail}
-                      alt={content.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <FiBook className="text-primary-main text-2xl" />
-                    </div>
-                  )}
-                </div>
-
-                {/* 컨텐츠 정보 */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs bg-primary-light/20 text-primary-main px-2 py-0.5 rounded-full font-medium">
-                      {content.category}
-                    </span>
-                    {content.readTime && (
-                      <span className="text-xs text-gray-500">
-                        {content.readTime} 읽기
-                      </span>
+          filteredContents.map((content) => {
+            const isRecoveryGuide = content.category === "회복 가이드";
+            return (
+              <button
+                key={content.id}
+                onClick={() => {
+                  // 회복 가이드인 경우 상세 페이지로 이동
+                  if (content.category === "회복 가이드" && content.slug) {
+                    router.push(`/community/recovery-guide/${content.slug}`);
+                  } else {
+                    // 다른 컨텐츠는 추후 구현
+                    console.log("Navigate to:", content.id);
+                  }
+                }}
+                className={`w-full bg-white border rounded-xl hover:shadow-lg hover:border-primary-main/30 transition-all duration-200 text-left group ${
+                  isRecoveryGuide
+                    ? "border-green-100 bg-gradient-to-br from-white to-green-50/30 p-3.5"
+                    : "border-gray-200 p-3"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {/* 썸네일 - 1:1 비율 */}
+                  <div
+                    className={`flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden shadow-sm ${
+                      isRecoveryGuide
+                        ? "bg-gradient-to-br from-green-100 to-emerald-100 ring-2 ring-green-200/50"
+                        : "bg-gradient-to-br from-primary-light/20 to-primary-main/30"
+                    }`}
+                  >
+                    {content.thumbnail ? (
+                      <img
+                        src={content.thumbnail}
+                        alt={content.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <FiBook
+                          className={`${
+                            isRecoveryGuide
+                              ? "text-emerald-600"
+                              : "text-primary-main"
+                          } text-lg`}
+                        />
+                      </div>
                     )}
                   </div>
-                  <h4 className="font-semibold text-gray-900 mb-1 text-sm line-clamp-2">
-                    {content.title}
-                  </h4>
-                  <p className="text-xs text-gray-600 line-clamp-1 mb-2">
-                    {content.description}
-                  </p>
-                  {content.views && content.views > 0 && (
-                    <div className="flex items-center gap-3 text-xs text-gray-400">
-                      <span>조회 {content.views.toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
 
-                {/* 화살표 */}
-                <div className="flex-shrink-0">
-                  <FiChevronRight className="text-gray-400" />
+                  {/* 컨텐츠 정보 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                          isRecoveryGuide
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-primary-light/20 text-primary-main"
+                        }`}
+                      >
+                        {content.category}
+                      </span>
+                      {content.readTime && (
+                        <span className="text-[10px] text-gray-500 font-medium">
+                          {content.readTime} 읽기
+                        </span>
+                      )}
+                    </div>
+                    <h4
+                      className={`font-bold line-clamp-2 leading-snug mb-1.5 ${
+                        isRecoveryGuide
+                          ? "text-sm text-gray-900"
+                          : "text-sm text-gray-900"
+                      }`}
+                    >
+                      {content.title}
+                    </h4>
+                    <p className="text-gray-600 line-clamp-1 leading-relaxed text-xs mb-1.5">
+                      {content.description}
+                    </p>
+                    {content.views !== undefined && (
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
+                        <span>조회 {content.views.toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 화살표 */}
+                  <div className="flex-shrink-0 mt-1">
+                    <FiChevronRight
+                      className={`text-sm transition-transform group-hover:translate-x-0.5 ${
+                        isRecoveryGuide ? "text-emerald-500" : "text-gray-400"
+                      }`}
+                    />
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))
+              </button>
+            );
+          })
         )}
       </div>
     </div>

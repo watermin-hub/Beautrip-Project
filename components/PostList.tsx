@@ -771,7 +771,9 @@ export default function PostList({
                 procedurePosts.map((post) => (
                   <div
                     key={post.id}
-                    className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                    className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
+                      post.reviewType === "concern" ? "p-5" : "p-4"
+                    }`}
                   >
                     {/* Category Tag */}
                     <div className="mb-3">
@@ -804,13 +806,19 @@ export default function PostList({
 
                     {/* Title - 고민상담소 글에만 표시 */}
                     {post.reviewType === "concern" && post.title && (
-                      <h3 className="text-base font-bold text-gray-900 mb-2">
-                        {post.title}
+                      <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
+                        <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
+                          {post.title}
+                        </span>
                       </h3>
                     )}
 
                     {/* Post Content */}
-                    <p className="text-gray-800 text-sm mb-3 leading-relaxed line-clamp-3">
+                    <p
+                      className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
+                        post.reviewType === "concern" ? "mb-4" : "mb-3"
+                      }`}
+                    >
                       {post.content}
                     </p>
 
@@ -884,7 +892,9 @@ export default function PostList({
                 hospitalPosts.map((post) => (
                   <div
                     key={post.id}
-                    className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+                    className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
+                      post.reviewType === "concern" ? "p-5" : "p-4"
+                    }`}
                   >
                     {/* Category Tag */}
                     <div className="mb-3">
@@ -917,13 +927,19 @@ export default function PostList({
 
                     {/* Title - 고민상담소 글에만 표시 */}
                     {post.reviewType === "concern" && post.title && (
-                      <h3 className="text-base font-bold text-gray-900 mb-2">
-                        {post.title}
+                      <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
+                        <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
+                          {post.title}
+                        </span>
                       </h3>
                     )}
 
                     {/* Post Content */}
-                    <p className="text-gray-800 text-sm mb-3 leading-relaxed line-clamp-3">
+                    <p
+                      className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
+                        post.reviewType === "concern" ? "mb-4" : "mb-3"
+                      }`}
+                    >
                       {post.content}
                     </p>
 
@@ -999,7 +1015,9 @@ export default function PostList({
       {posts.map((post) => (
         <div
           key={post.id}
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+          className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
+            post.reviewType === "concern" ? "p-5" : "p-4"
+          }`}
         >
           {/* Category Tag */}
           <div className="mb-3">
@@ -1028,13 +1046,19 @@ export default function PostList({
 
           {/* Title - 고민상담소 글에만 표시 */}
           {post.reviewType === "concern" && post.title && (
-            <h3 className="text-base font-bold text-gray-900 mb-2">
-              {post.title}
+            <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
+              <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
+                {post.title}
+              </span>
             </h3>
           )}
 
           {/* Post Content */}
-          <p className="text-gray-800 text-sm mb-3 leading-relaxed line-clamp-3">
+          <p
+            className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
+              post.reviewType === "concern" ? "mb-4" : "mb-3"
+            }`}
+          >
             {post.content}
           </p>
 
