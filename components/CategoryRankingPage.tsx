@@ -258,9 +258,28 @@ export default function CategoryRankingPage() {
         return scoreB - scoreA;
       });
 
-      // ✅ 캐러셀에서도 같은 시술명 도배 방지
+      // ✅ 같은 treatment_name이 연달아 나오지 않도록 필터링
+      const dedupedByTreatmentName: Treatment[] = [];
+      let lastTreatmentName = "";
+
+      for (const treatment of sorted) {
+        const currentTreatmentName = treatment.treatment_name || "";
+
+        // 같은 treatment_name이면 스킵 (연속으로 나오지 않도록)
+        if (
+          currentTreatmentName === lastTreatmentName &&
+          currentTreatmentName !== ""
+        ) {
+          continue;
+        }
+
+        dedupedByTreatmentName.push(treatment);
+        lastTreatmentName = currentTreatmentName;
+      }
+
+      // ✅ 캐러셀에서도 같은 시술명 도배 방지 (추가 안전장치)
       const dedupedSorted = limitByKey(
-        sorted,
+        dedupedByTreatmentName,
         (t) => t.treatment_name || "",
         DEDUPE_LIMIT_PER_NAME
       );
@@ -410,22 +429,37 @@ export default function CategoryRankingPage() {
         return scoreB - scoreA;
       });
 
-      // ⚠️ 중분류 랭킹에서는 도배 방지 제거: 중분류 내의 모든 시술들을 표시해야 함
-      // 도배 방지는 시술명 기준 정렬 시(중분류 선택 후)에만 적용되어야 함
-      // 여기서는 정렬된 리스트 그대로 사용 (모든 시술 표시)
+      // ✅ 같은 treatment_name이 연달아 나오지 않도록 필터링
+      const dedupedSorted: Treatment[] = [];
+      let lastTreatmentName = "";
+
+      for (const treatment of sorted) {
+        const currentTreatmentName = treatment.treatment_name || "";
+
+        // 같은 treatment_name이면 스킵 (연속으로 나오지 않도록)
+        if (
+          currentTreatmentName === lastTreatmentName &&
+          currentTreatmentName !== ""
+        ) {
+          continue;
+        }
+
+        dedupedSorted.push(treatment);
+        lastTreatmentName = currentTreatmentName;
+      }
 
       // 평균 평점과 총 리뷰 수는 전체 시술 기준으로 계산
       const averageRating =
-        sorted.reduce((sum, t) => sum + (t.rating || 0), 0) / sorted.length ||
-        0;
-      const totalReviews = sorted.reduce(
+        dedupedSorted.reduce((sum, t) => sum + (t.rating || 0), 0) /
+          dedupedSorted.length || 0;
+      const totalReviews = dedupedSorted.reduce(
         (sum, t) => sum + (t.review_count || 0),
         0
       );
 
       rankings.push({
         categoryMid: midCategory,
-        treatments: sorted, // 도배 방지 없이 모든 시술 표시
+        treatments: dedupedSorted, // 중복 제거된 시술 목록
         averageRating,
         totalReviews,
       });
@@ -467,12 +501,47 @@ export default function CategoryRankingPage() {
       }
     }
 
+    // ✅ 최소 기준 필터링: 리뷰 0개 또는 시술 1개인 항목은 랭킹에서 제외
+    const filteredRankings = rankings.filter((r) => {
+      const reviewCount = r.totalReviews || 0;
+      const treatmentCount = r.treatments.length || 0;
+
+      // 리뷰가 0개이거나 시술이 1개 이하인 경우 제외
+      if (reviewCount === 0 || treatmentCount <= 1) {
+        console.log(
+          `🚫 [필터링 제외] ${r.categoryMid}: 리뷰 ${reviewCount}개, 시술 ${treatmentCount}개`
+        );
+        return false;
+      }
+
+      return true;
+    });
+
+    console.log(
+      `🔍 [랭킹 필터링] 원본 ${rankings.length}개 → 필터링 후 ${filteredRankings.length}개 (리뷰 0개 또는 시술 1개 제외)`
+    );
+
+    // 필터링 후에도 리뷰 0개나 시술 1개인 항목이 있는지 재확인
+    const invalidItems = filteredRankings.filter(
+      (r) => (r.totalReviews || 0) === 0 || (r.treatments.length || 0) <= 1
+    );
+    if (invalidItems.length > 0) {
+      console.warn(
+        `⚠️ [필터링 오류] 여전히 ${invalidItems.length}개 항목이 필터링되지 않음:`,
+        invalidItems.map((r) => ({
+          중분류: r.categoryMid,
+          리뷰수: r.totalReviews,
+          시술개수: r.treatments.length,
+        }))
+      );
+    }
+
     // ✅ 개선된 중분류 랭킹 정렬: 베이지안 보정 평점 + 로그 스케일 정규화
     // 리뷰 수와 시술 개수는 로그 스케일 + 정규화로 안정적으로 반영
-    const reviewLogs = rankings.map((r) =>
+    const reviewLogs = filteredRankings.map((r) =>
       Math.log10((r.totalReviews || 0) + 1)
     );
-    const countLogs = rankings.map((r) =>
+    const countLogs = filteredRankings.map((r) =>
       Math.log10((r.treatments.length || 0) + 1)
     );
 
@@ -481,7 +550,7 @@ export default function CategoryRankingPage() {
     const cMin = Math.min(...countLogs, 0);
     const cMax = Math.max(...countLogs, 1);
 
-    rankings.sort((a, b) => {
+    filteredRankings.sort((a, b) => {
       const treatmentCountA = a.treatments.length;
       const treatmentCountB = b.treatments.length;
       const reviewCountA = a.totalReviews || 0;
@@ -537,7 +606,7 @@ export default function CategoryRankingPage() {
       return scoreB - scoreA;
     });
 
-    return rankings;
+    return filteredRankings;
   }, [treatments, selectedCategory, selectedMidCategory]);
 
   // 스크롤 관련 상태
@@ -808,6 +877,10 @@ export default function CategoryRankingPage() {
         "가슴의 모양과 위치를 개선하여 더욱 아름답고 균형 잡힌 가슴 라인을 만들어주는 시술입니다.",
       가슴재수술:
         "이전 가슴성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 결과를 만들어줍니다.",
+      여드름: "여드름 치료를 통해 피부와 외모를 개선할 수 있는 시술이에요.",
+      트임: "눈의 모양을 개선하고 더욱 선명하고 아름다운 눈매를 만들어주는 시술이에요.",
+      얼굴지방이식:
+        "자신의 지방을 얼굴에 이식하여 볼륨을 채우고 주름을 개선하여 더욱 젊고 탄력 있는 피부를 만들어주는 시술이에요.",
     };
 
     // 매핑된 설명이 있으면 사용
@@ -1099,6 +1172,24 @@ export default function CategoryRankingPage() {
                                   <h5 className="font-bold text-gray-900 text-sm line-clamp-2">
                                     {treatment.treatment_name}
                                   </h5>
+                                  {/* category_small - treatment_name과 별점 사이에 배치 */}
+                                  {treatment.category_small && (
+                                    <p className="text-sm font-medium text-gray-700 line-clamp-1">
+                                      {treatment.category_small}
+                                    </p>
+                                  )}
+                                  {/* 별점/리뷰 */}
+                                  <div className="flex items-center gap-1 text-[11px] text-gray-600">
+                                    <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
+                                    <span className="font-semibold">
+                                      {treatment.rating
+                                        ? treatment.rating.toFixed(1)
+                                        : "-"}
+                                    </span>
+                                    <span>
+                                      ({treatment.review_count || 0}개 리뷰)
+                                    </span>
+                                  </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-sm font-bold text-primary-main">
                                       {price}
@@ -1113,25 +1204,15 @@ export default function CategoryRankingPage() {
                                     {treatment.hospital_name || "병원명 없음"} ·
                                     서울
                                   </p>
-                                  <div className="flex items-center justify-between text-[11px] text-gray-600">
-                                    <div className="flex items-center gap-1">
-                                      <FiHeart
-                                        className={`text-[13px] ${
-                                          isFavorited
-                                            ? "text-red-500 fill-red-500"
-                                            : "text-gray-500"
-                                        }`}
-                                      />
-                                      <span>{treatment.review_count || 0}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
-                                      <span className="font-semibold">
-                                        {treatment.rating
-                                          ? treatment.rating.toFixed(1)
-                                          : "-"}
-                                      </span>
-                                    </div>
+                                  <div className="flex items-center gap-1 text-[11px] text-gray-600">
+                                    <FiHeart
+                                      className={`text-[13px] ${
+                                        isFavorited
+                                          ? "text-red-500 fill-red-500"
+                                          : "text-gray-500"
+                                      }`}
+                                    />
+                                    <span>{treatment.review_count || 0}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1330,6 +1411,26 @@ export default function CategoryRankingPage() {
                                   {treatment.treatment_name}
                                 </h5>
 
+                                {/* category_small - treatment_name과 별점 사이에 배치 */}
+                                {treatment.category_small && (
+                                  <p className="text-sm font-medium text-gray-700 line-clamp-1">
+                                    {treatment.category_small}
+                                  </p>
+                                )}
+
+                                {/* 별점/리뷰 */}
+                                <div className="flex items-center gap-1 text-[11px] text-gray-600">
+                                  <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
+                                  <span className="font-semibold">
+                                    {treatment.rating
+                                      ? treatment.rating.toFixed(1)
+                                      : "-"}
+                                  </span>
+                                  <span>
+                                    ({treatment.review_count || 0}개 리뷰)
+                                  </span>
+                                </div>
+
                                 {/* 가격 / 부가세 */}
                                 <div className="flex items-center gap-1">
                                   <span className="text-sm font-bold text-primary-main">
@@ -1348,31 +1449,16 @@ export default function CategoryRankingPage() {
                                   서울
                                 </p>
 
-                                {/* 찜/평점/리뷰 */}
-                                <div className="flex items-center justify-between text-[11px] text-gray-600">
-                                  <div className="flex items-center gap-1">
-                                    <FiHeart
-                                      className={`text-[13px] ${
-                                        isFavorited
-                                          ? "text-red-500 fill-red-500"
-                                          : "text-gray-500"
-                                      }`}
-                                    />
-                                    <span>{treatment.review_count || 0}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <FiStar className="text-yellow-400 fill-yellow-400 text-[12px]" />
-                                    <span className="font-semibold">
-                                      {treatment.rating
-                                        ? treatment.rating.toFixed(1)
-                                        : "-"}
-                                    </span>
-                                    {treatment.review_count !== undefined && (
-                                      <span className="text-[10px] text-gray-400">
-                                        ({treatment.review_count || 0})
-                                      </span>
-                                    )}
-                                  </div>
+                                {/* 찜 */}
+                                <div className="flex items-center gap-1 text-[11px] text-gray-600">
+                                  <FiHeart
+                                    className={`text-[13px] ${
+                                      isFavorited
+                                        ? "text-red-500 fill-red-500"
+                                        : "text-gray-500"
+                                    }`}
+                                  />
+                                  <span>{treatment.review_count || 0}</span>
                                 </div>
                               </div>
                             </div>

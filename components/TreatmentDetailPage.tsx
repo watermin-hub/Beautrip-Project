@@ -434,30 +434,16 @@ export default function TreatmentDetailPage({
           </div>
         </div>
 
-        {/* 옵션 정보 */}
-        {relatedOptions.length > 0 && (
+        {/* 옵션 정보 - 단일 옵션만 표시 (category_small) */}
+        {currentTreatment?.category_small && (
           <div className="px-4 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  옵션 ({relatedOptions.length + 1}개)
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900">옵션</h3>
                 <p className="text-sm text-gray-500 mt-1">
-                  {currentTreatment.category_mid ||
-                    currentTreatment.category_large}
+                  {currentTreatment.category_small}
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  // 옵션 목록으로 스크롤
-                  document
-                    .getElementById("options-section")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="flex items-center gap-1 text-primary-main text-sm font-medium"
-              >
-                전체보기 <FiChevronRight className="text-sm" />
-              </button>
             </div>
 
             {/* 현재 옵션 정보 */}
@@ -592,92 +578,6 @@ export default function TreatmentDetailPage({
                   #{tag}
                 </span>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* 옵션 목록 */}
-        {relatedOptions.length > 0 && (
-          <div
-            id="options-section"
-            className="px-4 py-4 border-b border-gray-100"
-          >
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              옵션 목록
-            </h3>
-            <div className="space-y-3">
-              {/* 현재 옵션 */}
-              <div className="bg-primary-light/5 border border-primary-main/20 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="text-sm font-medium text-gray-900">
-                      옵션 {relatedOptions.length + 1} /{" "}
-                      {relatedOptions.length + 1}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-2">
-                      {currentTreatment.category_mid || "기본"}
-                    </span>
-                  </div>
-                  {currentTreatment.selling_price && (
-                    <span className="text-sm font-bold text-primary-main">
-                      {new Intl.NumberFormat("ko-KR").format(
-                        currentTreatment.selling_price
-                      )}
-                      원
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-gray-600 space-y-1">
-                  {surgeryTime > 0 && (
-                    <div>시술 소요 시간: 약 {surgeryTime}분</div>
-                  )}
-                  {downtime > 0 && <div>회복 시간: 약 {downtime}일</div>}
-                </div>
-              </div>
-
-              {/* 다른 옵션들 */}
-              {relatedOptions.map((option, index) => {
-                const optionSurgeryTime = parseProcedureTime(
-                  option.surgery_time
-                );
-                const optionDowntime = parseRecoveryPeriod(option.downtime);
-                return (
-                  <div
-                    key={option.treatment_id}
-                    className="bg-gray-50 border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => {
-                      router.push(`/treatment/${option.treatment_id}`);
-                    }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-900">
-                          옵션 {index + 1} / {relatedOptions.length + 1}
-                        </span>
-                        <span className="text-xs text-gray-500 ml-2">
-                          {option.category_mid || "기본"}
-                        </span>
-                      </div>
-                      {option.selling_price && (
-                        <span className="text-sm font-bold text-gray-900">
-                          {new Intl.NumberFormat("ko-KR").format(
-                            option.selling_price
-                          )}
-                          원
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      {optionSurgeryTime > 0 && (
-                        <div>시술 소요 시간: 약 {optionSurgeryTime}분</div>
-                      )}
-                      {optionDowntime > 0 && (
-                        <div>회복 시간: 약 {optionDowntime}일</div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
         )}

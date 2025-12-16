@@ -1412,13 +1412,21 @@ export async function getScheduleBasedRecommendations(
   // 아주 짧은 일정(당일 or 1박 2일)일 때는,
   // 회복친화적인 3일짜리 시술까지는 보여주기 위해
   // 필터 기준을 최소 3일로 완화
-  const effectiveTravelDays = travelDays <= 2 ? 3 : travelDays;
+  // const effectiveTravelDays = travelDays <= 2 ? 3 : travelDays;
+  const effectiveTravelDays = travelDays; // 임시: 1박2일에서 3일짜리 포함 로직 주석 처리 (확인용)
 
   // 대분류 카테고리로 필터링
   const mappedCategories = CATEGORY_MAPPING[categoryLarge] || [categoryLarge];
 
   const categoryFiltered = treatments.filter((t) => {
     if (!t.category_large) return false;
+
+    // 디버깅: 피부관리 중분류 확인
+    if (t.category_mid === "피부관리") {
+      console.log(
+        `🔍 [피부관리 대분류 필터링] category_large: "${t.category_large}", category_mid: "${t.category_mid}", 선택된 대분류: "${categoryLarge}"`
+      );
+    }
 
     // "전체"인 경우 모든 시술 포함
     if (categoryLarge === "전체") {
@@ -1684,15 +1692,33 @@ export async function getScheduleBasedRecommendations(
       // - 이 값이 없을 때만 기존 로직(downtime)으로 fallback
       const groupStayDays = recommendedStayDays;
 
+      // 디버깅: 피부관리 카테고리 확인
+      if (categoryMid === "피부관리") {
+        console.log(
+          `🔍 [피부관리 디버깅] category_mid: "${categoryMid}", 권장체류일수: ${groupStayDays}, effectiveTravelDays: ${effectiveTravelDays}, 여행일수: ${effectiveTravelDays}일`
+        );
+      }
+
       // 권장체류일수가 여행 일수보다 크면, 이 중분류 전체를 추천에서 제외
       // 단, 당일/1박 2일은 effectiveTravelDays=3으로 간주하여 3일짜리 시술까지 허용
+      // (임시 주석 처리: 1박2일에서 3일짜리 포함 로직 비활성화)
       if (groupStayDays > 0 && groupStayDays > effectiveTravelDays) {
+        if (categoryMid === "피부관리") {
+          console.log(
+            `❌ [피부관리 필터링됨] 권장체류일수 ${groupStayDays}일 > 여행일수 ${effectiveTravelDays}일로 제외됨`
+          );
+        }
         return null;
       }
 
       let suitableTreatments: Treatment[];
       if (groupStayDays > 0) {
         // 권장체류일수가 여행 일수 이내면 해당 중분류 전체를 포함
+        if (categoryMid === "피부관리") {
+          console.log(
+            `✅ [피부관리 포함] 권장체류일수 ${groupStayDays}일 <= 여행일수 ${effectiveTravelDays}일, 시술 ${treatmentList.length}개 포함`
+          );
+        }
         suitableTreatments = treatmentList;
       } else {
         // 권장체류일수가 없으면 기존 로직 사용 (downtime 기반)
@@ -1702,6 +1728,7 @@ export async function getScheduleBasedRecommendations(
           if (recoveryPeriod === 0) return true;
           // 여행 일수에서 최소 1일은 여유를 둠 (시술 당일 제외)
           // 당일/1박 2일의 경우 effectiveTravelDays=3이므로 2일까지 허용
+          // (임시 주석 처리: 1박2일에서 3일짜리 포함 로직 비활성화)
           return recoveryPeriod <= effectiveTravelDays - 1;
         });
       }
