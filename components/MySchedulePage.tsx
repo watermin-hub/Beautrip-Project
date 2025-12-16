@@ -241,9 +241,9 @@ function RecoveryCardComponent({
         );
         // 전체를 가져오지 않고 특정 treatment_id만 찾기
         const treatments = await loadTreatmentsPaginated(1, 1000);
-        const treatment = treatments.find(
-          (t) => t.treatment_id === rec.treatmentId
-        );
+        const treatment =
+          treatments.data?.find((t) => t.treatment_id === rec.treatmentId) ??
+          null;
         if (treatment?.category_small) {
           categorySmall = treatment.category_small;
           console.log("✅ category_small 찾음:", categorySmall);
