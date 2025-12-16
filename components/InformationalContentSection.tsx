@@ -63,6 +63,8 @@ export default function InformationalContentSection() {
   const filteredContents =
     selectedCategory === "all"
       ? allContents
+      : selectedCategory === "회복 가이드🍀"
+      ? allContents.filter((item) => item.category === "회복 가이드")
       : allContents.filter((item) => item.category === selectedCategory);
 
   return (
@@ -88,7 +90,8 @@ export default function InformationalContentSection() {
       <div className="space-y-3">
         {filteredContents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
-            {selectedCategory === "회복 가이드"
+            {selectedCategory === "회복 가이드🍀" ||
+            selectedCategory === "회복 가이드"
               ? "회복 가이드 글이 준비 중입니다."
               : "컨텐츠가 없습니다."}
           </div>
@@ -141,7 +144,7 @@ export default function InformationalContentSection() {
                   <p className="text-xs text-gray-600 line-clamp-1 mb-2">
                     {content.description}
                   </p>
-                  {content.views && (
+                  {content.views && content.views > 0 && (
                     <div className="flex items-center gap-3 text-xs text-gray-400">
                       <span>조회 {content.views.toLocaleString()}</span>
                     </div>

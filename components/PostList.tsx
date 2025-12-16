@@ -2,7 +2,6 @@
 
 import { FiArrowUp, FiMessageCircle, FiEye, FiHeart } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
-import RecoveryGuideSection from "./RecoveryGuideSection";
 import {
   loadProcedureReviews,
   loadHospitalReviews,
@@ -990,11 +989,6 @@ export default function PostList({
             </div>
           </div>
         </div>
-
-        {/* 회복 가이드 섹션 - 최하단 */}
-        <div className="px-4 mt-8 pt-6 border-t border-gray-200">
-          <RecoveryGuideSection />
-        </div>
       </div>
     );
   }
@@ -1090,11 +1084,6 @@ export default function PostList({
           </div>
         </div>
       ))}
-
-      {/* 회복 가이드 섹션 - 최하단 */}
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <RecoveryGuideSection />
-      </div>
     </div>
   );
 }
