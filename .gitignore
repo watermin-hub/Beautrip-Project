@@ -26,6 +26,7 @@ firebase-debug.log
 # Local env files
 .env*.local
 .env
+.env.local
 
 # Vercel
 .vercel
