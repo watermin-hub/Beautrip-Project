@@ -30,6 +30,29 @@ const informationalContents: ContentItem[] = [
     readTime: "4분",
     views: 1567,
   },
+  {
+    id: "top20",
+    title: "외국인 여행객을 위한 한국 인기 시술 정보 TOP 20!",
+    description:
+      "한국을 방문하는 외국인 여행객을 위한 인기 시술 정보를 한눈에 확인하세요",
+    category: "정보",
+    readTime: "5분",
+    views: 2341,
+    slug: "top20", // 라우팅용 slug
+    thumbnail:
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/top20/top20_kr.png", // 썸네일 이미지
+  },
+  {
+    id: "travel-recommendation",
+    title: "내 일정에 딱 맞는 한국 여행지 추천 ✈️",
+    description: "여행 루트 자동 생성해드려요!",
+    category: "정보",
+    readTime: "6분",
+    views: 1892,
+    slug: "travel-recommendation",
+    thumbnail:
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HAN01.png",
+  },
 ];
 
 export default function InformationalContentSection() {
@@ -114,6 +137,12 @@ export default function InformationalContentSection() {
                   // 회복 가이드인 경우 상세 페이지로 이동
                   if (content.category === "회복 가이드" && content.slug) {
                     router.push(`/community/recovery-guide/${content.slug}`);
+                  } else if (content.slug === "top20") {
+                    // TOP 20 정보 페이지로 이동
+                    router.push(`/community/info/top20`);
+                  } else if (content.slug === "travel-recommendation") {
+                    // 여행지 추천 페이지로 이동
+                    router.push(`/community/info/travel-recommendation`);
                   } else {
                     // 다른 컨텐츠는 추후 구현
                     console.log("Navigate to:", content.id);
@@ -138,7 +167,9 @@ export default function InformationalContentSection() {
                       <img
                         src={content.thumbnail}
                         alt={content.title}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover ${
+                          content.slug === "top20" ? "object-top" : ""
+                        }`}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

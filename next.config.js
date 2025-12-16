@@ -14,6 +14,7 @@ const nextConfig = {
       { protocol: "https", hostname: "i.namu.wiki" },
       { protocol: "https", hostname: "play-lh.googleusercontent.com" },
       { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "ecimg.cafe24img.com" },
     ],
   },
 };

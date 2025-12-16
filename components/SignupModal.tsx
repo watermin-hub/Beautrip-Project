@@ -18,7 +18,7 @@ export default function SignupModal({
   onSignupSuccess,
 }: SignupModalProps) {
   const router = useRouter();
-  const [loginId, setLoginId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,12 +29,14 @@ export default function SignupModal({
   if (!isOpen) return null;
 
   const validateForm = () => {
-    if (!loginId.trim()) {
-      setError("아이디를 입력해주세요.");
+    if (!email.trim()) {
+      setError("이메일을 입력해주세요.");
       return false;
     }
-    if (loginId.length < 4) {
-      setError("아이디는 4자 이상이어야 합니다.");
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("올바른 이메일 형식을 입력해주세요.");
       return false;
     }
     if (!password) {
@@ -62,22 +64,28 @@ export default function SignupModal({
     setIsLoading(true);
 
     try {
-      // 1. Supabase Auth로 회원가입 (email 대신 login_id를 email 필드에 임시 저장)
-      // 실제로는 Supabase의 custom auth를 사용하거나, email 필드를 login_id로 사용
-      // 여기서는 email 필드를 login_id@beautrip.local 형식으로 저장
-      const email = `${loginId}@beautrip.local`;
-
+      // 1. Supabase Auth로 회원가입
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
-            login_id: loginId,
+            login_id: email.trim(), // 이메일을 login_id로도 저장
           },
         },
       });
 
       if (authError) {
+        console.error("Auth 오류:", authError);
+        // 더 친절한 에러 메시지 제공
+        if (authError.message.includes("already registered")) {
+          throw new Error("이미 등록된 이메일입니다.");
+        } else if (authError.message.includes("Invalid email")) {
+          throw new Error("올바른 이메일 형식을 입력해주세요.");
+        } else if (authError.message.includes("Password")) {
+          throw new Error("비밀번호가 너무 짧습니다.");
+        }
         throw authError;
       }
 
@@ -91,7 +99,7 @@ export default function SignupModal({
         .insert({
           user_id: authData.user.id, // Supabase Auth의 UUID
           provider: "local",
-          login_id: loginId,
+          login_id: email.trim(),
           preferred_language: "KR", // 기본값
         });
 
@@ -99,11 +107,26 @@ export default function SignupModal({
         // 프로필 저장 실패 시 Auth 사용자도 삭제해야 할 수 있지만,
         // 일단 에러만 표시 (실제로는 트랜잭션 처리 필요)
         console.error("프로필 저장 실패:", profileError);
-        throw new Error("프로필 저장에 실패했습니다.");
+        // 더 자세한 에러 메시지 제공
+        if (profileError.code === "23505") {
+          throw new Error("이미 존재하는 사용자입니다.");
+        } else if (profileError.code === "23503") {
+          throw new Error("사용자 정보를 찾을 수 없습니다.");
+        }
+        throw new Error(`프로필 저장에 실패했습니다: ${profileError.message}`);
       }
 
       // 3. 성공 처리
-      alert("회원가입이 완료되었습니다!");
+      // Supabase가 이메일 확인을 요구하는 경우, 사용자에게 안내
+      if (authData.user && !authData.session) {
+        // 이메일 확인이 필요한 경우
+        alert(
+          "회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요."
+        );
+      } else {
+        alert("회원가입이 완료되었습니다!");
+      }
+
       if (onSignupSuccess) {
         onSignupSuccess();
       } else {
@@ -113,9 +136,19 @@ export default function SignupModal({
       onClose();
     } catch (err: any) {
       console.error("회원가입 오류:", err);
-      setError(
-        err.message || "회원가입 중 오류가 발생했습니다. 다시 시도해주세요."
-      );
+      // 더 자세한 에러 정보 로깅
+      if (err.details) {
+        console.error("에러 상세:", err.details);
+      }
+      if (err.hint) {
+        console.error("에러 힌트:", err.hint);
+      }
+      // 사용자에게 보여줄 에러 메시지
+      const errorMessage =
+        err.message ||
+        err.error_description ||
+        "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -165,16 +198,16 @@ export default function SignupModal({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                아이디
+                이메일
               </label>
               <input
-                type="text"
-                value={loginId}
+                type="email"
+                value={email}
                 onChange={(e) => {
-                  setLoginId(e.target.value);
+                  setEmail(e.target.value);
                   setError("");
                 }}
-                placeholder="아이디를 입력하세요 (4자 이상)"
+                placeholder="이메일을 입력하세요"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent"
                 disabled={isLoading}
               />

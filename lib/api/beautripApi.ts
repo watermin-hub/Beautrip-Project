@@ -2235,6 +2235,8 @@ export async function loadConcernPosts(
 export interface CategoryToggleMap {
   id?: number;
   category_mid?: string; // 중분류
+  category_small?: string; // 소분류
+  toggle_family?: string; // 타이틀 패밀리 (회복 가이드 제목 매칭용)
   keyword?: string; // 키워드
   recovery_guide_id?: string; // 회복 가이드 ID (slug)
   recovery_guide_keyword?: string; // 회복 가이드 키워드
@@ -2304,6 +2306,245 @@ export async function getRecoveryGuideIdByCategory(
     return null;
   } catch (error) {
     console.error("회복 가이드 ID 조회 실패:", error);
+    return null;
+  }
+}
+
+// category_mid로 toggle_family 찾기
+export async function getToggleFamilyByCategoryMid(
+  categoryMid: string
+): Promise<string | null> {
+  try {
+    if (!categoryMid) {
+      console.warn("⚠️ categoryMid가 없음");
+      return null;
+    }
+
+    const client = getSupabaseOrNull();
+    if (!client) {
+      console.warn("⚠️ Supabase 클라이언트가 없음");
+      return null;
+    }
+
+    console.log("🔍 category_toggle_map에서 categoryMid로 조회:", categoryMid);
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.CATEGORY_TOGGLE_MAP)
+      .select("toggle_family, category_mid")
+      .eq("category_mid", categoryMid)
+      .limit(1);
+
+    if (error) {
+      console.error("❌ toggle_family 조회 실패:", error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn(
+        "⚠️ category_toggle_map에서 categoryMid로 데이터를 찾을 수 없음:",
+        categoryMid
+      );
+      return null;
+    }
+
+    const toggleFamily = data[0]?.toggle_family;
+    console.log("✅ toggle_family 찾음 (categoryMid):", toggleFamily);
+    return toggleFamily || null;
+  } catch (error) {
+    console.error("❌ toggle_family 조회 실패:", error);
+    return null;
+  }
+}
+
+// category_mid로 category_small 찾기
+export async function getCategorySmallByCategoryMid(
+  categoryMid: string
+): Promise<string | null> {
+  try {
+    if (!categoryMid) return null;
+
+    const client = getSupabaseOrNull();
+    if (!client) return null;
+
+    console.log("🔍 category_mid로 category_small 찾기:", categoryMid);
+
+    // category_toggle_map에서 category_mid로 category_small 찾기
+    const { data, error } = await client
+      .from(TABLE_NAMES.CATEGORY_TOGGLE_MAP)
+      .select("category_small")
+      .eq("category_mid", categoryMid)
+      .limit(1);
+
+    if (error) {
+      console.warn("⚠️ category_small 조회 실패:", error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn("⚠️ category_toggle_map에서 category_small을 찾을 수 없음");
+      return null;
+    }
+
+    const categorySmall = data[0]?.category_small;
+    console.log("✅ category_small 찾음:", categorySmall);
+    return categorySmall || null;
+  } catch (error) {
+    console.error("❌ category_small 조회 실패:", error);
+    return null;
+  }
+}
+
+// category_small로 toggle_family 찾기
+export async function getToggleFamilyByCategorySmall(
+  categorySmall: string
+): Promise<string | null> {
+  try {
+    if (!categorySmall) {
+      console.warn("⚠️ categorySmall이 없음");
+      return null;
+    }
+
+    const client = getSupabaseOrNull();
+    if (!client) {
+      console.warn("⚠️ Supabase 클라이언트가 없음");
+      return null;
+    }
+
+    console.log("🔍 category_toggle_map에서 조회:", categorySmall);
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.CATEGORY_TOGGLE_MAP)
+      .select("toggle_family, category_small")
+      .eq("category_small", categorySmall)
+      .limit(1);
+
+    if (error) {
+      console.error("❌ toggle_family 조회 실패:", error.message);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn(
+        "⚠️ category_toggle_map에서 데이터를 찾을 수 없음:",
+        categorySmall
+      );
+      // category_small이 정확히 일치하지 않을 수 있으므로 부분 일치로도 시도
+      const { data: partialData } = await client
+        .from(TABLE_NAMES.CATEGORY_TOGGLE_MAP)
+        .select("toggle_family, category_small")
+        .ilike("category_small", `%${categorySmall}%`)
+        .limit(1);
+
+      if (partialData && partialData.length > 0) {
+        console.log("✅ 부분 일치로 찾음:", partialData[0].toggle_family);
+        return partialData[0].toggle_family || null;
+      }
+      return null;
+    }
+
+    const toggleFamily = data[0]?.toggle_family;
+    console.log("✅ toggle_family 찾음:", toggleFamily);
+    return toggleFamily || null;
+  } catch (error) {
+    console.error("❌ toggle_family 조회 실패:", error);
+    return null;
+  }
+}
+
+// category_small로 회복 가이드 찾기 (toggle_family를 회복 가이드 제목과 매칭)
+export async function findRecoveryGuideByCategorySmall(
+  categorySmall: string
+): Promise<string | null> {
+  try {
+    if (!categorySmall) {
+      console.warn("⚠️ categorySmall이 없음");
+      return null;
+    }
+
+    console.log("🔍 toggle_family 찾는 중... categorySmall:", categorySmall);
+    // toggle_family 가져오기
+    const toggleFamily = await getToggleFamilyByCategorySmall(categorySmall);
+    if (!toggleFamily) {
+      console.warn("⚠️ toggle_family를 찾을 수 없음");
+      return null;
+    }
+
+    return await findRecoveryGuideByToggleFamily(toggleFamily);
+  } catch (error) {
+    console.error("❌ 회복 가이드 찾기 실패:", error);
+    return null;
+  }
+}
+
+// toggle_family로 회복 가이드 찾기 (공통 함수)
+async function findRecoveryGuideByToggleFamily(
+  toggleFamily: string
+): Promise<string | null> {
+  try {
+    if (!toggleFamily) {
+      console.warn("⚠️ toggleFamily이 없음");
+      return null;
+    }
+
+    console.log(
+      "🔍 회복 가이드 목록에서 매칭 중... toggle_family:",
+      toggleFamily
+    );
+    // 회복 가이드 목록 가져오기 (recoveryGuidePosts에서)
+    const { getAllRecoveryGuides } = await import(
+      "@/lib/content/recoveryGuidePosts"
+    );
+    const recoveryGuides = getAllRecoveryGuides();
+
+    console.log("📋 회복 가이드 개수:", recoveryGuides.length);
+
+    // toggle_family가 회복 가이드 제목에 포함되어 있는지 확인
+    const matchedGuide = recoveryGuides.find((guide) =>
+      guide.title.includes(toggleFamily)
+    );
+
+    if (matchedGuide) {
+      console.log(
+        "✅ 회복 가이드 매칭 성공:",
+        matchedGuide.id,
+        matchedGuide.title
+      );
+    } else {
+      console.warn("⚠️ 회복 가이드 매칭 실패. toggle_family:", toggleFamily);
+      console.warn(
+        "📋 사용 가능한 회복 가이드 제목:",
+        recoveryGuides.map((g) => g.title)
+      );
+    }
+
+    return matchedGuide?.id || null;
+  } catch (error) {
+    console.error("❌ 회복 가이드 찾기 실패:", error);
+    return null;
+  }
+}
+
+// category_mid로 회복 가이드 찾기
+export async function findRecoveryGuideByCategoryMid(
+  categoryMid: string
+): Promise<string | null> {
+  try {
+    if (!categoryMid) {
+      console.warn("⚠️ categoryMid가 없음");
+      return null;
+    }
+
+    console.log("🔍 toggle_family 찾는 중... categoryMid:", categoryMid);
+    // toggle_family 가져오기
+    const toggleFamily = await getToggleFamilyByCategoryMid(categoryMid);
+    if (!toggleFamily) {
+      console.warn("⚠️ toggle_family를 찾을 수 없음 (categoryMid)");
+      return null;
+    }
+
+    return await findRecoveryGuideByToggleFamily(toggleFamily);
+  } catch (error) {
+    console.error("❌ 회복 가이드 찾기 실패:", error);
     return null;
   }
 }

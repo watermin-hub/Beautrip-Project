@@ -216,6 +216,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.photoReviewWrite": "포토 후기 작성",
     "community.writePost": "글 작성하기",
     "community.noItems": "등록된 항목이 없습니다.",
+    "community.top20.title": "외국인 여행객을 위한 한국 인기 시술 정보 TOP 20!",
+    "community.travelRecommendation.title":
+      "내 일정에 딱 맞는 한국 여행지 추천 ✈️",
+    "community.travelRecommendation.subtitle": "여행 루트 자동 생성해드려요!",
     "explore.section.ranking": "카테고리별 인기 랭킹",
     "explore.section.rankingDesc": "상위 10개 시술 랭킹",
     "explore.section.recommendation": "맞춤 추천",
@@ -437,6 +441,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.photoReviewWrite": "Write Photo Review",
     "community.writePost": "Write Post",
     "community.noItems": "No items registered.",
+    "community.top20.title":
+      "TOP 20 Popular Korean Procedures for Foreign Travelers!",
+    "community.travelRecommendation.title":
+      "Perfect Korean Travel Spots for Your Schedule ✈️",
+    "community.travelRecommendation.subtitle":
+      "We'll automatically create your travel route!",
     "explore.section.ranking": "Popular Rankings by Category",
     "explore.section.rankingDesc": "Top 10 Procedure Rankings",
     "explore.section.recommendation": "Custom Recommendations",
@@ -656,6 +666,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.photoReviewWrite": "フォトレビュー作成",
     "community.writePost": "投稿作成",
     "community.noItems": "登録された項目がありません。",
+    "community.top20.title": "外国人旅行者のための韓国人気施術情報 TOP 20！",
+    "community.travelRecommendation.title":
+      "あなたのスケジュールにぴったりの韓国旅行地おすすめ ✈️",
+    "community.travelRecommendation.subtitle": "旅行ルートを自動生成します！",
     "explore.section.ranking": "カテゴリ別人気ランキング",
     "explore.section.rankingDesc": "上位10の施術ランキング",
     "explore.section.recommendation": "カスタム推奨",
@@ -870,6 +884,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.photoReviewWrite": "写照片评论",
     "community.writePost": "写帖子",
     "community.noItems": "没有注册的项目。",
+    "community.top20.title": "外国游客的韩国热门疗程信息 TOP 20！",
+    "community.travelRecommendation.title": "适合您日程的韩国旅游地推荐 ✈️",
+    "community.travelRecommendation.subtitle": "自动为您生成旅行路线！",
     "explore.section.ranking": "按类别热门排名",
     "explore.section.rankingDesc": "前10个疗程排名",
     "explore.section.recommendation": "定制推荐",

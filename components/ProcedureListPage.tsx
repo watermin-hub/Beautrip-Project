@@ -348,6 +348,7 @@ export default function ProcedureListPage() {
         selectedTreatment.category_large ||
         "기타",
       categoryMid: selectedTreatment.category_mid || null,
+      categorySmall: selectedTreatment.category_small || null, // 소분류 추가
       recoveryDays,
       recoveryText, // 회복 기간 텍스트 추가
       procedureTime: parseProcedureTime(selectedTreatment.surgery_time) || 0,
@@ -523,88 +524,82 @@ export default function ProcedureListPage() {
                         }}
                       />
                       {discountRate && (
-                        <div className="absolute top-1 left-1 bg-red-500 text-white px-1 py-0.5 rounded text-[10px] font-bold">
+                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
                           {discountRate}
                         </div>
                       )}
-                      {/* 번역 뱃지 (예시) */}
-                      <div className="absolute bottom-1 left-1 bg-blue-500 text-white px-1.5 py-0.5 rounded text-[9px] font-semibold">
+                      {/* 번역 뱃지 */}
+                      <div className="absolute bottom-2 left-2 bg-blue-500 text-white px-1.5 py-0.5 rounded text-[9px] font-semibold z-10">
                         통역
                       </div>
+                      {/* 찜 버튼 - 썸네일 우측 상단 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFavoriteClick(treatment);
+                        }}
+                        className="absolute top-3 right-3 bg-white bg-opacity-90 p-2 rounded-full z-10 shadow-sm hover:bg-opacity-100 transition-colors"
+                      >
+                        <FiHeart
+                          className={`text-base ${
+                            isFavorite
+                              ? "text-red-500 fill-red-500"
+                              : "text-gray-700"
+                          }`}
+                        />
+                      </button>
                     </div>
 
-                    {/* 상세 정보 */}
-                    <div className="p-3 flex flex-col h-full">
-                      <div>
-                        {/* 병원명 */}
-                        <p className="text-xs text-gray-500 mb-1 line-clamp-1">
-                          {treatment.hospital_name} · {location}
-                        </p>
-                        {/* 시술명 */}
-                        <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
-                          {treatment.treatment_name}
-                        </h5>
-                        {/* 평점 */}
-                        {rating > 0 && (
-                          <div className="flex items-center gap-1 mb-1">
-                            <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                            <span className="text-xs font-semibold text-gray-700">
-                              {rating.toFixed(1)}
+                    {/* 카드 내용 */}
+                    <div className="p-3 relative">
+                      {/* 시술명 */}
+                      <h5 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[40px]">
+                        {treatment.treatment_name}
+                      </h5>
+
+                      {/* 병원명 */}
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                        {treatment.hospital_name} · {location}
+                      </p>
+
+                      {/* 평점 */}
+                      {rating > 0 && (
+                        <div className="flex items-center gap-1 mb-2">
+                          <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                          <span className="text-xs font-semibold text-gray-700">
+                            {rating.toFixed(1)}
+                          </span>
+                          {reviewCount > 0 && (
+                            <span className="text-xs text-gray-400">
+                              ({reviewCount})
                             </span>
-                            {reviewCount > 0 && (
-                              <span className="text-xs text-gray-400">
-                                ({reviewCount})
-                              </span>
-                            )}
-                          </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 가격 */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-bold text-primary-main">
+                          {sellingPrice}
+                        </span>
+                        {treatment.vat_info && (
+                          <span className="text-[10px] text-gray-500">
+                            {treatment.vat_info}
+                          </span>
                         )}
                       </div>
 
-                      {/* 가격과 버튼 - 하단 고정 */}
-                      <div className="flex items-end justify-between mt-auto">
-                        <div className="flex-1">
-                          {/* 가격 */}
-                          <div>
-                            <span className="text-base font-bold text-primary-main">
-                              {sellingPrice}
-                            </span>
-                            {treatment.vat_info && (
-                              <span className="text-xs text-gray-500 ml-1">
-                                {treatment.vat_info}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 하트/달력 버튼 - 세로 배치 */}
-                        <div className="flex flex-col gap-1.5">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFavoriteClick(treatment);
-                            }}
-                            className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                          >
-                            <FiHeart
-                              className={`text-base ${
-                                isFavorite
-                                  ? "text-red-500 fill-red-500"
-                                  : "text-gray-700"
-                              }`}
-                            />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTreatment(treatment);
-                              setIsScheduleModalOpen(true);
-                            }}
-                            className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                          >
-                            <FiCalendar className="text-base text-primary-main" />
-                          </button>
-                        </div>
-                      </div>
+                      {/* 일정 추가 버튼 - 카드 우측 하단 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTreatment(treatment);
+                          setIsScheduleModalOpen(true);
+                        }}
+                        className="absolute bottom-3 right-3 p-2 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors"
+                      >
+                        <FiCalendar className="text-base text-primary-main" />
+                      </button>
                     </div>
                   </div>
                 );

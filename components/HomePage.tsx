@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import RankingBanner from "./RankingBanner";
 import Header from "./Header";
@@ -20,6 +21,8 @@ import type { TravelScheduleData } from "./TravelScheduleForm";
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // 실제 데이터의 대분류 카테고리 10개
   const MAIN_CATEGORIES = [
@@ -46,6 +49,19 @@ export default function HomePage() {
   );
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+
+  // URL 쿼리 파라미터에서 openCalendar 확인하여 모달 열기
+  useEffect(() => {
+    const openCalendar = searchParams.get("openCalendar");
+    if (openCalendar === "true") {
+      // 모달을 먼저 열고, 약간의 딜레이 후 URL 변경
+      setIsCalendarModalOpen(true);
+      // URL에서 쿼리 파라미터 제거 (깔끔한 URL 유지) - 모달이 열린 후 실행
+      setTimeout(() => {
+        router.replace("/", { scroll: false });
+      }, 100);
+    }
+  }, [searchParams, router]);
 
   const handleScheduleChange = (
     start: string | null,
@@ -99,6 +115,7 @@ export default function HomePage() {
           <TravelScheduleBar
             onScheduleChange={handleScheduleChange}
             onModalStateChange={setIsCalendarModalOpen}
+            initialOpen={isCalendarModalOpen}
           />
         </div>
 

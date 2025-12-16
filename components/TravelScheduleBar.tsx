@@ -12,14 +12,26 @@ interface TravelScheduleBarProps {
     categoryId?: string | null
   ) => void;
   onModalStateChange?: (isOpen: boolean) => void;
+  initialOpen?: boolean; // 외부에서 모달을 열 수 있도록 하는 prop
 }
 
 export default function TravelScheduleBar({
   onScheduleChange,
   onModalStateChange,
+  initialOpen = false,
 }: TravelScheduleBarProps) {
   const { t } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // initialOpen prop이 변경되면 모달 상태 업데이트
+  useEffect(() => {
+    if (initialOpen) {
+      setIsModalOpen(true);
+      if (onModalStateChange) {
+        onModalStateChange(true);
+      }
+    }
+  }, [initialOpen, onModalStateChange]);
   const [selectedStartDate, setSelectedStartDate] = useState<string | null>(
     null
   );
