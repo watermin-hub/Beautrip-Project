@@ -561,40 +561,20 @@ export async function getRecoveryInfoByCategoryMid(
       );
     }
 
-    // 중분류 컬럼과 category_mid를 매칭 (더 강력한 매칭 로직)
-    // 1) 정규화된 정확 일치 우선
+    // 중분류 컬럼과 category_mid를 정확히 일치시켜서 매칭 (정확 일치만 허용)
+    // 1) 원본 문자열 정확 일치 (최우선)
     let matched = normalizedRecoveryData.find(
-      (item) => item._normalized && item._normalized === normalizedCategoryMid
+      (item) => item._mid === categoryMidTrimmed
     );
 
-    // 2) 원본 문자열 정확 일치
+    // 2) 정규화된 정확 일치 (공백/대소문자 차이만 허용)
     if (!matched) {
       matched = normalizedRecoveryData.find(
-        (item) => item._mid === categoryMidTrimmed
+        (item) => item._normalized && item._normalized === normalizedCategoryMid
       );
     }
 
-    // 3) 정규화된 부분 일치
-    if (!matched) {
-      matched = normalizedRecoveryData.find((item) => {
-        if (!item._normalized) return false;
-        return (
-          item._normalized.includes(normalizedCategoryMid) ||
-          normalizedCategoryMid.includes(item._normalized)
-        );
-      });
-    }
-
-    // 4) 원본 부분 일치
-    if (!matched) {
-      matched = normalizedRecoveryData.find((item) => {
-        const mid = item._mid;
-        if (!mid) return false;
-        return (
-          mid.includes(categoryMidTrimmed) || categoryMidTrimmed.includes(mid)
-        );
-      });
-    }
+    // 부분 일치 제거: 모든 category_mid 값이 정확히 일치해야 함
 
     if (!matched) {
       if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
@@ -1503,8 +1483,20 @@ export async function getScheduleBasedRecommendations(
   });
 
   console.log(
-    `[일정 기반 추천] 선택 카테고리: ${categoryLarge}, 필터링된 데이터: ${categoryFiltered.length}개`
+    `[일정 기반 추천] 선택 카테고리: ${categoryLarge}, 여행일수: ${effectiveTravelDays}일, 필터링된 데이터: ${categoryFiltered.length}개`
   );
+
+  // 디버깅: "피부" 카테고리 선택 시 필터링된 데이터 확인
+  if (categoryLarge === "피부") {
+    const pibuCategoryMids = new Set<string>();
+    categoryFiltered.forEach((t) => {
+      if (t.category_mid) pibuCategoryMids.add(t.category_mid);
+    });
+    console.log(
+      `🔍 [피부 카테고리 필터링] 총 ${categoryFiltered.length}개 시술, 중분류:`,
+      Array.from(pibuCategoryMids).slice(0, 10)
+    );
+  }
 
   // 중분류별로 그룹화 (대분류 + 중분류 조합으로 키 생성하여 중복 방지)
   const midCategoryMap = new Map<string, Treatment[]>();
@@ -1541,6 +1533,16 @@ export async function getScheduleBasedRecommendations(
     }
     midCategoryMap.get(uniqueKey)!.push(treatment);
   });
+
+  // 디버깅: "피부" 카테고리 선택 시 중분류별 그룹화 결과
+  if (categoryLarge === "피부") {
+    console.log(
+      `🔍 [피부 중분류 그룹화] 총 ${midCategoryMap.size}개 중분류 그룹:`,
+      Array.from(midCategoryMap.keys())
+        .filter((k) => k.includes("피부"))
+        .slice(0, 10)
+    );
+  }
 
   // "정맥주사" 중복 확인 로그 - 각 대분류별로 다른 시술인지 확인
   if (jeongmaekjusaTreatments.length > 0) {
@@ -1666,9 +1668,25 @@ export async function getScheduleBasedRecommendations(
       treatmentList,
     ]): Promise<ScheduleBasedRecommendation | null> => {
       // uniqueKey에서 중분류 이름만 추출 (대분류::중분류 형식)
+      // ⚠️ 중요: treatment_master의 category_mid와 정확히 일치해야 함
       const categoryMid = uniqueKey.split("::")[1] || "기타";
 
+      // 디버깅: category_mid 정확 일치 확인
+      const allCategoryMidsInGroup = new Set(
+        treatmentList.map((t) => t.category_mid || "").filter(Boolean)
+      );
+      if (
+        allCategoryMidsInGroup.size > 1 ||
+        !allCategoryMidsInGroup.has(categoryMid)
+      ) {
+        console.warn(
+          `⚠️ [중분류 그룹 불일치] uniqueKey: "${uniqueKey}", categoryMid: "${categoryMid}", 실제 category_mid들:`,
+          Array.from(allCategoryMidsInGroup)
+        );
+      }
+
       // 먼저 category_treattime_recovery 테이블에서 권장체류일수 및 회복기간 범위 가져오기
+      // ⚠️ 중요: 정확히 같은 category_mid로만 매칭 (부분 일치 제거)
       let recommendedStayDays = 0;
       let recoveryMin = 0;
       let recoveryMax = 0;
@@ -1682,6 +1700,15 @@ export async function getScheduleBasedRecommendations(
           procedureTimeMin = recoveryInfo.procedureTimeMin;
           procedureTimeMax = recoveryInfo.procedureTimeMax;
           recommendedStayDays = recoveryInfo.recommendedStayDays;
+
+          // 디버깅: 모든 중분류에 대한 매칭 결과 로그
+          console.log(
+            `📊 [중분류 매칭] "${categoryMid}": 권장체류일수=${recommendedStayDays}일, 시술수=${treatmentList.length}개`
+          );
+        } else {
+          console.warn(
+            `⚠️ [중분류 매칭 실패] "${categoryMid}": category_treattime_recovery에서 찾을 수 없음, 시술수=${treatmentList.length}개`
+          );
         }
       } catch (error) {
         console.warn(
@@ -1808,7 +1835,7 @@ export async function getScheduleBasedRecommendations(
         }))
         .sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-      return {
+      const result = {
         categoryMid,
         treatments: sortedTreatments,
         averageRecoveryPeriod: Math.round(averageRecoveryPeriod * 10) / 10,
@@ -1818,6 +1845,13 @@ export async function getScheduleBasedRecommendations(
         averageProcedureTimeMin: procedureTimeMin,
         averageProcedureTimeMax: procedureTimeMax,
       };
+
+      // 디버깅: 최종 결과 로그
+      console.log(
+        `✅ [최종 추천] "${categoryMid}": ${sortedTreatments.length}개 시술 포함, 권장체류일수=${recommendedStayDays}일, 여행일수=${effectiveTravelDays}일`
+      );
+
+      return result;
     }
   );
 
@@ -1825,23 +1859,43 @@ export async function getScheduleBasedRecommendations(
     (rec): rec is ScheduleBasedRecommendation => rec !== null
   );
 
-  return recommendations
-    .filter((rec) => rec.treatments.length > 0) // 시술이 있는 중분류만
-    .sort((a, b) => {
-      // 1순위: 인기 점수(가장 상위 시술의 recommendationScore) 높은 순
-      const scoreA = a.treatments[0]?.recommendationScore || 0;
-      const scoreB = b.treatments[0]?.recommendationScore || 0;
-      if (scoreA !== scoreB) {
-        return scoreB - scoreA;
-      }
+  console.log(
+    `📋 [일정 기반 추천 완료] 총 ${recommendations.length}개 중분류 추천 생성됨 (여행일수: ${effectiveTravelDays}일)`
+  );
 
-      // 2순위: 평균 회복 기간이 짧은 순 (동점일 때 여행 친화적인 순서)
-      if (a.averageRecoveryPeriod !== b.averageRecoveryPeriod) {
-        return a.averageRecoveryPeriod - b.averageRecoveryPeriod;
-      }
+  const filteredRecommendations = recommendations.filter(
+    (rec) => rec.treatments.length > 0
+  ); // 시술이 있는 중분류만
 
-      return 0;
-    });
+  console.log(
+    `📋 [최종 필터링] 시술이 있는 중분류: ${filteredRecommendations.length}개`
+  );
+
+  if (categoryLarge === "피부") {
+    console.log(
+      `🔍 [피부 최종 결과] 중분류 목록:`,
+      filteredRecommendations.map((r) => ({
+        중분류: r.categoryMid,
+        시술수: r.treatments.length,
+      }))
+    );
+  }
+
+  return filteredRecommendations.sort((a, b) => {
+    // 1순위: 인기 점수(가장 상위 시술의 recommendationScore) 높은 순
+    const scoreA = a.treatments[0]?.recommendationScore || 0;
+    const scoreB = b.treatments[0]?.recommendationScore || 0;
+    if (scoreA !== scoreB) {
+      return scoreB - scoreA;
+    }
+
+    // 2순위: 평균 회복 기간이 짧은 순 (동점일 때 여행 친화적인 순서)
+    if (a.averageRecoveryPeriod !== b.averageRecoveryPeriod) {
+      return a.averageRecoveryPeriod - b.averageRecoveryPeriod;
+    }
+
+    return 0;
+  });
 }
 
 // 플랫폼 우선순위 (높을수록 우선)
