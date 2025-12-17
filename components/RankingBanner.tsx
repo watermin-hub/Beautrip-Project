@@ -89,13 +89,18 @@ export default function RankingBanner() {
           {/* Right: Indicator dots */}
           <div className="flex items-center gap-1 ml-2 flex-shrink-0">
             {rankings.map((_, index) => (
-              <div
+              <button
                 key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(index);
+                }}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   index === currentIndex
                     ? "bg-primary-main w-2"
-                    : "bg-gray-300 w-1.5"
+                    : "bg-gray-300 w-1.5 hover:bg-gray-400"
                 }`}
+                aria-label={`${index + 1}순위: ${rankings[index].name}`}
               />
             ))}
           </div>

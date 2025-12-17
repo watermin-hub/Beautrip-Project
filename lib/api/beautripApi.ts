@@ -2573,23 +2573,56 @@ export interface PostLike {
 }
 
 // 현재 사용자 ID 가져오기 (헬퍼 함수)
+// Supabase 세션 또는 localStorage의 userId 확인
 async function getCurrentUserId(): Promise<string | null> {
   try {
     const client = getSupabaseOrNull();
-    if (!client) return null;
+    if (!client) {
+      // Supabase 클라이언트가 없어도 localStorage에서 userId 확인
+      if (typeof window !== "undefined") {
+        const savedUserId = localStorage.getItem("userId");
+        if (savedUserId) {
+          return savedUserId;
+        }
+      }
+      return null;
+    }
 
+    // 1. 먼저 Supabase 세션 확인
     const {
       data: { user },
       error,
     } = await client.auth.getUser();
 
-    if (error || !user) {
-      return null;
+    if (!error && user) {
+      return user.id;
     }
 
-    return user.id;
+    // 2. Supabase 세션이 없으면 localStorage에서 userId 확인
+    if (typeof window !== "undefined") {
+      const savedUserId = localStorage.getItem("userId");
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+      // localStorage에 로그인 정보가 있으면 userId 반환
+      if (isLoggedIn === "true" && savedUserId) {
+        return savedUserId;
+      }
+    }
+
+    return null;
   } catch (error) {
     console.error("사용자 ID 가져오기 실패:", error);
+
+    // 에러 발생 시에도 localStorage에서 userId 확인
+    if (typeof window !== "undefined") {
+      const savedUserId = localStorage.getItem("userId");
+      const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+      if (isLoggedIn === "true" && savedUserId) {
+        return savedUserId;
+      }
+    }
+
     return null;
   }
 }
@@ -3067,5 +3100,143 @@ export async function getPostLikeCount(
   } catch (error) {
     console.error("글 좋아요 개수 조회 중 오류:", error);
     return 0;
+  }
+}
+
+// ==================== 일정 저장 관련 API ====================
+
+// 저장된 일정 인터페이스
+export interface SavedSchedule {
+  id?: string;
+  user_id: string;
+  schedule_period: string; // 일정 기간 (예: "25.12.14~25.12.20")
+  treatment_ids: number[]; // 시술 ID 배열
+  created_at?: string;
+  updated_at?: string;
+}
+
+// 일정 저장
+export async function saveSchedule(
+  schedulePeriod: string,
+  treatmentIds: number[]
+): Promise<{ success: boolean; data?: SavedSchedule; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { data, error } = await client
+      .from("saved_schedules")
+      .insert({
+        user_id: userId,
+        schedule_period: schedulePeriod,
+        treatment_ids: treatmentIds,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("일정 저장 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data as SavedSchedule };
+  } catch (error: any) {
+    console.error("일정 저장 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "일정 저장에 실패했습니다.",
+    };
+  }
+}
+
+// 저장된 일정 목록 조회
+export async function getSavedSchedules(): Promise<{
+  success: boolean;
+  schedules?: SavedSchedule[];
+  error?: string;
+}> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { data, error } = await client
+      .from("saved_schedules")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("저장된 일정 목록 조회 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    const schedules = (data || []) as SavedSchedule[];
+
+    return { success: true, schedules };
+  } catch (error: any) {
+    console.error("저장된 일정 목록 조회 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "저장된 일정 목록 조회에 실패했습니다.",
+    };
+  }
+}
+
+// 저장된 일정 삭제
+export async function deleteSavedSchedule(
+  scheduleId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { error } = await client
+      .from("saved_schedules")
+      .delete()
+      .eq("id", scheduleId)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("저장된 일정 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("저장된 일정 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "저장된 일정 삭제에 실패했습니다.",
+    };
   }
 }

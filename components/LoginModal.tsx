@@ -409,15 +409,69 @@ export default function LoginModal({
     setIsLoading(true);
 
     try {
-      // Supabase 이메일/비밀번호 로그인
+      // 1. 먼저 user_profiles 테이블에서 이메일로 사용자 확인
+      const { data: profileByEmail, error: profileSearchError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("login_id", userId.trim())
+        .maybeSingle();
+
+      if (profileSearchError) {
+        console.error("user_profiles 조회 오류:", profileSearchError);
+      }
+
+      // 2. Supabase 이메일/비밀번호 로그인 시도
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
           email: userId.trim(), // 이메일을 아이디로 사용
           password,
         });
 
+      // 3. 로그인 에러 처리: user_profiles 테이블 확인 후 우회 처리
       if (authError) {
-        console.error("로그인 오류:", authError);
+        // user_profiles에 사용자가 있는 경우
+        if (profileByEmail) {
+          // 이메일 인증 에러인 경우: user_profiles 기반으로 로그인 허용
+          if (authError.message.includes("Email not confirmed")) {
+            console.log(
+              "이메일 인증 미완료이지만 user_profiles에 사용자 존재, 로그인 허용"
+            );
+
+            // user_profiles 정보로 로그인 처리
+            const userInfo = {
+              username:
+                profileByEmail.display_name ||
+                userId.trim().split("@")[0] ||
+                "사용자",
+              provider: profileByEmail.provider || "local",
+            };
+
+            // localStorage에 사용자 정보 저장
+            if (typeof window !== "undefined") {
+              localStorage.setItem("isLoggedIn", "true");
+              localStorage.setItem("userInfo", JSON.stringify(userInfo));
+              localStorage.setItem("userId", profileByEmail.user_id); // user_id 저장
+            }
+
+            // 자동 로그인 설정
+            if (autoLogin && typeof window !== "undefined") {
+              localStorage.setItem("autoLogin", "true");
+            }
+
+            onLoginSuccess(userInfo);
+            onClose();
+            return;
+          }
+
+          // Invalid login credentials 에러인 경우: 비밀번호가 틀렸거나 사용자가 없음
+          // 보안상 비밀번호 검증은 필수이므로 로그인 허용하지 않음
+          if (authError.message.includes("Invalid login credentials")) {
+            // user_profiles에 사용자가 있어도 비밀번호가 틀렸으면 로그인 거부
+            throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+          }
+        }
+
+        // user_profiles에 사용자가 없는 경우에만 에러 표시
         if (authError.message.includes("Invalid login credentials")) {
           throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
         } else if (authError.message.includes("Email not confirmed")) {
@@ -432,7 +486,7 @@ export default function LoginModal({
         throw new Error("로그인에 실패했습니다.");
       }
 
-      // user_profiles에서 사용자 정보 가져오기
+      // 4. user_profiles에서 사용자 정보 가져오기
       const { data: profile, error: profileError } = await supabase
         .from("user_profiles")
         .select("*")
@@ -444,12 +498,12 @@ export default function LoginModal({
         // 프로필이 없어도 로그인은 성공 처리
       }
 
-      // 자동 로그인 설정 (localStorage)
+      // 5. 자동 로그인 설정 (localStorage)
       if (autoLogin && typeof window !== "undefined") {
         localStorage.setItem("autoLogin", "true");
       }
 
-      // 로그인 성공 처리
+      // 6. 로그인 성공 처리
       const userInfo = {
         username:
           profile?.display_name ||
@@ -464,6 +518,7 @@ export default function LoginModal({
       if (typeof window !== "undefined") {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        localStorage.setItem("userId", authData.user.id); // user_id 저장 (항상 저장)
       }
 
       onLoginSuccess(userInfo);

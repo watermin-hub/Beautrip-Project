@@ -22,7 +22,14 @@ import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
 import {
   getRecoveryInfoByCategoryMid,
   findRecoveryGuideByCategorySmall,
+  loadTreatmentsPaginated,
+  type Treatment,
+  saveSchedule,
+  getSavedSchedules,
+  deleteSavedSchedule,
+  type SavedSchedule,
 } from "@/lib/api/beautripApi";
+import AddToScheduleModal from "./AddToScheduleModal";
 
 interface TravelPeriod {
   start: string; // YYYY-MM-DD
@@ -130,6 +137,415 @@ const clinics = [
     image: "",
   },
 ];
+
+// 비슷한 시술 추천 컴포넌트
+function SimilarProcedureRecommendation({
+  categoryMid,
+  currentProcedureId,
+  currentProcedureName,
+  travelPeriod,
+}: {
+  categoryMid: string | null;
+  currentProcedureId?: number;
+  currentProcedureName: string;
+  travelPeriod: TravelPeriod | null;
+}) {
+  const [similarTreatments, setSimilarTreatments] = useState<Treatment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(
+    null
+  );
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [recoveryInfoMap, setRecoveryInfoMap] = useState<
+    Record<number, number>
+  >({});
+
+  // 비슷한 시술 로드
+  useEffect(() => {
+    const loadSimilarTreatments = async () => {
+      if (!categoryMid) {
+        setSimilarTreatments([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // 같은 중분류의 시술들을 로드
+        const result = await loadTreatmentsPaginated(1, 20, {
+          categoryMid: categoryMid,
+        });
+
+        // 이미 일정에 추가된 시술 제외
+        const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
+        const scheduledTreatmentIds = new Set(
+          schedules
+            .map((s: any) => s.treatmentId)
+            .filter((id: any) => id !== undefined && id !== null)
+        );
+
+        // 현재 시술도 제외
+        if (currentProcedureId) {
+          scheduledTreatmentIds.add(currentProcedureId);
+        }
+
+        const filtered = result.data.filter(
+          (treatment) =>
+            treatment.treatment_id &&
+            !scheduledTreatmentIds.has(treatment.treatment_id) &&
+            treatment.treatment_name !== currentProcedureName
+        );
+
+        // 최대 3개만 표시
+        const limitedTreatments = filtered.slice(0, 3);
+        setSimilarTreatments(limitedTreatments);
+
+        // 회복 기간 정보 로드
+        const recoveryMap: Record<number, number> = {};
+        await Promise.all(
+          limitedTreatments.map(async (treatment) => {
+            if (treatment.treatment_id && treatment.category_mid) {
+              try {
+                const recoveryInfo = await getRecoveryInfoByCategoryMid(
+                  treatment.category_mid
+                );
+                if (recoveryInfo) {
+                  recoveryMap[treatment.treatment_id] =
+                    recoveryInfo.recommendedStayDays > 0
+                      ? recoveryInfo.recommendedStayDays
+                      : recoveryInfo.recoveryMax || 0;
+                }
+              } catch (error) {
+                // 회복 정보 로드 실패 시 무시
+              }
+            }
+          })
+        );
+        setRecoveryInfoMap(recoveryMap);
+      } catch (error) {
+        console.error("비슷한 시술 로드 실패:", error);
+        setSimilarTreatments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSimilarTreatments();
+  }, [categoryMid, currentProcedureId, currentProcedureName]);
+
+  // 일정 추가 핸들러
+  const handleDateSelect = (date: string) => {
+    if (!selectedTreatment) return;
+
+    const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
+    const newId =
+      schedules.length > 0
+        ? Math.max(...schedules.map((s: any) => s.id)) + 1
+        : 1;
+
+    const newSchedule = {
+      id: newId,
+      procedureDate: date,
+      procedureName: selectedTreatment.treatment_name || "시술명 없음",
+      hospital: selectedTreatment.hospital_name || "병원명 없음",
+      category: selectedTreatment.category_large || "",
+      categoryMid: selectedTreatment.category_mid || null,
+      categorySmall: selectedTreatment.category_small || null,
+      recoveryDays: 0,
+      treatmentId: selectedTreatment.treatment_id,
+    };
+
+    schedules.push(newSchedule);
+    localStorage.setItem("schedules", JSON.stringify(schedules));
+    window.dispatchEvent(new Event("scheduleAdded"));
+    setIsScheduleModalOpen(false);
+    setSelectedTreatment(null);
+    alert("일정에 추가되었습니다!");
+  };
+
+  if (!categoryMid || similarTreatments.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="mt-3 space-y-2">
+        <p className="text-xs text-gray-600 mb-2">
+          {currentProcedureName}과 비슷한 시술이에요
+        </p>
+        <div className="space-y-2">
+          {similarTreatments.map((treatment) => (
+            <div
+              key={treatment.treatment_id}
+              onClick={() => {
+                setSelectedTreatment(treatment);
+                setIsScheduleModalOpen(true);
+              }}
+              className="bg-purple-50 border border-purple-200 rounded-lg p-3 cursor-pointer hover:bg-purple-100 transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h5 className="text-sm font-semibold text-gray-900 mb-1 truncate">
+                    {treatment.treatment_name || "시술명 없음"}
+                  </h5>
+                  <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                    <span className="text-purple-600">⊙</span>
+                    <span className="truncate">
+                      {treatment.hospital_name || "병원명 없음"}
+                    </span>
+                  </div>
+                  {treatment.category_mid && (
+                    <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                      <span className="text-purple-600">◇</span>
+                      <span>{treatment.category_mid}</span>
+                    </div>
+                  )}
+                  {(recoveryInfoMap[treatment.treatment_id || 0] ||
+                    treatment.downtime) && (
+                    <div className="flex items-center gap-1 text-xs text-primary-main font-medium">
+                      <span>①</span>
+                      <span>
+                        회복 기간:{" "}
+                        {recoveryInfoMap[treatment.treatment_id || 0] ||
+                          treatment.downtime ||
+                          0}
+                        일
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 일정 추가 모달 */}
+      {selectedTreatment && (
+        <AddToScheduleModal
+          isOpen={isScheduleModalOpen}
+          onClose={() => {
+            setIsScheduleModalOpen(false);
+            setSelectedTreatment(null);
+          }}
+          onDateSelect={handleDateSelect}
+          treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          selectedStartDate={travelPeriod?.start || null}
+          selectedEndDate={travelPeriod?.end || null}
+          categoryMid={selectedTreatment.category_mid || null}
+        />
+      )}
+    </>
+  );
+}
+
+// 저장된 일정 탭 컴포넌트
+function SavedSchedulesTab({
+  travelPeriod,
+  savedSchedules,
+}: {
+  travelPeriod: TravelPeriod | null;
+  savedSchedules: ProcedureSchedule[];
+}) {
+  const [savedSchedulesList, setSavedSchedulesList] = useState<SavedSchedule[]>(
+    []
+  );
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // 저장된 일정 목록 로드
+  useEffect(() => {
+    loadSavedSchedules();
+  }, []);
+
+  const loadSavedSchedules = async () => {
+    setLoading(true);
+    try {
+      const result = await getSavedSchedules();
+      if (result.success && result.schedules) {
+        setSavedSchedulesList(result.schedules);
+      }
+    } catch (error) {
+      console.error("저장된 일정 로드 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 현재 일정 저장
+  const handleSaveCurrentSchedule = async () => {
+    if (!travelPeriod) {
+      alert("여행 기간을 먼저 설정해주세요.");
+      return;
+    }
+
+    if (savedSchedules.length === 0) {
+      alert("저장할 일정이 없습니다.");
+      return;
+    }
+
+    // 일정 기간 포맷팅 (예: "25.12.14~25.12.20")
+    const formatPeriod = (start: string, end: string) => {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const startStr = `${String(startDate.getFullYear()).slice(-2)}.${String(
+        startDate.getMonth() + 1
+      ).padStart(2, "0")}.${String(startDate.getDate()).padStart(2, "0")}`;
+      const endStr = `${String(endDate.getFullYear()).slice(-2)}.${String(
+        endDate.getMonth() + 1
+      ).padStart(2, "0")}.${String(endDate.getDate()).padStart(2, "0")}`;
+      return `${startStr}~${endStr}`;
+    };
+
+    const periodStr = formatPeriod(travelPeriod.start, travelPeriod.end);
+    const treatmentIds = savedSchedules
+      .map((s) => s.treatmentId)
+      .filter((id): id is number => id !== undefined && id !== null);
+
+    if (treatmentIds.length === 0) {
+      alert("저장할 시술이 없습니다.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await saveSchedule(periodStr, treatmentIds);
+      if (result.success) {
+        alert("일정이 저장되었습니다!");
+        loadSavedSchedules();
+      } else {
+        alert(result.error || "일정 저장에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("일정 저장 실패:", error);
+      alert("일정 저장에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 저장된 일정 삭제
+  const handleDeleteSavedSchedule = async (scheduleId: string) => {
+    if (!confirm("이 저장된 일정을 삭제하시겠습니까?")) {
+      return;
+    }
+
+    try {
+      const result = await deleteSavedSchedule(scheduleId);
+      if (result.success) {
+        alert("저장된 일정이 삭제되었습니다.");
+        loadSavedSchedules();
+      } else {
+        alert(result.error || "일정 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("일정 삭제 실패:", error);
+      alert("일정 삭제에 실패했습니다.");
+    }
+  };
+
+  return (
+    <div className="px-4 py-4">
+      {/* 현재 일정 저장 버튼 */}
+      <div className="mb-6">
+        <button
+          onClick={handleSaveCurrentSchedule}
+          disabled={saving || !travelPeriod || savedSchedules.length === 0}
+          className="w-full bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          <FiCalendar className="text-lg" />
+          {saving ? "저장 중..." : "현재 일정 저장하기"}
+        </button>
+        {!travelPeriod && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            여행 기간을 설정한 후 일정을 저장할 수 있습니다.
+          </p>
+        )}
+        {travelPeriod && savedSchedules.length === 0 && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            저장할 일정이 없습니다.
+          </p>
+        )}
+      </div>
+
+      {/* 저장된 일정 목록 */}
+      <div>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">저장된 일정</h3>
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-sm">로딩 중...</p>
+          </div>
+        ) : savedSchedulesList.length === 0 ? (
+          <div className="text-center py-12">
+            <FiCalendar className="text-gray-300 text-5xl mx-auto mb-3" />
+            <p className="text-gray-500 text-sm mb-1">
+              저장된 일정이 없습니다.
+            </p>
+            <p className="text-gray-400 text-xs">
+              일정을 저장하면 여기서 확인할 수 있습니다.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {savedSchedulesList.map((schedule) => (
+              <div
+                key={schedule.id}
+                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FiCalendar className="text-primary-main" />
+                      <h4 className="text-base font-semibold text-gray-900">
+                        {schedule.schedule_period}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                      <FiTag className="text-primary-main" />
+                      <span>시술 {schedule.treatment_ids.length}개</span>
+                    </div>
+                    {schedule.created_at && (
+                      <p className="text-xs text-gray-400">
+                        저장일:{" "}
+                        {new Date(schedule.created_at).toLocaleDateString(
+                          "ko-KR"
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() =>
+                      schedule.id && handleDeleteSavedSchedule(schedule.id)
+                    }
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    title="삭제"
+                  >
+                    <FiX className="text-gray-500 text-lg" />
+                  </button>
+                </div>
+                {/* 시술 ID 목록 (간단히 표시) */}
+                {schedule.treatment_ids.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1">시술 ID:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {schedule.treatment_ids.map((id, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 bg-primary-light/20 text-primary-main text-xs rounded"
+                        >
+                          #{id}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // 회복 카드 컴포넌트 (categoryMid로 recoveryText 동적 로드)
 function RecoveryCardComponent({
@@ -443,7 +859,7 @@ function RecoveryCardComponent({
 
 export default function MySchedulePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"schedule" | "map">("schedule");
+  const [activeTab, setActiveTab] = useState<"schedule" | "saved">("schedule");
   // 초기 날짜를 현재 날짜로 설정
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -876,16 +1292,16 @@ export default function MySchedulePage() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("map")}
+            onClick={() => setActiveTab("saved")}
             className={`text-sm font-medium transition-colors pb-1 relative ${
-              activeTab === "map" ? "text-gray-900" : "text-gray-500"
+              activeTab === "saved" ? "text-gray-900" : "text-gray-500"
             }`}
           >
             <div className="flex items-center gap-2">
-              <FiMapPin className="text-lg" />
-              <span>지도</span>
+              <FiCalendar className="text-lg" />
+              <span>저장된 일정</span>
             </div>
-            {activeTab === "map" && (
+            {activeTab === "saved" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-main"></span>
             )}
           </button>
@@ -1116,6 +1532,15 @@ export default function MySchedulePage() {
                           </div>
                         )}
                       </div>
+                      {/* 비슷한 시술 추천 */}
+                      {proc.categoryMid && (
+                        <SimilarProcedureRecommendation
+                          categoryMid={proc.categoryMid}
+                          currentProcedureId={proc.treatmentId}
+                          currentProcedureName={proc.procedureName}
+                          travelPeriod={travelPeriod}
+                        />
+                      )}
                     </div>
                   );
                 })}
@@ -1167,176 +1592,11 @@ export default function MySchedulePage() {
         </div>
       )}
 
-      {activeTab === "map" && (
-        <>
-          {/* Map Header */}
-          <div className="sticky top-[144px] z-30 bg-white border-b border-gray-100 px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <button className="p-2 hover:bg-gray-50 rounded-full transition-colors">
-                <FiArrowLeft className="text-gray-700 text-xl" />
-              </button>
-              <div className="flex gap-2">
-                <button
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    selectedFilters.includes("appointment")
-                      ? "bg-primary-main text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  <IoCheckmarkCircle className="inline mr-1" />앱 예약 가능
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Map Container */}
-          <div className="relative h-[60vh] bg-gray-100 overflow-hidden">
-            {/* Map Background Pattern */}
-            <div className="absolute inset-0 opacity-30">
-              <div
-                className="w-full h-full"
-                style={{
-                  backgroundImage: `
-              linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
-              linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px)
-            `,
-                  backgroundSize: "20px 20px",
-                }}
-              ></div>
-            </div>
-
-            {/* Subway Lines */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-green-500 opacity-60"></div>
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-red-500 opacity-60"></div>
-
-            {/* Station Marker */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <div className="w-20 h-20 bg-green-500 rounded-full border-4 border-white shadow-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">신사역</span>
-              </div>
-            </div>
-
-            {/* Clinic Cluster Markers */}
-            {clinicMarkers.map((marker) => (
-              <div
-                key={marker.id}
-                className="absolute bg-primary-main text-white px-2 py-1 rounded-full text-xs font-semibold shadow-md cursor-pointer hover:bg-primary-light transition-colors"
-                style={{
-                  left: `${marker.x}%`,
-                  top: `${marker.y}%`,
-                  transform: "translate(-50%, -50%)",
-                }}
-              >
-                {marker.label}
-              </div>
-            ))}
-
-            {/* Road Labels */}
-            <div className="absolute top-10 left-4 text-xs text-gray-600 font-medium">
-              강남대로
-            </div>
-            <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-medium">
-              도산대로
-            </div>
-            <div className="absolute top-1/2 right-4 text-xs text-gray-600 font-medium">
-              3호선
-            </div>
-
-            {/* Additional POIs */}
-            <div className="absolute top-20 right-10 text-xs text-gray-500">
-              GS25
-            </div>
-            <div className="absolute bottom-20 left-20 text-xs text-gray-500">
-              스타벅스
-            </div>
-          </div>
-
-          {/* Location Header */}
-          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900">
-              강남구 신사동
-            </h3>
-          </div>
-
-          {/* Clinic Cards */}
-          <div className="px-4 py-4">
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-              {clinics.map((clinic) => (
-                <div
-                  key={clinic.id}
-                  className="flex-shrink-0 w-72 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
-                >
-                  {/* Image */}
-                  <div className="w-full h-40 bg-gradient-to-br from-primary-light/20 to-primary-main/30 relative">
-                    {/* Placeholder for profile image */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-md">
-                        <span className="text-primary-main text-3xl">👤</span>
-                      </div>
-                    </div>
-                    {/* Procedure name overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                      <p className="text-white font-semibold text-sm">
-                        {clinic.procedure}
-                      </p>
-                    </div>
-                    <button className="absolute top-3 right-3 bg-white bg-opacity-90 p-2 rounded-full z-10 shadow-sm hover:bg-opacity-100 transition-colors relative">
-                      {clinic.likes ? (
-                        <>
-                          <FiHeart className="text-primary-main fill-primary-main text-lg" />
-                          {clinic.likes > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-primary-main text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold">
-                              {clinic.likes}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <FiHeart className="text-gray-700 text-lg" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-4">
-                    <p className="text-gray-900 font-semibold text-sm mb-1">
-                      {clinic.name}
-                    </p>
-                    {clinic.location && (
-                      <p className="text-gray-500 text-xs mb-2">
-                        {clinic.location}
-                      </p>
-                    )}
-                    <p className="text-gray-700 text-sm mb-3 line-clamp-2">
-                      {clinic.procedure}
-                    </p>
-                    <p className="text-gray-900 font-bold text-lg mb-3">
-                      {clinic.price} VAT 포함
-                    </p>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-1">
-                        <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
-                        <span className="text-gray-900 font-semibold text-sm">
-                          {clinic.rating}
-                        </span>
-                        <span className="text-gray-500 text-xs">
-                          ({clinic.reviewCount})
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="flex-1 bg-primary-main hover:bg-[#2DB8A0] text-white py-2.5 rounded-lg text-sm font-semibold transition-colors">
-                        상세보기
-                      </button>
-                      <button className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-lg text-sm font-semibold transition-colors">
-                        문의하기
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
+      {activeTab === "saved" && (
+        <SavedSchedulesTab
+          travelPeriod={travelPeriod}
+          savedSchedules={savedSchedules}
+        />
       )}
 
       <div className="pb-20">

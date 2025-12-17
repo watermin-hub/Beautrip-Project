@@ -32,10 +32,79 @@ export default function MyPage() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const subscriptionRef = useRef<any>(null);
 
-  // Check if user is logged in (Supabase 세션도 확인)
+  // Check if user is logged in (Supabase 세션 + localStorage 모두 확인)
   useEffect(() => {
     const checkAuth = async () => {
-      // Supabase 세션 먼저 확인 (가장 확실한 방법)
+      // 1. localStorage 먼저 확인 (user_profiles 기반 로그인 지원)
+      const savedIsLoggedIn = localStorage.getItem("isLoggedIn");
+      const savedUserInfo = localStorage.getItem("userInfo");
+      const savedUserId = localStorage.getItem("userId");
+
+      // localStorage에 로그인 정보가 있으면 로그인 상태로 설정
+      if (savedIsLoggedIn === "true" && savedUserInfo) {
+        try {
+          const parsedUserInfo = JSON.parse(savedUserInfo);
+          setIsLoggedIn(true);
+          setUserInfo(parsedUserInfo);
+          setShowLogin(false);
+
+          // Supabase 세션도 확인 (있으면 유지, 없어도 localStorage 기반으로 로그인 유지)
+          const { supabase } = await import("@/lib/supabase");
+          if (supabase) {
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
+
+            // 세션이 없고 userId가 있으면 user_profiles에서 정보 다시 가져오기
+            if (!session && savedUserId) {
+              const { data: profile } = await supabase
+                .from("user_profiles")
+                .select("*")
+                .eq("user_id", savedUserId)
+                .maybeSingle();
+
+              if (profile) {
+                // user_profiles 정보로 업데이트
+                const updatedUserInfo = {
+                  username:
+                    profile.display_name || parsedUserInfo.username || "사용자",
+                  provider:
+                    profile.provider || parsedUserInfo.provider || "local",
+                };
+                setUserInfo(updatedUserInfo);
+                localStorage.setItem(
+                  "userInfo",
+                  JSON.stringify(updatedUserInfo)
+                );
+              }
+            } else if (session?.user) {
+              // 세션이 있으면 세션 정보로 업데이트
+              const sessionUserInfo = {
+                username:
+                  session.user.user_metadata?.full_name ||
+                  session.user.user_metadata?.name ||
+                  session.user.email?.split("@")[0] ||
+                  parsedUserInfo.username ||
+                  "사용자",
+                provider:
+                  session.user.app_metadata?.provider ||
+                  parsedUserInfo.provider ||
+                  "local",
+              };
+              setUserInfo(sessionUserInfo);
+              localStorage.setItem("userInfo", JSON.stringify(sessionUserInfo));
+              if (session.user.id) {
+                localStorage.setItem("userId", session.user.id);
+              }
+            }
+          }
+          return; // localStorage 기반 로그인 성공
+        } catch (e) {
+          console.error("Failed to parse user info", e);
+        }
+      }
+
+      // 2. localStorage에 정보가 없으면 Supabase 세션 확인
       const { supabase } = await import("@/lib/supabase");
       if (!supabase) {
         console.warn(
@@ -55,7 +124,6 @@ export default function MyPage() {
         setIsLoggedIn(true);
 
         // localStorage에서 사용자 정보 확인
-        const savedUserInfo = localStorage.getItem("userInfo");
         if (savedUserInfo) {
           try {
             setUserInfo(JSON.parse(savedUserInfo));
@@ -83,6 +151,7 @@ export default function MyPage() {
           });
           // localStorage에도 저장
           localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("userId", session.user.id);
           localStorage.setItem(
             "userInfo",
             JSON.stringify({
@@ -97,13 +166,14 @@ export default function MyPage() {
         }
         setShowLogin(false);
       } else {
-        // 세션이 없으면 로그아웃 상태
+        // 세션이 없고 localStorage에도 없으면 로그아웃 상태
         setIsLoggedIn(false);
         setUserInfo(null);
         setShowLogin(true);
         // localStorage도 정리
         localStorage.removeItem("isLoggedIn");
         localStorage.removeItem("userInfo");
+        localStorage.removeItem("userId");
       }
     };
 
@@ -179,9 +249,11 @@ export default function MyPage() {
         }
       }
 
-      // localStorage 정리
+      // localStorage 정리 (모든 로그인 관련 정보 제거)
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("userInfo");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("autoLogin");
 
       // 상태 업데이트
       setIsLoggedIn(false);
@@ -195,6 +267,8 @@ export default function MyPage() {
       // 에러가 발생해도 로컬 상태는 정리
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("userInfo");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("autoLogin");
       setIsLoggedIn(false);
       setUserInfo(null);
       setShowLogin(true);

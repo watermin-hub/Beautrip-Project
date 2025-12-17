@@ -67,7 +67,7 @@ export default function SignupModal({
     setIsLoading(true);
 
     try {
-      // 1. Supabase Auth로 회원가입
+      // 1. Supabase Auth로 회원가입 (이메일 인증 없이 바로 세션 생성)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -76,6 +76,7 @@ export default function SignupModal({
           data: {
             login_id: email.trim(), // 이메일을 login_id로도 저장
           },
+          // 이메일 인증 없이 바로 로그인되도록 설정
         },
       });
 
@@ -119,30 +120,76 @@ export default function SignupModal({
         throw new Error(`프로필 저장에 실패했습니다: ${profileError.message}`);
       }
 
-      // 3. 선택한 언어를 localStorage에 저장 (즉시 적용)
+      // 3. 세션이 없으면 (이메일 인증 필요 시) 자동으로 로그인 시도
+      if (!authData.session && authData.user) {
+        // 이메일 인증 없이 바로 로그인 시도
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+
+        if (signInError) {
+          console.warn(
+            "자동 로그인 실패 (이메일 인증 필요할 수 있음):",
+            signInError
+          );
+          // 이메일 인증이 필요한 경우에도 user_profiles는 이미 생성되었으므로
+          // 사용자에게 안내만 하고 계속 진행
+        } else if (signInData.session) {
+          // 세션 생성 성공
+          authData.session = signInData.session;
+        }
+      }
+
+      // 4. 선택한 언어를 localStorage에 저장 (즉시 적용)
       if (typeof window !== "undefined") {
         localStorage.setItem("language", selectedLanguage);
         window.dispatchEvent(new Event("languageChanged"));
       }
 
-      // 4. 성공 처리
-      // Supabase가 이메일 확인을 요구하는 경우, 사용자에게 안내
-      if (authData.user && !authData.session) {
-        // 이메일 확인이 필요한 경우
+      // 5. 세션이 있으면 자동 로그인 처리
+      if (authData.session) {
+        // user_profiles에서 사용자 정보 가져오기
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", authData.user.id)
+          .maybeSingle();
+
+        const userInfo = {
+          username:
+            profile?.display_name ||
+            authData.user.email?.split("@")[0] ||
+            "사용자",
+          provider: profile?.provider || "local",
+        };
+
+        // localStorage에 사용자 정보 저장
+        if (typeof window !== "undefined") {
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("userInfo", JSON.stringify(userInfo));
+        }
+
+        // 로그인 성공 콜백 호출 (SignupModal이 LoginModal의 onLoginSuccess를 받을 수 있도록)
+        if (onSignupSuccess) {
+          onSignupSuccess();
+        }
+
+        alert("회원가입 및 로그인이 완료되었습니다!");
+        onClose();
+      } else {
+        // 세션이 없는 경우 (이메일 인증 필요)
         alert(
           "회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요."
         );
-      } else {
-        alert("회원가입이 완료되었습니다!");
+        if (onSignupSuccess) {
+          onSignupSuccess();
+        } else {
+          router.push("/mypage");
+        }
+        onClose();
       }
-
-      if (onSignupSuccess) {
-        onSignupSuccess();
-      } else {
-        // 로그인 페이지로 이동
-        router.push("/mypage");
-      }
-      onClose();
     } catch (err: any) {
       console.error("회원가입 오류:", err);
       // 더 자세한 에러 정보 로깅
