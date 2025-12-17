@@ -198,7 +198,7 @@ export default function HotConcernsSection() {
             {t("home.hotConcerns")}
           </h3>
         </div>
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
@@ -221,7 +221,7 @@ export default function HotConcernsSection() {
       </div>
 
       {/* 카드 슬라이드 */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3">
         {treatments.map((treatment) => {
           const isFavorite = favorites.has(treatment.treatment_id || 0);
           const thumbnailUrl = getThumbnailUrl(treatment);
@@ -283,25 +283,18 @@ export default function HotConcernsSection() {
                 </button>
               </div>
 
-              {/* 카드 내용 - flex-col로 하단 정렬 */}
-              <div className="p-3 flex flex-col h-full">
+              {/* 카드 내용 - 균형 좋은 간격 */}
+              <div className="p-2.5 flex flex-col min-h-[116px]">
                 {/* 상단 콘텐츠 */}
-                <div>
+                <div className="space-y-1.5">
                   {/* 시술명 */}
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                  <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
                     {treatment.treatment_name}
                   </h4>
 
-                  {/* 병원명 */}
-                  {treatment.hospital_name && (
-                    <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                      {treatment.hospital_name}
-                    </p>
-                  )}
-
                   {/* 평점 */}
-                  {rating > 0 && (
-                    <div className="flex items-center gap-1 mb-2">
+                  {rating > 0 ? (
+                    <div className="flex items-center gap-1 h-[14px]">
                       <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
                       <span className="text-xs font-semibold text-gray-700">
                         {rating.toFixed(1)}
@@ -310,11 +303,22 @@ export default function HotConcernsSection() {
                         ({reviewCount.toLocaleString()})
                       </span>
                     </div>
+                  ) : (
+                    <div className="h-[14px]" />
+                  )}
+
+                  {/* 병원명 */}
+                  {treatment.hospital_name ? (
+                    <p className="text-xs text-gray-600 line-clamp-1 h-[16px]">
+                      {treatment.hospital_name}
+                    </p>
+                  ) : (
+                    <div className="h-[16px]" />
                   )}
                 </div>
 
-                {/* 하단 정보 - mt-auto로 하단 고정 */}
-                <div className="mt-auto flex items-center justify-between">
+                {/* 하단 정보 - 적당한 간격 */}
+                <div className="mt-auto pt-2 flex items-center justify-between">
                   {/* 가격 */}
                   <div className="flex items-center gap-1">
                     <span className="text-sm font-bold text-primary-main">
@@ -333,7 +337,7 @@ export default function HotConcernsSection() {
                       e.stopPropagation();
                       handleScheduleClick(treatment, e);
                     }}
-                    className="p-2 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                    className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
                   >
                     <FiCalendar className="text-base text-primary-main" />
                   </button>
