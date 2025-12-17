@@ -1998,7 +1998,7 @@ export interface ProcedureReviewData {
   surgery_date?: string;
   content: string;
   images?: string[];
-  user_id?: number; // 선택사항, 기본값 0
+  user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
 }
@@ -2016,7 +2016,7 @@ export interface HospitalReviewData {
   translation_satisfaction?: number;
   content: string;
   images?: string[];
-  user_id?: number; // 선택사항, 기본값 0
+  user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
 }
@@ -2027,7 +2027,7 @@ export interface ConcernPostData {
   title: string;
   concern_category: string;
   content: string;
-  user_id?: number; // 선택사항, 기본값 0
+  user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
 }
@@ -2038,7 +2038,7 @@ export async function saveProcedureReview(
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const reviewData = {
-      user_id: data.user_id ?? 0,
+      user_id: data.user_id || null,
       category: data.category,
       procedure_name: data.procedure_name,
       hospital_name: data.hospital_name || null,
@@ -2079,7 +2079,7 @@ export async function saveHospitalReview(
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const reviewData = {
-      user_id: data.user_id ?? 0,
+      user_id: data.user_id || null,
       hospital_name: data.hospital_name,
       category_large: data.category_large,
       procedure_name: data.procedure_name || null,
@@ -2122,7 +2122,7 @@ export async function saveConcernPost(
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const postData = {
-      user_id: data.user_id ?? 0,
+      user_id: data.user_id || null,
       title: data.title,
       concern_category: data.concern_category,
       content: data.content,
@@ -2546,5 +2546,526 @@ export async function findRecoveryGuideByCategoryMid(
   } catch (error) {
     console.error("❌ 회복 가이드 찾기 실패:", error);
     return null;
+  }
+}
+
+// ============================================
+// 찜하기 및 좋아요 기능 API 함수
+// ============================================
+
+// 시술 찜하기 인터페이스
+export interface ProcedureFavorite {
+  id?: string;
+  user_id: string;
+  treatment_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// 글 좋아요 인터페이스
+export interface PostLike {
+  id?: string;
+  user_id: string;
+  post_id: string;
+  post_type: "procedure_review" | "hospital_review" | "concern_post";
+  created_at?: string;
+  updated_at?: string;
+}
+
+// 현재 사용자 ID 가져오기 (헬퍼 함수)
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return null;
+
+    const {
+      data: { user },
+      error,
+    } = await client.auth.getUser();
+
+    if (error || !user) {
+      return null;
+    }
+
+    return user.id;
+  } catch (error) {
+    console.error("사용자 ID 가져오기 실패:", error);
+    return null;
+  }
+}
+
+// 시술 찜하기 추가
+export async function addProcedureFavorite(
+  treatmentId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    // 이미 찜하기가 있는지 확인
+    const { data: existing } = await client
+      .from("procedure_favorites")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("treatment_id", treatmentId)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: false, error: "이미 찜한 시술입니다." };
+    }
+
+    // 찜하기 추가
+    const { error } = await client.from("procedure_favorites").insert({
+      user_id: userId,
+      treatment_id: treatmentId,
+    });
+
+    if (error) {
+      console.error("시술 찜하기 추가 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("시술 찜하기 추가 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "시술 찜하기에 실패했습니다.",
+    };
+  }
+}
+
+// 시술 찜하기 삭제
+export async function removeProcedureFavorite(
+  treatmentId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { error } = await client
+      .from("procedure_favorites")
+      .delete()
+      .eq("user_id", userId)
+      .eq("treatment_id", treatmentId);
+
+    if (error) {
+      console.error("시술 찜하기 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("시술 찜하기 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "시술 찜하기 삭제에 실패했습니다.",
+    };
+  }
+}
+
+// 시술 찜하기 토글 (추가/삭제)
+export async function toggleProcedureFavorite(
+  treatmentId: number
+): Promise<{ success: boolean; isFavorite: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        isFavorite: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return {
+        success: false,
+        isFavorite: false,
+        error: "로그인이 필요합니다.",
+      };
+    }
+
+    // 현재 찜하기 상태 확인
+    const { data: existing } = await client
+      .from("procedure_favorites")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("treatment_id", treatmentId)
+      .maybeSingle();
+
+    if (existing) {
+      // 이미 찜하기가 있으면 삭제
+      const result = await removeProcedureFavorite(treatmentId);
+      return { ...result, isFavorite: false };
+    } else {
+      // 찜하기가 없으면 추가
+      const result = await addProcedureFavorite(treatmentId);
+      return { ...result, isFavorite: true };
+    }
+  } catch (error: any) {
+    console.error("시술 찜하기 토글 중 오류:", error);
+    return {
+      success: false,
+      isFavorite: false,
+      error: error?.message || "시술 찜하기 토글에 실패했습니다.",
+    };
+  }
+}
+
+// 찜한 시술 목록 조회
+export async function getFavoriteProcedures(): Promise<{
+  success: boolean;
+  favorites?: ProcedureFavorite[];
+  treatmentIds?: number[];
+  error?: string;
+}> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { data, error } = await client
+      .from("procedure_favorites")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("찜한 시술 목록 조회 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    const favorites = (data || []) as ProcedureFavorite[];
+    const treatmentIds = favorites.map((f) => f.treatment_id);
+
+    return { success: true, favorites, treatmentIds };
+  } catch (error: any) {
+    console.error("찜한 시술 목록 조회 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "찜한 시술 목록 조회에 실패했습니다.",
+    };
+  }
+}
+
+// 특정 시술의 찜하기 여부 확인
+export async function isProcedureFavorite(
+  treatmentId: number
+): Promise<boolean> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return false;
+
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { data } = await client
+      .from("procedure_favorites")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("treatment_id", treatmentId)
+      .maybeSingle();
+
+    return !!data;
+  } catch (error) {
+    console.error("시술 찜하기 여부 확인 중 오류:", error);
+    return false;
+  }
+}
+
+// 여러 시술의 찜하기 여부 일괄 확인
+export async function getFavoriteStatus(
+  treatmentIds: number[]
+): Promise<Set<number>> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return new Set();
+
+    const userId = await getCurrentUserId();
+    if (!userId) return new Set();
+
+    if (treatmentIds.length === 0) return new Set();
+
+    const { data } = await client
+      .from("procedure_favorites")
+      .select("treatment_id")
+      .eq("user_id", userId)
+      .in("treatment_id", treatmentIds);
+
+    return new Set((data || []).map((f: any) => f.treatment_id));
+  } catch (error) {
+    console.error("시술 찜하기 상태 일괄 확인 중 오류:", error);
+    return new Set();
+  }
+}
+
+// 커뮤니티 글 좋아요 추가
+export async function addPostLike(
+  postId: string,
+  postType: "procedure_review" | "hospital_review" | "concern_post"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    // 이미 좋아요가 있는지 확인
+    const { data: existing } = await client
+      .from("post_likes")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("post_id", postId)
+      .eq("post_type", postType)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: false, error: "이미 좋아요를 누른 글입니다." };
+    }
+
+    // 좋아요 추가
+    const { error } = await client.from("post_likes").insert({
+      user_id: userId,
+      post_id: postId,
+      post_type: postType,
+    });
+
+    if (error) {
+      console.error("글 좋아요 추가 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("글 좋아요 추가 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "글 좋아요에 실패했습니다.",
+    };
+  }
+}
+
+// 커뮤니티 글 좋아요 삭제
+export async function removePostLike(
+  postId: string,
+  postType: "procedure_review" | "hospital_review" | "concern_post"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { error } = await client
+      .from("post_likes")
+      .delete()
+      .eq("user_id", userId)
+      .eq("post_id", postId)
+      .eq("post_type", postType);
+
+    if (error) {
+      console.error("글 좋아요 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("글 좋아요 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "글 좋아요 삭제에 실패했습니다.",
+    };
+  }
+}
+
+// 커뮤니티 글 좋아요 토글
+export async function togglePostLike(
+  postId: string,
+  postType: "procedure_review" | "hospital_review" | "concern_post"
+): Promise<{ success: boolean; isLiked: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        isLiked: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, isLiked: false, error: "로그인이 필요합니다." };
+    }
+
+    // 현재 좋아요 상태 확인
+    const { data: existing } = await client
+      .from("post_likes")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("post_id", postId)
+      .eq("post_type", postType)
+      .maybeSingle();
+
+    if (existing) {
+      // 이미 좋아요가 있으면 삭제
+      const result = await removePostLike(postId, postType);
+      return { ...result, isLiked: false };
+    } else {
+      // 좋아요가 없으면 추가
+      const result = await addPostLike(postId, postType);
+      return { ...result, isLiked: true };
+    }
+  } catch (error: any) {
+    console.error("글 좋아요 토글 중 오류:", error);
+    return {
+      success: false,
+      isLiked: false,
+      error: error?.message || "글 좋아요 토글에 실패했습니다.",
+    };
+  }
+}
+
+// 좋아요한 글 목록 조회
+export async function getLikedPosts(): Promise<{
+  success: boolean;
+  likes?: PostLike[];
+  error?: string;
+}> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const { data, error } = await client
+      .from("post_likes")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("좋아요한 글 목록 조회 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    const likes = (data || []) as PostLike[];
+
+    return { success: true, likes };
+  } catch (error: any) {
+    console.error("좋아요한 글 목록 조회 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "좋아요한 글 목록 조회에 실패했습니다.",
+    };
+  }
+}
+
+// 특정 글의 좋아요 여부 확인
+export async function isPostLiked(
+  postId: string,
+  postType: "procedure_review" | "hospital_review" | "concern_post"
+): Promise<boolean> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return false;
+
+    const userId = await getCurrentUserId();
+    if (!userId) return false;
+
+    const { data } = await client
+      .from("post_likes")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("post_id", postId)
+      .eq("post_type", postType)
+      .maybeSingle();
+
+    return !!data;
+  } catch (error) {
+    console.error("글 좋아요 여부 확인 중 오류:", error);
+    return false;
+  }
+}
+
+// 글의 좋아요 개수 조회
+export async function getPostLikeCount(
+  postId: string,
+  postType: "procedure_review" | "hospital_review" | "concern_post"
+): Promise<number> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return 0;
+
+    const { count, error } = await client
+      .from("post_likes")
+      .select("*", { count: "exact", head: true })
+      .eq("post_id", postId)
+      .eq("post_type", postType);
+
+    if (error) {
+      console.error("글 좋아요 개수 조회 실패:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error("글 좋아요 개수 조회 중 오류:", error);
+    return 0;
   }
 }

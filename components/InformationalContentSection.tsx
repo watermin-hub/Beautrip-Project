@@ -26,16 +26,16 @@ const informationalContents: ContentItem[] = [
     id: 4,
     title: "통역 서비스 이용 가이드",
     description: "한국어가 서툰 외국인을 위한 통역 서비스 안내",
-    category: "정보",
+    category: "가이드",
     readTime: "4분",
     views: 1567,
   },
   {
     id: "top20",
-    title: "외국인 여행객을 위한 한국 인기 시술 정보 TOP 20!",
+    title: "한국 인기 시술 정보 TOP 20!",
     description:
       "한국을 방문하는 외국인 여행객을 위한 인기 시술 정보를 한눈에 확인하세요",
-    category: "정보",
+    category: "가이드",
     readTime: "5분",
     views: 2341,
     slug: "top20", // 라우팅용 slug
@@ -46,7 +46,7 @@ const informationalContents: ContentItem[] = [
     id: "travel-recommendation",
     title: "내 일정에 딱 맞는 한국 여행지 추천 ✈️",
     description: "여행 루트 자동 생성해드려요!",
-    category: "정보",
+    category: "가이드",
     readTime: "6분",
     views: 1892,
     slug: "travel-recommendation",
@@ -81,7 +81,7 @@ export default function InformationalContentSection() {
     ...recoveryGuideItems,
   ];
 
-  const categories = ["all", "가이드", "정보", "회복 가이드🍀"];
+  const categories = ["all", "가이드", "회복 가이드"];
 
   const filteredContents =
     selectedCategory === "all"
@@ -95,7 +95,7 @@ export default function InformationalContentSection() {
           );
           return [...otherContents, ...recoveryGuides.slice(0, 5)];
         })()
-      : selectedCategory === "회복 가이드🍀"
+      : selectedCategory === "회복 가이드"
       ? allContents.filter((item) => item.category === "회복 가이드")
       : allContents.filter((item) => item.category === selectedCategory);
 
@@ -122,8 +122,7 @@ export default function InformationalContentSection() {
       <div className="space-y-2.5">
         {filteredContents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
-            {selectedCategory === "회복 가이드🍀" ||
-            selectedCategory === "회복 가이드"
+            {selectedCategory === "회복 가이드"
               ? "회복 가이드 글이 준비 중입니다."
               : "컨텐츠가 없습니다."}
           </div>

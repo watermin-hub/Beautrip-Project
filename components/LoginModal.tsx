@@ -62,7 +62,7 @@ export default function LoginModal({
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
-      // SIGNED_IN 이벤트이고, 모달이 열려있고, 아직 처리 중이 아닐 때만 실행
+        // SIGNED_IN 이벤트이고, 모달이 열려있고, 아직 처리 중이 아닐 때만 실행
         if (event === "SIGNED_IN" && session?.user && isOpen && !isProcessing) {
           isProcessing = true;
           try {
@@ -400,18 +400,82 @@ export default function LoginModal({
     }
   };
 
-  const handleIdLogin = () => {
+  const handleIdLogin = async () => {
     if (!userId || !password) {
       alert("아이디와 비밀번호를 입력해주세요.");
       return;
     }
-    // TODO: 실제 ID 로그인 API 연동
-    console.log("ID Login:", { userId, password, autoLogin });
-    const mockUserInfo = {
-      username: userId,
-      provider: "id",
-    };
-    onLoginSuccess(mockUserInfo);
+
+    setIsLoading(true);
+
+    try {
+      // Supabase 이메일/비밀번호 로그인
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: userId.trim(), // 이메일을 아이디로 사용
+          password,
+        });
+
+      if (authError) {
+        console.error("로그인 오류:", authError);
+        if (authError.message.includes("Invalid login credentials")) {
+          throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+        } else if (authError.message.includes("Email not confirmed")) {
+          throw new Error(
+            "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요."
+          );
+        }
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error("로그인에 실패했습니다.");
+      }
+
+      // user_profiles에서 사용자 정보 가져오기
+      const { data: profile, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("프로필 조회 실패:", profileError);
+        // 프로필이 없어도 로그인은 성공 처리
+      }
+
+      // 자동 로그인 설정 (localStorage)
+      if (autoLogin && typeof window !== "undefined") {
+        localStorage.setItem("autoLogin", "true");
+      }
+
+      // 로그인 성공 처리
+      const userInfo = {
+        username:
+          profile?.display_name ||
+          authData.user.user_metadata?.full_name ||
+          authData.user.user_metadata?.name ||
+          authData.user.email?.split("@")[0] ||
+          "사용자",
+        provider: profile?.provider || "local",
+      };
+
+      // localStorage에 사용자 정보 저장
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
+      }
+
+      onLoginSuccess(userInfo);
+      onClose();
+    } catch (error: any) {
+      console.error("로그인 오류:", error);
+      alert(
+        error.message || "로그인 중 오류가 발생했습니다. 다시 시도해주세요."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -480,15 +544,14 @@ export default function LoginModal({
                     <span>{provider.name}</span>
                   </button>
                 ))}
-              </div>
 
-              {/* 아이디 또는 다른 방법으로 로그인 */}
-              <div className="text-center mb-6">
+                {/* 아이디로 로그인 버튼 (구글과 같은 사이즈, 아이콘 없음) */}
                 <button
-                  onClick={() => setShowOtherMethods(true)}
-                  className="text-gray-600 text-sm hover:text-primary-main transition-colors underline"
+                  onClick={() => setShowIdLogin(true)}
+                  disabled={isLoading}
+                  className="w-full bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-900 py-4 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  아이디 또는 다른 방법으로 로그인
+                  아이디로 로그인
                 </button>
               </div>
 
@@ -520,14 +583,15 @@ export default function LoginModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  아이디
+                  이메일
                 </label>
                 <input
-                  type="text"
+                  type="email"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  placeholder="아이디를 입력하세요"
+                  placeholder="이메일을 입력하세요"
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -542,6 +606,12 @@ export default function LoginModal({
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="비밀번호를 입력하세요"
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent pr-12"
+                    disabled={isLoading}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleIdLogin();
+                      }
+                    }}
                   />
                   <button
                     type="button"
@@ -575,9 +645,10 @@ export default function LoginModal({
 
               <button
                 onClick={handleIdLogin}
-                className="w-full bg-primary-main hover:bg-primary-light text-white py-4 rounded-xl font-semibold transition-colors"
+                disabled={isLoading}
+                className="w-full bg-primary-main hover:bg-primary-light text-white py-4 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                로그인
+                {isLoading ? "로그인 중..." : "로그인"}
               </button>
 
               <button

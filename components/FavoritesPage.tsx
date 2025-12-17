@@ -11,6 +11,13 @@ import {
   FiGlobe,
 } from "react-icons/fi";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  getFavoriteProcedures,
+  loadTreatmentById,
+  Treatment,
+  removeProcedureFavorite,
+} from "@/lib/api/beautripApi";
+import { useRouter } from "next/navigation";
 
 interface FavoriteItem {
   id: number;
@@ -25,12 +32,15 @@ interface FavoriteItem {
   procedures?: string[];
   specialties?: string[];
   type: "procedure" | "clinic";
+  treatment?: Treatment; // Supabase에서 가져온 시술 정보
 }
 
 export default function FavoritesPage() {
   const { t } = useLanguage();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // URL 쿼리 파라미터에서 type 읽기, 없으면 기본값 "procedure"
   const initialTab = (
@@ -41,11 +51,61 @@ export default function FavoritesPage() {
   );
 
   useEffect(() => {
-    const savedFavorites = JSON.parse(
-      localStorage.getItem("favorites") || "[]"
-    );
-    setFavorites(savedFavorites);
+    const loadFavorites = async () => {
+      try {
+        setLoading(true);
 
+        // Supabase에서 찜한 시술 목록 가져오기
+        const result = await getFavoriteProcedures();
+        if (result.success && result.treatmentIds) {
+          // 각 시술의 상세 정보 로드
+          const treatmentPromises = result.treatmentIds.map((treatmentId) =>
+            loadTreatmentById(treatmentId)
+          );
+          const treatments = await Promise.all(treatmentPromises);
+
+          // FavoriteItem 형식으로 변환
+          const favoriteItems: FavoriteItem[] = treatments
+            .filter((t): t is Treatment => t !== null)
+            .map((treatment) => ({
+              id: treatment.treatment_id || 0,
+              title: treatment.treatment_name || "시술명 없음",
+              clinic: treatment.hospital_name || "병원명 없음",
+              location: "강남", // 추후 주소 정보 추가
+              price: treatment.selling_price
+                ? `${Math.round(treatment.selling_price / 10000)}만원`
+                : "가격 문의",
+              rating: treatment.rating ? treatment.rating.toFixed(1) : "0.0",
+              reviewCount: treatment.review_count
+                ? `${treatment.review_count}`
+                : undefined,
+              type: "procedure" as const,
+              treatment,
+            }));
+
+          setFavorites(favoriteItems);
+        } else {
+          // Supabase에서 가져오기 실패 시 localStorage에서 로드 (하위 호환성)
+          const savedFavorites = JSON.parse(
+            localStorage.getItem("favorites") || "[]"
+          );
+          setFavorites(savedFavorites);
+        }
+      } catch (error) {
+        console.error("찜 목록 로드 실패:", error);
+        // 에러 발생 시 localStorage에서 로드
+        const savedFavorites = JSON.parse(
+          localStorage.getItem("favorites") || "[]"
+        );
+        setFavorites(savedFavorites);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFavorites();
+
+    // localStorage 업데이트 이벤트 리스너 (하위 호환성)
     const handleFavoritesUpdate = () => {
       const updated = JSON.parse(localStorage.getItem("favorites") || "[]");
       setFavorites(updated);
@@ -64,17 +124,38 @@ export default function FavoritesPage() {
     }
   }, [searchParams]);
 
-  const removeFavorite = (id: number) => {
-    const updated = favorites.filter((item) => item.id !== id);
-    localStorage.setItem("favorites", JSON.stringify(updated));
-    setFavorites(updated);
-    window.dispatchEvent(new Event("favoritesUpdated"));
+  const removeFavorite = async (id: number) => {
+    try {
+      // Supabase에서 찜하기 삭제
+      const result = await removeProcedureFavorite(id);
+      if (result.success) {
+        // 로컬 상태 업데이트
+        const updated = favorites.filter((item) => item.id !== id);
+        setFavorites(updated);
+        // localStorage도 업데이트 (하위 호환성)
+        localStorage.setItem("favorites", JSON.stringify(updated));
+        window.dispatchEvent(new Event("favoritesUpdated"));
+      } else {
+        alert(result.error || "찜하기 삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("찜하기 삭제 실패:", error);
+      alert("찜하기 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const procedures = favorites.filter((item) => item.type === "procedure");
   const clinics = favorites.filter((item) => item.type === "clinic");
 
   const displayedItems = activeTab === "procedure" ? procedures : clinics;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4">
+        <div className="text-gray-500">로딩 중...</div>
+      </div>
+    );
+  }
 
   if (favorites.length === 0) {
     return (
@@ -121,7 +202,12 @@ export default function FavoritesPage() {
         {displayedItems.map((item) => (
           <div
             key={`${item.type}-${item.id}`}
-            className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => {
+              if (item.type === "procedure" && item.id) {
+                router.push(`/treatment/${item.id}`);
+              }
+            }}
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">

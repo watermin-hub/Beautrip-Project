@@ -648,6 +648,16 @@ export default function ProcedureRecommendation({
         ) + 1
       : 0;
 
+  // 날짜 포맷팅 함수 (예: 12월 18일 (목))
+  const formatDateWithDay = (dateString: string): string => {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+    const dayName = dayNames[date.getDay()];
+    return `${month}월 ${day}일 (${dayName})`;
+  };
+
   // 필터링된 추천 데이터
   const filteredRecommendations = useMemo(() => {
     let filtered = recommendations;
@@ -827,11 +837,17 @@ export default function ProcedureRecommendation({
 
       {/* 여행 기간 정보 - 맞춤 시술 추천 바로 아래 */}
       <div className="mb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <FiCalendar className="text-primary-main" />
           <span className="text-sm text-gray-700">
             {t("procedure.travelPeriod")}: {travelDays - 1}박 {travelDays}일
           </span>
+          {scheduleData.travelPeriod.start && scheduleData.travelPeriod.end && (
+            <div className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-medium">
+              {formatDateWithDay(scheduleData.travelPeriod.start)} ~{" "}
+              {formatDateWithDay(scheduleData.travelPeriod.end)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1035,85 +1051,75 @@ export default function ProcedureRecommendation({
                     return (
                       <div
                         key={treatment.treatment_id}
-                        className="flex-shrink-0 w-[150px] cursor-pointer flex flex-col"
+                        className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                         onClick={() => {
                           if (treatment.treatment_id) {
                             router.push(`/treatment/${treatment.treatment_id}`);
                           }
                         }}
                       >
-                        {/* 이미지 + 할인율 오버레이 - 2:1 비율 */}
-                        <div className="w-full aspect-[2/1] bg-gray-100 rounded-lg mb-3 overflow-hidden relative">
+                        {/* 이미지 - 2:1 비율 */}
+                        <div className="relative w-full aspect-[2/1] bg-gray-100 overflow-hidden">
                           <img
                             src={getThumbnailUrl(treatment)}
-                            alt={treatment.treatment_name}
+                            alt={treatment.treatment_name || "시술 이미지"}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              if (target.dataset.fallback === "true") {
+                                target.style.display = "none";
+                                return;
+                              }
+                              target.src =
+                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
+                              target.dataset.fallback = "true";
+                            }}
                           />
                           {/* 할인율 배지 */}
                           {treatment.dis_rate && treatment.dis_rate > 0 && (
-                            <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded z-20">
+                            <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
                               {treatment.dis_rate}%
                             </div>
                           )}
+                          {/* 찜 버튼 - 썸네일 우측 상단 */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFavoriteClick(e);
+                            }}
+                            className="absolute top-3 right-3 bg-white bg-opacity-90 p-2 rounded-full z-10 shadow-sm hover:bg-opacity-100 transition-colors"
+                          >
+                            <FiHeart
+                              className={`text-base ${
+                                isFavorited
+                                  ? "text-red-500 fill-red-500"
+                                  : "text-gray-700"
+                              }`}
+                            />
+                          </button>
                         </div>
 
-                        {/* 카드 내용 */}
-                        <div className="flex flex-col h-full p-3">
+                        {/* 카드 내용 - flex-col로 하단 정렬 */}
+                        <div className="p-3 flex flex-col h-full">
+                          {/* 상단 콘텐츠 */}
                           <div>
-                            {/* 병원명 */}
-                            <p className="text-xs text-gray-500 mb-1">
-                              {treatment.hospital_name}
-                            </p>
-
                             {/* 시술명 */}
-                            <h5 className="font-semibold text-gray-900 mb-2 text-sm line-clamp-2">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
                               {treatment.treatment_name}
-                            </h5>
+                            </h4>
 
-                            {/* 시술 시간 및 회복 기간 */}
-                            {(procedureTime > 0 || recoveryPeriod > 0) && (
-                              <div className="flex items-center gap-3 text-xs text-gray-600 mb-2">
-                                {procedureTime > 0 ? (
-                                  <div className="flex items-center gap-1">
-                                    <FiClock className="text-primary-main text-xs" />
-                                    <span>
-                                      {procedureTime}
-                                      {t("procedure.procedureTime")}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-1">
-                                    <FiClock className="text-gray-300 text-xs" />
-                                    <span className="text-gray-400">
-                                      시간 정보 없음
-                                    </span>
-                                  </div>
-                                )}
-                                {recoveryPeriod > 0 ? (
-                                  <div className="flex items-center gap-1">
-                                    <FiCalendar className="text-primary-main text-xs" />
-                                    <span>
-                                      {t("procedure.recoveryPeriod")}{" "}
-                                      {recoveryPeriod}
-                                      {t("procedure.recoveryDays")}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-1">
-                                    <FiCalendar className="text-gray-300 text-xs" />
-                                    <span className="text-gray-400">
-                                      회복기간 정보 없음
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                            {/* 병원명 */}
+                            {treatment.hospital_name && (
+                              <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                                {treatment.hospital_name}
+                              </p>
                             )}
 
                             {/* 평점 */}
-                            {treatment.rating && (
-                              <div className="flex items-center gap-1 mb-1">
+                            {treatment.rating && treatment.rating > 0 && (
+                              <div className="flex items-center gap-1 mb-2">
                                 <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                                <span className="text-xs font-semibold">
+                                <span className="text-xs font-semibold text-gray-700">
                                   {treatment.rating.toFixed(1)}
                                 </span>
                                 {treatment.review_count && (
@@ -1125,56 +1131,31 @@ export default function ProcedureRecommendation({
                             )}
                           </div>
 
-                          {/* 가격과 버튼 - 하단 고정 */}
-                          <div className="flex items-end justify-between mt-auto">
-                            <div className="flex-1">
-                              {/* 가격 */}
-                              <div className="flex items-center gap-2">
-                                {treatment.original_price &&
-                                  treatment.selling_price &&
-                                  treatment.original_price >
-                                    treatment.selling_price && (
-                                    <span className="text-xs text-gray-400 line-through">
-                                      {Math.round(
-                                        treatment.original_price / 10000
-                                      )}
-                                      만원
-                                    </span>
-                                  )}
-                                <span className="text-base font-bold text-primary-main">
-                                  {price}
+                          {/* 하단 정보 - mt-auto로 하단 고정 */}
+                          <div className="mt-auto flex items-center justify-between">
+                            {/* 가격 */}
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm font-bold text-primary-main">
+                                {price}
+                              </span>
+                              {treatment.vat_info && (
+                                <span className="text-[10px] text-gray-500">
+                                  {treatment.vat_info}
                                 </span>
-                              </div>
+                              )}
                             </div>
 
-                            {/* 하트/달력 버튼 - 세로 배치 */}
-                            <div className="flex flex-col gap-1.5">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleFavoriteClick(e);
-                                }}
-                                className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                              >
-                                <FiHeart
-                                  className={`text-base ${
-                                    isFavorited
-                                      ? "text-red-500 fill-red-500"
-                                      : "text-gray-600"
-                                  }`}
-                                />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedTreatment(treatment);
-                                  setIsScheduleModalOpen(true);
-                                }}
-                                className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                              >
-                                <FiCalendar className="text-base text-primary-main" />
-                              </button>
-                            </div>
+                            {/* 일정 추가 버튼 */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTreatment(treatment);
+                                setIsScheduleModalOpen(true);
+                              }}
+                              className="p-2 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                            >
+                              <FiCalendar className="text-base text-primary-main" />
+                            </button>
                           </div>
                         </div>
                       </div>

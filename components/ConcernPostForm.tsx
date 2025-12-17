@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FiArrowLeft } from "react-icons/fi";
 import { saveConcernPost } from "@/lib/api/beautripApi";
+import { supabase } from "@/lib/supabase";
 
 interface ConcernPostFormProps {
   onBack: () => void;
@@ -29,6 +30,17 @@ export default function ConcernPostForm({
   ];
 
   const handleSubmit = async () => {
+    // 로그인 여부 확인
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      alert("로그인 후에만 고민글을 작성할 수 있습니다.");
+      return;
+    }
+
     // 필수 항목 검증
     if (!title || !concernCategory || content.length < 10) {
       alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
@@ -41,7 +53,7 @@ export default function ConcernPostForm({
         title,
         concern_category: concernCategory,
         content,
-        user_id: 0, // 현재는 로그인 기능이 없으므로 0으로 통일
+        user_id: user.id, // Supabase Auth UUID
       });
 
       if (result.success) {
@@ -139,4 +151,3 @@ export default function ConcernPostForm({
     </div>
   );
 }
-

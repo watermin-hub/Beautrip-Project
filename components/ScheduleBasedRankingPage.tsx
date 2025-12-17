@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import TravelScheduleBar from "./TravelScheduleBar";
-import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
 import ProcedureRecommendation from "./ProcedureRecommendation";
 import type { TravelScheduleData } from "./TravelScheduleForm";
 
@@ -28,8 +27,9 @@ export default function ScheduleBasedRankingPage() {
     start: null,
     end: null,
   });
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null
+  );
 
   const handleScheduleChange = (
     start: string | null,
@@ -65,19 +65,14 @@ export default function ScheduleBasedRankingPage() {
 
   return (
     <div className="px-4 py-6">
-      <h3 className="text-lg font-bold mb-2 text-gray-900">
-        일정 맞춤 랭킹
-      </h3>
+      <h3 className="text-lg font-bold mb-2 text-gray-900">일정 맞춤 랭킹</h3>
       <p className="text-sm text-gray-600 mb-6">
         여행 일정을 입력하면 해당 기간에 맞는 시술을 추천해드립니다.
       </p>
 
       {/* 여행 일정 입력 바 (홈페이지와 동일) */}
       <div className="mb-6">
-        <TravelScheduleBar
-          onScheduleChange={handleScheduleChange}
-          onModalStateChange={setIsCalendarModalOpen}
-        />
+        <TravelScheduleBar onScheduleChange={handleScheduleChange} />
       </div>
 
       {/* 일정 선택 시 맞춤 시술 추천 표시 (홈페이지와 동일) */}
@@ -97,17 +92,6 @@ export default function ScheduleBasedRankingPage() {
           </p>
         </div>
       )}
-
-      {/* 캘린더 모달 */}
-      <TravelScheduleCalendarModal
-        isOpen={isCalendarModalOpen}
-        onClose={() => setIsCalendarModalOpen(false)}
-        onDateSelect={handleScheduleChange}
-        selectedStartDate={schedule.start}
-        selectedEndDate={schedule.end}
-        onModalStateChange={setIsCalendarModalOpen}
-      />
     </div>
   );
 }
-

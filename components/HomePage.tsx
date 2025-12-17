@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import RankingBanner from "./RankingBanner";
@@ -16,6 +16,7 @@ import BottomNavigation from "./BottomNavigation";
 import ProcedureRecommendation from "./ProcedureRecommendation";
 import CountryPainPointSection from "./CountryPainPointSection";
 import CommunityWriteModal from "./CommunityWriteModal";
+import LoginModal from "./LoginModal";
 import InformationalContentSection from "./InformationalContentSection";
 import type { TravelScheduleData } from "./TravelScheduleForm";
 
@@ -49,6 +50,25 @@ export default function HomePage() {
   );
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const procedureRecommendationRef = useRef<HTMLDivElement>(null);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { supabase } = await import("@/lib/supabase");
+      if (!supabase) {
+        setIsLoggedIn(false);
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+  }, []);
 
   // URL 쿼리 파라미터에서 openCalendar 확인하여 모달 열기
   useEffect(() => {
@@ -101,6 +121,49 @@ export default function HomePage() {
 
   const hasFullSchedule = !!(schedule.start && schedule.end);
 
+  // 1번 배너 클릭 핸들러: 로그인 체크 후 후기 작성 모달 또는 로그인 모달 열기
+  const handleBanner1Click = () => {
+    if (isLoggedIn) {
+      setIsWriteModalOpen(true);
+    } else {
+      setIsLoginModalOpen(true);
+    }
+  };
+
+  // 5번 배너 클릭 핸들러: 오늘부터 2박 3일 일정 설정 후 ProcedureRecommendation 섹션으로 스크롤
+  const handleBanner5Click = () => {
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 2); // 오늘부터 2박 3일 (오늘, 내일, 모레)
+
+    const formatDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const startDateStr = formatDate(today);
+    const endDateStr = formatDate(endDate);
+
+    // 일정 설정
+    handleScheduleChange(startDateStr, endDateStr);
+
+    // ProcedureRecommendation 섹션으로 스크롤
+    setTimeout(() => {
+      if (procedureRecommendationRef.current) {
+        const headerOffset = 96; // 헤더 높이
+        const elementPosition = procedureRecommendationRef.current.offsetTop;
+        const offsetPosition = elementPosition - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
+    }, 300); // 일정 설정 후 DOM 업데이트 대기
+  };
+
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">
       {/* Fixed Ranking Banner - 상단 고정 */}
@@ -119,9 +182,18 @@ export default function HomePage() {
           />
         </div>
 
+        {/* 메인 배너 (일정 검색 완료 후에도 일정 수정 바로 밑에 표시) */}
+        <PromotionBanner
+          onBanner1Click={handleBanner1Click}
+          onBanner5Click={handleBanner5Click}
+        />
+
         {/* 인기 시술 → 맞춤 시술 (일정 선택 시 맞춤 시술로 대체) */}
         {scheduleData ? (
-          <div className="mb-6 -mx-4 bg-gray-50">
+          <div
+            ref={procedureRecommendationRef}
+            className="mb-6 -mx-4 bg-gray-50"
+          >
             <ProcedureRecommendation
               scheduleData={scheduleData}
               selectedCategoryId={selectedCategoryId}
@@ -132,9 +204,6 @@ export default function HomePage() {
         ) : (
           <HotConcernsSection />
         )}
-
-        {/* 배너 슬라이더 (AI/이벤트/블프...) */}
-        <PromotionBanner />
 
         {/* 정보성 컨텐츠 섹션 (커뮤니티에 추가 예정) */}
         <InformationalContentSection />
@@ -184,6 +253,18 @@ export default function HomePage() {
       <CommunityWriteModal
         isOpen={isWriteModalOpen}
         onClose={() => setIsWriteModalOpen(false)}
+      />
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsLoggedIn(true);
+          setIsLoginModalOpen(false);
+          // 로그인 성공 후 후기 작성 모달 열기
+          setIsWriteModalOpen(true);
+        }}
       />
 
       <div className="pb-20">

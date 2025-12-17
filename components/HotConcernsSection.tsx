@@ -283,55 +283,61 @@ export default function HotConcernsSection() {
                 </button>
               </div>
 
-              {/* 카드 내용 */}
-              <div className="p-3 relative">
-                {/* 시술명 */}
-                <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[40px]">
-                  {treatment.treatment_name}
-                </h4>
+              {/* 카드 내용 - flex-col로 하단 정렬 */}
+              <div className="p-3 flex flex-col h-full">
+                {/* 상단 콘텐츠 */}
+                <div>
+                  {/* 시술명 */}
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                    {treatment.treatment_name}
+                  </h4>
 
-                {/* 병원명 */}
-                {treatment.hospital_name && (
-                  <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                    {treatment.hospital_name}
-                  </p>
-                )}
+                  {/* 병원명 */}
+                  {treatment.hospital_name && (
+                    <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                      {treatment.hospital_name}
+                    </p>
+                  )}
 
-                {/* 평점 */}
-                {rating > 0 && (
-                  <div className="flex items-center gap-1 mb-2">
-                    <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                    <span className="text-xs font-semibold text-gray-700">
-                      {rating.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      ({reviewCount.toLocaleString()})
-                    </span>
-                  </div>
-                )}
-
-                {/* 가격 */}
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-bold text-primary-main">
-                    {price}
-                  </span>
-                  {treatment.vat_info && (
-                    <span className="text-[10px] text-gray-500">
-                      {treatment.vat_info}
-                    </span>
+                  {/* 평점 */}
+                  {rating > 0 && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                      <span className="text-xs font-semibold text-gray-700">
+                        {rating.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        ({reviewCount.toLocaleString()})
+                      </span>
+                    </div>
                   )}
                 </div>
 
-                {/* 일정 추가 버튼 - 카드 우측 하단 */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleScheduleClick(treatment, e);
-                  }}
-                  className="absolute bottom-3 right-3 p-2 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors"
-                >
-                  <FiCalendar className="text-base text-primary-main" />
-                </button>
+                {/* 하단 정보 - mt-auto로 하단 고정 */}
+                <div className="mt-auto flex items-center justify-between">
+                  {/* 가격 */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-bold text-primary-main">
+                      {price}
+                    </span>
+                    {treatment.vat_info && (
+                      <span className="text-[10px] text-gray-500">
+                        {treatment.vat_info}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 일정 추가 버튼 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleScheduleClick(treatment, e);
+                    }}
+                    className="p-2 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                  >
+                    <FiCalendar className="text-base text-primary-main" />
+                  </button>
+                </div>
               </div>
             </div>
           );

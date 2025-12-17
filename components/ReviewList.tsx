@@ -9,6 +9,9 @@ import {
   ProcedureReviewData,
   HospitalReviewData,
   ConcernPostData,
+  togglePostLike,
+  isPostLiked,
+  getPostLikeCount,
 } from "@/lib/api/beautripApi";
 
 interface ReviewPost {
@@ -24,6 +27,8 @@ interface ReviewPost {
   comments: number;
   views: number;
   likes?: number;
+  postType?: "procedure_review" | "hospital_review" | "concern_post"; // Supabase 글 타입
+  isLiked?: boolean; // 현재 사용자가 좋아요를 눌렀는지
 }
 
 const reviewPosts: ReviewPost[] = [
@@ -131,6 +136,8 @@ const formatTimeAgo = (dateString?: string): string => {
 export default function ReviewList() {
   const [supabaseReviews, setSupabaseReviews] = useState<ReviewPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     const loadReviews = async () => {
@@ -161,6 +168,7 @@ export default function ReviewList() {
           upvotes: 0,
           comments: 0,
           views: 0,
+          postType: "procedure_review" as const,
         }));
 
         // 병원 후기 변환 (created_at 포함)
@@ -179,6 +187,7 @@ export default function ReviewList() {
           upvotes: 0,
           comments: 0,
           views: 0,
+          postType: "hospital_review" as const,
         }));
 
         // 고민글 변환 (created_at 포함)
@@ -195,6 +204,7 @@ export default function ReviewList() {
             upvotes: 0,
             comments: 0,
             views: 0,
+            postType: "concern_post" as const,
           }));
 
         // 최신순으로 정렬 (created_at 기준, 모든 후기 통합)
@@ -217,6 +227,34 @@ export default function ReviewList() {
           .map(({ created_at, ...rest }) => rest); // created_at 제거
 
         setSupabaseReviews(allSupabaseReviews);
+
+        // 좋아요 상태 및 개수 로드
+        const postIds = allSupabaseReviews
+          .filter((post) => post.postType && typeof post.id === "string")
+          .map((post) => ({
+            id: post.id as string,
+            type: post.postType!,
+          }));
+
+        // 좋아요 상태 일괄 확인
+        const likedSet = new Set<string>();
+        const countsMap = new Map<string, number>();
+
+        await Promise.all(
+          postIds.map(async ({ id, type }) => {
+            const [isLiked, count] = await Promise.all([
+              isPostLiked(id, type),
+              getPostLikeCount(id, type),
+            ]);
+            if (isLiked) {
+              likedSet.add(`${id}-${type}`);
+            }
+            countsMap.set(`${id}-${type}`, count);
+          })
+        );
+
+        setLikedPosts(likedSet);
+        setLikeCounts(countsMap);
       } catch (error) {
         console.error("후기 로드 실패:", error);
       } finally {
@@ -328,7 +366,67 @@ export default function ReviewList() {
                 {post.views.toLocaleString()}
               </span>
             </div>
-            {post.likes && (
+            {/* 좋아요 버튼 */}
+            {post.postType && typeof post.id === "string" && (
+              <button
+                onClick={async () => {
+                  const postId = post.id as string;
+                  const postType = post.postType!;
+                  const key = `${postId}-${postType}`;
+
+                  try {
+                    const result = await togglePostLike(postId, postType);
+                    if (result.success) {
+                      // 좋아요 상태 업데이트
+                      setLikedPosts((prev) => {
+                        const newSet = new Set(prev);
+                        if (result.isLiked) {
+                          newSet.add(key);
+                        } else {
+                          newSet.delete(key);
+                        }
+                        return newSet;
+                      });
+
+                      // 좋아요 개수 업데이트
+                      const newCount = await getPostLikeCount(postId, postType);
+                      setLikeCounts((prev) => {
+                        const newMap = new Map(prev);
+                        newMap.set(key, newCount);
+                        return newMap;
+                      });
+                    } else {
+                      if (result.error?.includes("로그인이 필요")) {
+                        alert("로그인이 필요합니다.");
+                      } else {
+                        alert(result.error || "좋아요 처리에 실패했습니다.");
+                      }
+                    }
+                  } catch (error) {
+                    console.error("좋아요 토글 실패:", error);
+                    alert("좋아요 처리 중 오류가 발생했습니다.");
+                  }
+                }}
+                className={`flex items-center gap-1 ml-auto transition-colors ${
+                  likedPosts.has(`${post.id}-${post.postType}`)
+                    ? "text-red-500"
+                    : "text-gray-600 hover:text-red-500"
+                }`}
+              >
+                <FiHeart
+                  className={`text-lg ${
+                    likedPosts.has(`${post.id}-${post.postType}`)
+                      ? "fill-red-500"
+                      : ""
+                  }`}
+                />
+                <span className="text-xs">
+                  {likeCounts.get(`${post.id}-${post.postType}`) || 0}
+                </span>
+              </button>
+            )}
+            {/* 기존 하드코딩된 좋아요 표시 (postType이 없는 경우) */}
+            {!post.postType && post.likes && (
               <div className="flex items-center gap-1 text-gray-600 ml-auto">
                 <FiHeart className="text-primary-main fill-primary-main" />
                 <span className="text-xs">{post.likes}</span>

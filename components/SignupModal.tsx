@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { FiArrowLeft, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiArrowLeft, FiEye, FiEyeOff, FiChevronDown } from "react-icons/fi";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import type { LanguageCode } from "@/contexts/LanguageContext";
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -25,6 +26,8 @@ export default function SignupModal({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>("KR");
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -100,7 +103,7 @@ export default function SignupModal({
           user_id: authData.user.id, // Supabase Auth의 UUID
           provider: "local",
           login_id: email.trim(),
-          preferred_language: "KR", // 기본값
+          preferred_language: selectedLanguage, // 선택한 언어 저장
         });
 
       if (profileError) {
@@ -116,7 +119,13 @@ export default function SignupModal({
         throw new Error(`프로필 저장에 실패했습니다: ${profileError.message}`);
       }
 
-      // 3. 성공 처리
+      // 3. 선택한 언어를 localStorage에 저장 (즉시 적용)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("language", selectedLanguage);
+        window.dispatchEvent(new Event("languageChanged"));
+      }
+
+      // 4. 성공 처리
       // Supabase가 이메일 확인을 요구하는 경우, 사용자에게 안내
       if (authData.user && !authData.session) {
         // 이메일 확인이 필요한 경우
@@ -272,6 +281,74 @@ export default function SignupModal({
                     <FiEye className="text-xl" />
                   )}
                 </button>
+              </div>
+            </div>
+
+            {/* 언어 선택 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                선호 언어
+              </label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+                  }
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent text-left flex items-center justify-between bg-white"
+                >
+                  <span className="text-gray-900">
+                    {selectedLanguage === "KR"
+                      ? "한국어"
+                      : selectedLanguage === "EN"
+                      ? "English"
+                      : selectedLanguage === "JP"
+                      ? "日本語"
+                      : "中文"}
+                  </span>
+                  <FiChevronDown
+                    className={`text-gray-500 transition-transform ${
+                      isLanguageDropdownOpen ? "transform rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* 드롭다운 메뉴 */}
+                {isLanguageDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsLanguageDropdownOpen(false)}
+                    />
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                      {(
+                        [
+                          { code: "KR" as LanguageCode, label: "한국어" },
+                          { code: "EN" as LanguageCode, label: "English" },
+                          { code: "JP" as LanguageCode, label: "日本語" },
+                          { code: "CN" as LanguageCode, label: "中文" },
+                        ] as const
+                      ).map((lang) => (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          onClick={() => {
+                            setSelectedLanguage(lang.code);
+                            setIsLanguageDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                            selectedLanguage === lang.code
+                              ? "bg-primary-main/5 text-primary-main font-medium"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

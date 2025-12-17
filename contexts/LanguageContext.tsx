@@ -140,7 +140,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "calendar.selectCategory": "카테고리 선택",
     "calendar.selectEndDate": "종료일을 선택해주세요",
     "procedure.filter": "필터",
-    "procedure.customRecommendations": "맞춤 시술 추천",
+    "procedure.customRecommendations": "여행 일정에 딱 맞는 시술 추천",
     "procedure.travelInfo": "여행 일정 정보",
     "procedure.travelPeriod": "여행 기간",
     "procedure.selectedCategory": "선택 카테고리",

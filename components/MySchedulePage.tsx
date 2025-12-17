@@ -13,6 +13,7 @@ import {
   FiStar,
   FiHeart,
   FiEdit2,
+  FiX,
 } from "react-icons/fi";
 import { IoCheckmarkCircle } from "react-icons/io5";
 import Header from "./Header";
@@ -134,9 +135,11 @@ const clinics = [
 function RecoveryCardComponent({
   rec,
   isOutsideTravel,
+  onDelete,
 }: {
   rec: ProcedureSchedule;
   isOutsideTravel: boolean;
+  onDelete: (id: number) => void;
 }) {
   const router = useRouter();
   const [recoveryText, setRecoveryText] = useState<string | null>(
@@ -337,16 +340,37 @@ function RecoveryCardComponent({
     }
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm("이 회복 기간 일정을 삭제하시겠습니까?")) {
+      onDelete(rec.id);
+    }
+  };
+
   return (
     <div
       onClick={handleCardClick}
-      className={`border rounded-xl p-4 shadow-sm cursor-pointer transition-all hover:shadow-md ${
+      className={`border rounded-xl p-4 shadow-sm cursor-pointer transition-all hover:shadow-md relative ${
         isOutsideTravel
-          ? "bg-amber-50 border-amber-200 hover:border-amber-300"
-          : "bg-green-50 border-green-200 hover:border-green-300"
+          ? "bg-red-50 border-red-200 hover:border-red-300"
+          : "bg-yellow-50 border-yellow-200 hover:border-yellow-300"
       } ${isNavigating ? "opacity-70" : ""}`}
     >
-      <div className="flex items-start justify-between mb-2">
+      {/* 삭제 버튼 */}
+      <button
+        onClick={handleDelete}
+        className={`absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm transition-colors z-10 ${
+          isOutsideTravel ? "hover:bg-red-50" : "hover:bg-yellow-50"
+        }`}
+        title="삭제"
+      >
+        <FiX
+          className={`text-sm ${
+            isOutsideTravel ? "text-red-600" : "text-yellow-600"
+          }`}
+        />
+      </button>
+      <div className="flex items-start justify-between mb-2 pr-8">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h4 className="text-base font-semibold text-gray-900">
@@ -355,27 +379,27 @@ function RecoveryCardComponent({
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                 isOutsideTravel
-                  ? "bg-amber-200 text-amber-800"
-                  : "bg-green-200 text-green-800"
+                  ? "bg-red-200 text-red-900"
+                  : "bg-yellow-200 text-yellow-800"
               }`}
             >
               회복 기간
             </span>
             {isOutsideTravel && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-300 text-amber-900">
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-300 text-red-950">
                 ⚠️ 여행 기간 밖
               </span>
             )}
           </div>
           <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
             <FiMapPin
-              className={isOutsideTravel ? "text-amber-600" : "text-green-600"}
+              className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
             />
             <span>{rec.hospital}</span>
           </div>
           <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
             <FiTag
-              className={isOutsideTravel ? "text-amber-600" : "text-green-600"}
+              className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
             />
             <span>{rec.category}</span>
           </div>
@@ -383,13 +407,11 @@ function RecoveryCardComponent({
           {rec.recoveryDays > 0 && (
             <div
               className={`flex items-center gap-1 text-sm font-medium mb-2 ${
-                isOutsideTravel ? "text-amber-700" : "text-green-700"
+                isOutsideTravel ? "text-red-700" : "text-yellow-700"
               }`}
             >
               <FiClock
-                className={
-                  isOutsideTravel ? "text-amber-600" : "text-green-600"
-                }
+                className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
               />
               <span>회복 기간: {rec.recoveryDays}일</span>
             </div>
@@ -397,15 +419,13 @@ function RecoveryCardComponent({
           {/* 회복 가이드 표시 (해당 일차에 맞는 텍스트 우선) */}
           {(getGuideForDay(rec.recoveryDayIndex) || recoveryText) && (
             <div
-              className={`text-xs text-gray-700 rounded-lg p-3 mt-2 border ${
-                isOutsideTravel
-                  ? "bg-white/60 border-amber-100"
-                  : "bg-white/60 border-green-100"
+              className={`text-xs text-gray-700 rounded-lg p-3 mt-2 border bg-white/60 ${
+                isOutsideTravel ? "border-red-100" : "border-yellow-100"
               }`}
             >
               <p
                 className={`font-semibold mb-1.5 ${
-                  isOutsideTravel ? "text-amber-800" : "text-green-800"
+                  isOutsideTravel ? "text-red-800" : "text-yellow-800"
                 }`}
               >
                 회복 가이드
@@ -422,6 +442,7 @@ function RecoveryCardComponent({
 }
 
 export default function MySchedulePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"schedule" | "map">("schedule");
   // 초기 날짜를 현재 날짜로 설정
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -510,10 +531,12 @@ export default function MySchedulePage() {
           hospital: s.hospital,
           category: s.category,
           categoryMid: s.categoryMid || null,
+          categorySmall: s.categorySmall || null,
           recoveryDays: s.recoveryDays || 0,
           recoveryText: s.recoveryText || null, // 회복 기간 텍스트
           recoveryGuides: s.recoveryGuides || undefined, // 회복 가이드 범위별 텍스트
           procedureTime: s.procedureTime ? `${s.procedureTime}분` : undefined,
+          treatmentId: s.treatmentId || undefined, // 시술 ID 추가
         })
       );
 
@@ -938,7 +961,7 @@ export default function MySchedulePage() {
                   bgClass = "";
                   textClass = "text-primary-main font-bold";
                 } else if (isSelectedDate) {
-                  bgClass = "bg-primary-main/20";
+                  bgClass = "bg-primary-main/10";
                   textClass = "text-primary-main font-semibold";
                 } else {
                   bgClass = "";
@@ -952,22 +975,26 @@ export default function MySchedulePage() {
                     className={`aspect-square border-r border-b border-gray-100 p-0.5 transition-colors relative ${bgClass} ${textClass} hover:bg-gray-50`}
                   >
                     <div className="flex flex-col items-start justify-start h-full w-full p-0.5">
-                      <span className="text-xs font-medium">
+                      <span
+                        className={`text-xs ${
+                          isTodayDate ? "font-bold" : "font-medium"
+                        }`}
+                      >
                         {date.getDate()}
                       </span>
 
-                      {/* 시술 표시 (최대 3줄) */}
+                      {/* 시술 표시 (최대 3줄) - mint 계열 */}
                       <div className="flex flex-col gap-0.5 w-full mt-0.5">
                         {proceduresOnDate.slice(0, 3).map((proc, idx) => (
                           <div
                             key={proc.id}
-                            className="w-full h-1.5 bg-purple-400 rounded-sm"
+                            className="w-full h-1.5 bg-primary-main rounded-sm"
                             title={proc.procedureName}
                           />
                         ))}
                       </div>
 
-                      {/* 회복 기간 표시 (초록색, 여행 밖이면 주황색) */}
+                      {/* 회복 기간 표시 (yellow 계열, 여행 밖이면 더 진한 yellow) */}
                       {recoveryOnDate.length > 0 &&
                         proceduresOnDate.length < 3 && (
                           <div className="flex flex-col gap-0.5 w-full mt-0.5">
@@ -978,8 +1005,8 @@ export default function MySchedulePage() {
                                   key={`recovery-${rec.id}-${idx}`}
                                   className={`w-full h-1.5 rounded-sm ${
                                     isRecoveryOutside
-                                      ? "bg-amber-400"
-                                      : "bg-green-400"
+                                      ? "bg-red-500"
+                                      : "bg-yellow-400"
                                   }`}
                                   title={`${rec.procedureName} 회복 기간`}
                                 />
@@ -1000,15 +1027,15 @@ export default function MySchedulePage() {
               <span className="text-gray-600">여행 기간</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1.5 bg-purple-400 rounded-sm"></div>
+              <div className="w-3 h-1.5 bg-primary-main rounded-sm"></div>
               <span className="text-gray-600">시술</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1.5 bg-green-400 rounded-sm"></div>
+              <div className="w-3 h-1.5 bg-yellow-400 rounded-sm"></div>
               <span className="text-gray-600">회복 기간</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1.5 bg-amber-400 rounded-sm"></div>
+              <div className="w-3 h-1.5 bg-red-500 rounded-sm"></div>
               <span className="text-gray-600">회복 기간 (여행 밖)</span>
             </div>
           </div>
@@ -1021,51 +1048,106 @@ export default function MySchedulePage() {
                   {selectedDate} 일정 정보
                 </h3>
 
-                {/* 시술 카드 (보라 톤 배경) */}
-                {selectedProcedures.map((proc) => (
-                  <div
-                    key={proc.id}
-                    className="bg-purple-50 border border-purple-200 rounded-xl p-4 shadow-sm"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="text-base font-semibold text-gray-900 mb-1">
-                          {proc.procedureName}
-                        </h4>
-                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                          <FiMapPin className="text-purple-600" />
-                          <span>{proc.hospital}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                          <FiTag className="text-purple-600" />
-                          <span>{proc.category}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-purple-700 font-medium mb-1">
-                          <FiClock className="text-purple-600" />
-                          <span>회복 기간: {proc.recoveryDays}일</span>
-                        </div>
-                        {/* 시술 당일 카드에서는 회복 가이드는 노출하지 않음 (회복일 카드에서만 안내) */}
-                      </div>
-                      {proc.procedureTime && (
-                        <div className="text-sm font-semibold text-purple-700">
-                          {proc.procedureTime}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {/* 시술 카드 (red 계열 배경) */}
+                {selectedProcedures.map((proc) => {
+                  const handleCardClick = () => {
+                    if (proc.treatmentId) {
+                      router.push(`/treatment/${proc.treatmentId}`);
+                    } else {
+                      alert("시술 상세 정보를 불러올 수 없습니다.");
+                    }
+                  };
 
-                {/* 회복 기간 카드 (녹색 톤 배경) */}
+                  const handleDelete = (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    if (confirm("이 시술 일정을 삭제하시겠습니까?")) {
+                      const schedules = JSON.parse(
+                        localStorage.getItem("schedules") || "[]"
+                      );
+                      const updatedSchedules = schedules.filter(
+                        (s: any) => s.id !== proc.id
+                      );
+                      localStorage.setItem(
+                        "schedules",
+                        JSON.stringify(updatedSchedules)
+                      );
+                      window.dispatchEvent(new Event("scheduleAdded"));
+                      alert("일정이 삭제되었습니다.");
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={proc.id}
+                      onClick={handleCardClick}
+                      className="bg-primary-light/10 border border-primary-main rounded-xl p-4 shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-primary-main/80 relative"
+                    >
+                      {/* 삭제 버튼 */}
+                      <button
+                        onClick={handleDelete}
+                        className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm hover:bg-primary-light/20 transition-colors z-10"
+                        title="삭제"
+                      >
+                        <FiX className="text-primary-main text-sm" />
+                      </button>
+
+                      <div className="flex items-start justify-between mb-2 pr-8">
+                        <div className="flex-1">
+                          <h4 className="text-base font-semibold text-gray-900 mb-1">
+                            {proc.procedureName}
+                          </h4>
+                          <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                            <FiMapPin className="text-primary-main" />
+                            <span>{proc.hospital}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                            <FiTag className="text-primary-main" />
+                            <span>{proc.category}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-primary-main font-medium mb-1">
+                            <FiClock className="text-primary-main" />
+                            <span>회복 기간: {proc.recoveryDays}일</span>
+                          </div>
+                          {/* 시술 당일 카드에서는 회복 가이드는 노출하지 않음 (회복일 카드에서만 안내) */}
+                        </div>
+                        {proc.procedureTime && (
+                          <div className="text-sm font-semibold text-primary-main">
+                            {proc.procedureTime}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* 회복 기간 카드 (red 계열 배경) */}
                 {selectedRecovery.map((rec, idx) => {
                   // 선택한 날짜가 여행 일정 밖인지 여부를 boolean으로 변환
                   const isOutsideTravel = !!(
                     selectedDateObj && isRecoveryOutsideTravel(selectedDateObj)
                   );
+
+                  const handleDeleteRecovery = (id: number) => {
+                    const schedules = JSON.parse(
+                      localStorage.getItem("schedules") || "[]"
+                    );
+                    const updatedSchedules = schedules.filter(
+                      (s: any) => s.id !== id
+                    );
+                    localStorage.setItem(
+                      "schedules",
+                      JSON.stringify(updatedSchedules)
+                    );
+                    window.dispatchEvent(new Event("scheduleAdded"));
+                    alert("일정이 삭제되었습니다.");
+                  };
+
                   return (
                     <RecoveryCardComponent
                       key={`recovery-${rec.id}-${idx}`}
                       rec={rec}
                       isOutsideTravel={isOutsideTravel}
+                      onDelete={handleDeleteRecovery}
                     />
                   );
                 })}

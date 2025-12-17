@@ -175,6 +175,17 @@ export default function ProcedureReviewForm({
   };
 
   const handleSubmit = async () => {
+    // 로그인 여부 확인
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      alert("로그인 후에만 시술 후기를 작성할 수 있습니다.");
+      return;
+    }
+
     // 필수 항목 검증
     // procedureName은 procedureSearchTerm에서 가져오거나 직접 입력된 값 사용
     const finalProcedureName = procedureName || procedureSearchTerm;
@@ -212,7 +223,7 @@ export default function ProcedureReviewForm({
         surgery_date: surgeryDate || undefined,
         content,
         images: imageUrls,
-        user_id: 0, // 현재는 로그인 기능이 없으므로 0으로 통일
+        user_id: user.id, // Supabase Auth UUID
       });
 
       if (result.success) {

@@ -19,7 +19,7 @@ export default function CommunityHeader({
   const tabs = [
     { id: "popular" as const, label: "인기글" },
     { id: "latest" as const, label: "최신글" },
-    { id: "info" as const, label: "정보컨텐츠" },
+    { id: "info" as const, label: "가이드" },
     { id: "consultation" as const, label: "고민상담소" },
   ];
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import CategoryRankingPage from "./CategoryRankingPage";
 import KBeautyRankingPage from "./KBeautyRankingPage";
 import HospitalRankingPage from "./HospitalRankingPage";
@@ -9,7 +10,16 @@ import ScheduleBasedRankingPage from "./ScheduleBasedRankingPage";
 type RankingTab = "category" | "kbeauty" | "hospital" | "schedule";
 
 export default function RankingSection() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<RankingTab>("category");
+
+  // URL 쿼리 파라미터에서 tab 읽어서 해당 탭 선택
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["category", "kbeauty", "hospital", "schedule"].includes(tab)) {
+      setActiveTab(tab as RankingTab);
+    }
+  }, [searchParams]);
 
   const tabs = [
     { id: "category" as RankingTab, label: "카테고리별" },

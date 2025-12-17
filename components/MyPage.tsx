@@ -18,6 +18,7 @@ import {
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import LoginModal from "./LoginModal";
+import { getFavoriteProcedures, getLikedPosts } from "@/lib/api/beautripApi";
 
 interface UserInfo {
   username: string;
@@ -301,19 +302,34 @@ function MainContent({
   });
 
   useEffect(() => {
-    // 찜목록 개수 로드
-    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-    const procedures = favorites.filter(
-      (f: any) => f.type === "procedure"
-    ).length;
-    const hospitals = favorites.filter((f: any) => f.type === "clinic").length;
-    setFavoriteCount({ procedures, hospitals });
+    // Supabase에서 찜한 시술 개수 로드
+    const loadFavoriteCounts = async () => {
+      try {
+        const result = await getFavoriteProcedures();
+        if (result.success && result.treatmentIds) {
+          setFavoriteCount({
+            procedures: result.treatmentIds.length,
+            hospitals: 0, // 병원 찜하기는 추후 구현
+          });
+        }
+      } catch (error) {
+        console.error("찜한 시술 개수 로드 실패:", error);
+        // 실패 시 localStorage에서 로드 (하위 호환성)
+        const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+        const procedures = favorites.filter(
+          (f: any) => f.type === "procedure" || typeof f === "number"
+        ).length;
+        setFavoriteCount({ procedures, hospitals: 0 });
+      }
+    };
 
-    // 스크랩 개수 로드
+    loadFavoriteCounts();
+
+    // 스크랩 개수 로드 (로컬스토리지)
     const scraps = JSON.parse(localStorage.getItem("communityScraps") || "[]");
     setScrapCount(scraps.length);
 
-    // 내가 쓴 후기 개수 로드
+    // 내가 쓴 후기 개수 로드 (로컬스토리지)
     const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
     setReviewCount(reviews.length);
 
@@ -406,6 +422,27 @@ function MainContent({
           badge={scrapCount}
           onClick={() => {
             alert("스크랩한 글 목록 기능은 준비 중입니다.");
+          }}
+        />
+        <MenuItem
+          icon={FiHeart}
+          label="좋아요한 글"
+          badge={0}
+          onClick={async () => {
+            try {
+              const result = await getLikedPosts();
+              if (result.success && result.likes) {
+                const count = result.likes.length;
+                alert(
+                  `좋아요한 글: ${count}개\n\n목록 보기 기능은 준비 중입니다.`
+                );
+              } else {
+                alert("좋아요한 글을 불러올 수 없습니다.");
+              }
+            } catch (error) {
+              console.error("좋아요한 글 로드 실패:", error);
+              alert("좋아요한 글을 불러오는 중 오류가 발생했습니다.");
+            }
           }}
         />
       </div>

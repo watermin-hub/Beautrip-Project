@@ -25,6 +25,9 @@ import {
   parseRecoveryPeriod,
   parseProcedureTime,
   getRecoveryInfoByCategoryMid,
+  toggleProcedureFavorite,
+  isProcedureFavorite,
+  getFavoriteStatus,
 } from "@/lib/api/beautripApi";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
@@ -111,22 +114,12 @@ export default function TreatmentDetailPage({
         ];
         setTreatments(allTreatments);
 
-        // 찜 상태 로드
-        const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-        setIsFavorite(
-          favorites.some((f: any) => f.id === treatmentId || f === treatmentId)
-        );
+        // 찜 상태 로드 (Supabase)
+        const favoriteStatus = await isProcedureFavorite(treatmentId);
+        setIsFavorite(favoriteStatus);
 
-        // 찜 개수 (같은 시술명의 모든 옵션의 찜 수 합산)
-        const sameNameTreatments = [treatment, ...relatedOptions];
-        const totalFavorites = sameNameTreatments.reduce((sum, t) => {
-          const favs = JSON.parse(localStorage.getItem("favorites") || "[]");
-          const isFav = favs.some(
-            (f: any) => (typeof f === "object" ? f.id : f) === t.treatment_id
-          );
-          return sum + (isFav ? 1 : 0);
-        }, 0);
-        setFavoriteCount(totalFavorites);
+        // 찜 개수는 일단 0으로 설정 (추후 통계 기능 추가 시 수정)
+        setFavoriteCount(0);
 
         // 문의 개수 (로컬스토리지에서)
         const inquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");
@@ -176,19 +169,24 @@ export default function TreatmentDetailPage({
     };
   }, [isInquiryDropdownOpen]);
 
-  // 찜하기 토글
-  const handleFavoriteToggle = () => {
-    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
-    if (isFavorite) {
-      const newFavorites = favorites.filter((id: number) => id !== treatmentId);
-      localStorage.setItem("favorites", JSON.stringify(newFavorites));
-      setIsFavorite(false);
-      setFavoriteCount((prev) => Math.max(0, prev - 1));
-    } else {
-      favorites.push(treatmentId);
-      localStorage.setItem("favorites", JSON.stringify(favorites));
-      setIsFavorite(true);
-      setFavoriteCount((prev) => prev + 1);
+  // 찜하기 토글 (Supabase 연동)
+  const handleFavoriteToggle = async () => {
+    try {
+      const result = await toggleProcedureFavorite(treatmentId);
+      if (result.success) {
+        setIsFavorite(result.isFavorite);
+        // 찜 개수는 추후 통계 기능 추가 시 업데이트
+      } else {
+        if (result.error?.includes("로그인이 필요")) {
+          alert("로그인이 필요합니다.");
+          // 로그인 모달 표시 또는 로그인 페이지로 이동
+        } else {
+          alert(result.error || "찜하기 처리에 실패했습니다.");
+        }
+      }
+    } catch (error) {
+      console.error("찜하기 토글 실패:", error);
+      alert("찜하기 처리 중 오류가 발생했습니다.");
     }
   };
 
