@@ -55,7 +55,9 @@ export default function FavoritesPage() {
       try {
         setLoading(true);
 
-        // Supabase에서 찜한 시술 목록 가져오기
+        const allFavorites: FavoriteItem[] = [];
+
+        // 1. Supabase에서 찜한 시술 목록 가져오기
         const result = await getFavoriteProcedures();
         if (result.success && result.treatmentIds) {
           // 각 시술의 상세 정보 로드
@@ -64,8 +66,8 @@ export default function FavoritesPage() {
           );
           const treatments = await Promise.all(treatmentPromises);
 
-          // FavoriteItem 형식으로 변환
-          const favoriteItems: FavoriteItem[] = treatments
+          // 시술 찜 FavoriteItem 형식으로 변환
+          const procedureFavorites: FavoriteItem[] = treatments
             .filter((t): t is Treatment => t !== null)
             .map((treatment) => ({
               id: treatment.treatment_id || 0,
@@ -83,13 +85,38 @@ export default function FavoritesPage() {
               treatment,
             }));
 
-          setFavorites(favoriteItems);
-        } else {
-          // Supabase에서 가져오기 실패 시 localStorage에서 로드 (하위 호환성)
-          const savedFavorites = JSON.parse(
-            localStorage.getItem("favorites") || "[]"
-          );
+          allFavorites.push(...procedureFavorites);
+        }
+
+        // 2. localStorage에서 병원 찜 목록 가져오기 (병원 찜하기는 아직 Supabase 미지원)
+        const savedFavorites = JSON.parse(
+          localStorage.getItem("favorites") || "[]"
+        );
+        const clinicFavorites = savedFavorites.filter(
+          (f: any) => f.type === "clinic"
+        );
+
+        // 병원 찜 FavoriteItem 형식으로 변환
+        const hospitalFavorites: FavoriteItem[] = clinicFavorites.map(
+          (f: any) => ({
+            id: f.id || f.name?.hashCode?.() || 0, // 임시 ID 생성
+            title: f.title || f.name || f.clinic || "병원명 없음",
+            clinic: f.clinic || f.name || "병원명 없음",
+            address: f.address || "",
+            location: f.location || "",
+            rating: f.rating ? f.rating.toFixed(1) : "0.0",
+            reviewCount: f.reviewCount ? `${f.reviewCount}` : undefined,
+            type: "clinic" as const,
+          })
+        );
+
+        allFavorites.push(...hospitalFavorites);
+
+        // Supabase에서 가져온 시술 찜이 없고 localStorage에도 없으면 localStorage 전체 로드 (하위 호환성)
+        if (allFavorites.length === 0) {
           setFavorites(savedFavorites);
+        } else {
+          setFavorites(allFavorites);
         }
       } catch (error) {
         console.error("찜 목록 로드 실패:", error);
@@ -126,17 +153,46 @@ export default function FavoritesPage() {
 
   const removeFavorite = async (id: number) => {
     try {
-      // Supabase에서 찜하기 삭제
-      const result = await removeProcedureFavorite(id);
-      if (result.success) {
-        // 로컬 상태 업데이트
+      // 시술 찜인지 병원 찜인지 확인
+      const item = favorites.find((f) => f.id === id);
+
+      if (item?.type === "procedure") {
+        // Supabase에서 시술 찜하기 삭제
+        const result = await removeProcedureFavorite(id);
+        if (result.success) {
+          // 로컬 상태 업데이트
+          const updated = favorites.filter((item) => item.id !== id);
+          setFavorites(updated);
+          // localStorage도 업데이트 (하위 호환성)
+          const savedFavorites = JSON.parse(
+            localStorage.getItem("favorites") || "[]"
+          );
+          const updatedLocal = savedFavorites.filter(
+            (f: any) => !(f.id === id && f.type === "procedure")
+          );
+          localStorage.setItem("favorites", JSON.stringify(updatedLocal));
+          window.dispatchEvent(new Event("favoritesUpdated"));
+        } else {
+          alert(result.error || "찜하기 삭제에 실패했습니다.");
+        }
+      } else {
+        // 병원 찜은 localStorage에서만 삭제
         const updated = favorites.filter((item) => item.id !== id);
         setFavorites(updated);
-        // localStorage도 업데이트 (하위 호환성)
-        localStorage.setItem("favorites", JSON.stringify(updated));
+        const savedFavorites = JSON.parse(
+          localStorage.getItem("favorites") || "[]"
+        );
+        const updatedLocal = savedFavorites.filter(
+          (f: any) =>
+            !(
+              (f.id === id ||
+                f.name === item?.title ||
+                f.title === item?.title) &&
+              f.type === "clinic"
+            )
+        );
+        localStorage.setItem("favorites", JSON.stringify(updatedLocal));
         window.dispatchEvent(new Event("favoritesUpdated"));
-      } else {
-        alert(result.error || "찜하기 삭제에 실패했습니다.");
       }
     } catch (error) {
       console.error("찜하기 삭제 실패:", error);
@@ -206,87 +262,75 @@ export default function FavoritesPage() {
             onClick={() => {
               if (item.type === "procedure" && item.id) {
                 router.push(`/treatment/${item.id}`);
+              } else if (item.type === "clinic") {
+                // 병원 상세 페이지로 이동 (병원명으로 검색)
+                router.push(`/hospital?name=${encodeURIComponent(item.title)}`);
               }
             }}
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold">
-                    {item.type === "procedure" ? "시술" : "병원"}
-                  </span>
-                  <h3 className="text-base font-bold text-gray-900">
-                    {item.title}
-                  </h3>
-                </div>
                 {item.type === "procedure" ? (
+                  // 시술 찜 카드: 시술명/병원명/가격/평점/리뷰수
                   <>
-                    <p className="text-sm text-gray-600 mb-1">{item.clinic}</p>
-                    {item.location && (
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <FiMapPin className="text-gray-400" />
-                        <span>{item.location}</span>
+                    <h3 className="text-base font-bold text-gray-900 mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-2">{item.clinic}</p>
+                    <div className="flex items-center gap-4">
+                      {item.price && (
+                        <span className="text-base font-bold text-primary-main">
+                          {item.price}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                        <span className="text-sm font-semibold text-gray-900">
+                          {item.rating}
+                        </span>
+                        {item.reviewCount && (
+                          <span className="text-xs text-gray-500">
+                            ({item.reviewCount})
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </>
                 ) : (
+                  // 병원 찜 카드: 병원명/주소/평점/리뷰수
                   <>
-                    {item.location && (
-                      <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                        <FiMapPin className="text-primary-main" />
-                        <span>{item.location}</span>
-                      </div>
-                    )}
+                    <h3 className="text-base font-bold text-gray-900 mb-1">
+                      {item.title}
+                    </h3>
                     {item.address && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        {item.address}
+                      <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                        <FiMapPin className="text-primary-main text-xs" />
+                        <span>{item.address}</span>
                       </p>
                     )}
-                    {item.phone && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                        <FiPhone className="text-primary-main" />
-                        <span>{item.phone}</span>
-                      </div>
-                    )}
-                    {item.specialties && item.specialties.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {item.specialties.map((specialty, idx) => (
-                          <span
-                            key={idx}
-                            className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium"
-                          >
-                            {specialty}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                      <span className="text-sm font-semibold text-gray-900">
+                        {item.rating}
+                      </span>
+                      {item.reviewCount && (
+                        <span className="text-xs text-gray-500">
+                          ({item.reviewCount})
+                        </span>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
               <button
-                onClick={() => removeFavorite(item.id)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeFavorite(item.id);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors ml-2"
               >
                 <FiHeart className="text-red-500 fill-red-500 text-xl" />
               </button>
-            </div>
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-              <div className="flex items-center gap-1">
-                <FiStar className="text-yellow-400 fill-yellow-400" />
-                <span className="text-sm font-semibold text-gray-900">
-                  {item.rating}
-                </span>
-                {item.reviewCount && (
-                  <span className="text-xs text-gray-500">
-                    ({item.reviewCount})
-                  </span>
-                )}
-              </div>
-              {item.price && (
-                <span className="text-base font-bold text-primary-main">
-                  {item.price}
-                </span>
-              )}
             </div>
           </div>
         ))}

@@ -214,6 +214,7 @@ export async function loadTreatmentsPaginated(
     searchTerm?: string;
     categoryLarge?: string;
     categoryMid?: string;
+    categorySmall?: string; // 소분류 필터 추가
     skipPlatformSort?: boolean; // 랭킹 페이지용: 플랫폼 정렬 건너뛰기
     randomOrder?: boolean; // 랜덤 정렬 옵션
   }
@@ -267,6 +268,15 @@ export async function loadTreatmentsPaginated(
 
     if (filters?.categoryMid) {
       query = query.eq("category_mid", filters.categoryMid);
+    }
+
+    if (filters?.categorySmall) {
+      // 소분류는 정확 일치로 검색
+      const trimmedCategorySmall = filters.categorySmall.trim();
+      query = query.eq("category_small", trimmedCategorySmall);
+      console.log(
+        `[loadTreatmentsPaginated] 소분류 필터 (정확 일치): "${trimmedCategorySmall}"`
+      );
     }
 
     let data, error, count;
@@ -478,6 +488,11 @@ export async function getRecoveryInfoByCategoryMid(
     if (!categoryMid) return null;
 
     const categoryMidTrimmed = categoryMid.trim();
+
+    // "시력교정" 카테고리는 API 데이터에서 제거되었으므로 조용히 null 반환
+    if (categoryMidTrimmed === "시력교정") {
+      return null;
+    }
 
     // 캐시 (중복 호출/로그 스팸 방지) - trim된 키 사용
     // ❗ null(매칭 실패)은 캐시하지 않고, 성공한 값만 캐시합니다.
@@ -1990,7 +2005,7 @@ export interface ProcedureReviewData {
   category: string;
   procedure_name: string;
   hospital_name?: string;
-  cost: number;
+  cost?: number; // 비필수 항목으로 변경
   procedure_rating: number;
   hospital_rating: number;
   gender: "여" | "남";
@@ -2042,7 +2057,7 @@ export async function saveProcedureReview(
       category: data.category,
       procedure_name: data.procedure_name,
       hospital_name: data.hospital_name || null,
-      cost: data.cost,
+      cost: data.cost || null, // 비필수 항목으로 변경
       procedure_rating: data.procedure_rating,
       hospital_rating: data.hospital_rating,
       gender: data.gender,
@@ -2795,8 +2810,59 @@ export async function getFavoriteProcedures(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("찜한 시술 목록 조회 실패:", error);
-      return { success: false, error: error.message };
+      // 에러 정보 상세 수집
+      const errorKeys = Object.keys(error);
+      const errorInfo: any = {
+        hasError: true,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorKeys: errorKeys,
+        errorKeysLength: errorKeys.length,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+      };
+
+      // JSON 직렬화 시도
+      try {
+        errorInfo.stringified = JSON.stringify(error, null, 2);
+      } catch (e) {
+        errorInfo.stringifyError = String(e);
+      }
+
+      // 모든 속성 직접 접근
+      const allProps: any = {};
+      for (const key in error) {
+        allProps[key] = (error as any)[key];
+      }
+      errorInfo.allProperties = allProps;
+
+      // 에러 메시지 추출 (여러 소스에서 시도)
+      const errorMessage =
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        (errorKeys.length > 0
+          ? `에러 발생 (속성: ${errorKeys.join(", ")})`
+          : null) ||
+        (typeof error === "string" ? error : null) ||
+        (errorInfo.stringified && errorInfo.stringified !== "{}"
+          ? errorInfo.stringified
+          : null) ||
+        "찜한 시술 목록 조회 중 오류가 발생했습니다.";
+
+      console.error("찜한 시술 목록 조회 실패 - 상세 정보:", errorInfo);
+      console.error("원본 에러 객체:", error);
+      console.error("에러 객체 타입 체크:", {
+        isObject: typeof error === "object",
+        isNull: error === null,
+        isArray: Array.isArray(error),
+        toString: String(error),
+        valueOf: error?.valueOf?.(),
+      });
+
+      return { success: false, error: errorMessage };
     }
 
     const favorites = (data || []) as ProcedureFavorite[];
@@ -3100,6 +3166,331 @@ export async function getPostLikeCount(
   } catch (error) {
     console.error("글 좋아요 개수 조회 중 오류:", error);
     return 0;
+  }
+}
+
+// 좋아요한 글의 상세 정보 조회 (카테고리명, 글 제목, 작성자 이름 포함)
+export interface LikedPostDetail {
+  id: string;
+  postType: "procedure_review" | "hospital_review" | "concern_post";
+  categoryName: string; // "후기", "가이드", "고민"
+  title: string; // 글 제목
+  authorName: string; // 작성자 이름(닉네임)
+  createdAt: string;
+}
+
+export async function getLikedPostsWithDetails(): Promise<{
+  success: boolean;
+  posts?: LikedPostDetail[];
+  error?: string;
+}> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    // 좋아요한 글 목록 가져오기
+    const { data: likes, error: likesError } = await client
+      .from("post_likes")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (likesError) {
+      console.error("좋아요한 글 목록 조회 실패:", likesError);
+      return { success: false, error: likesError.message };
+    }
+
+    if (!likes || likes.length === 0) {
+      return { success: true, posts: [] };
+    }
+
+    // 각 글 타입별로 상세 정보 가져오기
+    const postDetails: LikedPostDetail[] = [];
+
+    for (const like of likes) {
+      try {
+        let postData: any = null;
+        let categoryName = "";
+        let title = "";
+        let authorName = "익명";
+
+        // 글 타입에 따라 다른 테이블에서 데이터 가져오기
+        if (like.post_type === "procedure_review") {
+          const { data, error } = await client
+            .from("procedure_reviews")
+            .select("id, category, procedure_name, user_id")
+            .eq("id", like.post_id)
+            .single();
+
+          if (!error && data) {
+            postData = data;
+            categoryName = "후기";
+            title = data.procedure_name || "시술 후기";
+          }
+        } else if (like.post_type === "hospital_review") {
+          const { data, error } = await client
+            .from("hospital_reviews")
+            .select("id, category_large, hospital_name, user_id")
+            .eq("id", like.post_id)
+            .single();
+
+          if (!error && data) {
+            postData = data;
+            categoryName = "후기";
+            title = data.hospital_name || "병원 후기";
+          }
+        } else if (like.post_type === "concern_post") {
+          const { data, error } = await client
+            .from("concern_posts")
+            .select("id, title, concern_category, user_id")
+            .eq("id", like.post_id)
+            .single();
+
+          if (!error && data) {
+            postData = data;
+            categoryName = "고민";
+            title = data.title || "고민글";
+          }
+        }
+
+        // 작성자 이름 가져오기
+        if (postData && postData.user_id) {
+          const { data: profile } = await client
+            .from("user_profiles")
+            .select("display_name, login_id")
+            .eq("user_id", postData.user_id)
+            .maybeSingle();
+
+          if (profile && profile.display_name) {
+            authorName = profile.display_name;
+          } else if (profile && profile.login_id) {
+            // display_name이 없으면 login_id에서 이메일 앞부분 사용
+            authorName = profile.login_id.split("@")[0];
+          } else {
+            // 프로필이 없으면 기본값 사용
+            authorName = "익명";
+          }
+        }
+
+        if (postData) {
+          postDetails.push({
+            id: like.post_id,
+            postType: like.post_type,
+            categoryName,
+            title,
+            authorName,
+            createdAt: like.created_at || new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error(`글 상세 정보 로드 실패 (${like.post_id}):`, error);
+        // 에러가 발생해도 다음 글 계속 처리
+      }
+    }
+
+    return { success: true, posts: postDetails };
+  } catch (error: any) {
+    console.error("좋아요한 글 상세 정보 조회 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "좋아요한 글 상세 정보 조회에 실패했습니다.",
+    };
+  }
+}
+
+// ==================== 랭킹 RPC 함수 ====================
+
+// 중분류 랭킹 결과 인터페이스
+export interface MidCategoryRanking {
+  category_mid: string;
+  category_rank: number;
+  treatment_count: number;
+  total_reviews: number;
+  average_rating: number;
+  category_score: number;
+  treatments: Treatment[]; // 이미 정렬된 시술 목록
+}
+
+// 소분류 랭킹 결과 인터페이스
+export interface SmallCategoryRanking {
+  category_small_key: string; // category_small 또는 treatment_name 또는 '기타'
+  category_rank: number;
+  treatment_count: number;
+  total_reviews: number;
+  average_rating: number;
+  category_score: number;
+  treatments: Treatment[]; // 이미 정렬된 시술 목록
+}
+
+// 중분류 랭킹 조회 (RPC)
+export async function getMidCategoryRankings(
+  p_category_large: string | null = null,
+  p_m: number = 20, // 베이지안 평균 신뢰 임계값
+  p_dedupe_limit_per_name: number = 2, // 같은 시술명 최대 노출 개수
+  p_limit_per_category: number = 20 // 각 중분류당 상위 N개 카드만 노출
+): Promise<{
+  success: boolean;
+  data?: MidCategoryRanking[];
+  error?: string;
+}> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    const { data, error } = await client.rpc("rpc_mid_category_rankings", {
+      p_category_large: p_category_large,
+      p_m: p_m,
+      p_dedupe_limit_per_name: p_dedupe_limit_per_name,
+      p_limit_per_category: p_limit_per_category,
+    });
+
+    if (error) {
+      console.error("중분류 랭킹 조회 실패:", error);
+      // RPC 함수가 아직 준비되지 않은 경우를 위한 상세 에러 로그
+      if (error.message?.includes("function") || error.code === "42883") {
+        console.warn(
+          "⚠️ RPC 함수가 아직 생성되지 않았을 수 있습니다. 백엔드 담당자에게 확인하세요."
+        );
+      }
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: "데이터를 가져올 수 없습니다." };
+    }
+
+    // 디버깅: 실제 반환된 데이터 구조 확인
+    if (data.length > 0) {
+      console.log("🔍 [RPC 반환 데이터 샘플]:", {
+        keys: Object.keys(data[0]),
+        hasTreatments: "treatments" in data[0],
+        treatmentsType: typeof data[0].treatments,
+        treatmentsIsArray: Array.isArray(data[0].treatments),
+        sample: data[0],
+      });
+    }
+
+    // 데이터 정리 (NaN 처리)
+    const cleanedData = cleanData<MidCategoryRanking>(data);
+
+    // treatments 배열이 없는 경우 빈 배열로 초기화
+    const processedData = cleanedData.map((item) => ({
+      ...item,
+      treatments: Array.isArray(item.treatments) ? item.treatments : [],
+    }));
+
+    console.log(
+      `✅ [중분류 랭킹] ${processedData.length}개 항목 처리 완료`,
+      processedData[0]
+        ? `첫 번째 항목 구조: ${Object.keys(processedData[0]).join(", ")}`
+        : ""
+    );
+
+    return { success: true, data: processedData };
+  } catch (error: any) {
+    console.error("중분류 랭킹 조회 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "중분류 랭킹 조회에 실패했습니다.",
+    };
+  }
+}
+
+// 소분류 랭킹 조회 (RPC)
+export async function getSmallCategoryRankings(
+  p_category_mid: string,
+  p_m: number = 20, // 베이지안 평균 신뢰 임계값
+  p_dedupe_limit_per_name: number = 2, // 같은 시술명 최대 노출 개수
+  p_limit_per_category: number = 20 // 각 소분류당 상위 N개 카드만 노출
+): Promise<{
+  success: boolean;
+  data?: SmallCategoryRanking[];
+  error?: string;
+}> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    if (!p_category_mid) {
+      return { success: false, error: "중분류가 필요합니다." };
+    }
+
+    const { data, error } = await client.rpc("rpc_small_category_rankings", {
+      p_category_mid: p_category_mid,
+      p_m: p_m,
+      p_dedupe_limit_per_name: p_dedupe_limit_per_name,
+      p_limit_per_category: p_limit_per_category,
+    });
+
+    if (error) {
+      console.error("소분류 랭킹 조회 실패:", error);
+      // RPC 함수가 아직 준비되지 않은 경우를 위한 상세 에러 로그
+      if (error.message?.includes("function") || error.code === "42883") {
+        console.warn(
+          "⚠️ RPC 함수가 아직 생성되지 않았을 수 있습니다. 백엔드 담당자에게 확인하세요."
+        );
+      }
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: "데이터를 가져올 수 없습니다." };
+    }
+
+    // 디버깅: 실제 반환된 데이터 구조 확인
+    if (data.length > 0) {
+      console.log("🔍 [RPC 반환 데이터 샘플]:", {
+        keys: Object.keys(data[0]),
+        hasTreatments: "treatments" in data[0],
+        treatmentsType: typeof data[0].treatments,
+        treatmentsIsArray: Array.isArray(data[0].treatments),
+        sample: data[0],
+      });
+    }
+
+    // 데이터 정리 (NaN 처리)
+    const cleanedData = cleanData<SmallCategoryRanking>(data);
+
+    // treatments 배열이 없는 경우 빈 배열로 초기화
+    const processedData = cleanedData.map((item) => ({
+      ...item,
+      treatments: Array.isArray(item.treatments) ? item.treatments : [],
+    }));
+
+    console.log(
+      `✅ [소분류 랭킹] ${processedData.length}개 항목 처리 완료`,
+      processedData[0]
+        ? `첫 번째 항목 구조: ${Object.keys(processedData[0]).join(", ")}`
+        : ""
+    );
+
+    return { success: true, data: processedData };
+  } catch (error: any) {
+    console.error("소분류 랭킹 조회 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "소분류 랭킹 조회에 실패했습니다.",
+    };
   }
 }
 

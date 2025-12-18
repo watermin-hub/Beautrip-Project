@@ -21,7 +21,7 @@ export default function ExploreHeader({
   ];
 
   return (
-    <div className="sticky top-[48px] z-30 bg-white border-b border-gray-100">
+    <div className="fixed top-[89px] left-1/2 transform -translate-x-1/2 w-full max-w-md z-[45] bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
         <h1 className="text-xl font-bold text-gray-900">탐색</h1>

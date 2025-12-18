@@ -385,6 +385,17 @@ function MainContent({
             procedures: result.treatmentIds.length,
             hospitals: 0, // 병원 찜하기는 추후 구현
           });
+        } else if (!result.success) {
+          // API에서 에러가 반환된 경우
+          console.warn("찜한 시술 개수 로드 실패:", result.error);
+          // 실패 시 localStorage에서 로드 (하위 호환성)
+          const favorites = JSON.parse(
+            localStorage.getItem("favorites") || "[]"
+          );
+          const procedures = favorites.filter(
+            (f: any) => f.type === "procedure" || typeof f === "number"
+          ).length;
+          setFavoriteCount({ procedures, hospitals: 0 });
         }
       } catch (error) {
         console.error("찜한 시술 개수 로드 실패:", error);
@@ -507,9 +518,8 @@ function MainContent({
               const result = await getLikedPosts();
               if (result.success && result.likes) {
                 const count = result.likes.length;
-                alert(
-                  `좋아요한 글: ${count}개\n\n목록 보기 기능은 준비 중입니다.`
-                );
+                // 좋아요한 글 목록 페이지로 이동
+                router.push("/liked-posts");
               } else {
                 alert("좋아요한 글을 불러올 수 없습니다.");
               }

@@ -110,6 +110,7 @@ export default function KBeautyRankingPage() {
     // category_mid로 회복 기간 정보 가져오기
     let recoveryDays = 0;
     let recoveryText: string | null = null;
+    let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
     if (selectedTreatment.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
@@ -118,6 +119,7 @@ export default function KBeautyRankingPage() {
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax;
         recoveryText = recoveryInfo.recoveryText;
+        recoveryGuides = recoveryInfo.recoveryGuides; // 회복 가이드 범위별 텍스트 추가
       }
     }
 
@@ -127,12 +129,34 @@ export default function KBeautyRankingPage() {
 
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
+    // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
+    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
+    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const treatmentId = selectedTreatment.treatment_id;
+
+    const isDuplicate = schedules.some((s: any) => {
+      if (s.procedureDate !== date) return false;
+      // treatmentId가 있으면 treatmentId로 비교
+      if (treatmentId && s.treatmentId) {
+        return s.treatmentId === treatmentId;
+      }
+      // treatmentId가 없으면 procedureName과 hospital 조합으로 비교
+      return s.procedureName === procedureName && s.hospital === hospital;
+    });
+
+    if (isDuplicate) {
+      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      setIsScheduleModalOpen(false);
+      setSelectedTreatment(null);
+      return;
+    }
+
     const newSchedule = {
       id: Date.now(),
-      treatmentId: selectedTreatment.treatment_id,
+      treatmentId: treatmentId,
       procedureDate: date,
-      procedureName: selectedTreatment.treatment_name || "시술명 없음",
-      hospital: selectedTreatment.hospital_name || "병원명 없음",
+      procedureName: procedureName,
+      hospital: hospital,
       category:
         selectedTreatment.category_mid ||
         selectedTreatment.category_large ||
@@ -140,6 +164,7 @@ export default function KBeautyRankingPage() {
       categoryMid: selectedTreatment.category_mid || null,
       recoveryDays,
       recoveryText,
+      recoveryGuides, // 회복 가이드 범위별 텍스트 추가
       procedureTime: parseProcedureTime(selectedTreatment.surgery_time) || 0,
       price: selectedTreatment.selling_price || null,
       rating: selectedTreatment.rating || 0,
@@ -147,12 +172,23 @@ export default function KBeautyRankingPage() {
     };
 
     schedules.push(newSchedule);
-    localStorage.setItem("schedules", JSON.stringify(schedules));
-    window.dispatchEvent(new Event("scheduleAdded"));
 
-    alert(`${date}에 일정이 추가되었습니다!`);
-    setIsScheduleModalOpen(false);
-    setSelectedTreatment(null);
+    // localStorage 저장 시도 (에러 처리 추가)
+    try {
+      const schedulesJson = JSON.stringify(schedules);
+      localStorage.setItem("schedules", schedulesJson);
+      window.dispatchEvent(new Event("scheduleAdded"));
+      alert(`${date}에 일정이 추가되었습니다!`);
+      setIsScheduleModalOpen(false);
+      setSelectedTreatment(null);
+    } catch (error: any) {
+      console.error("일정 저장 실패:", error);
+      if (error.name === "QuotaExceededError") {
+        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+      } else {
+        alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
+      }
+    }
   };
 
   if (loading) {

@@ -188,8 +188,8 @@ export default function ProcedureReviewForm({
 
     // 필수 항목 검증
     // procedureName은 procedureSearchTerm에서 가져오거나 직접 입력된 값 사용
-    const finalProcedureName = procedureName || procedureSearchTerm;
-    if (!category || !finalProcedureName || !cost || content.length < 10) {
+    const finalProcedureName = procedureName || procedureSearchTerm.trim();
+    if (!category || !finalProcedureName || content.length < 10) {
       alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
       return;
     }
@@ -215,7 +215,7 @@ export default function ProcedureReviewForm({
         category,
         procedure_name: finalProcedureName,
         hospital_name: hospitalName || undefined,
-        cost: parseInt(cost),
+        cost: cost ? parseInt(cost) : undefined,
         procedure_rating: procedureRating,
         hospital_rating: hospitalRating,
         gender,
@@ -327,10 +327,8 @@ export default function ProcedureReviewForm({
             } else {
               setShowProcedureSuggestions(false);
             }
-            // 자동완성에서 선택되지 않은 값이면 procedureName도 업데이트 (직접 입력 허용)
-            if (value && !procedureSuggestions.includes(value)) {
-              setProcedureName(value);
-            }
+            // 직접 입력 허용: 입력한 값이 자동완성 목록에 없어도 procedureName에 저장
+            setProcedureName(value);
           }}
           onFocus={() => {
             if (
@@ -344,8 +342,8 @@ export default function ProcedureReviewForm({
             // 약간의 지연을 두어 클릭 이벤트가 먼저 발생하도록
             setTimeout(() => {
               setShowProcedureSuggestions(false);
-              // blur 시 현재 입력값을 procedureName에 저장 (선택된 값이 없을 때)
-              if (procedureSearchTerm && !procedureName) {
+              // blur 시 현재 입력값을 procedureName에 저장 (직접 입력 허용)
+              if (procedureSearchTerm) {
                 setProcedureName(procedureSearchTerm);
               }
             }, 200);
@@ -376,24 +374,6 @@ export default function ProcedureReviewForm({
           )}
       </div>
 
-      {/* 시술, 수술 비용 (만원) */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
-          비용 (만원) <span className="text-red-500">*</span>
-        </label>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-700">₩</span>
-          <input
-            type="number"
-            value={cost}
-            onChange={(e) => setCost(e.target.value)}
-            placeholder="수술 비용"
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
-          />
-          <span className="text-gray-700">만원</span>
-        </div>
-      </div>
-
       {/* 전체적인 시술 만족도 */}
       <StarRating
         rating={procedureRating}
@@ -407,33 +387,6 @@ export default function ProcedureReviewForm({
         onRatingChange={setHospitalRating}
         label="병원 만족도 (1~5)"
       />
-
-      {/* 병원명 (선택사항) */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
-          병원명(선택사항)
-        </label>
-        <input
-          type="text"
-          value={hospitalName}
-          onChange={(e) => setHospitalName(e.target.value)}
-          placeholder="병원명을 입력하세요"
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
-        />
-      </div>
-
-      {/* 시술 날짜 (선택사항) */}
-      <div>
-        <label className="block text-sm font-semibold text-gray-900 mb-2">
-          시술 날짜(선택사항)
-        </label>
-        <input
-          type="date"
-          value={surgeryDate}
-          onChange={(e) => setSurgeryDate(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
-        />
-      </div>
 
       {/* 성별 */}
       <div>
@@ -487,6 +440,51 @@ export default function ProcedureReviewForm({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* 비용(선택사항) */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-900 mb-2">
+          비용(선택사항)
+        </label>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-700">₩</span>
+          <input
+            type="number"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="수술 비용"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
+          />
+          <span className="text-gray-700">만원</span>
+        </div>
+      </div>
+
+      {/* 병원명 (선택사항) */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-900 mb-2">
+          병원명(선택사항)
+        </label>
+        <input
+          type="text"
+          value={hospitalName}
+          onChange={(e) => setHospitalName(e.target.value)}
+          placeholder="병원명을 입력하세요"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
+        />
+      </div>
+
+      {/* 시술 날짜 (선택사항) */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-900 mb-2">
+          시술 날짜(선택사항)
+        </label>
+        <input
+          type="date"
+          value={surgeryDate}
+          onChange={(e) => setSurgeryDate(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
+        />
       </div>
 
       {/* 글 작성 */}

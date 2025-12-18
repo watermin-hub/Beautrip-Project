@@ -23,6 +23,10 @@ import {
   getRecoveryInfoByCategoryMid,
   findRecoveryGuideByCategorySmall,
   loadTreatmentsPaginated,
+  loadTreatmentById,
+  getThumbnailUrl,
+  parseRecoveryPeriod,
+  parseProcedureTime,
   type Treatment,
   saveSchedule,
   getSavedSchedules,
@@ -30,6 +34,38 @@ import {
   type SavedSchedule,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+
+/**
+ * 받침 유무에 따라 "와" 또는 "과"를 반환하는 함수
+ * @param text - 받침을 확인할 텍스트 (단일 단어 또는 "+"로 연결된 여러 단어)
+ * @returns "와" (받침 없음) 또는 "과" (받침 있음)
+ */
+function getWaOrGwa(text: string): string {
+  if (!text || text.length === 0) return "과";
+
+  // "+"로 연결된 경우 마지막 단어를 확인
+  const words = text.split("+").map((w) => w.trim());
+  const lastWord = words[words.length - 1];
+
+  if (!lastWord || lastWord.length === 0) return "과";
+
+  // 마지막 문자 가져오기
+  const lastChar = lastWord[lastWord.length - 1];
+  const charCode = lastChar.charCodeAt(0);
+
+  // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
+  if (charCode >= 0xac00 && charCode <= 0xd7a3) {
+    // 받침 확인: (유니코드 - 0xAC00) % 28
+    // 0이면 받침 없음, 0이 아니면 받침 있음
+    const hasBatchim = (charCode - 0xac00) % 28 !== 0;
+    return hasBatchim ? "과" : "와";
+  }
+
+  // 한글이 아닌 경우 (영문, 숫자 등) 기본값으로 "과" 반환
+  // 영문의 경우 마지막 글자가 자음/모음에 따라 다를 수 있지만,
+  // 일반적으로 "과"를 사용하는 것이 안전
+  return "과";
+}
 
 interface TravelPeriod {
   start: string; // YYYY-MM-DD
@@ -138,14 +174,14 @@ const clinics = [
   },
 ];
 
-// 비슷한 시술 추천 컴포넌트
+// 비슷한 시술 추천 컴포넌트 (소분류 기준)
 function SimilarProcedureRecommendation({
-  categoryMid,
+  categorySmall,
   currentProcedureId,
   currentProcedureName,
   travelPeriod,
 }: {
-  categoryMid: string | null;
+  categorySmall: string | null;
   currentProcedureId?: number;
   currentProcedureName: string;
   travelPeriod: TravelPeriod | null;
@@ -163,16 +199,82 @@ function SimilarProcedureRecommendation({
   // 비슷한 시술 로드
   useEffect(() => {
     const loadSimilarTreatments = async () => {
-      if (!categoryMid) {
+      console.log("🔍 [연관 시술 추천] 로드 시작:", {
+        categorySmall,
+        currentProcedureId,
+        currentProcedureName,
+      });
+
+      if (!categorySmall) {
+        console.warn(
+          "⚠️ [연관 시술 추천] categorySmall이 없어서 추천을 표시하지 않습니다."
+        );
         setSimilarTreatments([]);
         return;
       }
 
       setLoading(true);
       try {
-        // 같은 중분류의 시술들을 로드
-        const result = await loadTreatmentsPaginated(1, 20, {
-          categoryMid: categoryMid,
+        // 같은 소분류의 시술들을 로드
+        const trimmedCategorySmall = categorySmall.trim();
+        console.log("📡 [연관 시술 추천] API 호출:", {
+          original: categorySmall,
+          trimmed: trimmedCategorySmall,
+        });
+
+        // 먼저 필터 없이 전체 데이터에서 "승모근보톡스" 관련 값 찾기 (디버깅용)
+        if (
+          trimmedCategorySmall.includes("승모근") ||
+          trimmedCategorySmall.includes("보톡스")
+        ) {
+          const debugResult = await loadTreatmentsPaginated(1, 200, {});
+          const relatedTreatments = debugResult.data.filter((t: any) => {
+            const cat = (t.category_small || "").toLowerCase();
+            return cat.includes("승모근") || cat.includes("보톡스");
+          });
+          console.log("🔍 [디버깅] 승모근보톡스 관련 시술 찾기:", {
+            total: debugResult.data.length,
+            relatedCount: relatedTreatments.length,
+            relatedCategorySmalls: Array.from(
+              new Set(relatedTreatments.map((t: any) => t.category_small))
+            ),
+            sampleRelated: relatedTreatments.slice(0, 5).map((t: any) => ({
+              id: t.treatment_id,
+              name: t.treatment_name,
+              category_small: t.category_small,
+            })),
+          });
+        }
+
+        const result = await loadTreatmentsPaginated(1, 100, {
+          categorySmall: trimmedCategorySmall,
+        });
+        console.log("📥 [연관 시술 추천] API 응답:", {
+          total: result.data.length,
+          requestedCategorySmall: trimmedCategorySmall,
+          foundCategorySmalls: Array.from(
+            new Set(
+              result.data.map((t: any) => t.category_small).filter(Boolean)
+            )
+          ),
+          allUniqueCategorySmalls: Array.from(
+            new Set(
+              result.data
+                .map((t: any) => ({
+                  original: t.category_small,
+                  trimmed: t.category_small?.trim(),
+                  lower: t.category_small?.toLowerCase().trim(),
+                }))
+                .filter((c: any) => c.original)
+            )
+          ),
+          sampleData: result.data.slice(0, 10).map((t: any) => ({
+            id: t.treatment_id,
+            name: t.treatment_name,
+            category_small: t.category_small,
+            category_small_trimmed: t.category_small?.trim(),
+            category_mid: t.category_mid,
+          })),
         });
 
         // 이미 일정에 추가된 시술 제외
@@ -188,15 +290,71 @@ function SimilarProcedureRecommendation({
           scheduledTreatmentIds.add(currentProcedureId);
         }
 
-        const filtered = result.data.filter(
-          (treatment) =>
+        // 소분류 정규화 함수 (공백 제거, 대소문자 통일)
+        const normalizeCategorySmall = (
+          cat: string | null | undefined
+        ): string => {
+          if (!cat) return "";
+          return cat.trim().toLowerCase();
+        };
+
+        const normalizedCategorySmall = normalizeCategorySmall(categorySmall);
+
+        const filtered = result.data.filter((treatment) => {
+          const treatmentCategorySmall = normalizeCategorySmall(
+            treatment.category_small
+          );
+
+          const matches =
             treatment.treatment_id &&
             !scheduledTreatmentIds.has(treatment.treatment_id) &&
-            treatment.treatment_name !== currentProcedureName
-        );
+            treatment.treatment_name !== currentProcedureName &&
+            treatmentCategorySmall === normalizedCategorySmall;
+
+          if (!matches && treatment.treatment_id) {
+            console.log("❌ [필터링 제외]", {
+              treatment_id: treatment.treatment_id,
+              treatment_name: treatment.treatment_name,
+              category_small: treatment.category_small,
+              normalized: treatmentCategorySmall,
+              expected: normalizedCategorySmall,
+              match: treatmentCategorySmall === normalizedCategorySmall,
+            });
+          }
+
+          return matches;
+        });
+
+        console.log("🔍 [연관 시술 추천] 필터링 결과:", {
+          beforeFilter: result.data.length,
+          afterFilter: filtered.length,
+          requestedCategorySmall: categorySmall,
+          normalizedRequested: normalizeCategorySmall(categorySmall),
+          allCategorySmallsInResult: Array.from(
+            new Set(
+              result.data.map((t: any) => t.category_small).filter(Boolean)
+            )
+          ),
+          matchedCategorySmalls: Array.from(
+            new Set(filtered.map((t: any) => t.category_small))
+          ),
+          sampleFiltered: filtered.slice(0, 3).map((t: any) => ({
+            id: t.treatment_id,
+            name: t.treatment_name,
+            category_small: t.category_small,
+            normalized: normalizeCategorySmall(t.category_small),
+          })),
+        });
 
         // 최대 3개만 표시
         const limitedTreatments = filtered.slice(0, 3);
+        console.log("✅ [연관 시술 추천] 최종 추천 시술:", {
+          count: limitedTreatments.length,
+          treatments: limitedTreatments.map((t: any) => ({
+            id: t.treatment_id,
+            name: t.treatment_name,
+          })),
+        });
         setSimilarTreatments(limitedTreatments);
 
         // 회복 기간 정보 로드
@@ -230,13 +388,76 @@ function SimilarProcedureRecommendation({
     };
 
     loadSimilarTreatments();
-  }, [categoryMid, currentProcedureId, currentProcedureName]);
+  }, [categorySmall, currentProcedureId, currentProcedureName]);
+
+  // 중복 시술 체크 헬퍼 함수
+  const isDuplicateProcedure = (
+    schedules: any[],
+    date: string,
+    treatmentId: number | undefined,
+    procedureName: string,
+    hospital: string
+  ): boolean => {
+    return schedules.some((s: any) => {
+      // 같은 날짜인지 확인
+      if (s.procedureDate !== date) return false;
+
+      // treatmentId가 있으면 treatmentId로 비교
+      if (treatmentId && s.treatmentId) {
+        return s.treatmentId === treatmentId;
+      }
+
+      // treatmentId가 없으면 procedureName과 hospital 조합으로 비교
+      return s.procedureName === procedureName && s.hospital === hospital;
+    });
+  };
 
   // 일정 추가 핸들러
-  const handleDateSelect = (date: string) => {
+  const handleDateSelect = async (date: string) => {
     if (!selectedTreatment) return;
 
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
+
+    // 중복 체크
+    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
+    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const treatmentId = selectedTreatment.treatment_id;
+
+    if (
+      isDuplicateProcedure(
+        schedules,
+        date,
+        treatmentId,
+        procedureName,
+        hospital
+      )
+    ) {
+      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      return;
+    }
+
+    // category_mid로 회복 기간 정보 가져오기
+    let recoveryDays = 0;
+    let recoveryText: string | null = null;
+    let recoveryGuides: Record<string, string | null> | undefined = undefined;
+
+    if (selectedTreatment.category_mid) {
+      const recoveryInfo = await getRecoveryInfoByCategoryMid(
+        selectedTreatment.category_mid
+      );
+      if (recoveryInfo) {
+        recoveryDays = recoveryInfo.recoveryMax;
+        recoveryText = recoveryInfo.recoveryText;
+        recoveryGuides = recoveryInfo.recoveryGuides;
+      }
+    }
+
+    // recoveryInfo가 없으면 기존 downtime 사용 (fallback)
+    if (recoveryDays === 0) {
+      const { parseRecoveryPeriod } = await import("@/lib/api/beautripApi");
+      recoveryDays = parseRecoveryPeriod(selectedTreatment.downtime) || 0;
+    }
+
     const newId =
       schedules.length > 0
         ? Math.max(...schedules.map((s: any) => s.id)) + 1
@@ -245,77 +466,167 @@ function SimilarProcedureRecommendation({
     const newSchedule = {
       id: newId,
       procedureDate: date,
-      procedureName: selectedTreatment.treatment_name || "시술명 없음",
-      hospital: selectedTreatment.hospital_name || "병원명 없음",
+      procedureName: procedureName,
+      hospital: hospital,
       category: selectedTreatment.category_large || "",
       categoryMid: selectedTreatment.category_mid || null,
       categorySmall: selectedTreatment.category_small || null,
-      recoveryDays: 0,
-      treatmentId: selectedTreatment.treatment_id,
+      recoveryDays,
+      recoveryText,
+      recoveryGuides,
+      treatmentId: treatmentId,
     };
 
     schedules.push(newSchedule);
-    localStorage.setItem("schedules", JSON.stringify(schedules));
-    window.dispatchEvent(new Event("scheduleAdded"));
-    setIsScheduleModalOpen(false);
-    setSelectedTreatment(null);
-    alert("일정에 추가되었습니다!");
+
+    // localStorage 저장 시도 (에러 처리 추가)
+    try {
+      const schedulesJson = JSON.stringify(schedules);
+      localStorage.setItem("schedules", schedulesJson);
+      window.dispatchEvent(new Event("scheduleAdded"));
+      setIsScheduleModalOpen(false);
+      setSelectedTreatment(null);
+      alert("일정에 추가되었습니다!");
+    } catch (error: any) {
+      console.error("일정 저장 실패:", error);
+      if (error.name === "QuotaExceededError") {
+        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+      } else {
+        alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
+      }
+    }
   };
 
-  if (!categoryMid || similarTreatments.length === 0) {
+  if (!categorySmall || similarTreatments.length === 0) {
+    return null;
+  }
+
+  // HotConcernsSection과 동일한 카드 형식으로 렌더링
+  if (loading || similarTreatments.length === 0) {
     return null;
   }
 
   return (
     <>
-      <div className="mt-3 space-y-2">
-        <p className="text-xs text-gray-600 mb-2">
-          {currentProcedureName}과 비슷한 시술이에요
+      <div className="mt-5 space-y-3">
+        {/* 서브 타이틀: "~~~와(과) 비슷한 시술이에요" */}
+        <p className="text-sm font-semibold text-gray-700">
+          {currentProcedureName}
+          {getWaOrGwa(currentProcedureName)} 비슷한 시술이에요
         </p>
-        <div className="space-y-2">
-          {similarTreatments.map((treatment) => (
-            <div
-              key={treatment.treatment_id}
-              onClick={() => {
-                setSelectedTreatment(treatment);
-                setIsScheduleModalOpen(true);
-              }}
-              className="bg-purple-50 border border-purple-200 rounded-lg p-3 cursor-pointer hover:bg-purple-100 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-sm font-semibold text-gray-900 mb-1 truncate">
-                    {treatment.treatment_name || "시술명 없음"}
-                  </h5>
-                  <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
-                    <span className="text-purple-600">⊙</span>
-                    <span className="truncate">
-                      {treatment.hospital_name || "병원명 없음"}
-                    </span>
-                  </div>
-                  {treatment.category_mid && (
-                    <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
-                      <span className="text-purple-600">◇</span>
-                      <span>{treatment.category_mid}</span>
-                    </div>
-                  )}
-                  {(recoveryInfoMap[treatment.treatment_id || 0] ||
-                    treatment.downtime) && (
-                    <div className="flex items-center gap-1 text-xs text-primary-main font-medium">
-                      <span>①</span>
-                      <span>
-                        회복 기간:{" "}
-                        {recoveryInfoMap[treatment.treatment_id || 0] ||
-                          treatment.downtime ||
-                          0}
-                        일
-                      </span>
+
+        {/* 연관 시술 카드들 - HotConcernsSection과 동일한 형식 */}
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3">
+          {similarTreatments.map((treatment) => {
+            const thumbnailUrl = getThumbnailUrl(treatment);
+            const price = treatment.selling_price
+              ? `${Math.round(treatment.selling_price / 10000)}만원`
+              : "가격 문의";
+            const rating = treatment.rating || 0;
+            const reviewCount = treatment.review_count || 0;
+            const discountRate = treatment.dis_rate
+              ? `${treatment.dis_rate}%`
+              : "";
+
+            return (
+              <div
+                key={treatment.treatment_id}
+                className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
+                onClick={() => {
+                  if (treatment.treatment_id) {
+                    window.location.href = `/treatment/${treatment.treatment_id}`;
+                  }
+                }}
+              >
+                {/* 이미지 - 2:1 비율 */}
+                <div className="relative w-full aspect-[2/1] bg-gray-100 overflow-hidden">
+                  <img
+                    src={thumbnailUrl}
+                    alt={treatment.treatment_name || "시술 이미지"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.dataset.fallback === "true") {
+                        target.style.display = "none";
+                        return;
+                      }
+                      target.src =
+                        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
+                      target.dataset.fallback = "true";
+                    }}
+                  />
+                  {/* 할인율 배지 */}
+                  {discountRate && (
+                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
+                      {discountRate}
                     </div>
                   )}
                 </div>
+
+                {/* 카드 내용 */}
+                <div className="p-2.5 flex flex-col min-h-[116px]">
+                  {/* 상단 콘텐츠 */}
+                  <div className="space-y-1.5">
+                    {/* 시술명 */}
+                    <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
+                      {treatment.treatment_name}
+                    </h4>
+
+                    {/* 평점 */}
+                    {rating > 0 ? (
+                      <div className="flex items-center gap-1 h-[14px]">
+                        <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                        <span className="text-xs font-semibold text-gray-700">
+                          {rating.toFixed(1)}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          ({reviewCount.toLocaleString()})
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="h-[14px]" />
+                    )}
+
+                    {/* 병원명 */}
+                    {treatment.hospital_name ? (
+                      <p className="text-xs text-gray-600 line-clamp-1 h-[16px]">
+                        {treatment.hospital_name}
+                      </p>
+                    ) : (
+                      <div className="h-[16px]" />
+                    )}
+                  </div>
+
+                  {/* 하단 정보 */}
+                  <div className="mt-auto pt-2 flex items-center justify-between">
+                    {/* 가격 */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-bold text-primary-main">
+                        {price}
+                      </span>
+                      {treatment.vat_info && (
+                        <span className="text-[10px] text-gray-500">
+                          {treatment.vat_info}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* 일정 추가 버튼 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTreatment(treatment);
+                        setIsScheduleModalOpen(true);
+                      }}
+                      className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                    >
+                      <FiCalendar className="text-base text-primary-main" />
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -969,6 +1280,65 @@ export default function MySchedulePage() {
     };
   }, []);
 
+  // 저장된 일정에 categorySmall이 없으면 treatmentId로 원본 데이터에서 가져오기
+  useEffect(() => {
+    const needsCategorySmallUpdate = savedSchedules.some(
+      (s) => s.treatmentId && !s.categorySmall
+    );
+
+    if (needsCategorySmallUpdate) {
+      (async () => {
+        const updated = await Promise.all(
+          savedSchedules.map(async (s) => {
+            if (s.treatmentId && !s.categorySmall) {
+              try {
+                console.log("📦 [일정 로드] categorySmall 찾는 중...", {
+                  treatmentId: s.treatmentId,
+                  procedureName: s.procedureName,
+                });
+                // 특정 treatment_id로 직접 조회
+                const treatment = await loadTreatmentById(s.treatmentId);
+                if (treatment?.category_small) {
+                  console.log(
+                    "✅ [일정 로드] categorySmall 찾음:",
+                    treatment.category_small
+                  );
+                  return {
+                    ...s,
+                    categorySmall: treatment.category_small,
+                  };
+                } else {
+                  console.warn(
+                    `⚠️ [일정 로드] treatment_id ${s.treatmentId}의 category_small이 없습니다.`,
+                    {
+                      treatment_id: treatment?.treatment_id,
+                      treatment_name: treatment?.treatment_name,
+                      category_mid: treatment?.category_mid,
+                      category_small: treatment?.category_small,
+                    }
+                  );
+                }
+              } catch (error) {
+                console.error("❌ [일정 로드] categorySmall 로드 실패:", error);
+              }
+            }
+            return s;
+          })
+        );
+
+        const changed = updated.some(
+          (s, idx) => s.categorySmall !== savedSchedules[idx]?.categorySmall
+        );
+
+        if (changed) {
+          setSavedSchedules(updated);
+          localStorage.setItem("schedules", JSON.stringify(updated));
+          window.dispatchEvent(new Event("scheduleAdded"));
+        }
+      })();
+    }
+  }, [savedSchedules]);
+
   // 저장된 일정에 회복정보가 비어있을 때 category_mid로 보강 (권장체류일수/회복가이드)
   useEffect(() => {
     const needsUpdate = savedSchedules.some(
@@ -1532,15 +1902,43 @@ export default function MySchedulePage() {
                           </div>
                         )}
                       </div>
-                      {/* 비슷한 시술 추천 */}
-                      {proc.categoryMid && (
-                        <SimilarProcedureRecommendation
-                          categoryMid={proc.categoryMid}
-                          currentProcedureId={proc.treatmentId}
-                          currentProcedureName={proc.procedureName}
-                          travelPeriod={travelPeriod}
-                        />
-                      )}
+                    </div>
+                  );
+                })}
+
+                {/* 비슷한 시술 추천 섹션 - 카드 밖으로 분리 */}
+                {/* 연관 시술 추천 큰 제목 (맨 위에 하나만) */}
+                {selectedProcedures.some((proc) => proc.categorySmall) && (
+                  <div className="mt-6 mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">
+                      연관 시술 추천
+                    </h3>
+                  </div>
+                )}
+
+                {/* 각 시술 카드별 연관 시술 추천 섹션 */}
+                {selectedProcedures.map((proc) => {
+                  console.log("🔍 [시술 카드] 연관 추천 체크:", {
+                    procedureName: proc.procedureName,
+                    categorySmall: proc.categorySmall,
+                    treatmentId: proc.treatmentId,
+                  });
+
+                  if (!proc.categorySmall) {
+                    console.warn(
+                      `⚠️ [시술 카드] "${proc.procedureName}"의 categorySmall이 없어서 추천을 표시하지 않습니다.`
+                    );
+                    return null;
+                  }
+
+                  return (
+                    <div key={`similar-${proc.id}`} className="mt-2">
+                      <SimilarProcedureRecommendation
+                        categorySmall={proc.categorySmall}
+                        currentProcedureId={proc.treatmentId}
+                        currentProcedureName={proc.procedureName}
+                        travelPeriod={travelPeriod}
+                      />
                     </div>
                   );
                 })}

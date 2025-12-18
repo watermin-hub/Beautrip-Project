@@ -32,7 +32,7 @@ export default function HospitalReviewForm({
   const [selectedProcedure, setSelectedProcedure] = useState("");
   const [overallSatisfaction, setOverallSatisfaction] = useState(0);
   const [hospitalKindness, setHospitalKindness] = useState(0);
-  const [hasTranslation, setHasTranslation] = useState(false);
+  const [hasTranslation, setHasTranslation] = useState<boolean | null>(null);
   const [translationSatisfaction, setTranslationSatisfaction] = useState(0);
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -199,7 +199,12 @@ export default function HospitalReviewForm({
     }
 
     // 필수 항목 검증
-    if (!hospitalName || !categoryLarge || content.length < 10) {
+    if (
+      !hospitalName ||
+      !categoryLarge ||
+      hasTranslation === null ||
+      content.length < 10
+    ) {
       alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
       return;
     }
@@ -209,15 +214,19 @@ export default function HospitalReviewForm({
       const imageUrls = images.length > 0 ? images : undefined;
 
       // 데이터 저장
+      // procedure_name은 selectedProcedure 또는 procedureSearchTerm에서 가져오기
+      const finalProcedureName =
+        selectedProcedure || procedureSearchTerm.trim() || undefined;
+
       const result = await saveHospitalReview({
         hospital_name: hospitalName,
         category_large: categoryLarge,
-        procedure_name: selectedProcedure || undefined,
+        procedure_name: finalProcedureName,
         visit_date: visitDate || undefined,
         overall_satisfaction:
           overallSatisfaction > 0 ? overallSatisfaction : undefined,
         hospital_kindness: hospitalKindness > 0 ? hospitalKindness : undefined,
-        has_translation: hasTranslation,
+        has_translation: hasTranslation ?? false,
         translation_satisfaction:
           hasTranslation && translationSatisfaction > 0
             ? translationSatisfaction
@@ -308,10 +317,8 @@ export default function HospitalReviewForm({
             } else {
               setShowProcedureSuggestions(false);
             }
-            // 자동완성에서 선택되지 않은 값이면 selectedProcedure도 업데이트 (직접 입력 허용)
-            if (value && !procedureSuggestions.includes(value)) {
-              setSelectedProcedure(value);
-            }
+            // 직접 입력 허용: 입력한 값이 자동완성 목록에 없어도 selectedProcedure에 저장
+            setSelectedProcedure(value);
           }}
           onFocus={() => {
             if (
@@ -325,8 +332,8 @@ export default function HospitalReviewForm({
             // 약간의 지연을 두어 클릭 이벤트가 먼저 발생하도록
             setTimeout(() => {
               setShowProcedureSuggestions(false);
-              // blur 시 현재 입력값을 selectedProcedure에 저장 (선택된 값이 없을 때)
-              if (procedureSearchTerm && !selectedProcedure) {
+              // blur 시 현재 입력값을 selectedProcedure에 저장 (직접 입력 허용)
+              if (procedureSearchTerm) {
                 setSelectedProcedure(procedureSearchTerm);
               }
             }, 200);
@@ -374,14 +381,14 @@ export default function HospitalReviewForm({
       {/* 통역 여부 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          통역 여부
+          통역 여부 <span className="text-red-500">*</span>
         </label>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={() => setHasTranslation(true)}
             className={`flex-1 py-3 rounded-xl border-2 transition-colors ${
-              hasTranslation
+              hasTranslation === true
                 ? "border-primary-main bg-primary-main/10 text-primary-main"
                 : "border-gray-300 text-gray-700"
             }`}
@@ -392,7 +399,7 @@ export default function HospitalReviewForm({
             type="button"
             onClick={() => setHasTranslation(false)}
             className={`flex-1 py-3 rounded-xl border-2 transition-colors ${
-              !hasTranslation
+              hasTranslation === false
                 ? "border-primary-main bg-primary-main/10 text-primary-main"
                 : "border-gray-300 text-gray-700"
             }`}
@@ -401,6 +408,15 @@ export default function HospitalReviewForm({
           </button>
         </div>
       </div>
+
+      {/* 통역 만족도 */}
+      {hasTranslation === true && (
+        <StarRating
+          rating={translationSatisfaction}
+          onRatingChange={setTranslationSatisfaction}
+          label="통역 만족도 (1~5)"
+        />
+      )}
 
       {/* 병원 방문일 */}
       <div>
@@ -414,15 +430,6 @@ export default function HospitalReviewForm({
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
       </div>
-
-      {/* 통역 만족도 */}
-      {hasTranslation && (
-        <StarRating
-          rating={translationSatisfaction}
-          onRatingChange={setTranslationSatisfaction}
-          label="통역 만족도 (1~5)"
-        />
-      )}
 
       {/* 글 작성 */}
       <div>

@@ -609,12 +609,34 @@ export default function ProcedureRecommendation({
 
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
+    // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
+    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
+    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const treatmentId = selectedTreatment.treatment_id;
+
+    const isDuplicate = schedules.some((s: any) => {
+      if (s.procedureDate !== date) return false;
+      // treatmentId가 있으면 treatmentId로 비교
+      if (treatmentId && s.treatmentId) {
+        return s.treatmentId === treatmentId;
+      }
+      // treatmentId가 없으면 procedureName과 hospital 조합으로 비교
+      return s.procedureName === procedureName && s.hospital === hospital;
+    });
+
+    if (isDuplicate) {
+      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      setIsScheduleModalOpen(false);
+      setSelectedTreatment(null);
+      return;
+    }
+
     const newSchedule = {
       id: Date.now(),
-      treatmentId: selectedTreatment.treatment_id,
+      treatmentId: treatmentId,
       procedureDate: date,
-      procedureName: selectedTreatment.treatment_name || "시술명 없음",
-      hospital: selectedTreatment.hospital_name || "병원명 없음",
+      procedureName: procedureName,
+      hospital: hospital,
       category:
         selectedTreatment.category_mid ||
         selectedTreatment.category_large ||
@@ -630,12 +652,23 @@ export default function ProcedureRecommendation({
     };
 
     schedules.push(newSchedule);
-    localStorage.setItem("schedules", JSON.stringify(schedules));
-    window.dispatchEvent(new Event("scheduleAdded"));
 
-    alert(`${date}에 일정이 추가되었습니다!`);
-    setIsScheduleModalOpen(false);
-    setSelectedTreatment(null);
+    // localStorage 저장 시도 (에러 처리 추가)
+    try {
+      const schedulesJson = JSON.stringify(schedules);
+      localStorage.setItem("schedules", schedulesJson);
+      window.dispatchEvent(new Event("scheduleAdded"));
+      alert(`${date}에 일정이 추가되었습니다!`);
+      setIsScheduleModalOpen(false);
+      setSelectedTreatment(null);
+    } catch (error: any) {
+      console.error("일정 저장 실패:", error);
+      if (error.name === "QuotaExceededError") {
+        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+      } else {
+        alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
+      }
+    }
   };
 
   // 여행 일수 계산
@@ -1013,7 +1046,7 @@ export default function ProcedureRecommendation({
                 ref={(el) => {
                   scrollRefs.current[rec.categoryMid] = el;
                 }}
-                className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4"
+                className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
                 onScroll={() => handleScroll(rec.categoryMid)}
               >
                 {rec.treatments
@@ -1099,25 +1132,18 @@ export default function ProcedureRecommendation({
                           </button>
                         </div>
 
-                        {/* 카드 내용 - flex-col로 하단 정렬 */}
-                        <div className="p-3 flex flex-col h-full">
+                        {/* 카드 내용 - 균형 좋은 간격 */}
+                        <div className="p-2.5 flex flex-col min-h-[116px]">
                           {/* 상단 콘텐츠 */}
-                          <div>
+                          <div className="space-y-1.5">
                             {/* 시술명 */}
-                            <h4 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
+                            <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
                               {treatment.treatment_name}
                             </h4>
 
-                            {/* 병원명 */}
-                            {treatment.hospital_name && (
-                              <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                                {treatment.hospital_name}
-                              </p>
-                            )}
-
                             {/* 평점 */}
-                            {treatment.rating && treatment.rating > 0 && (
-                              <div className="flex items-center gap-1 mb-2">
+                            {treatment.rating && treatment.rating > 0 ? (
+                              <div className="flex items-center gap-1 h-[14px]">
                                 <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
                                 <span className="text-xs font-semibold text-gray-700">
                                   {treatment.rating.toFixed(1)}
@@ -1128,11 +1154,22 @@ export default function ProcedureRecommendation({
                                   </span>
                                 )}
                               </div>
+                            ) : (
+                              <div className="h-[14px]" />
+                            )}
+
+                            {/* 병원명 */}
+                            {treatment.hospital_name ? (
+                              <p className="text-xs text-gray-600 line-clamp-1 h-[16px]">
+                                {treatment.hospital_name}
+                              </p>
+                            ) : (
+                              <div className="h-[16px]" />
                             )}
                           </div>
 
-                          {/* 하단 정보 - mt-auto로 하단 고정 */}
-                          <div className="mt-auto flex items-center justify-between">
+                          {/* 하단 정보 - 적당한 간격 */}
+                          <div className="mt-auto pt-2 flex items-center justify-between">
                             {/* 가격 */}
                             <div className="flex items-center gap-1">
                               <span className="text-sm font-bold text-primary-main">
@@ -1152,7 +1189,7 @@ export default function ProcedureRecommendation({
                                 setSelectedTreatment(treatment);
                                 setIsScheduleModalOpen(true);
                               }}
-                              className="p-2 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                              className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
                             >
                               <FiCalendar className="text-base text-primary-main" />
                             </button>

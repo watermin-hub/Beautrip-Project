@@ -296,13 +296,33 @@ export default function TreatmentDetailPage({
       recoveryDays = parseRecoveryPeriod(currentTreatment.downtime) || 0;
     }
 
+    // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
+    const procedureName = currentTreatment.treatment_name || "시술명 없음";
+    const hospital = currentTreatment.hospital_name || "병원명 없음";
+    const treatmentId = currentTreatment.treatment_id;
+
+    const isDuplicate = schedules.some((s: any) => {
+      if (s.procedureDate !== date) return false;
+      // treatmentId가 있으면 treatmentId로 비교
+      if (treatmentId && s.treatmentId) {
+        return s.treatmentId === treatmentId;
+      }
+      // treatmentId가 없으면 procedureName과 hospital 조합으로 비교
+      return s.procedureName === procedureName && s.hospital === hospital;
+    });
+
+    if (isDuplicate) {
+      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      return;
+    }
+
     // 새로운 일정 데이터 생성
     const newSchedule = {
       id: Date.now(),
-      treatmentId: currentTreatment.treatment_id,
+      treatmentId: treatmentId,
       procedureDate: date,
-      procedureName: currentTreatment.treatment_name || "시술명 없음",
-      hospital: currentTreatment.hospital_name || "병원명 없음",
+      procedureName: procedureName,
+      hospital: hospital,
       category:
         currentTreatment.category_mid ||
         currentTreatment.category_large ||
@@ -318,12 +338,22 @@ export default function TreatmentDetailPage({
     };
 
     schedules.push(newSchedule);
-    localStorage.setItem("schedules", JSON.stringify(schedules));
 
-    // 일정 추가 이벤트 발생
-    window.dispatchEvent(new Event("scheduleAdded"));
-
-    alert(`${date}에 일정이 추가되었습니다!`);
+    // localStorage 저장 시도 (에러 처리 추가)
+    try {
+      const schedulesJson = JSON.stringify(schedules);
+      localStorage.setItem("schedules", schedulesJson);
+      // 일정 추가 이벤트 발생
+      window.dispatchEvent(new Event("scheduleAdded"));
+      alert(`${date}에 일정이 추가되었습니다!`);
+    } catch (error: any) {
+      console.error("일정 저장 실패:", error);
+      if (error.name === "QuotaExceededError") {
+        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+      } else {
+        alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
+      }
+    }
   };
 
   if (loading) {

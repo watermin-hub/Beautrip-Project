@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiHeart,
@@ -164,35 +164,6 @@ export default function HospitalInfoPage() {
     }
   }, [filterCategory]);
 
-  // 카테고리 목록 (정적 데이터로 관리 - 필요시 별도 API 호출)
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
-    hospitals.forEach((hospital: HospitalMaster) => {
-      if (hospital.hospital_departments) {
-        try {
-          const departments =
-            typeof hospital.hospital_departments === "string"
-              ? JSON.parse(hospital.hospital_departments)
-              : hospital.hospital_departments;
-
-          if (Array.isArray(departments)) {
-            departments.forEach((dept: string) => cats.add(dept));
-          } else if (typeof departments === "string") {
-            departments.split(",").forEach((dept: string) => {
-              const trimmed = dept.trim();
-              if (trimmed) cats.add(trimmed);
-            });
-          }
-        } catch (e) {
-          if (typeof hospital.hospital_departments === "string") {
-            cats.add(hospital.hospital_departments);
-          }
-        }
-      }
-    });
-    return Array.from(cats).sort();
-  }, [hospitals]);
-
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       loadData(currentPage + 1, false);
@@ -339,29 +310,15 @@ export default function HospitalInfoPage() {
   return (
     <div className="bg-white">
       {/* 필터 섹션 */}
-      <div className="sticky top-[156px] z-20 bg-white border-b border-gray-100 px-4 py-3">
-        <div className="space-y-2">
-          <AutocompleteInput
-            value={searchTerm}
-            onChange={handleSearchChange}
-            placeholder="병원명을 입력해 주세요."
-            suggestions={autocompleteSuggestions}
-            onSuggestionSelect={handleSuggestionSelect}
-            onEnter={handleSearchEnter}
-          />
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main"
-          >
-            <option value="">전체 카테고리</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="sticky top-[197px] z-20 bg-white border-b border-gray-100 px-4 py-3">
+        <AutocompleteInput
+          value={searchTerm}
+          onChange={handleSearchChange}
+          placeholder="병원명을 입력해 주세요."
+          suggestions={autocompleteSuggestions}
+          onSuggestionSelect={handleSuggestionSelect}
+          onEnter={handleSearchEnter}
+        />
       </div>
 
       <div className="px-4 py-6">

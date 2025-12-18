@@ -59,6 +59,13 @@ export default function InformationalContentSection() {
   const { t } = useLanguage();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
+
+  // 카테고리 변경 시 더보기 상태 리셋
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setShowAll(false);
+  };
 
   // 회복 가이드 글 가져오기
   const recoveryGuidePosts = getAllRecoveryGuides();
@@ -99,6 +106,14 @@ export default function InformationalContentSection() {
       ? allContents.filter((item) => item.category === "회복 가이드")
       : allContents.filter((item) => item.category === selectedCategory);
 
+  // 전체 탭에서 5개만 표시
+  const displayedContents =
+    selectedCategory === "all" && !showAll
+      ? filteredContents.slice(0, 5)
+      : filteredContents;
+
+  const hasMore = selectedCategory === "all" && filteredContents.length > 5;
+
   return (
     <div className="mb-6 pt-3">
       {/* 카테고리 필터 */}
@@ -106,7 +121,7 @@ export default function InformationalContentSection() {
         {categories.map((category) => (
           <button
             key={category}
-            onClick={() => setSelectedCategory(category)}
+            onClick={() => handleCategoryChange(category)}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               selectedCategory === category
                 ? "bg-primary-main text-white"
@@ -120,14 +135,14 @@ export default function InformationalContentSection() {
 
       {/* 컨텐츠 리스트 */}
       <div className="space-y-2.5">
-        {filteredContents.length === 0 ? (
+        {displayedContents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
             {selectedCategory === "회복 가이드"
               ? "회복 가이드 글이 준비 중입니다."
               : "컨텐츠가 없습니다."}
           </div>
         ) : (
-          filteredContents.map((content) => {
+          displayedContents.map((content) => {
             const isRecoveryGuide = content.category === "회복 가이드";
             return (
               <button
@@ -234,6 +249,18 @@ export default function InformationalContentSection() {
           })
         )}
       </div>
+
+      {/* 더보기 버튼 */}
+      {hasMore && !showAll && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setShowAll(true)}
+            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+          >
+            더보기 ({filteredContents.length - 5}개 더)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

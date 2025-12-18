@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import CategoryRankingPage from "./CategoryRankingPage";
 import KBeautyRankingPage from "./KBeautyRankingPage";
@@ -9,7 +9,13 @@ import ScheduleBasedRankingPage from "./ScheduleBasedRankingPage";
 
 type RankingTab = "category" | "kbeauty" | "hospital" | "schedule";
 
-export default function RankingSection() {
+interface RankingSectionProps {
+  isVisible?: boolean;
+}
+
+export default function RankingSection({
+  isVisible = true,
+}: RankingSectionProps) {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<RankingTab>("category");
 
@@ -31,7 +37,7 @@ export default function RankingSection() {
   return (
     <div className="bg-white">
       {/* 하위 탭 네비게이션 */}
-      <div className="sticky top-[156px] z-20 bg-white border-b border-gray-100 px-4 py-3">
+      <div className="bg-white px-4 py-3">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
@@ -51,7 +57,9 @@ export default function RankingSection() {
 
       {/* 탭 콘텐츠 */}
       <div>
-        {activeTab === "category" && <CategoryRankingPage />}
+        {activeTab === "category" && (
+          <CategoryRankingPage isVisible={isVisible} />
+        )}
         {activeTab === "kbeauty" && <KBeautyRankingPage />}
         {activeTab === "hospital" && <HospitalRankingPage />}
         {activeTab === "schedule" && <ScheduleBasedRankingPage />}
