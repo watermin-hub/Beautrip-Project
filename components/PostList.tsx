@@ -453,8 +453,6 @@ export default function PostList({
   const [popularSection, setPopularSection] = useState<
     "procedure" | "hospital"
   >("procedure");
-  const procedureSectionRef = useRef<HTMLDivElement>(null);
-  const hospitalSectionRef = useRef<HTMLDivElement>(null);
 
   // 최신글: Supabase에서 데이터 가져오기
   useEffect(() => {
@@ -717,30 +715,117 @@ export default function PostList({
     );
   }
 
-  // 인기글: 시술 후기/병원 후기 섹션으로 나누기
+  // 인기글: 시술 후기/병원 후기 섹션으로 나누기 (탭 전환 방식)
   if (activeTab === "popular") {
-    const scrollToSection = (section: "procedure" | "hospital") => {
+    const switchSection = (section: "procedure" | "hospital") => {
       setPopularSection(section);
-      if (section === "procedure" && procedureSectionRef.current) {
-        procedureSectionRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      } else if (section === "hospital" && hospitalSectionRef.current) {
-        hospitalSectionRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
     };
+
+    // 공통 포스트 렌더링 함수
+    const renderPost = (post: Post) => (
+      <div
+        key={post.id}
+        className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
+          post.reviewType === "concern" ? "p-5" : "p-4"
+        }`}
+      >
+        {/* Category Tag */}
+        <div className="mb-3">
+          <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
+            {post.category}
+          </span>
+        </div>
+
+        {/* User Info */}
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-2xl">
+            {post.avatar}
+          </div>
+          <div className="flex-1">
+            <span className="text-sm font-semibold text-gray-900">
+              {post.username}
+            </span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-gray-500">{post.timestamp}</span>
+              {post.edited && (
+                <span className="text-xs text-gray-400">수정됨</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Title - 고민상담소 글에만 표시 */}
+        {post.reviewType === "concern" && post.title && (
+          <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
+            <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
+              {post.title}
+            </span>
+          </h3>
+        )}
+
+        {/* Post Content */}
+        <p
+          className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
+            post.reviewType === "concern" ? "mb-4" : "mb-3"
+          }`}
+        >
+          {post.content}
+        </p>
+
+        {/* Images */}
+        {post.images && post.images.length > 0 && (
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {post.images.slice(0, 4).map((img, idx) => (
+              <div
+                key={idx}
+                className="relative w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0"
+              >
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                  이미지
+                </div>
+                {idx === 3 && post.images!.length > 4 && (
+                  <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs">
+                    +{post.images!.length - 4}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center gap-4">
+            <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <FiArrowUp className="text-lg" />
+              <span className="text-xs font-medium">{post.upvotes}</span>
+            </button>
+            <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <FiMessageCircle className="text-lg" />
+              <span className="text-xs font-medium">{post.comments}</span>
+            </button>
+            <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <FiEye className="text-lg" />
+              <span className="text-xs font-medium">{post.views}</span>
+            </button>
+            {post.likes && (
+              <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+                <FiHeart className="text-lg" />
+                <span className="text-xs font-medium">{post.likes}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
 
     return (
       <div className="pb-4">
         {/* 탭 메뉴 */}
-        <div className="sticky top-[48px] z-10 bg-white border-b border-gray-200 px-4">
+        <div className="sticky top-[141px] z-10 bg-white border-b border-gray-200 px-4">
           <div className="flex gap-2 py-3">
             <button
-              onClick={() => scrollToSection("procedure")}
+              onClick={() => switchSection("procedure")}
               className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${
                 popularSection === "procedure"
                   ? "bg-primary-main text-white"
@@ -750,7 +835,7 @@ export default function PostList({
               시술 후기
             </button>
             <button
-              onClick={() => scrollToSection("hospital")}
+              onClick={() => switchSection("hospital")}
               className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${
                 popularSection === "hospital"
                   ? "bg-primary-main text-white"
@@ -762,248 +847,39 @@ export default function PostList({
           </div>
         </div>
 
-        <div className="px-4 space-y-6 pt-4">
-          {/* 시술 후기 섹션 */}
-          <div ref={procedureSectionRef}>
-            <h2 className="text-lg font-bold text-gray-900 mb-4">시술 후기</h2>
-            <div className="space-y-4">
-              {procedurePosts.length > 0 ? (
-                procedurePosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
-                      post.reviewType === "concern" ? "p-5" : "p-4"
-                    }`}
-                  >
-                    {/* Category Tag */}
-                    <div className="mb-3">
-                      <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
-                        {post.category}
-                      </span>
-                    </div>
-
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-2xl">
-                        {post.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {post.username}
-                        </span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-gray-500">
-                            {post.timestamp}
-                          </span>
-                          {post.edited && (
-                            <span className="text-xs text-gray-400">
-                              수정됨
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Title - 고민상담소 글에만 표시 */}
-                    {post.reviewType === "concern" && post.title && (
-                      <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
-                        <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
-                          {post.title}
-                        </span>
-                      </h3>
-                    )}
-
-                    {/* Post Content */}
-                    <p
-                      className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
-                        post.reviewType === "concern" ? "mb-4" : "mb-3"
-                      }`}
-                    >
-                      {post.content}
-                    </p>
-
-                    {/* Images */}
-                    {post.images && post.images.length > 0 && (
-                      <div className="flex gap-2 mb-3 flex-wrap">
-                        {post.images.slice(0, 4).map((img, idx) => (
-                          <div
-                            key={idx}
-                            className="relative w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0"
-                          >
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                              이미지
-                            </div>
-                            {idx === 3 && post.images!.length > 4 && (
-                              <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs">
-                                +{post.images!.length - 4}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-4">
-                        <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                          <FiArrowUp className="text-lg" />
-                          <span className="text-xs font-medium">
-                            {post.upvotes}
-                          </span>
-                        </button>
-                        <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                          <FiMessageCircle className="text-lg" />
-                          <span className="text-xs font-medium">
-                            {post.comments}
-                          </span>
-                        </button>
-                        <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                          <FiEye className="text-lg" />
-                          <span className="text-xs font-medium">
-                            {post.views}
-                          </span>
-                        </button>
-                        {post.likes && (
-                          <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                            <FiHeart className="text-lg" />
-                            <span className="text-xs font-medium">
-                              {post.likes}
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
+        {/* 선택된 섹션만 표시 */}
+        <div className="px-4 pt-4">
+          {popularSection === "procedure" ? (
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                시술 후기
+              </h2>
+              <div className="space-y-4">
+                {procedurePosts.length > 0 ? (
+                  procedurePosts.map(renderPost)
+                ) : (
+                  <div className="text-center py-8 text-gray-500 text-sm">
+                    시술 후기가 없습니다.
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500 text-sm">
-                  시술 후기가 없습니다.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* 병원 후기 섹션 */}
-          <div ref={hospitalSectionRef}>
-            <h2 className="text-lg font-bold text-gray-900 mb-4">병원 후기</h2>
-            <div className="space-y-4">
-              {hospitalPosts.length > 0 ? (
-                hospitalPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
-                      post.reviewType === "concern" ? "p-5" : "p-4"
-                    }`}
-                  >
-                    {/* Category Tag */}
-                    <div className="mb-3">
-                      <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
-                        {post.category}
-                      </span>
-                    </div>
-
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-2xl">
-                        {post.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {post.username}
-                        </span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-gray-500">
-                            {post.timestamp}
-                          </span>
-                          {post.edited && (
-                            <span className="text-xs text-gray-400">
-                              수정됨
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Title - 고민상담소 글에만 표시 */}
-                    {post.reviewType === "concern" && post.title && (
-                      <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
-                        <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
-                          {post.title}
-                        </span>
-                      </h3>
-                    )}
-
-                    {/* Post Content */}
-                    <p
-                      className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
-                        post.reviewType === "concern" ? "mb-4" : "mb-3"
-                      }`}
-                    >
-                      {post.content}
-                    </p>
-
-                    {/* Images */}
-                    {post.images && post.images.length > 0 && (
-                      <div className="flex gap-2 mb-3 flex-wrap">
-                        {post.images.slice(0, 4).map((img, idx) => (
-                          <div
-                            key={idx}
-                            className="relative w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0"
-                          >
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                              이미지
-                            </div>
-                            {idx === 3 && post.images!.length > 4 && (
-                              <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs">
-                                +{post.images!.length - 4}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-4">
-                        <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                          <FiArrowUp className="text-lg" />
-                          <span className="text-xs font-medium">
-                            {post.upvotes}
-                          </span>
-                        </button>
-                        <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                          <FiMessageCircle className="text-lg" />
-                          <span className="text-xs font-medium">
-                            {post.comments}
-                          </span>
-                        </button>
-                        <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                          <FiEye className="text-lg" />
-                          <span className="text-xs font-medium">
-                            {post.views}
-                          </span>
-                        </button>
-                        {post.likes && (
-                          <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
-                            <FiHeart className="text-lg" />
-                            <span className="text-xs font-medium">
-                              {post.likes}
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
+          ) : (
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-4">
+                병원 후기
+              </h2>
+              <div className="space-y-4">
+                {hospitalPosts.length > 0 ? (
+                  hospitalPosts.map(renderPost)
+                ) : (
+                  <div className="text-center py-8 text-gray-500 text-sm">
+                    병원 후기가 없습니다.
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500 text-sm">
-                  병원 후기가 없습니다.
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );

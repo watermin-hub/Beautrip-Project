@@ -156,16 +156,6 @@ export default function HospitalRankingPage() {
           </div>
         ) : (
           <>
-            <div className="text-sm text-gray-600 mb-4">
-              총 {hospitals.length}개의 병원을 찾았습니다.
-              {hospitals.length > ITEMS_PER_PAGE && (
-                <span className="ml-2 text-gray-500">
-                  ({startIndex + 1}-{Math.min(endIndex, hospitals.length)} /{" "}
-                  {hospitals.length})
-                </span>
-              )}
-            </div>
-
             <div className="space-y-4">
               {currentHospitals.map((hospital, index) => {
                 const rank = startIndex + index + 1;
@@ -254,16 +244,14 @@ export default function HospitalRankingPage() {
                         {/* Categories */}
                         {categoriesArr.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-2">
-                            {categoriesArr
-                              .slice(0, 3)
-                              .map((category, idx) => (
-                                <span
-                                  key={idx}
-                                  className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium"
-                                >
-                                  {category}
-                                </span>
-                              ))}
+                            {categoriesArr.slice(0, 3).map((category, idx) => (
+                              <span
+                                key={idx}
+                                className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium"
+                              >
+                                {category}
+                              </span>
+                            ))}
                           </div>
                         )}
 

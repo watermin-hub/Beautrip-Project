@@ -19,10 +19,7 @@ export default function CommunityPage() {
 
   useEffect(() => {
     const tab = searchParams.get("tab") as CommunityTab | null;
-    if (
-      tab &&
-      ["popular", "latest", "info", "consultation"].includes(tab)
-    ) {
+    if (tab && ["popular", "latest", "info", "consultation"].includes(tab)) {
       setActiveTab(tab);
       // 탭 변경 시 상단으로 스크롤
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -41,7 +38,7 @@ export default function CommunityPage() {
       <CommunityHeader activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Content */}
-      <div className="mt-1">
+      <div className="pt-[141px]">
         {activeTab === "popular" ? (
           <PostList activeTab="popular" />
         ) : activeTab === "latest" ? (

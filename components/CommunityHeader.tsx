@@ -25,7 +25,7 @@ export default function CommunityHeader({
 
   return (
     <>
-      <div className="sticky top-[48px] z-20 bg-white border-b border-gray-100">
+      <div className="fixed top-[48px] left-1/2 transform -translate-x-1/2 w-full max-w-md z-20 bg-white border-b border-gray-100">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
           <h1 className="text-xl font-bold text-gray-900">커뮤니티</h1>

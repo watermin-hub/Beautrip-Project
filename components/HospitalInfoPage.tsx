@@ -310,7 +310,7 @@ export default function HospitalInfoPage() {
   return (
     <div className="bg-white">
       {/* 필터 섹션 */}
-      <div className="sticky top-[197px] z-20 bg-white border-b border-gray-100 px-4 py-3">
+      <div className="sticky top-[96px] z-30 bg-white border-b border-gray-100 px-4 py-3">
         <AutocompleteInput
           value={searchTerm}
           onChange={handleSearchChange}

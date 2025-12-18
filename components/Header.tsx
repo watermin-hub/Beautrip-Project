@@ -48,7 +48,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
       <header
         className={`fixed left-1/2 transform -translate-x-1/2 w-full max-w-md ${
           hasRankingBanner ? "top-[41px]" : "top-0"
-        } z-40 bg-white border-b border-gray-100 px-4 py-3`}
+        } z-[60] bg-white border-b border-gray-100 px-4 py-3`}
       >
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -91,11 +91,11 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
               {isLanguageOpen && (
                 <>
                   <div
-                    className="fixed inset-0 z-[99]"
+                    className="fixed inset-0 z-[10000]"
                     onClick={() => setIsLanguageOpen(false)}
                   />
                   <div
-                    className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[100] min-w-[150px]"
+                    className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[150px]"
                     style={{
                       top: `${dropdownPosition.top}px`,
                       right: `${dropdownPosition.right}px`,

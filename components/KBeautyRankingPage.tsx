@@ -203,11 +203,11 @@ export default function KBeautyRankingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-4 py-6">
-        <h3 className="text-lg font-bold mb-2 text-gray-900">
+      <div className="px-4 pt-1 pb-6">
+        <h3 className="text-lg font-bold mb-1 text-gray-900">
           K-beauty 인기 랭킹
         </h3>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-gray-600 mb-4">
           K-beauty 트렌드를 반영한 인기 시술 랭킹입니다.
         </p>
 
@@ -216,162 +216,154 @@ export default function KBeautyRankingPage() {
             <p className="text-gray-600">K-beauty 시술이 없습니다.</p>
           </div>
         ) : (
-          <>
-            <div className="text-sm text-gray-600 mb-4">
-              총 {rankings.length}개의 K-beauty 시술 중 상위 10개를 표시합니다.
-            </div>
+          <div className="space-y-4">
+            {displayRankings.map((treatment, index) => {
+              const rank = startIndex + index + 1;
+              const isFavorite = favorites.has(treatment.treatment_id || 0);
+              const thumbnailUrl = getThumbnailUrl(treatment);
+              const price = treatment.selling_price
+                ? new Intl.NumberFormat("ko-KR").format(
+                    treatment.selling_price
+                  ) + "원"
+                : "";
+              const rating = treatment.rating || 0;
+              const reviewCount = treatment.review_count || 0;
+              const discountRate = treatment.dis_rate
+                ? `${treatment.dis_rate}%`
+                : "";
 
-            <div className="space-y-4">
-              {displayRankings.map((treatment, index) => {
-                const rank = startIndex + index + 1;
-                const isFavorite = favorites.has(treatment.treatment_id || 0);
-                const thumbnailUrl = getThumbnailUrl(treatment);
-                const price = treatment.selling_price
-                  ? new Intl.NumberFormat("ko-KR").format(
-                      treatment.selling_price
-                    ) + "원"
-                  : "";
-                const rating = treatment.rating || 0;
-                const reviewCount = treatment.review_count || 0;
-                const discountRate = treatment.dis_rate
-                  ? `${treatment.dis_rate}%`
-                  : "";
+              return (
+                <div
+                  key={treatment.treatment_id}
+                  className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => {
+                    if (treatment.treatment_id) {
+                      router.push(`/treatment/${treatment.treatment_id}`);
+                    }
+                  }}
+                >
+                  <div className="flex gap-4 p-4">
+                    {/* Rank Badge */}
+                    <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-primary-main text-white rounded-lg font-bold text-lg">
+                      {rank}
+                    </div>
 
-                return (
-                  <div
-                    key={treatment.treatment_id}
-                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => {
-                      if (treatment.treatment_id) {
-                        router.push(`/treatment/${treatment.treatment_id}`);
-                      }
-                    }}
-                  >
-                    <div className="flex gap-4 p-4">
-                      {/* Rank Badge */}
-                      <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-primary-main text-white rounded-lg font-bold text-lg">
-                        {rank}
-                      </div>
+                    {/* Image - 2:1 비율 */}
+                    <div className="relative w-24 aspect-[2/1] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                      <img
+                        src={thumbnailUrl}
+                        alt={treatment.treatment_name || "시술 이미지"}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target.dataset.fallback === "true") {
+                            target.style.display = "none";
+                            return;
+                          }
+                          target.src =
+                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3E🏥%3C/text%3E%3C/svg%3E';
+                          target.dataset.fallback = "true";
+                        }}
+                      />
+                      {discountRate && (
+                        <div className="absolute top-1 right-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+                          {discountRate}
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Image - 2:1 비율 */}
-                      <div className="relative w-24 aspect-[2/1] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                        <img
-                          src={thumbnailUrl}
-                          alt={treatment.treatment_name || "시술 이미지"}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            if (target.dataset.fallback === "true") {
-                              target.style.display = "none";
-                              return;
-                            }
-                            target.src =
-                              'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="20"%3E🏥%3C/text%3E%3C/svg%3E';
-                            target.dataset.fallback = "true";
-                          }}
-                        />
-                        {discountRate && (
-                          <div className="absolute top-1 right-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
-                            {discountRate}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                              {treatment.treatment_name || "시술명 없음"}
+                            </h3>
+                            <p className="text-sm text-gray-600 truncate">
+                              {treatment.hospital_name || "병원명 없음"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Categories */}
+                        {(treatment.category_large ||
+                          treatment.category_mid) && (
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {treatment.category_large && (
+                              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium">
+                                {treatment.category_large}
+                              </span>
+                            )}
+                            {treatment.category_mid && (
+                              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
+                                {treatment.category_mid}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 flex flex-col">
-                        <div>
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
-                                {treatment.treatment_name || "시술명 없음"}
-                              </h3>
-                              <p className="text-sm text-gray-600 truncate">
-                                {treatment.hospital_name || "병원명 없음"}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Categories */}
-                          {(treatment.category_large ||
-                            treatment.category_mid) && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {treatment.category_large && (
-                                <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium">
-                                  {treatment.category_large}
-                                </span>
-                              )}
-                              {treatment.category_mid && (
-                                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
-                                  {treatment.category_mid}
-                                </span>
-                              )}
-                            </div>
+                      {/* Price/Rating and buttons - 하단 고정 */}
+                      <div className="flex items-end justify-between mt-auto">
+                        <div className="flex-1">
+                          {price && (
+                            <p className="text-gray-900 font-bold mb-1">
+                              {price}
+                            </p>
                           )}
+                          <div className="flex items-center gap-2">
+                            {rating > 0 && (
+                              <div className="flex items-center gap-1">
+                                <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                                <span className="text-gray-900 font-semibold text-sm">
+                                  {rating.toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                            {reviewCount > 0 && (
+                              <span className="text-gray-500 text-xs">
+                                리뷰 {reviewCount}개
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        {/* Price/Rating and buttons - 하단 고정 */}
-                        <div className="flex items-end justify-between mt-auto">
-                          <div className="flex-1">
-                            {price && (
-                              <p className="text-gray-900 font-bold mb-1">
-                                {price}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2">
-                              {rating > 0 && (
-                                <div className="flex items-center gap-1">
-                                  <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
-                                  <span className="text-gray-900 font-semibold text-sm">
-                                    {rating.toFixed(1)}
-                                  </span>
-                                </div>
-                              )}
-                              {reviewCount > 0 && (
-                                <span className="text-gray-500 text-xs">
-                                  리뷰 {reviewCount}개
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* 하트/달력 버튼 - 세로 배치 */}
-                          <div className="flex flex-col gap-1.5">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFavoriteClick(treatment);
-                              }}
-                              className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                              <FiHeart
-                                className={`text-base ${
-                                  isFavorite
-                                    ? "text-red-500 fill-red-500"
-                                    : "text-gray-400"
-                                }`}
-                              />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTreatment(treatment);
-                                setIsScheduleModalOpen(true);
-                              }}
-                              className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                              <FiCalendar className="text-base text-primary-main" />
-                            </button>
-                          </div>
+                        {/* 하트/달력 버튼 - 세로 배치 */}
+                        <div className="flex flex-col gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleFavoriteClick(treatment);
+                            }}
+                            className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <FiHeart
+                              className={`text-base ${
+                                isFavorite
+                                  ? "text-red-500 fill-red-500"
+                                  : "text-gray-400"
+                              }`}
+                            />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTreatment(treatment);
+                              setIsScheduleModalOpen(true);
+                            }}
+                            className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <FiCalendar className="text-base text-primary-main" />
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* 페이지네이션 제거 (스크롤 페이지에서는 상위 10개만 표시) */}
-          </>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 

@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "./Header";
 import ExploreHeader from "./ExploreHeader";
-import RankingBanner from "./RankingBanner";
 import RankingSection from "./RankingSection";
 import ProcedureListPage from "./ProcedureListPage";
 import HospitalInfoPage from "./HospitalInfoPage";
@@ -35,7 +34,7 @@ export default function ExploreScrollPage() {
     }
 
     if (targetRef?.current) {
-      const headerOffset = 137; // RankingBanner(41px) + Header(48px) + ExploreHeader(48px)
+      const headerOffset = 96; // Header(48px) + ExploreHeader(48px)
       const elementPosition = targetRef.current.offsetTop;
       const offsetPosition = elementPosition - headerOffset;
 
@@ -84,8 +83,7 @@ export default function ExploreScrollPage() {
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">
-      <RankingBanner />
-      <Header hasRankingBanner={true} />
+      <Header hasRankingBanner={false} />
       <ExploreHeader
         activeSection={activeSection}
         onSectionClick={scrollToSection}
@@ -95,31 +93,26 @@ export default function ExploreScrollPage() {
       <section
         ref={rankingRef}
         id="ranking"
-        className="border-b border-gray-200"
+        className="border-b border-gray-200 pt-[208px]"
       >
-        <RankingSection isVisible={activeSection === "ranking"} />
+        <RankingSection
+          isVisible={activeSection === "ranking"}
+          activeSection={activeSection}
+        />
       </section>
 
       {/* 전체 시술 섹션 */}
       <section
         ref={procedureRef}
         id="procedure"
-        className="scroll-mt-[137px] border-b border-gray-200"
+        className="scroll-mt-[96px] border-b border-gray-200"
       >
-        <div className="sticky top-[137px] z-20 bg-white border-b border-gray-100 px-4 py-3">
-          <h2 className="text-lg font-bold text-gray-900">
-            {t("explore.section.procedure")}
-          </h2>
-          <p className="text-xs text-gray-500 mt-1">
-            {t("explore.section.procedureDesc")}
-          </p>
-        </div>
-        <ProcedureListPage />
+        <ProcedureListPage activeSection={activeSection} />
       </section>
 
       {/* 전체 병원 섹션 */}
-      <section ref={hospitalRef} id="hospital" className="scroll-mt-[137px]">
-        <div className="sticky top-[137px] z-20 bg-white border-b border-gray-100 px-4 py-3">
+      <section ref={hospitalRef} id="hospital" className="scroll-mt-[96px]">
+        <div className="sticky top-[96px] z-20 bg-white border-b border-gray-100 px-4 py-3">
           <h2 className="text-lg font-bold text-gray-900">
             {t("explore.section.hospital")}
           </h2>

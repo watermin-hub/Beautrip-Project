@@ -11,10 +11,12 @@ type RankingTab = "category" | "kbeauty" | "hospital" | "schedule";
 
 interface RankingSectionProps {
   isVisible?: boolean;
+  activeSection?: string; // ExploreScrollPage의 activeSection 전달
 }
 
 export default function RankingSection({
   isVisible = true,
+  activeSection = "ranking",
 }: RankingSectionProps) {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<RankingTab>("category");
@@ -37,7 +39,11 @@ export default function RankingSection({
   return (
     <div className="bg-white">
       {/* 하위 탭 네비게이션 */}
-      <div className="bg-white px-4 py-3">
+      <div
+        className={`${activeSection === "ranking" ? "fixed" : "relative"} ${
+          activeSection === "ranking" ? "top-[160px]" : ""
+        } left-1/2 transform -translate-x-1/2 w-full max-w-md z-40 bg-white px-4 py-2`}
+      >
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
@@ -56,9 +62,12 @@ export default function RankingSection({
       </div>
 
       {/* 탭 콘텐츠 */}
-      <div>
+      <div className={activeSection === "ranking" ? "pt-[61px]" : ""}>
         {activeTab === "category" && (
-          <CategoryRankingPage isVisible={isVisible} />
+          <CategoryRankingPage
+            isVisible={isVisible}
+            shouldStick={activeSection === "ranking"}
+          />
         )}
         {activeTab === "kbeauty" && <KBeautyRankingPage />}
         {activeTab === "hospital" && <HospitalRankingPage />}

@@ -1097,50 +1097,54 @@ function RecoveryCardComponent({
           }`}
         />
       </button>
-      <div className="flex items-start justify-between mb-2 pr-8">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="text-base font-semibold text-gray-900">
-              {rec.procedureName}
-            </h4>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                isOutsideTravel
-                  ? "bg-red-200 text-red-900"
-                  : "bg-yellow-200 text-yellow-800"
-              }`}
-            >
-              회복 기간
-            </span>
-            {isOutsideTravel && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-300 text-red-950">
-                ⚠️ 여행 기간 밖
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-            <FiMapPin
-              className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
-            />
-            <span>{rec.hospital}</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-            <FiTag
-              className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
-            />
-            <span>{rec.category}</span>
+          <h4 className="text-base font-semibold text-gray-900 mb-1.5 pr-10">
+            {rec.procedureName}
+          </h4>
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 flex-wrap">
+            <div className="flex items-center gap-1">
+              <FiMapPin
+                className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
+              />
+              <span>{rec.hospital}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <FiTag
+                className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
+              />
+              <span>{rec.category}</span>
+            </div>
           </div>
           {/* 회복 일수 정보 표시 */}
           {rec.recoveryDays > 0 && (
             <div
-              className={`flex items-center gap-1 text-sm font-medium mb-2 ${
+              className={`flex items-center gap-2 text-sm font-medium mb-2 flex-wrap ${
                 isOutsideTravel ? "text-red-700" : "text-yellow-700"
               }`}
             >
-              <FiClock
-                className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
-              />
-              <span>회복 기간: {rec.recoveryDays}일</span>
+              <div className="flex items-center gap-1">
+                <FiClock
+                  className={
+                    isOutsideTravel ? "text-red-600" : "text-yellow-600"
+                  }
+                />
+                <span>회복 기간: {rec.recoveryDays}일</span>
+              </div>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
+                  isOutsideTravel
+                    ? "bg-red-200 text-red-900"
+                    : "bg-yellow-200 text-yellow-800"
+                }`}
+              >
+                회복 기간
+              </span>
+              {isOutsideTravel && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-300 text-red-950 whitespace-nowrap">
+                  ⚠️ 여행 기간 밖
+                </span>
+              )}
             </div>
           )}
           {/* 회복 가이드 표시 (해당 일차에 맞는 텍스트 우선) */}
@@ -1157,8 +1161,11 @@ function RecoveryCardComponent({
               >
                 회복 가이드
               </p>
-              <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-                {getGuideForDay(rec.recoveryDayIndex) || recoveryText}
+              <p className="text-gray-700 leading-relaxed">
+                {(getGuideForDay(rec.recoveryDayIndex) || recoveryText || "")
+                  .replace(/\n/g, " ")
+                  .replace(/\s+/g, " ")
+                  .trim()}
               </p>
             </div>
           )}
@@ -1830,10 +1837,6 @@ export default function MySchedulePage() {
           {selectedDate &&
             (selectedProcedures.length > 0 || selectedRecovery.length > 0) && (
               <div className="mt-6 space-y-3">
-                <h3 className="text-lg font-bold text-gray-900">
-                  {selectedDate} 일정 정보
-                </h3>
-
                 {/* 시술 카드 (red 계열 배경) */}
                 {selectedProcedures.map((proc) => {
                   const handleCardClick = () => {
@@ -1877,23 +1880,32 @@ export default function MySchedulePage() {
                         <FiX className="text-primary-main text-sm" />
                       </button>
 
-                      <div className="flex items-start justify-between mb-2 pr-8">
+                      <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <h4 className="text-base font-semibold text-gray-900 mb-1">
+                          <h4 className="text-base font-semibold text-gray-900 mb-1.5 pr-10">
                             {proc.procedureName}
                           </h4>
-                          <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                            <FiMapPin className="text-primary-main" />
-                            <span>{proc.hospital}</span>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 flex-wrap">
+                            <div className="flex items-center gap-1">
+                              <FiMapPin className="text-primary-main" />
+                              <span>{proc.hospital}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <FiTag className="text-primary-main" />
+                              <span>{proc.category}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                            <FiTag className="text-primary-main" />
-                            <span>{proc.category}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-primary-main font-medium mb-1">
-                            <FiClock className="text-primary-main" />
-                            <span>회복 기간: {proc.recoveryDays}일</span>
-                          </div>
+                          {proc.recoveryDays > 0 && (
+                            <div className="flex items-center gap-2 text-sm text-primary-main font-medium mb-2 flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <FiClock className="text-primary-main" />
+                                <span>회복 기간: {proc.recoveryDays}일</span>
+                              </div>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap bg-primary-main/20 text-primary-main">
+                                시술 일자
+                              </span>
+                            </div>
+                          )}
                           {/* 시술 당일 카드에서는 회복 가이드는 노출하지 않음 (회복일 카드에서만 안내) */}
                         </div>
                         {proc.procedureTime && (

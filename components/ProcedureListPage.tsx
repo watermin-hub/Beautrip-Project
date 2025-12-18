@@ -11,6 +11,7 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   loadTreatmentsPaginated,
   getThumbnailUrl,
@@ -24,7 +25,14 @@ import CommunityWriteModal from "./CommunityWriteModal";
 import AutocompleteInput from "./AutocompleteInput";
 import AddToScheduleModal from "./AddToScheduleModal";
 
-export default function ProcedureListPage() {
+interface ProcedureListPageProps {
+  activeSection?: string;
+}
+
+export default function ProcedureListPage({
+  activeSection = "procedure",
+}: ProcedureListPageProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
@@ -462,9 +470,15 @@ export default function ProcedureListPage() {
 
   return (
     <div className="bg-white">
-      {/* 필터 섹션 */}
-      <div className="sticky top-[197px] z-20 bg-white border-b border-gray-100 px-4 py-3">
-        <div className="space-y-2">
+      {/* 타이틀 + 필터 섹션 (하나의 고정 덩어리) */}
+      <div className="sticky top-[96px] z-40 bg-white px-4 py-3 shadow-md border-b border-gray-200">
+        <h2 className="text-lg font-bold text-gray-900">
+          {t("explore.section.procedure")}
+        </h2>
+        <p className="text-xs text-gray-500 mt-1">
+          {t("explore.section.procedureDesc")}
+        </p>
+        <div className="mt-3 space-y-2">
           <AutocompleteInput
             value={searchTerm}
             onChange={handleSearchChange}
@@ -515,7 +529,7 @@ export default function ProcedureListPage() {
       </div>
 
       {/* 시술 목록 */}
-      <div className="px-4 py-6">
+      <div className="px-4 py-4 pt-[220px]">
         {treatments.length === 0 && !loading ? (
           <div className="text-center py-12">
             <p className="text-gray-600">검색 결과가 없습니다.</p>

@@ -39,14 +39,17 @@ const MAIN_CATEGORIES = [
 
 interface CategoryRankingPageProps {
   isVisible?: boolean;
+  shouldStick?: boolean; // procedure 섹션 전까지만 고정
 }
 
 export default function CategoryRankingPage({
   isVisible = true,
+  shouldStick = true,
 }: CategoryRankingPageProps) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 여부
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // null = 전체
   const [selectedMidCategory, setSelectedMidCategory] = useState<string | null>(
     null
@@ -193,7 +196,10 @@ export default function CategoryRankingPage({
   useEffect(() => {
     const loadRankings = async () => {
       try {
-        setLoading(true);
+        // 초기 로드일 때만 로딩 화면 표시
+        if (isInitialLoad) {
+          setLoading(true);
+        }
         setError(null);
 
         if (selectedMidCategory !== null) {
@@ -339,6 +345,7 @@ export default function CategoryRankingPage({
         console.error("❌ [랭킹 로드 실패]:", err);
       } finally {
         setLoading(false);
+        setIsInitialLoad(false); // 첫 로드 완료 후 플래그 해제
       }
     };
 
@@ -728,8 +735,12 @@ export default function CategoryRankingPage({
   return (
     <div className="bg-white">
       {/* Category Filter Tags - 텍스트만 2줄 그리드 */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="px-4 py-3">
+      <div
+        className={`${shouldStick ? "fixed" : "relative"} ${
+          shouldStick ? "top-[208px]" : ""
+        } left-1/2 transform -translate-x-1/2 w-full max-w-md z-30 bg-white`}
+      >
+        <div className="px-4 pt-2 pb-3">
           {/* "ALL 전체" 버튼 - 위에 작은 글씨로 */}
           <div className="mb-2">
             <button
@@ -737,7 +748,7 @@ export default function CategoryRankingPage({
                 setSelectedCategory(null);
                 setSelectedMidCategory(null);
               }}
-              className={`text-xs font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors ${
                 selectedCategory === null
                   ? "text-primary-main font-bold"
                   : "text-gray-500 hover:text-gray-700"
@@ -759,7 +770,7 @@ export default function CategoryRankingPage({
                       setSelectedCategory(category.id);
                       setSelectedMidCategory(null); // 카테고리 변경 시 중분류 초기화
                     }}
-                    className={`text-xs font-medium transition-colors whitespace-nowrap ${
+                    className={`text-sm font-medium transition-colors whitespace-nowrap ${
                       isSelected
                         ? "text-primary-main font-bold"
                         : "text-gray-500 hover:text-gray-700"
@@ -775,7 +786,7 @@ export default function CategoryRankingPage({
 
         {/* 중분류 해시태그 필터 */}
         {midCategoriesList.length > 0 && (
-          <div className="px-4 pb-3">
+          <div className="px-4 pb-2">
             <div className="flex gap-2 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setSelectedMidCategory(null)}
@@ -811,7 +822,7 @@ export default function CategoryRankingPage({
       </div>
 
       {/* 컨텐츠 섹션 */}
-      <div className="px-4 py-6 space-y-6">
+      <div className={`px-4 space-y-6 ${shouldStick ? "pt-[106px]" : "pt-4"}`}>
         {/* 중분류 선택 시: 소분류별 랭킹 표시 */}
         {selectedMidCategory !== null ? (
           smallCategoryRankings.length === 0 ? (
