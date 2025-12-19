@@ -2283,6 +2283,7 @@ export interface ConcernPostData {
   title: string;
   concern_category: string;
   content: string;
+  images?: string[]; // 이미지 URL 배열 (비필수)
   user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
@@ -2396,6 +2397,7 @@ export async function saveConcernPost(
       title: data.title,
       concern_category: data.concern_category,
       content: data.content,
+      images: data.images && data.images.length > 0 ? data.images : null,
     };
 
     const { data: insertedData, error } = await supabase
@@ -2609,9 +2611,26 @@ export async function loadConcernPosts(
       return [];
     }
 
-    // 닉네임 추가 (이메일의 @ 앞부분)
+    // 이미지 URL 처리 및 닉네임 추가
     const processedData = await Promise.all(
       data.map(async (post: any) => {
+        // 이미지 URL 처리 (Storage 경로를 getPublicUrl로 변환)
+        if (post.images && Array.isArray(post.images)) {
+          post.images = post.images.map((imgUrl: string) => {
+            // 이미 공개 URL이면 그대로 반환
+            if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+              return imgUrl;
+            }
+            // Storage 경로인 경우 getPublicUrl로 변환 (concern-images 버킷)
+            if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("concern-images").getPublicUrl(imgUrl);
+              return publicUrl;
+            }
+            return imgUrl;
+          });
+        }
         post.nickname = await getUserNickname(post.user_id);
         return post;
       })
@@ -2620,6 +2639,153 @@ export async function loadConcernPosts(
     return processedData as ConcernPostData[];
   } catch (error) {
     console.error("고민글 로드 실패:", error);
+    return [];
+  }
+}
+
+// 사용자가 작성한 시술 후기 가져오기
+export async function loadMyProcedureReviews(
+  userId: string
+): Promise<ProcedureReviewData[]> {
+  try {
+    const { data, error } = await supabase
+      .from("procedure_reviews")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    // 이미지 URL 처리 및 닉네임 추가
+    const processedData = await Promise.all(
+      data.map(async (review: any) => {
+        if (review.images && Array.isArray(review.images)) {
+          review.images = review.images.map((imgUrl: string) => {
+            if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+              return imgUrl;
+            }
+            if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("review_images").getPublicUrl(imgUrl);
+              return publicUrl;
+            }
+            return imgUrl;
+          });
+        }
+        review.nickname = await getUserNickname(review.user_id);
+        return review;
+      })
+    );
+
+    return processedData as ProcedureReviewData[];
+  } catch (error) {
+    console.error("내 시술 후기 로드 실패:", error);
+    return [];
+  }
+}
+
+// 사용자가 작성한 병원 후기 가져오기
+export async function loadMyHospitalReviews(
+  userId: string
+): Promise<HospitalReviewData[]> {
+  try {
+    const { data, error } = await supabase
+      .from("hospital_reviews")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    // 이미지 URL 처리 및 닉네임 추가
+    const processedData = await Promise.all(
+      data.map(async (review: any) => {
+        if (review.images && Array.isArray(review.images)) {
+          review.images = review.images.map((imgUrl: string) => {
+            if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+              return imgUrl;
+            }
+            if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("review_images").getPublicUrl(imgUrl);
+              return publicUrl;
+            }
+            return imgUrl;
+          });
+        }
+        review.nickname = await getUserNickname(review.user_id);
+        return review;
+      })
+    );
+
+    return processedData as HospitalReviewData[];
+  } catch (error) {
+    console.error("내 병원 후기 로드 실패:", error);
+    return [];
+  }
+}
+
+// 사용자가 작성한 고민글 가져오기
+export async function loadMyConcernPosts(
+  userId: string
+): Promise<ConcernPostData[]> {
+  try {
+    const { data, error } = await supabase
+      .from("concern_posts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    // 이미지 URL 처리 및 닉네임 추가
+    const processedData = await Promise.all(
+      data.map(async (post: any) => {
+        // 이미지 URL 처리 (Storage 경로를 getPublicUrl로 변환)
+        if (post.images && Array.isArray(post.images)) {
+          post.images = post.images.map((imgUrl: string) => {
+            // 이미 공개 URL이면 그대로 반환
+            if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+              return imgUrl;
+            }
+            // Storage 경로인 경우 getPublicUrl로 변환 (concern-images 버킷)
+            if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("concern-images").getPublicUrl(imgUrl);
+              return publicUrl;
+            }
+            return imgUrl;
+          });
+        }
+        post.nickname = await getUserNickname(post.user_id);
+        return post;
+      })
+    );
+
+    return processedData as ConcernPostData[];
+  } catch (error) {
+    console.error("내 고민글 로드 실패:", error);
     return [];
   }
 }
@@ -4072,14 +4238,18 @@ export interface SavedSchedule {
   user_id: string;
   schedule_period: string; // 일정 기간 (예: "25.12.14~25.12.20")
   treatment_ids: number[]; // 시술 ID 배열
+  treatment_names: string[]; // 시술 이름 배열 (DB 트리거가 자동으로 채움)
+  treatment_dates?: (string | null)[]; // 시술별 날짜 정보 배열 (treatment_ids와 같은 순서) ["YYYY-MM-DD" | null]
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null; // Soft delete용 (삭제된 일정은 null이 아님)
 }
 
 // 일정 저장
 export async function saveSchedule(
   schedulePeriod: string,
-  treatmentIds: number[]
+  treatmentIds: number[],
+  treatmentDates?: (string | null)[] // 시술별 날짜 정보 배열 (treatment_ids와 같은 순서) ["YYYY-MM-DD" | null]
 ): Promise<{ success: boolean; data?: SavedSchedule; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -4095,6 +4265,27 @@ export async function saveSchedule(
       return { success: false, error: "로그인이 필요합니다." };
     }
 
+    // auth.uid() 확인 (RLS 정책 검증용)
+    const { data: sessionData } = await client.auth.getSession();
+    const authUid = sessionData?.session?.user?.id || null;
+
+    // 디버깅용 체크 (RLS 문제 진단)
+    console.log("[saveSchedule] auth uid 체크:", {
+      authUid: authUid,
+      payloadUserId: userId,
+      isMatch: authUid === userId,
+      authUidType: typeof authUid,
+      userIdType: typeof userId,
+    });
+
+    if (authUid !== userId) {
+      console.error("[saveSchedule] user_id 불일치:", {
+        authUid,
+        userId,
+        message: "RLS 정책 위반 가능성 높음",
+      });
+    }
+
     console.log("[saveSchedule] 저장 시도:", {
       userId,
       schedulePeriod,
@@ -4102,15 +4293,121 @@ export async function saveSchedule(
       treatmentIdsLength: treatmentIds.length,
     });
 
-    const { data, error } = await client
+    // upsert로 변경: 같은 기간은 덮어쓰기
+    // treatment_dates는 배열로 보내야 함 (treatment_ids와 같은 길이)
+    const payload: any = {
+      user_id: userId,
+      schedule_period: schedulePeriod,
+      treatment_ids: treatmentIds, // number[]
+      deleted_at: null, // 저장 시 deleted_at은 null로 설정
+    };
+
+    // treatment_dates가 있으면 배열로 추가 (길이가 treatment_ids와 같아야 함)
+    if (treatmentDates && Array.isArray(treatmentDates)) {
+      // 길이 확인 및 보정
+      if (treatmentDates.length !== treatmentIds.length) {
+        console.warn(
+          "[saveSchedule] treatment_dates 길이가 treatment_ids와 다릅니다. null로 채웁니다.",
+          {
+            treatmentIdsLength: treatmentIds.length,
+            treatmentDatesLength: treatmentDates.length,
+          }
+        );
+        // 길이를 맞추기 위해 null로 채움
+        while (treatmentDates.length < treatmentIds.length) {
+          treatmentDates.push(null);
+        }
+        treatmentDates = treatmentDates.slice(0, treatmentIds.length);
+      }
+      payload.treatment_dates = treatmentDates; // (string|null)[]
+    } else if (treatmentIds.length > 0) {
+      // treatment_dates가 없으면 null로 채운 배열 생성
+      payload.treatment_dates = treatmentIds.map(() => null);
+    }
+
+    // 디버깅용 체크
+    console.log("[saveSchedule] payload 체크:", {
+      user_id: payload.user_id,
+      authUid: authUid,
+      user_id_match: payload.user_id === authUid,
+      treatment_ids: payload.treatment_ids,
+      treatment_ids_isArray: Array.isArray(payload.treatment_ids),
+      treatment_dates: payload.treatment_dates,
+      treatment_dates_isArray: Array.isArray(payload.treatment_dates),
+      treatment_dates_sample: payload.treatment_dates?.[0], // 첫 번째 날짜 샘플 확인
+      lengths_match:
+        payload.treatment_ids?.length === payload.treatment_dates?.length,
+    });
+
+    // unique constraint가 없을 수 있으므로, 기존 레코드를 확인하고 update/insert 분기
+    // 먼저 기존 레코드 확인
+    const { data: existingData } = await client
       .from("saved_schedules")
-      .insert({
-        user_id: userId,
-        schedule_period: schedulePeriod,
-        treatment_ids: treatmentIds,
-      })
-      .select()
-      .single();
+      .select("id")
+      .eq("user_id", userId)
+      .eq("schedule_period", schedulePeriod)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    let data, error;
+
+    if (existingData?.id) {
+      // 기존 레코드가 있으면 update
+      const payloadWithoutDates = { ...payload };
+      delete payloadWithoutDates.treatment_dates;
+
+      try {
+        const result = await client
+          .from("saved_schedules")
+          .update(payload)
+          .eq("id", existingData.id)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } catch (updateError: any) {
+        // treatment_dates로 인한 에러일 수 있으므로, 없이 재시도
+        console.warn(
+          "[saveSchedule] treatment_dates 포함 업데이트 실패, 재시도:",
+          updateError
+        );
+        const retryResult = await client
+          .from("saved_schedules")
+          .update(payloadWithoutDates)
+          .eq("id", existingData.id)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+    } else {
+      // 기존 레코드가 없으면 insert
+      const payloadWithoutDates = { ...payload };
+      delete payloadWithoutDates.treatment_dates;
+
+      try {
+        const result = await client
+          .from("saved_schedules")
+          .insert(payload)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } catch (insertError: any) {
+        // treatment_dates로 인한 에러일 수 있으므로, 없이 재시도
+        console.warn(
+          "[saveSchedule] treatment_dates 포함 삽입 실패, 재시도:",
+          insertError
+        );
+        const retryResult = await client
+          .from("saved_schedules")
+          .insert(payloadWithoutDates)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+    }
 
     console.log("[saveSchedule] 응답:", {
       hasData: !!data,
@@ -4123,10 +4420,21 @@ export async function saveSchedule(
     // 에러가 있거나 데이터가 없는 경우
     if (error || !data) {
       // 에러 객체의 모든 속성을 안전하게 추출
-      const errorCode = error?.code || (error as any)?.code;
-      const errorMessage = error?.message || (error as any)?.message || "";
-      const errorDetails = error?.details || (error as any)?.details || "";
-      const errorHint = error?.hint || (error as any)?.hint || "";
+      let errorCode: string | undefined;
+      let errorMessage: string = "";
+      let errorDetails: string = "";
+      let errorHint: string = "";
+
+      // 에러가 객체인 경우
+      if (error && typeof error === "object") {
+        errorCode = (error as any)?.code || error?.code;
+        errorMessage = (error as any)?.message || error?.message || "";
+        errorDetails = (error as any)?.details || error?.details || "";
+        errorHint = (error as any)?.hint || error?.hint || "";
+      } else if (error) {
+        // 에러가 문자열이거나 다른 타입인 경우
+        errorMessage = String(error);
+      }
 
       const fullErrorMessage =
         errorMessage ||
@@ -4145,12 +4453,26 @@ export async function saveSchedule(
         errorStringified: error
           ? JSON.stringify(error, Object.getOwnPropertyNames(error))
           : "null",
-        errorKeys: error ? Object.keys(error) : [],
+        errorKeys: error && typeof error === "object" ? Object.keys(error) : [],
         hasData: !!data,
+        payload: JSON.stringify(payload),
       });
 
-      // PGRST205: 테이블을 찾을 수 없음 (Supabase PostgREST 에러)
+      // RLS (Row Level Security) 정책 위반 에러
       if (
+        fullErrorMessage.includes("row-level security") ||
+        fullErrorMessage.includes("violates row-level security policy") ||
+        fullErrorMessage.includes("RLS") ||
+        errorCode === "42501"
+      ) {
+        return {
+          success: false,
+          error:
+            "로그인 권한 문제로 일정 저장에 실패했습니다. 다시 로그인하거나 관리자에게 문의해주세요.",
+        };
+      }
+      // PGRST205: 테이블을 찾을 수 없음 (Supabase PostgREST 에러)
+      else if (
         errorCode === "PGRST205" ||
         errorCode === "42P01" ||
         fullErrorMessage.includes("saved_schedules") ||
@@ -4168,7 +4490,6 @@ export async function saveSchedule(
       }
       // 권한 문제
       else if (
-        errorCode === "42501" ||
         fullErrorMessage.includes("permission") ||
         fullErrorMessage.includes("권한")
       ) {
@@ -4251,8 +4572,11 @@ export async function getSavedSchedules(): Promise<{
 
     const { data, error } = await client
       .from("saved_schedules")
-      .select("*")
+      .select(
+        "id, schedule_period, treatment_ids, treatment_names, treatment_dates, created_at, updated_at"
+      )
       .eq("user_id", userId)
+      .is("deleted_at", null) // 삭제된 일정 제외
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -4290,15 +4614,52 @@ export async function deleteSavedSchedule(
       return { success: false, error: "로그인이 필요합니다." };
     }
 
-    const { error } = await client
+    // Soft delete: 실제 삭제 대신 deleted_at만 업데이트
+    const { data, error } = await client
       .from("saved_schedules")
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq("id", scheduleId)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .select();
 
     if (error) {
-      console.error("저장된 일정 삭제 실패:", error);
-      return { success: false, error: error.message };
+      // 에러 객체의 모든 속성을 안전하게 추출
+      let errorCode: string | undefined;
+      let errorMessage: string = "";
+      let errorDetails: string = "";
+      let errorHint: string = "";
+
+      if (error && typeof error === "object") {
+        errorCode = (error as any)?.code || error?.code;
+        errorMessage = (error as any)?.message || error?.message || "";
+        errorDetails = (error as any)?.details || error?.details || "";
+        errorHint = (error as any)?.hint || error?.hint || "";
+      } else if (error) {
+        errorMessage = String(error);
+      }
+
+      const fullErrorMessage =
+        errorMessage ||
+        errorDetails ||
+        errorHint ||
+        "저장된 일정 삭제에 실패했습니다.";
+
+      console.error("저장된 일정 삭제 실패:", {
+        error,
+        errorType: typeof error,
+        errorCode,
+        errorMessage,
+        errorDetails,
+        errorHint,
+        errorStringified: error
+          ? JSON.stringify(error, Object.getOwnPropertyNames(error))
+          : "null",
+        errorKeys: error && typeof error === "object" ? Object.keys(error) : [],
+        scheduleId,
+        userId,
+      });
+
+      return { success: false, error: fullErrorMessage };
     }
 
     return { success: true };

@@ -2,14 +2,18 @@
 
 import { FiSearch } from "react-icons/fi";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AISkinAnalysisConsentModal from "./AISkinAnalysisConsentModal";
 import AISkinAnalysisCameraModal from "./AISkinAnalysisCameraModal";
+import { uploadFaceImageToStorage } from "@/lib/api/faceImageUpload";
 
 export default function AISkinAnalysisButton() {
+  const router = useRouter();
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleStartAnalysis = () => {
     setIsConsentModalOpen(true);
@@ -20,11 +24,27 @@ export default function AISkinAnalysisButton() {
     setIsCameraModalOpen(true);
   };
 
-  const handleCapture = (imageData: string) => {
-    // 이미지를 localStorage에 저장
-    localStorage.setItem("capturedFaceImage", imageData);
-    // 결과 페이지로 이동 (나중에 구현)
-    alert("AI 피부 분석이 완료되었습니다! (결과 페이지는 추후 구현 예정)");
+  const handleCapture = async (imageData: string) => {
+    setIsUploading(true);
+    try {
+      // Supabase Storage에 업로드
+      const { filePath } = await uploadFaceImageToStorage(imageData);
+
+      // 업로드 성공 후 결과 페이지로 이동
+      router.push(
+        `/ai-skin-analysis-result?image=${encodeURIComponent(filePath)}`
+      );
+    } catch (error: any) {
+      console.error("이미지 업로드 오류:", error);
+      // 업로드 실패 시 임시로 localStorage에 저장하고 결과 페이지로 이동
+      localStorage.setItem("capturedFaceImage", imageData);
+      router.push("/ai-skin-analysis-result");
+      alert(
+        `업로드 중 오류가 발생했습니다: ${error?.message ?? "알 수 없는 오류"}`
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -75,8 +95,8 @@ export default function AISkinAnalysisButton() {
         isOpen={isCameraModalOpen}
         onClose={() => setIsCameraModalOpen(false)}
         onCapture={handleCapture}
+        isUploading={isUploading}
       />
     </>
   );
 }
-

@@ -44,10 +44,10 @@ export default function RankingSection({
   ];
 
   return (
-    <div className="bg-white">
+    <div className="bg-white relative">
       {/* 하위 탭 네비게이션 - sticky로 변경하여 자연스럽게 밀려 올라가도록 */}
       {/* Header(48) + ExploreHeader(약 56px) = 104px */}
-      <div className="sticky top-[104px] z-40 bg-white px-4 py-2">
+      <div className="sticky top-[104px] z-40 bg-white px-4 py-2 border-b border-gray-200 shadow-sm">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
@@ -68,7 +68,7 @@ export default function RankingSection({
       {/* 필터바 - 카테고리별 탭일 때만 표시, sticky로 렌더링 */}
       {/* 탭바 높이(약 48px) 아래에 위치: top-[152px] = 104 + 48 */}
       {activeTab === "category" && (
-        <div className="sticky top-[152px] z-[45] bg-white border-b border-gray-200">
+        <div className="sticky top-[152px] z-[45] bg-white">
           <CategoryFilterBar
             selectedCategory={selectedCategory}
             selectedMidCategory={selectedMidCategory}
@@ -82,8 +82,8 @@ export default function RankingSection({
         </div>
       )}
 
-      {/* 탭 콘텐츠 - 상단 sticky 요소들(탭바 약 48px + 필터바 약 90px) 아래에 표시되도록 padding-top 추가 */}
-      <div className="pt-[140px]">
+      {/* 탭 콘텐츠 - 상단 sticky 요소들 아래에 표시되도록 padding-top 추가 */}
+      <div className={activeTab === "category" ? "pt-[100px]" : "pt-24"}>
         {activeTab === "category" && (
           <CategoryRankingPage
             isVisible={isVisible}

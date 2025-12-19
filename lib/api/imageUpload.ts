@@ -161,3 +161,80 @@ export function getImageFileName(url: string): string | null {
     return null;
   }
 }
+
+/**
+ * 고민글 이미지를 Supabase Storage에 업로드 (concern-images 버킷 사용)
+ * @param file 업로드할 이미지 파일
+ * @param postId 고민글 ID (UUID)
+ * @param imageIndex 이미지 인덱스 (0부터 시작)
+ * @returns 업로드된 이미지의 공개 URL (getPublicUrl 사용)
+ */
+export async function uploadConcernImage(
+  file: File,
+  postId: string,
+  imageIndex: number
+): Promise<string> {
+  try {
+    const CONCERN_BUCKET_NAME = "concern-images";
+
+    // 파일 확장자 추출
+    const fileExt = file.name.split(".").pop();
+    if (!fileExt) {
+      throw new Error("파일 확장자를 찾을 수 없습니다.");
+    }
+
+    // 파일명 생성: {postId}/{imageIndex}.{ext}
+    const fileName = `${postId}/${imageIndex}.${fileExt}`;
+
+    // 이미지 업로드
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(CONCERN_BUCKET_NAME)
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false, // 중복 방지
+        contentType: file.type, // 파일 타입 명시
+      });
+
+    if (uploadError) {
+      console.error("고민글 이미지 업로드 실패:", uploadError);
+      throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
+    }
+
+    if (uploadData?.path) {
+      console.log("✅ 고민글 이미지 업로드 성공! 경로:", uploadData.path);
+    }
+
+    // 공개 URL 가져오기 (반드시 getPublicUrl 사용 - 백엔드 요구사항)
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(CONCERN_BUCKET_NAME).getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error: any) {
+    console.error("고민글 이미지 업로드 오류:", error);
+    throw error;
+  }
+}
+
+/**
+ * 여러 고민글 이미지를 한 번에 업로드 (concern-images 버킷 사용)
+ * @param files 업로드할 이미지 파일 배열
+ * @param postId 고민글 ID (UUID)
+ * @returns 업로드된 이미지들의 공개 URL 배열 (getPublicUrl 사용)
+ */
+export async function uploadConcernImages(
+  files: File[],
+  postId: string
+): Promise<string[]> {
+  try {
+    const uploadPromises = files.map((file, index) =>
+      uploadConcernImage(file, postId, index)
+    );
+
+    const urls = await Promise.all(uploadPromises);
+    return urls;
+  } catch (error: any) {
+    console.error("고민글 이미지 일괄 업로드 오류:", error);
+    throw error;
+  }
+}

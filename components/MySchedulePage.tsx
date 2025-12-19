@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FiCalendar,
   FiChevronLeft,
@@ -186,6 +186,7 @@ function SimilarProcedureRecommendation({
   currentProcedureName: string;
   travelPeriod: TravelPeriod | null;
 }) {
+  const router = useRouter();
   const [similarTreatments, setSimilarTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(
@@ -431,7 +432,9 @@ function SimilarProcedureRecommendation({
                 className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                 onClick={() => {
                   if (treatment.treatment_id) {
-                    window.location.href = `/treatment/${treatment.treatment_id}`;
+                    router.push(
+                      `/schedule/treatment/${treatment.treatment_id}`
+                    );
                   }
                 }}
               >
@@ -550,18 +553,50 @@ function SimilarProcedureRecommendation({
 function SavedSchedulesTab({
   travelPeriod,
   savedSchedules,
+  onScheduleClick,
+  formatDate,
+  monthNames,
+  dayNames,
 }: {
   travelPeriod: TravelPeriod | null;
   savedSchedules: ProcedureSchedule[];
+  onScheduleClick?: (schedule: SavedSchedule) => void;
+  formatDate: (date: Date) => string;
+  monthNames: string[];
+  dayNames: string[];
 }) {
   const [savedSchedulesList, setSavedSchedulesList] = useState<SavedSchedule[]>(
     []
   );
   const [loading, setLoading] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] =
+    useState<SavedSchedule | null>(null);
+  const [selectedScheduleProcedures, setSelectedScheduleProcedures] = useState<
+    ProcedureSchedule[]
+  >([]);
+  const [selectedScheduleTravelPeriod, setSelectedScheduleTravelPeriod] =
+    useState<TravelPeriod | null>(null);
+  const [selectedScheduleCurrentDate, setSelectedScheduleCurrentDate] =
+    useState(new Date());
+  const [selectedScheduleSelectedDate, setSelectedScheduleSelectedDate] =
+    useState<string | null>(null);
 
   // 저장된 일정 목록 로드
   useEffect(() => {
     loadSavedSchedules();
+
+    // 저장된 일정 업데이트 이벤트 리스너
+    const handleSavedScheduleUpdate = () => {
+      loadSavedSchedules();
+    };
+    window.addEventListener("savedScheduleUpdated", handleSavedScheduleUpdate);
+
+    return () => {
+      window.removeEventListener(
+        "savedScheduleUpdated",
+        handleSavedScheduleUpdate
+      );
+    };
   }, []);
 
   const loadSavedSchedules = async () => {
@@ -575,6 +610,101 @@ function SavedSchedulesTab({
       console.error("저장된 일정 로드 실패:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 저장된 일정 클릭 핸들러 (탭 내에서 달력 표시)
+  const handleScheduleClickInTab = async (schedule: SavedSchedule) => {
+    try {
+      // schedule_period 파싱 (예: "25.12.19~25.12.20")
+      const periodMatch = schedule.schedule_period.match(
+        /(\d{2})\.(\d{2})\.(\d{2})~(\d{2})\.(\d{2})\.(\d{2})/
+      );
+      if (!periodMatch) {
+        alert("일정 기간 형식이 올바르지 않습니다.");
+        return;
+      }
+
+      const [, startYear, startMonth, startDay, endYear, endMonth, endDay] =
+        periodMatch;
+      const year = 2000 + parseInt(startYear);
+      const startDate = `${year}-${startMonth}-${startDay}`;
+      const endDate = `${year}-${endMonth}-${endDay}`;
+
+      // travelPeriod 설정
+      const newTravelPeriod: TravelPeriod = {
+        start: startDate,
+        end: endDate,
+      };
+      setSelectedScheduleTravelPeriod(newTravelPeriod);
+
+      // treatment_ids로 각 시술 정보 로드
+      const newSchedules: ProcedureSchedule[] = [];
+      for (let i = 0; i < schedule.treatment_ids.length; i++) {
+        const treatmentId = schedule.treatment_ids[i];
+        try {
+          const treatment = await loadTreatmentById(treatmentId);
+          if (!treatment) continue;
+
+          // 회복 기간 정보 가져오기
+          let recoveryDays = 0;
+          let recoveryText: string | null = null;
+          let recoveryGuides: Record<string, string | null> | undefined =
+            undefined;
+
+          if (treatment.category_mid) {
+            const recoveryInfo = await getRecoveryInfoByCategoryMid(
+              treatment.category_mid
+            );
+            if (recoveryInfo) {
+              recoveryDays = recoveryInfo.recoveryMax;
+              recoveryText = recoveryInfo.recoveryText;
+              recoveryGuides = recoveryInfo.recoveryGuides;
+            }
+          }
+
+          // recoveryInfo가 없으면 기존 downtime 사용 (fallback)
+          if (recoveryDays === 0) {
+            recoveryDays = parseRecoveryPeriod(treatment.downtime) || 0;
+          }
+
+          // 시술 날짜는 treatment_dates 배열에서 인덱스로 가져오고, 없으면 여행 시작일로 설정
+          const procedureDate = schedule.treatment_dates?.[i] || startDate;
+
+          const newId =
+            newSchedules.length > 0
+              ? Math.max(...newSchedules.map((s) => s.id)) + 1
+              : 1;
+
+          newSchedules.push({
+            id: newId,
+            procedureDate: procedureDate,
+            procedureName: treatment.treatment_name || "시술명 없음",
+            hospital: treatment.hospital_name || "병원명 없음",
+            category: treatment.category_large || "",
+            categoryMid: treatment.category_mid || null,
+            categorySmall: treatment.category_small || null,
+            recoveryDays,
+            recoveryText,
+            recoveryGuides,
+            treatmentId: treatment.treatment_id,
+          });
+        } catch (error) {
+          console.error(`시술 ID ${treatmentId} 로드 실패:`, error);
+        }
+      }
+
+      if (newSchedules.length === 0) {
+        alert("시술 정보를 불러올 수 없습니다.");
+        return;
+      }
+
+      setSelectedSchedule(schedule);
+      setSelectedScheduleProcedures(newSchedules);
+      setSelectedScheduleCurrentDate(new Date(startDate));
+    } catch (error) {
+      console.error("저장된 일정 로드 실패:", error);
+      alert("저장된 일정을 불러오는 중 오류가 발생했습니다.");
     }
   };
 
@@ -598,11 +728,366 @@ function SavedSchedulesTab({
     }
   };
 
+  // 선택된 일정의 달력 계산
+  const selectedScheduleProcedureDates = useMemo(() => {
+    if (!selectedScheduleProcedures.length) return {};
+    const dates: { [key: string]: ProcedureSchedule[] } = {};
+
+    // formatDate를 내부에서 정의하여 의존성 문제 방지
+    const formatDateLocal = (date: Date): string => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    };
+
+    selectedScheduleProcedures.forEach((proc) => {
+      const procDate = new Date(proc.procedureDate);
+      const procDateStr = formatDateLocal(procDate);
+      if (!dates[procDateStr]) dates[procDateStr] = [];
+      dates[procDateStr].push(proc);
+
+      for (let i = 1; i <= proc.recoveryDays; i++) {
+        const recoveryDate = new Date(procDate);
+        recoveryDate.setDate(recoveryDate.getDate() + i);
+        const recoveryDateStr = formatDateLocal(recoveryDate);
+        if (!dates[recoveryDateStr]) dates[recoveryDateStr] = [];
+        dates[recoveryDateStr].push({
+          ...proc,
+          isRecovery: true,
+          recoveryDayIndex: i,
+        });
+      }
+    });
+    return dates;
+  }, [selectedScheduleProcedures]);
+
+  const selectedScheduleYear = selectedScheduleCurrentDate.getFullYear();
+  const selectedScheduleMonth = selectedScheduleCurrentDate.getMonth();
+  const selectedScheduleFirstDay = new Date(
+    selectedScheduleYear,
+    selectedScheduleMonth,
+    1
+  );
+  const selectedScheduleLastDay = new Date(
+    selectedScheduleYear,
+    selectedScheduleMonth + 1,
+    0
+  );
+  const selectedScheduleDaysInMonth = selectedScheduleLastDay.getDate();
+  const selectedScheduleStartingDay = selectedScheduleFirstDay.getDay();
+
+  const selectedScheduleCalendarDays: (Date | null)[] = [];
+  const selectedSchedulePrevMonthLastDay = new Date(
+    selectedScheduleYear,
+    selectedScheduleMonth,
+    0
+  ).getDate();
+  for (let i = selectedScheduleStartingDay - 1; i >= 0; i--) {
+    selectedScheduleCalendarDays.push(
+      new Date(
+        selectedScheduleYear,
+        selectedScheduleMonth - 1,
+        selectedSchedulePrevMonthLastDay - i
+      )
+    );
+  }
+  for (let day = 1; day <= selectedScheduleDaysInMonth; day++) {
+    selectedScheduleCalendarDays.push(
+      new Date(selectedScheduleYear, selectedScheduleMonth, day)
+    );
+  }
+  const selectedScheduleRemainingDays =
+    42 - selectedScheduleCalendarDays.length;
+  for (let day = 1; day <= selectedScheduleRemainingDays; day++) {
+    selectedScheduleCalendarDays.push(
+      new Date(selectedScheduleYear, selectedScheduleMonth + 1, day)
+    );
+  }
+
+  // formatDate, monthNames, dayNames는 MySchedulePage에서 정의된 것을 사용
+
+  const isSelectedScheduleTravelPeriod = (date: Date): boolean => {
+    if (!selectedScheduleTravelPeriod) return false;
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    // 시간 부분을 제거하고 날짜만 비교
+    const startDate = new Date(selectedScheduleTravelPeriod.start);
+    const startOnly = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate()
+    );
+    const endDate = new Date(selectedScheduleTravelPeriod.end);
+    const endOnly = new Date(
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate()
+    );
+    return dateOnly >= startOnly && dateOnly <= endOnly;
+  };
+
+  const isSelectedScheduleProcedureDate = (date: Date): boolean => {
+    const dateStr = formatDate(date);
+    return (
+      selectedScheduleProcedureDates[dateStr]?.some((p) => !p.isRecovery) ||
+      false
+    );
+  };
+
+  const isSelectedScheduleRecoveryPeriod = (date: Date): boolean => {
+    const dateStr = formatDate(date);
+    return (
+      selectedScheduleProcedureDates[dateStr]?.some((p) => p.isRecovery) ||
+      false
+    );
+  };
+
+  const getSelectedScheduleProceduresForDate = (
+    date: Date
+  ): ProcedureSchedule[] => {
+    const dateStr = formatDate(date);
+    return (
+      selectedScheduleProcedureDates[dateStr]?.filter((p) => !p.isRecovery) ||
+      []
+    );
+  };
+
+  const getSelectedScheduleRecoveryForDate = (
+    date: Date
+  ): ProcedureSchedule[] => {
+    const dateStr = formatDate(date);
+    return (
+      selectedScheduleProcedureDates[dateStr]?.filter((p) => p.isRecovery) || []
+    );
+  };
+
   return (
     <div className="px-4 py-4">
+      {/* 선택된 일정의 달력 (세로 크기만 줄임) */}
+      {selectedSchedule && selectedScheduleTravelPeriod && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-gray-900">
+              {selectedSchedule.schedule_period}
+            </h3>
+            <button
+              onClick={() => {
+                setSelectedSchedule(null);
+                setSelectedScheduleProcedures([]);
+                setSelectedScheduleTravelPeriod(null);
+                setSelectedScheduleSelectedDate(null);
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              닫기
+            </button>
+          </div>
+
+          {/* 캘린더 헤더 */}
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() =>
+                setSelectedScheduleCurrentDate(
+                  new Date(selectedScheduleYear, selectedScheduleMonth - 1, 1)
+                )
+              }
+              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiChevronLeft className="text-gray-700 text-lg" />
+            </button>
+            <h2 className="text-lg font-bold text-gray-900">
+              {selectedScheduleYear}년 {monthNames[selectedScheduleMonth]}
+            </h2>
+            <button
+              onClick={() =>
+                setSelectedScheduleCurrentDate(
+                  new Date(selectedScheduleYear, selectedScheduleMonth + 1, 1)
+                )
+              }
+              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiChevronRight className="text-gray-700 text-lg" />
+            </button>
+          </div>
+
+          {/* 캘린더 그리드 (세로 크기만 줄임) */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+            {/* 요일 헤더 */}
+            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+              {dayNames.map((day) => (
+                <div
+                  key={day}
+                  className="py-1.5 text-center text-xs font-semibold text-gray-600"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* 날짜 그리드 */}
+            <div className="grid grid-cols-7">
+              {selectedScheduleCalendarDays.map((date, index) => {
+                if (!date)
+                  return (
+                    <div
+                      key={index}
+                      className="h-12 border-r border-b border-gray-100"
+                    ></div>
+                  );
+
+                const isCurrentMonth =
+                  date.getMonth() === selectedScheduleMonth;
+                const isTravel = isSelectedScheduleTravelPeriod(date);
+                const isProcedure = isSelectedScheduleProcedureDate(date);
+                const isRecovery = isSelectedScheduleRecoveryPeriod(date);
+                const isSelected =
+                  selectedScheduleSelectedDate === formatDate(date);
+
+                let bgClass = "";
+                let textClass = "";
+
+                if (!isCurrentMonth) {
+                  bgClass = "bg-gray-50";
+                  textClass = "text-gray-300";
+                } else if (isTravel) {
+                  bgClass = "bg-sky-100";
+                  textClass = "text-sky-700";
+                } else if (isSelected) {
+                  bgClass = "bg-primary-main/10";
+                  textClass = "text-primary-main font-semibold";
+                } else {
+                  bgClass = "";
+                  textClass = "text-gray-700";
+                }
+
+                const proceduresOnDate =
+                  getSelectedScheduleProceduresForDate(date);
+                const recoveryOnDate = getSelectedScheduleRecoveryForDate(date);
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() =>
+                      setSelectedScheduleSelectedDate(formatDate(date))
+                    }
+                    className={`h-12 border-r border-b border-gray-100 p-0.5 transition-colors relative ${bgClass} ${textClass} hover:bg-gray-50`}
+                  >
+                    <div className="flex flex-col items-start justify-start h-full w-full p-0.5">
+                      <span className="text-xs font-medium">
+                        {date.getDate()}
+                      </span>
+                      <div className="flex flex-col gap-0.5 w-full mt-0.5">
+                        {proceduresOnDate.slice(0, 3).map((proc, idx) => (
+                          <div
+                            key={proc.id}
+                            className="w-full h-1 bg-primary-main rounded-sm"
+                            title={proc.procedureName}
+                          />
+                        ))}
+                      </div>
+                      {recoveryOnDate.length > 0 &&
+                        proceduresOnDate.length < 3 && (
+                          <div className="flex flex-col gap-0.5 w-full mt-0.5">
+                            {recoveryOnDate
+                              .slice(0, 3 - proceduresOnDate.length)
+                              .map((rec, idx) => (
+                                <div
+                                  key={`recovery-${rec.id}-${idx}`}
+                                  className="w-full h-1 bg-yellow-400 rounded-sm"
+                                  title={`${rec.procedureName} 회복 기간`}
+                                />
+                              ))}
+                          </div>
+                        )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 선택된 날짜의 시술 정보 */}
+          {selectedScheduleSelectedDate && (
+            <div className="space-y-3">
+              {getSelectedScheduleProceduresForDate(
+                new Date(selectedScheduleSelectedDate)
+              ).map((proc) => (
+                <div
+                  key={proc.id}
+                  className="bg-primary-light/10 border border-primary-main rounded-xl p-4"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2">
+                    {proc.procedureName}
+                  </h4>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <FiMapPin className="text-primary-main" />
+                    <span>{proc.hospital}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 저장된 일정 목록 */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">저장된 일정</h3>
+        <div className="flex items-center justify-between mb-4">
+          {savedSchedulesList.length > 0 && (
+            <button
+              onClick={async () => {
+                if (
+                  !confirm(
+                    `저장된 일정 ${savedSchedulesList.length}개를 모두 삭제하시겠습니까?`
+                  )
+                ) {
+                  return;
+                }
+
+                try {
+                  let successCount = 0;
+                  let failCount = 0;
+
+                  for (const schedule of savedSchedulesList) {
+                    if (schedule.id) {
+                      const result = await deleteSavedSchedule(schedule.id);
+                      if (result.success) {
+                        successCount++;
+                      } else {
+                        failCount++;
+                      }
+                    }
+                  }
+
+                  if (failCount === 0) {
+                    alert(`모든 일정(${successCount}개)이 삭제되었습니다.`);
+                  } else {
+                    alert(
+                      `${successCount}개 삭제 성공, ${failCount}개 삭제 실패`
+                    );
+                  }
+
+                  loadSavedSchedules();
+                  // 선택된 일정도 초기화
+                  setSelectedSchedule(null);
+                  setSelectedScheduleProcedures([]);
+                  setSelectedScheduleTravelPeriod(null);
+                  setSelectedScheduleSelectedDate(null);
+                } catch (error) {
+                  console.error("일괄 삭제 실패:", error);
+                  alert("일괄 삭제 중 오류가 발생했습니다.");
+                }
+              }}
+              className="text-sm text-gray-600 hover:text-red-600 transition-colors"
+            >
+              모두 지우기
+            </button>
+          )}
+        </div>
         {loading ? (
           <div className="text-center py-8">
             <p className="text-gray-500 text-sm">로딩 중...</p>
@@ -619,60 +1104,154 @@ function SavedSchedulesTab({
           </div>
         ) : (
           <div className="space-y-3">
-            {savedSchedulesList.map((schedule) => (
-              <div
-                key={schedule.id}
-                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FiCalendar className="text-primary-main" />
-                      <h4 className="text-base font-semibold text-gray-900">
-                        {schedule.schedule_period}
-                      </h4>
+            {savedSchedulesList.map((schedule) => {
+              // 날짜 형식 변환: "25.12.21~25.12.25" → "25년 12월 21일 ~ 25년 12월 25일 (4박 5일)"
+              const formatSchedulePeriod = (period: string): string => {
+                const match = period.match(
+                  /(\d{2})\.(\d{2})\.(\d{2})~(\d{2})\.(\d{2})\.(\d{2})/
+                );
+                if (!match) return period;
+
+                const [
+                  ,
+                  startYear,
+                  startMonth,
+                  startDay,
+                  endYear,
+                  endMonth,
+                  endDay,
+                ] = match;
+                const year = 2000 + parseInt(startYear);
+                const startDate = new Date(
+                  year,
+                  parseInt(startMonth) - 1,
+                  parseInt(startDay)
+                );
+                const endDate = new Date(
+                  year,
+                  parseInt(endMonth) - 1,
+                  parseInt(endDay)
+                );
+
+                // 박수 계산
+                const nights =
+                  Math.floor(
+                    (endDate.getTime() - startDate.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  ) || 0;
+                const days = nights + 1;
+
+                return `${parseInt(startMonth)}월 ${parseInt(
+                  startDay
+                )}일 ~ ${parseInt(endMonth)}월 ${parseInt(
+                  endDay
+                )}일 (${nights}박 ${days}일)`;
+              };
+
+              // 시술별 날짜 정보 가져오기 (배열)
+              const treatmentDates = schedule.treatment_dates || [];
+              const names = schedule.treatment_names || [];
+              const ids = schedule.treatment_ids || [];
+
+              return (
+                <div
+                  key={schedule.id}
+                  onClick={async () => {
+                    // 저장된 일정 탭 내에서 달력 표시 (탭 변경하지 않음)
+                    await handleScheduleClickInTab(schedule);
+                  }}
+                  className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FiCalendar className="text-primary-main" />
+                        <h4 className="text-base font-semibold text-gray-900">
+                          {formatSchedulePeriod(schedule.schedule_period)}
+                        </h4>
+                      </div>
+                      {schedule.created_at && (
+                        <p className="text-xs text-gray-400">
+                          저장일:{" "}
+                          {new Date(schedule.created_at).toLocaleDateString(
+                            "ko-KR",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                      <FiTag className="text-primary-main" />
-                      <span>시술 {schedule.treatment_ids.length}개</span>
-                    </div>
-                    {schedule.created_at && (
-                      <p className="text-xs text-gray-400">
-                        저장일:{" "}
-                        {new Date(schedule.created_at).toLocaleDateString(
-                          "ko-KR"
-                        )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        schedule.id && handleDeleteSavedSchedule(schedule.id);
+                      }}
+                      className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                      title="삭제"
+                    >
+                      <FiX className="text-gray-500 text-lg" />
+                    </button>
+                  </div>
+
+                  {/* 시술 목록 (날짜와 함께 표시) */}
+                  {(names.length > 0 || ids.length > 0) && (
+                    <div className="pt-3 border-t border-gray-100">
+                      <p className="text-xs text-gray-500 mb-2 font-medium">
+                        시술
                       </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() =>
-                      schedule.id && handleDeleteSavedSchedule(schedule.id)
-                    }
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    title="삭제"
-                  >
-                    <FiX className="text-gray-500 text-lg" />
-                  </button>
-                </div>
-                {/* 시술 ID 목록 (간단히 표시) */}
-                {schedule.treatment_ids.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-1">시술 ID:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {schedule.treatment_ids.map((id, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 bg-primary-light/20 text-primary-main text-xs rounded"
-                        >
-                          #{id}
-                        </span>
-                      ))}
+                      <div className="space-y-1.5">
+                        {names.length > 0
+                          ? names.map((name, i) => {
+                              const treatmentId = ids[i];
+                              // treatment_dates는 배열이므로 인덱스로 접근
+                              const dateStr = treatmentDates[i]
+                                ? (() => {
+                                    const date = new Date(treatmentDates[i]!);
+                                    return `${
+                                      date.getMonth() + 1
+                                    }월 ${date.getDate()}일`;
+                                  })()
+                                : "";
+
+                              return (
+                                <div
+                                  key={`n-${i}`}
+                                  className="text-sm text-gray-700"
+                                >
+                                  {dateStr ? `${dateStr} - ` : ""}
+                                  {name || `#${treatmentId || ""}`}
+                                </div>
+                              );
+                            })
+                          : ids.map((id, i) => {
+                              // treatment_dates는 배열이므로 인덱스로 접근
+                              const dateStr = treatmentDates[i]
+                                ? (() => {
+                                    const date = new Date(treatmentDates[i]!);
+                                    return `${
+                                      date.getMonth() + 1
+                                    }월 ${date.getDate()}일`;
+                                  })()
+                                : "";
+
+                              return (
+                                <div
+                                  key={`id-${id}`}
+                                  className="text-sm text-gray-700"
+                                >
+                                  {dateStr ? `${dateStr} - ` : ""}#${id}
+                                </div>
+                              );
+                            })}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -938,7 +1517,8 @@ function RecoveryCardComponent({
                     : "bg-yellow-200 text-yellow-800"
                 }`}
               >
-                회복 기간{rec.recoveryDayIndex ? ` D+${rec.recoveryDayIndex}` : ""}
+                회복 기간
+                {rec.recoveryDayIndex ? ` D+${rec.recoveryDayIndex}` : ""}
               </span>
               {isOutsideTravel && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-300 text-red-950 whitespace-nowrap">
@@ -978,6 +1558,19 @@ function RecoveryCardComponent({
 export default function MySchedulePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"schedule" | "saved">("schedule");
+
+  // URL 쿼리 파라미터에서 탭 확인
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "saved") {
+        setActiveTab("saved");
+      } else if (tab === "schedule") {
+        setActiveTab("schedule");
+      }
+    }
+  }, []);
   // 초기 날짜를 현재 날짜로 설정
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -1256,15 +1849,19 @@ export default function MySchedulePage() {
       date.getMonth(),
       date.getDate()
     );
+    // travelStart와 travelEnd가 Date 객체가 아닐 수 있으므로 안전하게 처리
+    const startDate =
+      travelStart instanceof Date ? travelStart : new Date(travelStart);
     const startOnly = new Date(
-      travelStart.getFullYear(),
-      travelStart.getMonth(),
-      travelStart.getDate()
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate()
     );
+    const endDate = travelEnd instanceof Date ? travelEnd : new Date(travelEnd);
     const endOnly = new Date(
-      travelEnd.getFullYear(),
-      travelEnd.getMonth(),
-      travelEnd.getDate()
+      endDate.getFullYear(),
+      endDate.getMonth(),
+      endDate.getDate()
     );
     return dateOnly >= startOnly && dateOnly <= endOnly;
   };
@@ -1318,10 +1915,62 @@ export default function MySchedulePage() {
     );
   };
 
+  // 특정 날짜의 회복 기간 목록 가져오기 (최대 3개, 시술과 합쳐서)
+  const getRecoveryForDateLimited = (
+    date: Date,
+    proceduresCount: number
+  ): ProcedureSchedule[] => {
+    const dateStr = formatDate(date);
+    const maxRecovery = Math.max(0, 3 - proceduresCount); // 남은 라인 수만큼만
+    return (procedureDates[dateStr]?.filter((p) => p.isRecovery) || []).slice(
+      0,
+      maxRecovery
+    );
+  };
+
   // 특정 날짜의 회복 기간 목록 가져오기
   const getRecoveryForDate = (date: Date): ProcedureSchedule[] => {
     const dateStr = formatDate(date);
     return procedureDates[dateStr]?.filter((p) => p.isRecovery) || [];
+  };
+
+  // 같은 시술이 이전/다음 날짜에 있는지 확인 (이어지게 표시용)
+  const getProcedureContinuity = (
+    date: Date,
+    procedure: ProcedureSchedule
+  ): { isStart: boolean; isEnd: boolean; isMiddle: boolean } => {
+    if (!procedure.treatmentId) {
+      return { isStart: true, isEnd: true, isMiddle: false };
+    }
+
+    const dateStr = formatDate(date);
+    const prevDate = new Date(date);
+    prevDate.setDate(prevDate.getDate() - 1);
+    const prevDateStr = formatDate(prevDate);
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + 1);
+    const nextDateStr = formatDate(nextDate);
+
+    const hasPrev =
+      procedureDates[prevDateStr]?.some(
+        (p) =>
+          !p.isRecovery &&
+          p.treatmentId === procedure.treatmentId &&
+          p.procedureName === procedure.procedureName
+      ) || false;
+    const hasNext =
+      procedureDates[nextDateStr]?.some(
+        (p) =>
+          !p.isRecovery &&
+          p.treatmentId === procedure.treatmentId &&
+          p.procedureName === procedure.procedureName
+      ) || false;
+
+    return {
+      isStart: !hasPrev,
+      isEnd: !hasNext,
+      isMiddle: hasPrev && hasNext,
+    };
   };
 
   // 날짜의 시술 정보 가져오기
@@ -1506,45 +2155,113 @@ export default function MySchedulePage() {
                 const formatPeriod = (start: string, end: string) => {
                   const startDate = new Date(start);
                   const endDate = new Date(end);
-                  const startStr = `${String(startDate.getFullYear()).slice(-2)}.${String(
-                    startDate.getMonth() + 1
-                  ).padStart(2, "0")}.${String(startDate.getDate()).padStart(2, "0")}`;
-                  const endStr = `${String(endDate.getFullYear()).slice(-2)}.${String(
-                    endDate.getMonth() + 1
-                  ).padStart(2, "0")}.${String(endDate.getDate()).padStart(2, "0")}`;
+                  const startStr = `${String(startDate.getFullYear()).slice(
+                    -2
+                  )}.${String(startDate.getMonth() + 1).padStart(
+                    2,
+                    "0"
+                  )}.${String(startDate.getDate()).padStart(2, "0")}`;
+                  const endStr = `${String(endDate.getFullYear()).slice(
+                    -2
+                  )}.${String(endDate.getMonth() + 1).padStart(
+                    2,
+                    "0"
+                  )}.${String(endDate.getDate()).padStart(2, "0")}`;
                   return `${startStr}~${endStr}`;
                 };
 
-                const periodStr = formatPeriod(travelPeriod.start, travelPeriod.end);
+                const periodStr = formatPeriod(
+                  travelPeriod.start,
+                  travelPeriod.end
+                );
                 const treatmentIds = savedSchedules
                   .map((s) => s.treatmentId)
-                  .filter((id): id is number => id !== undefined && id !== null);
+                  .filter(
+                    (id): id is number => id !== undefined && id !== null
+                  );
 
                 if (treatmentIds.length === 0) {
                   alert("저장할 시술이 없습니다.");
                   return;
                 }
 
+                // treatment_dates 배열 생성: treatment_ids와 같은 순서로 (string|null)[]
+                // treatment_ids의 각 id에 대응하는 날짜를 찾아서 배열로 만듦
+                const treatmentDates: (string | null)[] = treatmentIds.map(
+                  (id) => {
+                    const schedule = savedSchedules.find(
+                      (s) => s.treatmentId === id
+                    );
+                    // procedureDate가 있으면 로컬 시간 기준으로 YYYY-MM-DD 형식으로 변환
+                    // toISOString()은 UTC 기준이라 시차 문제가 발생할 수 있음
+                    if (schedule?.procedureDate) {
+                      const date = new Date(schedule.procedureDate);
+                      // 로컬 시간 기준으로 YYYY-MM-DD 형식 생성
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                      );
+                      const day = String(date.getDate()).padStart(2, "0");
+                      return `${year}-${month}-${day}`;
+                    }
+                    return null; // 날짜가 없으면 null
+                  }
+                );
+
+                // 디버깅용 체크 (날짜 형식 확인)
+                console.log("payload 체크:", {
+                  treatment_ids: treatmentIds,
+                  treatment_ids_isArray: Array.isArray(treatmentIds),
+                  treatment_dates: treatmentDates,
+                  treatment_dates_isArray: Array.isArray(treatmentDates),
+                  treatment_dates_sample: treatmentDates[0], // 첫 번째 날짜 샘플
+                  isDateString: treatmentDates[0]
+                    ? /^\d{4}-\d{2}-\d{2}$/.test(treatmentDates[0])
+                    : null, // "YYYY-MM-DD" 형식인지 확인
+                  lengths_match: treatmentIds.length === treatmentDates.length,
+                });
+
                 try {
-                  const result = await saveSchedule(periodStr, treatmentIds);
+                  const result = await saveSchedule(
+                    periodStr,
+                    treatmentIds,
+                    treatmentDates
+                  );
                   if (result.success) {
                     alert("일정이 저장되었습니다!");
+                    // 저장된 일정 목록 재조회를 위한 이벤트 발생
+                    window.dispatchEvent(new Event("savedScheduleUpdated"));
                   } else {
                     // 에러 메시지 개선
-                    const errorMessage = result.error || "일정 저장에 실패했습니다.";
-                    if (errorMessage.includes("saved_schedules") || errorMessage.includes("table")) {
-                      alert("일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.");
+                    const errorMessage =
+                      result.error || "일정 저장에 실패했습니다.";
+                    if (
+                      errorMessage.includes("saved_schedules") ||
+                      errorMessage.includes("table")
+                    ) {
+                      alert(
+                        "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요."
+                      );
                     } else if (errorMessage.includes("로그인")) {
-                      alert("일정을 저장하려면 로그인이 필요합니다.");
+                      if (confirm("일정을 저장하려면 로그인이 필요합니다.")) {
+                        router.push("/mypage");
+                      }
                     } else {
                       alert(errorMessage);
                     }
                   }
                 } catch (error: any) {
                   console.error("일정 저장 실패:", error);
-                  const errorMessage = error?.message || "일정 저장에 실패했습니다.";
-                  if (errorMessage.includes("saved_schedules") || errorMessage.includes("table")) {
-                    alert("일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.");
+                  const errorMessage =
+                    error?.message || "일정 저장에 실패했습니다.";
+                  if (
+                    errorMessage.includes("saved_schedules") ||
+                    errorMessage.includes("table")
+                  ) {
+                    alert(
+                      "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요."
+                    );
                   } else {
                     alert(errorMessage);
                   }
@@ -1615,9 +2332,12 @@ export default function MySchedulePage() {
                 const isTodayDate = isToday(date);
                 const isSelectedDate = isSelected(date);
 
-                // 날짜별 시술/회복 목록 가져오기
+                // 날짜별 시술/회복 목록 가져오기 (하루에 최대 3개 라인)
                 const proceduresOnDate = getProceduresForDateLimited(date);
-                const recoveryOnDate = getRecoveryForDate(date);
+                const recoveryOnDate = getRecoveryForDateLimited(
+                  date,
+                  proceduresOnDate.length
+                );
 
                 // 배경색 결정 우선순위: 여행일정 > 오늘 > 선택된 날짜
                 let bgClass = "";
@@ -1656,36 +2376,60 @@ export default function MySchedulePage() {
                         {date.getDate()}
                       </span>
 
-                      {/* 시술 표시 (최대 3줄) - mint 계열 */}
+                      {/* 시술 표시 (이어지게 표시) - mint 계열 */}
                       <div className="flex flex-col gap-0.5 w-full mt-0.5">
-                        {proceduresOnDate.slice(0, 3).map((proc, idx) => (
-                          <div
-                            key={proc.id}
-                            className="w-full h-1.5 bg-primary-main rounded-sm"
-                            title={proc.procedureName}
-                          />
-                        ))}
+                        {proceduresOnDate.map((proc, idx) => {
+                          const continuity = getProcedureContinuity(date, proc);
+                          // 이전 날짜에 같은 시술이 있으면 왼쪽 모서리를 둥글게 하지 않음
+                          // 다음 날짜에 같은 시술이 있으면 오른쪽 모서리를 둥글게 하지 않음
+                          const roundedClass = continuity.isStart
+                            ? continuity.isEnd
+                              ? "rounded-sm"
+                              : "rounded-l-sm"
+                            : continuity.isEnd
+                            ? "rounded-r-sm"
+                            : "";
+
+                          return (
+                            <div
+                              key={proc.id}
+                              className={`w-full h-1.5 bg-primary-main ${roundedClass}`}
+                              title={proc.procedureName}
+                            />
+                          );
+                        })}
                       </div>
 
                       {/* 회복 기간 표시 (yellow 계열, 여행 밖이면 더 진한 yellow) */}
-                      {recoveryOnDate.length > 0 &&
-                        proceduresOnDate.length < 3 && (
-                          <div className="flex flex-col gap-0.5 w-full mt-0.5">
-                            {recoveryOnDate
-                              .slice(0, 3 - proceduresOnDate.length)
-                              .map((rec, idx) => (
-                                <div
-                                  key={`recovery-${rec.id}-${idx}`}
-                                  className={`w-full h-1.5 rounded-sm ${
-                                    isRecoveryOutside
-                                      ? "bg-red-500"
-                                      : "bg-yellow-400"
-                                  }`}
-                                  title={`${rec.procedureName} 회복 기간`}
-                                />
-                              ))}
-                          </div>
-                        )}
+                      {recoveryOnDate.length > 0 && (
+                        <div className="flex flex-col gap-0.5 w-full mt-0.5">
+                          {recoveryOnDate.map((rec, idx) => {
+                            const continuity = getProcedureContinuity(
+                              date,
+                              rec
+                            );
+                            const roundedClass = continuity.isStart
+                              ? continuity.isEnd
+                                ? "rounded-sm"
+                                : "rounded-l-sm"
+                              : continuity.isEnd
+                              ? "rounded-r-sm"
+                              : "";
+
+                            return (
+                              <div
+                                key={`recovery-${rec.id}-${idx}`}
+                                className={`w-full h-1.5 ${roundedClass} ${
+                                  isRecoveryOutside
+                                    ? "bg-red-500"
+                                    : "bg-yellow-400"
+                                }`}
+                                title={`${rec.procedureName} 회복 기간`}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
@@ -1721,7 +2465,7 @@ export default function MySchedulePage() {
                 {selectedProcedures.map((proc) => {
                   const handleCardClick = () => {
                     if (proc.treatmentId) {
-                      router.push(`/treatment/${proc.treatmentId}`);
+                      router.push(`/schedule/treatment/${proc.treatmentId}`);
                     } else {
                       alert("시술 상세 정보를 불러올 수 없습니다.");
                     }
@@ -1886,6 +2630,10 @@ export default function MySchedulePage() {
         <SavedSchedulesTab
           travelPeriod={travelPeriod}
           savedSchedules={savedSchedules}
+          formatDate={formatDate}
+          monthNames={monthNames}
+          dayNames={dayNames}
+          // onScheduleClick은 더 이상 사용하지 않음 (저장된 일정 탭 내에서 달력 표시)
         />
       )}
 

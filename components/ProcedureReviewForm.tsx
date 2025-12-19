@@ -315,17 +315,6 @@ export default function ProcedureReviewForm({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-gray-50 rounded-full transition-colors"
-        >
-          <FiArrowLeft className="text-gray-700 text-xl" />
-        </button>
-        <h3 className="text-lg font-bold text-gray-900">시술 후기 작성</h3>
-      </div>
-
       {/* 시술 카테고리 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">

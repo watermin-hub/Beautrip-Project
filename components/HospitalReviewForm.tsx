@@ -291,17 +291,6 @@ export default function HospitalReviewForm({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-gray-50 rounded-full transition-colors"
-        >
-          <FiArrowLeft className="text-gray-700 text-xl" />
-        </button>
-        <h3 className="text-lg font-bold text-gray-900">병원 후기 작성</h3>
-      </div>
-
       {/* 병원명 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">

@@ -930,7 +930,9 @@ export default function CategoryRankingPage({
                                   key={treatmentId}
                                   className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                                   onClick={() => {
-                                    router.push(`/treatment/${treatmentId}`);
+                                    router.push(
+                                      `/explore/treatment/${treatmentId}`
+                                    );
                                   }}
                                 >
                                   {/* 이미지 - 2:1 비율 */}
@@ -1192,7 +1194,9 @@ export default function CategoryRankingPage({
                                 key={treatmentId}
                                 className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                                 onClick={() => {
-                                  router.push(`/treatment/${treatmentId}`);
+                                  router.push(
+                                    `/explore/treatment/${treatmentId}`
+                                  );
                                 }}
                               >
                                 {/* 이미지 - 2:1 비율 */}

@@ -526,7 +526,7 @@ export default function ProcedureListPage({
                     key={treatmentId}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer flex flex-col"
                     onClick={() => {
-                      router.push(`/treatment/${treatmentId}`);
+                      router.push(`/explore/treatment/${treatmentId}`);
                     }}
                   >
                     {/* 썸네일 - 2:1 비율 */}

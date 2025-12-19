@@ -264,7 +264,7 @@ export default function FavoritesPage() {
             className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => {
               if (item.type === "procedure" && item.id) {
-                router.push(`/treatment/${item.id}`);
+                router.push(`/favorites/treatment/${item.id}`);
               } else if (item.type === "clinic") {
                 // 병원 상세 페이지로 이동 (병원명으로 검색)
                 router.push(`/hospital?name=${encodeURIComponent(item.title)}`);

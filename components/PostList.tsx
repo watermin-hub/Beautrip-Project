@@ -3,6 +3,7 @@
 import { FiArrowUp, FiMessageCircle, FiEye, FiHeart } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   loadProcedureReviews,
   loadHospitalReviews,
@@ -840,11 +841,25 @@ export default function PostList({
                 key={idx}
                 className="relative w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0"
               >
-                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                  이미지
-                </div>
+                {img &&
+                (img.startsWith("http") ||
+                  img.startsWith("blob:") ||
+                  img.startsWith("/")) ? (
+                  <Image
+                    src={img}
+                    alt={`후기 이미지 ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                    sizes="80px"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                    이미지
+                  </div>
+                )}
                 {idx === 3 && post.images!.length > 4 && (
-                  <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs">
+                  <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs z-10">
                     +{post.images!.length - 4}
                   </div>
                 )}
@@ -923,9 +938,6 @@ export default function PostList({
         <div className="px-4 pt-4">
           {popularSection === "procedure" ? (
             <div>
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                시술 후기
-              </h2>
               <div className="space-y-4">
                 {procedurePosts.length > 0 ? (
                   procedurePosts.map(renderPost)
@@ -938,9 +950,6 @@ export default function PostList({
             </div>
           ) : (
             <div>
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                병원 후기
-              </h2>
               <div className="space-y-4">
                 {hospitalPosts.length > 0 ? (
                   hospitalPosts.map(renderPost)
@@ -1031,11 +1040,25 @@ export default function PostList({
                   key={idx}
                   className="relative w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0"
                 >
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                    이미지
-                  </div>
+                  {img &&
+                  (img.startsWith("http") ||
+                    img.startsWith("blob:") ||
+                    img.startsWith("/")) ? (
+                    <Image
+                      src={img}
+                      alt={`후기 이미지 ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                      sizes="80px"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                      이미지
+                    </div>
+                  )}
                   {idx === 3 && post.images!.length > 4 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs">
+                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs z-10">
                       +{post.images!.length - 4}
                     </div>
                   )}

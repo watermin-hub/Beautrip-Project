@@ -12,11 +12,19 @@ import {
   FiFileText,
   FiActivity,
   FiLogOut,
+  FiCalendar,
 } from "react-icons/fi";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import LoginModal from "./LoginModal";
-import { getFavoriteProcedures, getLikedPosts } from "@/lib/api/beautripApi";
+import {
+  getFavoriteProcedures,
+  getLikedPosts,
+  loadMyProcedureReviews,
+  loadMyHospitalReviews,
+  loadMyConcernPosts,
+} from "@/lib/api/beautripApi";
+import { supabase } from "@/lib/supabase";
 
 interface UserInfo {
   username: string;
@@ -466,9 +474,38 @@ function MainContent({
     loadFavoriteCounts();
     loadLikedPostsCount();
 
-    // 내가 쓴 후기 개수 로드 (로컬스토리지)
-    const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-    setReviewCount(reviews.length);
+    // 내가 쓴 후기 개수 로드 (Supabase)
+    const loadMyPostsCount = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          const [procedureReviews, hospitalReviews, concernPosts] =
+            await Promise.all([
+              loadMyProcedureReviews(session.user.id),
+              loadMyHospitalReviews(session.user.id),
+              loadMyConcernPosts(session.user.id),
+            ]);
+
+          setReviewCount(
+            procedureReviews.length +
+              hospitalReviews.length +
+              concernPosts.length
+          );
+        } else {
+          setReviewCount(0);
+        }
+      } catch (error) {
+        console.error("내 글 개수 로드 실패:", error);
+        // 실패 시 localStorage에서 로드 (하위 호환성)
+        const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+        setReviewCount(reviews.length);
+      }
+    };
+
+    loadMyPostsCount();
 
     // 설정 로드
     const savedLanguage = localStorage.getItem("language") || "KR";
@@ -567,6 +604,24 @@ function MainContent({
         />
       </div>
 
+      {/* 내 일정 */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <MenuItem
+          icon={FiCalendar}
+          label="저장한 일정 보기"
+          onClick={() => {
+            router.push("/schedule?tab=saved");
+          }}
+        />
+        <MenuItem
+          icon={FiCalendar}
+          label="내 일정 보기"
+          onClick={() => {
+            router.push("/schedule?tab=schedule");
+          }}
+        />
+      </div>
+
       {/* 내가 쓴 후기 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <MenuItem
@@ -574,14 +629,14 @@ function MainContent({
           label="내가 쓴 후기"
           badge={reviewCount}
           onClick={() => {
-            alert("내가 쓴 후기 목록 기능은 준비 중입니다.");
+            router.push("/community/my-posts");
           }}
         />
         <MenuItem
           icon={FiEdit3}
           label="글 작성"
           onClick={() => {
-            alert("글 작성 기능은 준비 중입니다.");
+            router.push("/community/write");
           }}
           isButton
         />

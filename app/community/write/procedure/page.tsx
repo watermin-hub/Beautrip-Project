@@ -1,0 +1,55 @@
+"use client";
+
+import { Suspense } from "react";
+import ProcedureReviewForm from "@/components/ProcedureReviewForm";
+import Header from "@/components/Header";
+import BottomNavigation from "@/components/BottomNavigation";
+import { useRouter } from "next/navigation";
+import { FiArrowLeft } from "react-icons/fi";
+
+export default function ProcedureReviewWritePage() {
+  const router = useRouter();
+
+  const handleBack = () => {
+    router.push("/community/write");
+  };
+
+  const handleSubmit = () => {
+    // 후기 목록 새로고침을 위한 이벤트 발생
+    window.dispatchEvent(new CustomEvent("reviewAdded"));
+    router.push("/community");
+  };
+
+  return (
+    <div className="min-h-screen bg-white max-w-md mx-auto w-full">
+      <Header />
+
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-100 sticky top-[64px] bg-white z-10 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+          >
+            <FiArrowLeft className="text-gray-700 text-xl" />
+          </button>
+          <h2 className="text-xl font-bold text-gray-900">시술 후기 작성</h2>
+        </div>
+      </div>
+
+      {/* Form - 양옆 간격과 상단 여백 추가 */}
+      <div className="px-6 pt-14 pb-24">
+        <Suspense
+          fallback={
+            <div className="p-4 text-center text-gray-500">로딩 중...</div>
+          }
+        >
+          <ProcedureReviewForm onBack={handleBack} onSubmit={handleSubmit} />
+        </Suspense>
+      </div>
+
+      {/* Bottom Navigation */}
+      <BottomNavigation />
+    </div>
+  );
+}

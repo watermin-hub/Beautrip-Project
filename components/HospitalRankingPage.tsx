@@ -144,7 +144,7 @@ export default function HospitalRankingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-4 py-6">
+      <div className="px-4 pt-4 pb-6">
         <h3 className="text-lg font-bold mb-2 text-gray-900">추천 병원 랭킹</h3>
         <p className="text-sm text-gray-600 mb-6">
           평점과 리뷰를 기반으로 한 추천 병원 랭킹입니다.
@@ -179,14 +179,14 @@ export default function HospitalRankingPage() {
                       }
                     }}
                   >
-                    <div className="flex gap-4 p-4">
-                      {/* Rank Badge */}
-                      <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-primary-main text-white rounded-lg font-bold text-lg">
+                    <div className="flex gap-3 p-3">
+                      {/* Rank Badge - 더 작고 세련되게 */}
+                      <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 rounded-md font-bold text-sm">
                         {rank}
                       </div>
 
-                      {/* Image - 2:1 비율 */}
-                      <div className="relative w-24 aspect-[2/1] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                      {/* Image - 2:1 비율, 더 크게 */}
+                      <div className="relative w-32 aspect-[2/1] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                         <img
                           src={thumbnailUrl}
                           alt={hospital.hospital_name}
@@ -205,34 +205,21 @@ export default function HospitalRankingPage() {
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-1.5">
+                            <h3 className="text-base font-bold text-gray-900 line-clamp-2 leading-snug flex-1">
                               {hospital.hospital_name}
                             </h3>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="flex items-center gap-1">
-                                <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
-                                <span className="text-gray-900 font-semibold text-sm">
-                                  {hospital.averageRating > 0
-                                    ? hospital.averageRating.toFixed(1)
-                                    : "-"}
-                                </span>
-                              </div>
-                              {hospital.totalReviews > 0 && (
-                                <span className="text-gray-500 text-xs">
-                                  리뷰 {hospital.totalReviews}개
-                                </span>
-                              )}
-                            </div>
-                          </div>
                           <button
-                            onClick={() => handleFavoriteClick(hospital)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFavoriteClick(hospital);
+                              }}
                             className="flex-shrink-0 ml-2 p-1.5 hover:bg-gray-50 rounded-full transition-colors"
                           >
                             <FiHeart
-                              className={`text-lg ${
+                                className={`text-base ${
                                 isFavorite
                                   ? "text-red-500 fill-red-500"
                                   : "text-gray-400"
@@ -240,14 +227,31 @@ export default function HospitalRankingPage() {
                             />
                           </button>
                         </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex items-center gap-1">
+                              <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                              <span className="text-gray-900 font-semibold text-xs">
+                                {hospital.averageRating > 0
+                                  ? hospital.averageRating.toFixed(1)
+                                  : "-"}
+                              </span>
+                            </div>
+                            {hospital.totalReviews > 0 && (
+                              <span className="text-gray-500 text-[10px]">
+                                리뷰 {hospital.totalReviews}개
+                              </span>
+                            )}
+                          </div>
 
                         {/* Categories */}
                         {categoriesArr.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {categoriesArr.slice(0, 3).map((category, idx) => (
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {categoriesArr
+                                .slice(0, 3)
+                                .map((category, idx) => (
                               <span
                                 key={idx}
-                                className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium"
+                                    className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-[10px] font-medium"
                               >
                                 {category}
                               </span>
@@ -256,7 +260,7 @@ export default function HospitalRankingPage() {
                         )}
 
                         {/* Procedures Count */}
-                        <div className="text-gray-600 text-sm">
+                          <div className="text-gray-600 text-xs">
                           시술 {hospital.treatments.length}개
                           {hospital.procedures.length > 0 && (
                             <span className="ml-2 text-gray-500">
@@ -264,6 +268,7 @@ export default function HospitalRankingPage() {
                               {hospital.procedures.length > 2 && " 외"}
                             </span>
                           )}
+                          </div>
                         </div>
                       </div>
                     </div>

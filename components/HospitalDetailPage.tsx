@@ -402,7 +402,7 @@ export default function HospitalDetailPage({
                 <div
                   key={treatment.treatment_id}
                   onClick={() => {
-                    router.push(`/treatment/${treatment.treatment_id}`);
+                    router.push(`/explore/treatment/${treatment.treatment_id}`);
                   }}
                   className="bg-gray-50 rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-colors"
                 >

@@ -476,23 +476,33 @@ export default function LoginModal({
           // 보안상 비밀번호 검증은 필수이므로 로그인 허용하지 않음
           if (authError.message.includes("Invalid login credentials")) {
             // user_profiles에 사용자가 있어도 비밀번호가 틀렸으면 로그인 거부
-            throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+            alert("이메일 또는 비밀번호가 올바르지 않습니다.");
+            setIsLoading(false);
+            return;
           }
         }
 
         // user_profiles에 사용자가 없는 경우에만 에러 표시
         if (authError.message.includes("Invalid login credentials")) {
-          throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+          alert("이메일 또는 비밀번호가 올바르지 않습니다.");
+          setIsLoading(false);
+          return;
         } else if (authError.message.includes("Email not confirmed")) {
-          throw new Error(
-            "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요."
-          );
+          alert("이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.");
+          setIsLoading(false);
+          return;
         }
-        throw authError;
+        // 예상치 못한 에러인 경우에만 콘솔에 표시
+        console.error("로그인 오류:", authError);
+        alert("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+        setIsLoading(false);
+        return;
       }
 
       if (!authData.user) {
-        throw new Error("로그인에 실패했습니다.");
+        alert("로그인에 실패했습니다.");
+        setIsLoading(false);
+        return;
       }
 
       // 4. user_profiles에서 사용자 정보 가져오기
@@ -533,7 +543,8 @@ export default function LoginModal({
       onLoginSuccess(userInfo);
       onClose();
     } catch (error: any) {
-      console.error("로그인 오류:", error);
+      // 예상치 못한 에러만 콘솔에 표시 (사용자 입력 오류는 이미 처리됨)
+      console.error("예상치 못한 로그인 오류:", error);
       alert(
         error.message || "로그인 중 오류가 발생했습니다. 다시 시도해주세요."
       );
@@ -619,7 +630,7 @@ export default function LoginModal({
                 </button>
               </div>
 
-              {/* 계정 찾기/문의하기 */}
+              {/* 회원가입 */}
               <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
@@ -628,14 +639,6 @@ export default function LoginModal({
                   className="text-gray-600 text-sm hover:text-primary-main transition-colors"
                 >
                   회원가입
-                </button>
-                <span className="text-gray-300">|</span>
-                <button className="text-gray-600 text-sm hover:text-primary-main transition-colors">
-                  아이디 찾기
-                </button>
-                <span className="text-gray-300">|</span>
-                <button className="text-gray-600 text-sm hover:text-primary-main transition-colors">
-                  비밀번호 찾기
                 </button>
               </div>
             </>
@@ -721,7 +724,7 @@ export default function LoginModal({
                 다른 로그인 방법
               </button>
 
-              {/* 계정 찾기/문의하기 */}
+              {/* 회원가입 */}
               <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
@@ -730,14 +733,6 @@ export default function LoginModal({
                   className="text-gray-600 text-sm hover:text-primary-main transition-colors"
                 >
                   회원가입
-                </button>
-                <span className="text-gray-300">|</span>
-                <button className="text-gray-600 text-sm hover:text-primary-main transition-colors">
-                  아이디 찾기
-                </button>
-                <span className="text-gray-300">|</span>
-                <button className="text-gray-600 text-sm hover:text-primary-main transition-colors">
-                  비밀번호 찾기
                 </button>
               </div>
             </div>

@@ -193,11 +193,11 @@ export default function KBeautyRankingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-4 pt-1 pb-6">
-        <h3 className="text-lg font-bold mb-1 text-gray-900">
+      <div className="px-4 pt-4 pb-6">
+        <h3 className="text-lg font-bold mb-2 text-gray-900">
           K-beauty 인기 랭킹
         </h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-gray-600 mb-6">
           K-beauty 트렌드를 반영한 인기 시술 랭킹입니다.
         </p>
 
@@ -228,18 +228,20 @@ export default function KBeautyRankingPage() {
                   className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => {
                     if (treatment.treatment_id) {
-                      router.push(`/treatment/${treatment.treatment_id}`);
+                      router.push(
+                        `/explore/treatment/${treatment.treatment_id}`
+                      );
                     }
                   }}
                 >
-                  <div className="flex gap-4 p-4">
-                    {/* Rank Badge */}
-                    <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-primary-main text-white rounded-lg font-bold text-lg">
+                  <div className="flex gap-3 p-3">
+                    {/* Rank Badge - 더 작고 세련되게 */}
+                    <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 rounded-md font-bold text-sm">
                       {rank}
                     </div>
 
-                    {/* Image - 2:1 비율 */}
-                    <div className="relative w-24 aspect-[2/1] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                    {/* Image - 2:1 비율, 더 크게 */}
+                    <div className="relative w-32 aspect-[2/1] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                       <img
                         src={thumbnailUrl}
                         alt={treatment.treatment_name || "시술 이미지"}
@@ -256,97 +258,90 @@ export default function KBeautyRankingPage() {
                         }}
                       />
                       {discountRate && (
-                        <div className="absolute top-1 right-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+                        <div className="absolute top-1.5 left-1.5 bg-red-500 text-white px-1.5 py-0.5 rounded text-[10px] font-bold z-10">
                           {discountRate}
                         </div>
                       )}
+                      {/* 찜 버튼 - 썸네일 우측 상단 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFavoriteClick(treatment);
+                        }}
+                        className="absolute top-1.5 right-1.5 bg-white bg-opacity-90 p-1.5 rounded-full z-10 shadow-sm hover:bg-opacity-100 transition-colors"
+                      >
+                        <FiHeart
+                          className={`text-sm ${
+                            isFavorite
+                              ? "text-red-500 fill-red-500"
+                              : "text-gray-700"
+                          }`}
+                        />
+                      </button>
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0 flex flex-col">
-                      <div>
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                      <div className="flex-1">
+                        <h3 className="text-base font-bold text-gray-900 mb-1.5 line-clamp-2 leading-snug">
                               {treatment.treatment_name || "시술명 없음"}
                             </h3>
-                            <p className="text-sm text-gray-600 truncate">
+                        <p className="text-xs text-gray-600 mb-2 line-clamp-1">
                               {treatment.hospital_name || "병원명 없음"}
                             </p>
-                          </div>
-                        </div>
 
                         {/* Categories */}
                         {(treatment.category_large ||
                           treatment.category_mid) && (
-                          <div className="flex flex-wrap gap-2 mb-2">
+                          <div className="flex flex-wrap gap-1.5 mb-2">
                             {treatment.category_large && (
-                              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-medium">
+                              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-[10px] font-medium">
                                 {treatment.category_large}
                               </span>
                             )}
                             {treatment.category_mid && (
-                              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
+                              <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px]">
                                 {treatment.category_mid}
                               </span>
                             )}
                           </div>
                         )}
-                      </div>
 
-                      {/* Price/Rating and buttons - 하단 고정 */}
-                      <div className="flex items-end justify-between mt-auto">
-                        <div className="flex-1">
-                          {price && (
-                            <p className="text-gray-900 font-bold mb-1">
-                              {price}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2">
+                        {/* Rating */}
+                        <div className="flex items-center gap-2 mb-2">
                             {rating > 0 && (
                               <div className="flex items-center gap-1">
-                                <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
-                                <span className="text-gray-900 font-semibold text-sm">
+                              <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                              <span className="text-gray-900 font-semibold text-xs">
                                   {rating.toFixed(1)}
                                 </span>
                               </div>
                             )}
                             {reviewCount > 0 && (
-                              <span className="text-gray-500 text-xs">
+                            <span className="text-gray-500 text-[10px]">
                                 리뷰 {reviewCount}개
                               </span>
                             )}
                           </div>
                         </div>
 
-                        {/* 하트/달력 버튼 - 세로 배치 */}
-                        <div className="flex flex-col gap-1.5">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleFavoriteClick(treatment);
-                            }}
-                            className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
-                          >
-                            <FiHeart
-                              className={`text-base ${
-                                isFavorite
-                                  ? "text-red-500 fill-red-500"
-                                  : "text-gray-400"
-                              }`}
-                            />
-                          </button>
+                      {/* Price and Calendar button - 하단 고정 */}
+                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                        {price && (
+                          <p className="text-primary-main font-bold text-sm">
+                            {price}
+                          </p>
+                        )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedTreatment(treatment);
                               setIsScheduleModalOpen(true);
                             }}
-                            className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors"
+                          className="p-1.5 hover:bg-gray-50 rounded-lg transition-colors flex-shrink-0"
                           >
                             <FiCalendar className="text-base text-primary-main" />
                           </button>
-                        </div>
                       </div>
                     </div>
                   </div>

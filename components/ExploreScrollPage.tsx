@@ -22,6 +22,7 @@ export default function ExploreScrollPage() {
   const isAutoScrolling = useRef(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
+  const [showProcedureSection, setShowProcedureSection] = useState(true);
 
   // 리뷰 작성 여부 확인
   useEffect(() => {
@@ -84,10 +85,39 @@ export default function ExploreScrollPage() {
   useEffect(() => {
     const section = searchParams.get("section");
     if (section) {
-      // 약간의 딜레이를 주어 DOM이 완전히 렌더링된 후 스크롤
-      setTimeout(() => {
-        scrollToSection(section);
-      }, 300);
+      // procedure 섹션으로 이동할 때는 ProcedureListPage를 0.5초 지연 표시
+      if (section === "procedure") {
+        const searchQuery = searchParams.get("search");
+        setShowProcedureSection(false);
+        // 랭킹이 먼저 로드되도록 0.5초 후에 ProcedureListPage 표시
+        setTimeout(() => {
+          setShowProcedureSection(true);
+          // ProcedureListPage가 DOM에 렌더링될 때까지 기다린 후 스크롤
+          const checkAndScroll = () => {
+            if (procedureRef.current) {
+              // 검색어가 있으면 검색 결과 로딩을 위해 추가 딜레이
+              const scrollDelay = searchQuery ? 800 : 0;
+              setTimeout(() => {
+                scrollToSection(section);
+              }, scrollDelay);
+            } else {
+              // 아직 DOM에 없으면 50ms 후 다시 시도
+              setTimeout(checkAndScroll, 50);
+            }
+          };
+          checkAndScroll();
+        }, 500);
+      } else {
+        // 다른 섹션으로 이동할 때는 즉시 표시
+        setShowProcedureSection(true);
+        // 약간의 딜레이를 주어 DOM이 완전히 렌더링된 후 스크롤
+        setTimeout(() => {
+          scrollToSection(section);
+        }, 300);
+      }
+    } else {
+      // section 파라미터가 없으면 즉시 표시
+      setShowProcedureSection(true);
     }
   }, [searchParams]);
 
@@ -130,7 +160,7 @@ export default function ExploreScrollPage() {
       <section
         ref={rankingRef}
         id="ranking"
-        className="border-b border-gray-200 scroll-mt-[112px]"
+        className="border-b border-gray-200 scroll-mt-[112px] relative"
       >
         <RankingSection
           isVisible={activeSection === "ranking"}
@@ -139,9 +169,15 @@ export default function ExploreScrollPage() {
       </section>
 
       {/* 전체 시술 섹션 */}
-      <section ref={procedureRef} id="procedure" className="scroll-mt-[112px]">
-        <ProcedureListPage activeSection={activeSection} />
-      </section>
+      {showProcedureSection && (
+        <section
+          ref={procedureRef}
+          id="procedure"
+          className="scroll-mt-[112px]"
+        >
+          <ProcedureListPage activeSection={activeSection} />
+        </section>
+      )}
 
       {/* 리뷰 작성 CTA 섹션 (전체 시술과 전체 병원 사이) */}
       {!hasWrittenReview && (

@@ -64,7 +64,7 @@ export default function ScheduleBasedRankingPage() {
   }, [schedule.start, schedule.end, selectedCategoryId]);
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-4 pt-4 pb-6">
       <h3 className="text-lg font-bold mb-2 text-gray-900">일정 맞춤 랭킹</h3>
       <p className="text-sm text-gray-600 mb-6">
         여행 일정을 입력하면 해당 기간에 맞는 시술을 추천해드립니다.
