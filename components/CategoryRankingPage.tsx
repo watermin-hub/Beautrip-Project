@@ -17,6 +17,8 @@ import {
   parseProcedureTime,
   getMidCategoryRankings,
   getSmallCategoryRankings,
+  toggleProcedureFavorite,
+  getFavoriteStatus,
   MidCategoryRanking,
   SmallCategoryRanking,
 } from "@/lib/api/beautripApi";
@@ -108,15 +110,42 @@ export default function CategoryRankingPage({
   ); // 중분류 목록 유지용
   const [error, setError] = useState<string | null>(null);
 
+  // 찜한 항목 로드 (Supabase에서)
   useEffect(() => {
-    const savedFavorites = JSON.parse(
-      localStorage.getItem("favorites") || "[]"
-    );
-    const procedureFavorites = savedFavorites
-      .filter((f: any) => f.type === "procedure")
-      .map((f: any) => f.id);
-    setFavorites(new Set(procedureFavorites));
-  }, []);
+    const loadFavorites = async () => {
+      // 모든 랭킹 데이터에서 treatment_id 수집
+      const allTreatmentIds: number[] = [];
+
+      // 중분류 랭킹에서 treatments 수집
+      midCategoryRankings.forEach((ranking) => {
+        ranking.treatments.forEach((treatment) => {
+          if (treatment.treatment_id) {
+            allTreatmentIds.push(treatment.treatment_id);
+          }
+        });
+      });
+
+      // 소분류 랭킹에서 treatments 수집
+      smallCategoryRankings.forEach((ranking) => {
+        ranking.treatments.forEach((treatment) => {
+          if (treatment.treatment_id) {
+            allTreatmentIds.push(treatment.treatment_id);
+          }
+        });
+      });
+
+      if (allTreatmentIds.length > 0) {
+        // 중복 제거
+        const uniqueIds = Array.from(new Set(allTreatmentIds));
+        const favoriteStatus = await getFavoriteStatus(uniqueIds);
+        setFavorites(favoriteStatus);
+      }
+    };
+
+    if (midCategoryRankings.length > 0 || smallCategoryRankings.length > 0) {
+      loadFavorites();
+    }
+  }, [midCategoryRankings, smallCategoryRankings]);
 
   // 같은 썸네일이 연속으로 나오지 않도록 섞는 함수
   const shuffleByThumbnail = useMemo(() => {
@@ -454,46 +483,30 @@ export default function CategoryRankingPage({
     });
   }, [smallCategoryRankings]);
 
-  const handleFavoriteClick = (treatment: Treatment, e: React.MouseEvent) => {
+  const handleFavoriteClick = async (
+    treatment: Treatment,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     if (!treatment.treatment_id) return;
 
-    const savedFavorites = JSON.parse(
-      localStorage.getItem("favorites") || "[]"
-    );
-    const isFavorite = favorites.has(treatment.treatment_id);
+    const result = await toggleProcedureFavorite(treatment.treatment_id);
 
-    if (isFavorite) {
-      const updated = savedFavorites.filter(
-        (f: any) => !(f.id === treatment.treatment_id && f.type === "procedure")
-      );
-      localStorage.setItem("favorites", JSON.stringify(updated));
+    if (result.success) {
+      // Supabase 업데이트 성공 시 로컬 상태 업데이트
       setFavorites((prev) => {
         const newSet = new Set(prev);
-        newSet.delete(treatment.treatment_id!);
+        if (result.isFavorite) {
+          newSet.add(treatment.treatment_id!);
+        } else {
+          newSet.delete(treatment.treatment_id!);
+        }
         return newSet;
       });
+      window.dispatchEvent(new Event("favoritesUpdated"));
     } else {
-      const newFavorite = {
-        id: treatment.treatment_id,
-        title: treatment.treatment_name,
-        clinic: treatment.hospital_name,
-        price: treatment.selling_price,
-        rating: treatment.rating,
-        reviewCount: treatment.review_count,
-        type: "procedure" as const,
-      };
-      localStorage.setItem(
-        "favorites",
-        JSON.stringify([...savedFavorites, newFavorite])
-      );
-      setFavorites((prev) => {
-        const newSet = new Set(prev);
-        newSet.add(treatment.treatment_id!);
-        return newSet;
-      });
+      console.error("찜하기 처리 실패:", result.error);
     }
-    window.dispatchEvent(new Event("favoritesUpdated"));
   };
 
   // 일정에 추가 핸들러

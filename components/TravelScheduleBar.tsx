@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiCalendar, FiChevronDown } from "react-icons/fi";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
@@ -36,9 +36,70 @@ export default function TravelScheduleBar({
     null
   );
   const [selectedEndDate, setSelectedEndDate] = useState<string | null>(null);
+  const isInitialLoad = useRef(true);
 
-  // localStorage에서 기존 여행 기간 로드하지 않음 (홈 화면에서는 항상 초기 상태로 시작)
-  // useEffect 제거 - 홈 화면에서는 날짜를 선택하라는 버튼으로 표시
+  // localStorage에서 기존 여행 기간 로드 (내 일정과 동기화)
+  useEffect(() => {
+    const loadTravelPeriod = (shouldNotifyParent: boolean = false) => {
+      const travelPeriod = localStorage.getItem("travelPeriod");
+      if (travelPeriod) {
+        try {
+          const period = JSON.parse(travelPeriod);
+          if (period.start && period.end) {
+            setSelectedStartDate(period.start);
+            setSelectedEndDate(period.end);
+            // 초기 로드 시에만 부모 컴포넌트에 알림 (무한 루프 방지)
+            if (shouldNotifyParent && onScheduleChange) {
+              onScheduleChange(period.start, period.end);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse travelPeriod:", e);
+        }
+      }
+    };
+
+    // 초기 로드 시에만 부모에게 알림
+    if (isInitialLoad.current) {
+      loadTravelPeriod(true);
+      isInitialLoad.current = false;
+    } else {
+      loadTravelPeriod(false);
+    }
+
+    // travelPeriodUpdated 이벤트 리스너 (초기화 시 부모에게도 알림)
+    const handleTravelPeriodUpdate = () => {
+      const travelPeriod = localStorage.getItem("travelPeriod");
+      if (travelPeriod) {
+        try {
+          const period = JSON.parse(travelPeriod);
+          if (period.start && period.end) {
+            setSelectedStartDate(period.start);
+            setSelectedEndDate(period.end);
+            // 부모 컴포넌트에도 알림
+            if (onScheduleChange) {
+              onScheduleChange(period.start, period.end);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse travelPeriod:", e);
+        }
+      } else {
+        // travelPeriod가 삭제된 경우 (초기화)
+        setSelectedStartDate(null);
+        setSelectedEndDate(null);
+        // 부모 컴포넌트에도 알림
+        if (onScheduleChange) {
+          onScheduleChange(null, null);
+        }
+      }
+    };
+
+    window.addEventListener("travelPeriodUpdated", handleTravelPeriodUpdate);
+    return () => {
+      window.removeEventListener("travelPeriodUpdated", handleTravelPeriodUpdate);
+    };
+  }, []); // 의존성 배열에서 onScheduleChange 제거
 
   const handleModalOpen = () => {
     setIsModalOpen(true);

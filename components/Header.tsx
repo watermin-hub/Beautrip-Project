@@ -48,9 +48,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
       <header
         className={`fixed left-1/2 transform -translate-x-1/2 w-full max-w-md ${
           hasRankingBanner ? "top-[41px]" : "top-0"
-        } ${
-          isCalendarModalOpen ? "z-[30]" : "z-[60]"
-        } bg-white border-b border-gray-100 px-4 py-3`}
+        } ${isCalendarModalOpen ? "z-[30]" : "z-[60]"} bg-white px-4 py-3`}
       >
         <div className="flex items-center justify-between">
           {/* Logo */}

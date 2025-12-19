@@ -11,6 +11,7 @@ import {
   FiShare2,
   FiCalendar,
   FiUser,
+  FiX,
 } from "react-icons/fi";
 import Image from "next/image";
 import {
@@ -57,12 +58,17 @@ export default function HospitalReviewDetailPage({
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     const loadReview = async () => {
       try {
         setLoading(true);
+        console.log("후기 로드 시작, reviewId:", reviewId);
         const data = await getHospitalReview(reviewId);
+        console.log("후기 데이터:", data);
         setReview(data);
 
         if (data) {
@@ -73,6 +79,8 @@ export default function HospitalReviewDetailPage({
           ]);
           setIsLiked(liked);
           setLikeCount(count);
+        } else {
+          console.warn("후기 데이터가 없습니다. reviewId:", reviewId);
         }
       } catch (error) {
         console.error("후기 로드 실패:", error);
@@ -81,7 +89,12 @@ export default function HospitalReviewDetailPage({
       }
     };
 
-    loadReview();
+    if (reviewId) {
+      loadReview();
+    } else {
+      console.error("reviewId가 없습니다!");
+      setLoading(false);
+    }
   }, [reviewId]);
 
   const handleLike = async () => {
@@ -154,7 +167,7 @@ export default function HospitalReviewDetailPage({
           </div>
           <div className="flex-1">
             <div className="text-sm font-semibold text-gray-900">
-              사용자{review.user_id?.slice(0, 8) || "익명"}
+              {(review as any).nickname || "익명"}
             </div>
             <div className="text-xs text-gray-500">
               {formatTimeAgo(review.created_at)}
@@ -291,7 +304,8 @@ export default function HospitalReviewDetailPage({
               {review.images.map((img, idx) => (
                 <div
                   key={idx}
-                  className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden ${
+                  onClick={() => setSelectedImageIndex(idx)}
+                  className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity ${
                     review.images!.length === 1 ? "max-h-96" : ""
                   }`}
                 >
@@ -301,9 +315,72 @@ export default function HospitalReviewDetailPage({
                     fill
                     className="object-cover"
                     unoptimized
+                    onError={(e) => {
+                      // 이미지 로딩 실패 시 처리
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                    }}
                   />
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 이미지 갤러리 모달 */}
+        {selectedImageIndex !== null && review.images && (
+          <div
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+            onClick={() => setSelectedImageIndex(null)}
+          >
+            <button
+              onClick={() => setSelectedImageIndex(null)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+            >
+              <FiX className="text-2xl" />
+            </button>
+            <div className="relative w-full h-full flex items-center justify-center p-4">
+              <Image
+                src={review.images[selectedImageIndex]}
+                alt={`후기 이미지 ${selectedImageIndex + 1}`}
+                width={1200}
+                height={1200}
+                className="max-w-full max-h-full object-contain"
+                unoptimized
+              />
+              {review.images.length > 1 && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex(
+                        selectedImageIndex > 0
+                          ? selectedImageIndex - 1
+                          : review.images!.length - 1
+                      );
+                    }}
+                    className="absolute left-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                  >
+                    ←
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImageIndex(
+                        selectedImageIndex < review.images!.length - 1
+                          ? selectedImageIndex + 1
+                          : 0
+                      );
+                    }}
+                    className="absolute right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                  >
+                    →
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+                    {selectedImageIndex + 1} / {review.images.length}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -330,7 +407,26 @@ export default function HospitalReviewDetailPage({
             <span className="text-sm font-medium">0</span>
           </button>
 
-          <button className="flex items-center gap-2 text-gray-600 ml-auto">
+          <button
+            onClick={async () => {
+              try {
+                if (navigator.share) {
+                  await navigator.share({
+                    title: `${review.hospital_name} 병원 후기`,
+                    text: review.content.slice(0, 100),
+                    url: window.location.href,
+                  });
+                } else {
+                  // 공유 API가 없으면 URL 복사
+                  await navigator.clipboard.writeText(window.location.href);
+                  alert("링크가 복사되었습니다!");
+                }
+              } catch (error) {
+                console.error("공유 실패:", error);
+              }
+            }}
+            className="flex items-center gap-2 text-gray-600 ml-auto hover:text-primary-main transition-colors"
+          >
             <FiShare2 className="text-xl" />
           </button>
         </div>

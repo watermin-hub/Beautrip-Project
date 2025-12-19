@@ -5,10 +5,8 @@ import { useRouter } from "next/navigation";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   FiChevronRight,
-  FiBookmark,
   FiHeart,
   FiEdit3,
-  FiBell,
   FiGlobe,
   FiDollarSign,
   FiFileText,
@@ -59,15 +57,22 @@ export default function MyPage() {
             if (!session && savedUserId) {
               const { data: profile } = await supabase
                 .from("user_profiles")
-                .select("*")
+                .select("nickname, display_name, login_id, provider")
                 .eq("user_id", savedUserId)
                 .maybeSingle();
 
               if (profile) {
-                // user_profiles 정보로 업데이트
+                // user_profiles 정보로 업데이트 (nickname 우선 사용)
+                const username =
+                  profile.nickname ||
+                  profile.display_name ||
+                  (profile.login_id && profile.login_id.includes("@")
+                    ? profile.login_id.split("@")[0]
+                    : null) ||
+                  parsedUserInfo.username ||
+                  "사용자";
                 const updatedUserInfo = {
-                  username:
-                    profile.display_name || parsedUserInfo.username || "사용자",
+                  username,
                   provider:
                     profile.provider || parsedUserInfo.provider || "local",
                 };
@@ -78,14 +83,24 @@ export default function MyPage() {
                 );
               }
             } else if (session?.user) {
-              // 세션이 있으면 세션 정보로 업데이트
+              // 세션이 있으면 user_profiles에서 nickname 가져오기
+              const { data: profile } = await supabase
+                .from("user_profiles")
+                .select("nickname, display_name, login_id")
+                .eq("user_id", session.user.id)
+                .maybeSingle();
+
+              const username =
+                profile?.nickname ||
+                profile?.display_name ||
+                session.user.user_metadata?.full_name ||
+                session.user.user_metadata?.name ||
+                session.user.email?.split("@")[0] ||
+                parsedUserInfo.username ||
+                "사용자";
+
               const sessionUserInfo = {
-                username:
-                  session.user.user_metadata?.full_name ||
-                  session.user.user_metadata?.name ||
-                  session.user.email?.split("@")[0] ||
-                  parsedUserInfo.username ||
-                  "사용자",
+                username,
                 provider:
                   session.user.app_metadata?.provider ||
                   parsedUserInfo.provider ||
@@ -129,24 +144,44 @@ export default function MyPage() {
             setUserInfo(JSON.parse(savedUserInfo));
           } catch (e) {
             console.error("Failed to parse user info", e);
-            // 파싱 실패 시 세션에서 가져오기
+            // 파싱 실패 시 user_profiles에서 nickname 가져오기
+            const { data: profile } = await supabase
+              .from("user_profiles")
+              .select("nickname, display_name, login_id")
+              .eq("user_id", session.user.id)
+              .maybeSingle();
+
+            const username =
+              profile?.nickname ||
+              profile?.display_name ||
+              session.user.user_metadata?.full_name ||
+              session.user.user_metadata?.name ||
+              session.user.email?.split("@")[0] ||
+              "사용자";
+
             setUserInfo({
-              username:
-                session.user.user_metadata?.full_name ||
-                session.user.user_metadata?.name ||
-                session.user.email?.split("@")[0] ||
-                "사용자",
+              username,
               provider: session.user.app_metadata?.provider || "google",
             });
           }
         } else {
-          // 세션은 있지만 localStorage에 정보가 없으면 세션에서 가져오기
+          // 세션은 있지만 localStorage에 정보가 없으면 user_profiles에서 nickname 가져오기
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("nickname, display_name, login_id")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+
+          const username =
+            profile?.nickname ||
+            profile?.display_name ||
+            session.user.user_metadata?.full_name ||
+            session.user.user_metadata?.name ||
+            session.user.email?.split("@")[0] ||
+            "사용자";
+
           setUserInfo({
-            username:
-              session.user.user_metadata?.full_name ||
-              session.user.user_metadata?.name ||
-              session.user.email?.split("@")[0] ||
-              "사용자",
+            username,
             provider: session.user.app_metadata?.provider || "google",
           });
           // localStorage에도 저장
@@ -155,11 +190,7 @@ export default function MyPage() {
           localStorage.setItem(
             "userInfo",
             JSON.stringify({
-              username:
-                session.user.user_metadata?.full_name ||
-                session.user.user_metadata?.name ||
-                session.user.email?.split("@")[0] ||
-                "사용자",
+              username,
               provider: session.user.app_metadata?.provider || "google",
             })
           );
@@ -365,15 +396,10 @@ function MainContent({
     procedures: 0,
     hospitals: 0,
   });
-  const [scrapCount, setScrapCount] = useState(0);
+  const [likedPostsCount, setLikedPostsCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [language, setLanguage] = useState("KR");
   const [currency, setCurrency] = useState("KRW");
-  const [notifications, setNotifications] = useState({
-    push: true,
-    email: false,
-    sms: false,
-  });
 
   useEffect(() => {
     // Supabase에서 찜한 시술 개수 로드
@@ -381,9 +407,17 @@ function MainContent({
       try {
         const result = await getFavoriteProcedures();
         if (result.success && result.treatmentIds) {
+          // 병원 찜하기는 localStorage에서 로드
+          const favorites = JSON.parse(
+            localStorage.getItem("favorites") || "[]"
+          );
+          const hospitals = favorites.filter(
+            (f: any) => f.type === "clinic"
+          ).length;
+
           setFavoriteCount({
             procedures: result.treatmentIds.length,
-            hospitals: 0, // 병원 찜하기는 추후 구현
+            hospitals: hospitals,
           });
         } else if (!result.success) {
           // API에서 에러가 반환된 경우
@@ -395,7 +429,10 @@ function MainContent({
           const procedures = favorites.filter(
             (f: any) => f.type === "procedure" || typeof f === "number"
           ).length;
-          setFavoriteCount({ procedures, hospitals: 0 });
+          const hospitals = favorites.filter(
+            (f: any) => f.type === "clinic"
+          ).length;
+          setFavoriteCount({ procedures, hospitals });
         }
       } catch (error) {
         console.error("찜한 시술 개수 로드 실패:", error);
@@ -404,15 +441,30 @@ function MainContent({
         const procedures = favorites.filter(
           (f: any) => f.type === "procedure" || typeof f === "number"
         ).length;
-        setFavoriteCount({ procedures, hospitals: 0 });
+        const hospitals = favorites.filter(
+          (f: any) => f.type === "clinic"
+        ).length;
+        setFavoriteCount({ procedures, hospitals });
+      }
+    };
+
+    // 좋아요한 글 개수 로드
+    const loadLikedPostsCount = async () => {
+      try {
+        const result = await getLikedPosts();
+        if (result.success && result.likes) {
+          setLikedPostsCount(result.likes.length);
+        } else {
+          setLikedPostsCount(0);
+        }
+      } catch (error) {
+        console.error("좋아요한 글 개수 로드 실패:", error);
+        setLikedPostsCount(0);
       }
     };
 
     loadFavoriteCounts();
-
-    // 스크랩 개수 로드 (로컬스토리지)
-    const scraps = JSON.parse(localStorage.getItem("communityScraps") || "[]");
-    setScrapCount(scraps.length);
+    loadLikedPostsCount();
 
     // 내가 쓴 후기 개수 로드 (로컬스토리지)
     const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
@@ -425,14 +477,16 @@ function MainContent({
     const savedCurrency = localStorage.getItem("currency") || "KRW";
     setCurrency(savedCurrency);
 
-    const savedNotifications = localStorage.getItem("notifications");
-    if (savedNotifications) {
-      try {
-        setNotifications(JSON.parse(savedNotifications));
-      } catch (e) {
-        console.error("Failed to parse notifications", e);
-      }
-    }
+    // favoritesUpdated 이벤트 리스너 (찜하기 상태 변경 시 카운트 새로고침)
+    const handleFavoritesUpdate = () => {
+      loadFavoriteCounts();
+    };
+
+    window.addEventListener("favoritesUpdated", handleFavoritesUpdate);
+
+    return () => {
+      window.removeEventListener("favoritesUpdated", handleFavoritesUpdate);
+    };
   }, []);
 
   const handleLanguageChange = () => {
@@ -452,15 +506,6 @@ function MainContent({
     const nextCurrency = currencies[nextIndex];
     setCurrency(nextCurrency);
     localStorage.setItem("currency", nextCurrency);
-  };
-
-  const handleNotificationToggle = (type: "push" | "email" | "sms") => {
-    const updated = {
-      ...notifications,
-      [type]: !notifications[type],
-    };
-    setNotifications(updated);
-    localStorage.setItem("notifications", JSON.stringify(updated));
   };
 
   return (
@@ -502,22 +547,13 @@ function MainContent({
           onClick={() => router.push("/favorites?type=clinic")}
         />
         <MenuItem
-          icon={FiBookmark}
-          label="글 스크랩"
-          badge={scrapCount}
-          onClick={() => {
-            alert("스크랩한 글 목록 기능은 준비 중입니다.");
-          }}
-        />
-        <MenuItem
           icon={FiHeart}
           label="좋아요한 글"
-          badge={0}
+          badge={likedPostsCount}
           onClick={async () => {
             try {
               const result = await getLikedPosts();
               if (result.success && result.likes) {
-                const count = result.likes.length;
                 // 좋아요한 글 목록 페이지로 이동
                 router.push("/liked-posts");
               } else {
@@ -577,31 +613,6 @@ function MainContent({
           label="통화"
           value={currency}
           onClick={handleCurrencyChange}
-        />
-      </div>
-
-      {/* 알림 */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">알림</h3>
-        </div>
-        <ToggleMenuItem
-          icon={FiBell}
-          label="푸시 알림"
-          checked={notifications.push}
-          onChange={() => handleNotificationToggle("push")}
-        />
-        <ToggleMenuItem
-          icon={FiBell}
-          label="이메일 알림"
-          checked={notifications.email}
-          onChange={() => handleNotificationToggle("email")}
-        />
-        <ToggleMenuItem
-          icon={FiBell}
-          label="SMS 알림"
-          checked={notifications.sms}
-          onChange={() => handleNotificationToggle("sms")}
         />
       </div>
 

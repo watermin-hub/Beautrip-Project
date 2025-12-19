@@ -11,6 +11,8 @@ import {
   parseRecoveryPeriod,
   parseProcedureTime,
   getRecoveryInfoByCategoryMid,
+  toggleProcedureFavorite,
+  getFavoriteStatus,
   type Treatment,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
@@ -59,39 +61,46 @@ export default function HotConcernsSection() {
   }, []);
 
   useEffect(() => {
-    const savedFavorites = JSON.parse(
-      localStorage.getItem("favorites") || "[]"
-    );
-    const procedureFavorites = savedFavorites
-      .filter((f: any) => f.type === "procedure")
-      .map((f: any) => f.id);
-    setFavorites(new Set(procedureFavorites));
-  }, []);
+    const loadFavorites = async () => {
+      if (treatments.length === 0) return;
 
-  const handleFavoriteClick = (treatment: Treatment, e: React.MouseEvent) => {
+      const treatmentIds = treatments
+        .map((t) => t.treatment_id)
+        .filter((id): id is number => id !== undefined);
+
+      if (treatmentIds.length > 0) {
+        const favoriteStatus = await getFavoriteStatus(treatmentIds);
+        setFavorites(favoriteStatus);
+      }
+    };
+
+    loadFavorites();
+  }, [treatments]);
+
+  const handleFavoriteClick = async (
+    treatment: Treatment,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
     if (!treatment.treatment_id) return;
 
-    setFavorites((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(treatment.treatment_id!)) {
-        newSet.delete(treatment.treatment_id!);
-      } else {
-        newSet.add(treatment.treatment_id!);
-      }
+    const result = await toggleProcedureFavorite(treatment.treatment_id);
 
-      // 로컬 스토리지에 저장
-      const savedFavorites = JSON.parse(
-        localStorage.getItem("favorites") || "[]"
-      );
-      const updatedFavorites = Array.from(newSet).map((id) => ({
-        id,
-        type: "procedure",
-      }));
-      localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
-
-      return newSet;
-    });
+    if (result.success) {
+      // Supabase 업데이트 성공 시 로컬 상태 업데이트
+      setFavorites((prev) => {
+        const newSet = new Set(prev);
+        if (result.isFavorite) {
+          newSet.add(treatment.treatment_id!);
+        } else {
+          newSet.delete(treatment.treatment_id!);
+        }
+        return newSet;
+      });
+      window.dispatchEvent(new Event("favoritesUpdated"));
+    } else {
+      console.error("찜하기 처리 실패:", result.error);
+    }
   };
 
   const handleScheduleClick = (treatment: Treatment, e: React.MouseEvent) => {

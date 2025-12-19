@@ -241,7 +241,7 @@ export default function TreatmentDetailPage({
         alert("등록된 전화번호가 없습니다.");
       }
     } else if (type === "email") {
-      // 메일 문의 - yb8259@naver.com으로 전송, Supabase에도 저장
+      // 메일 문의 - dnwhdgus93@gmail.com으로 전송, Supabase에도 저장
       const treatmentName = currentTreatment.treatment_name || "시술";
       const hospitalName = currentTreatment.hospital_name || "";
       const subject = encodeURIComponent(
@@ -256,7 +256,7 @@ export default function TreatmentDetailPage({
       );
 
       // mailto 링크 생성
-      window.location.href = `mailto:yb8259@naver.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:dnwhdgus93@gmail.com?subject=${subject}&body=${body}`;
 
       // Supabase에 문의 내역 저장 (CRM - Zapier - KIT 자동화를 위해)
       try {

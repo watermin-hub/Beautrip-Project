@@ -18,6 +18,8 @@ import {
   parseRecoveryPeriod,
   parseProcedureTime,
   getRecoveryInfoByCategoryMid,
+  toggleProcedureFavorite,
+  getFavoriteStatus,
   Treatment,
 } from "@/lib/api/beautripApi";
 import AutocompleteInput from "./AutocompleteInput";
@@ -214,16 +216,23 @@ export default function ProcedureListPage({
     }
   }, [searchParams]);
 
-  // 찜한 항목 로드
+  // 찜한 항목 로드 (Supabase에서)
   useEffect(() => {
-    const savedFavorites = JSON.parse(
-      localStorage.getItem("favorites") || "[]"
-    );
-    const procedureFavorites = savedFavorites
-      .filter((f: any) => f.type === "procedure")
-      .map((f: any) => f.id);
-    setFavorites(new Set(procedureFavorites));
-  }, []);
+    const loadFavorites = async () => {
+      if (treatments.length === 0) return;
+
+      const treatmentIds = treatments
+        .map((t) => t.treatment_id)
+        .filter((id): id is number => id !== undefined);
+
+      if (treatmentIds.length > 0) {
+        const favoriteStatus = await getFavoriteStatus(treatmentIds);
+        setFavorites(favoriteStatus);
+      }
+    };
+
+    loadFavorites();
+  }, [treatments]);
 
   // 대분류 변경 시 중분류 초기화
   useEffect(() => {
@@ -247,47 +256,26 @@ export default function ProcedureListPage({
     return sorted;
   }, [treatments, sortBy]);
 
-  const handleFavoriteClick = (treatment: Treatment) => {
+  const handleFavoriteClick = async (treatment: Treatment) => {
     if (!treatment.treatment_id) return;
 
-    const savedFavorites = JSON.parse(
-      localStorage.getItem("favorites") || "[]"
-    );
-    const isFavorite = savedFavorites.some(
-      (f: any) => f.id === treatment.treatment_id && f.type === "procedure"
-    );
+    const result = await toggleProcedureFavorite(treatment.treatment_id);
 
-    let updated;
-    if (isFavorite) {
-      updated = savedFavorites.filter(
-        (f: any) => !(f.id === treatment.treatment_id && f.type === "procedure")
-      );
+    if (result.success) {
+      // Supabase 업데이트 성공 시 로컬 상태 업데이트
+      setFavorites((prev) => {
+        const newFavorites = new Set(prev);
+        if (result.isFavorite) {
+          newFavorites.add(treatment.treatment_id!);
+        } else {
+          newFavorites.delete(treatment.treatment_id!);
+        }
+        return newFavorites;
+      });
+      window.dispatchEvent(new Event("favoritesUpdated"));
     } else {
-      const newFavorite = {
-        id: treatment.treatment_id,
-        title: treatment.treatment_name,
-        clinic: treatment.hospital_name,
-        price: treatment.selling_price,
-        rating: treatment.rating,
-        reviewCount: treatment.review_count,
-        type: "procedure" as const,
-      };
-      updated = [...savedFavorites, newFavorite];
+      console.error("찜하기 처리 실패:", result.error);
     }
-
-    localStorage.setItem("favorites", JSON.stringify(updated));
-
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev);
-      if (isFavorite) {
-        newFavorites.delete(treatment.treatment_id!);
-      } else {
-        newFavorites.add(treatment.treatment_id!);
-      }
-      return newFavorites;
-    });
-
-    window.dispatchEvent(new Event("favoritesUpdated"));
   };
 
   const handleInquiryClick = (treatmentId: number) => {

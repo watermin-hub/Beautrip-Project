@@ -1148,16 +1148,20 @@ export async function getCategoryMidByKeyword(
 
 // 국가별 인기 키워드 가져오기 (상위 N개)
 // Avg_CN, Avg_JP, Avg_EN 컬럼을 기준으로 국가별 인기 키워드 반환
+// 추천 시술이 있는 키워드만 필터링하여 반환
+export interface PopularKeyword {
+  translated: string; // 번역된 키워드 (표시용)
+  original: string; // 한국어 키워드 (category_mid 찾기용)
+}
+
 export async function getPopularKeywordsByCountry(
   country: string = "all",
-  limit: number = 10
-): Promise<string[]> {
+  limit: number = 6,
+  language: "KR" | "EN" | "JP" | "CN" = "KR"
+): Promise<PopularKeyword[]> {
   try {
-    // 한국의 경우 모든 국가 평균값을 합산하기 위해 더 많은 데이터를 가져옴
-    const loadLimit =
-      country === "korea" || country === "all"
-        ? limit * 10 // 한국/전체는 더 많이 로드
-        : limit * 5; // 특정 국가는 적게 로드
+    // 추천 시술 필터링을 위해 충분한 데이터 필요
+    const loadLimit = limit * 20; // 충분히 많이 로드하여 필터링 후에도 limit 개수 확보
 
     // 국가별 평균 기준으로 정렬된 데이터 가져오기
     // 한국의 경우 정렬 컬럼은 Avg_CN 사용 (실제 점수는 모든 국가 합산)
@@ -1167,18 +1171,21 @@ export async function getPopularKeywordsByCountry(
     });
 
     console.log(
-      `[getPopularKeywordsByCountry] 국가: ${country}, 로드된 트렌드 수: ${trends.length}`
+      `[getPopularKeywordsByCountry] 국가: ${country}, 언어: ${language}, 로드된 트렌드 수: ${trends.length}`
     );
 
     // 키워드별로 그룹화하고 국가별 평균값 합산 (같은 키워드가 여러 월에 있을 수 있음)
-    const keywordMap = new Map<string, number>();
+    const keywordMap = new Map<
+      string,
+      { score: number; krKeyword: string; translatedKeyword: string }
+    >();
 
     // 한국어 키워드는 KR 컬럼에서 가져옴
-    trends.forEach((trend, index) => {
+    for (const trend of trends) {
       // KR 컬럼에서 한국어 키워드 가져오기
-      const keyword = trend.KR || trend.keyword || null;
+      const krKeyword = trend.KR || trend.keyword || null;
 
-      if (keyword && typeof keyword === "string" && keyword.trim()) {
+      if (krKeyword && typeof krKeyword === "string" && krKeyword.trim()) {
         let score = 0;
 
         if (country === "all" || country === "korea") {
@@ -1203,21 +1210,65 @@ export async function getPopularKeywordsByCountry(
         }
 
         if (score > 0) {
-          const currentScore = keywordMap.get(keyword) || 0;
-          keywordMap.set(keyword, currentScore + score);
+          // 언어에 맞는 번역된 키워드 가져오기
+          let translatedKeyword = krKeyword; // 기본값은 한국어
+          if (language === "EN" && trend.EN) {
+            translatedKeyword = trend.EN;
+          } else if (language === "CN" && trend.CN) {
+            translatedKeyword = trend.CN;
+          } else if (language === "JP" && trend.JP) {
+            translatedKeyword = trend.JP;
+          }
+
+          const existing = keywordMap.get(krKeyword);
+          if (existing) {
+            existing.score += score;
+            // 번역된 키워드 업데이트 (더 높은 점수의 번역 사용)
+            if (score > existing.score - score) {
+              existing.translatedKeyword = translatedKeyword;
+            }
+          } else {
+            keywordMap.set(krKeyword, {
+              score,
+              krKeyword,
+              translatedKeyword,
+            });
+          }
         }
       }
-    });
+    }
 
     console.log(
       `[getPopularKeywordsByCountry] 키워드 맵 크기: ${keywordMap.size}`
     );
 
-    // 점수 기준으로 정렬하고 상위 N개 반환
-    const sortedKeywords = Array.from(keywordMap.entries())
-      .sort((a, b) => b[1] - a[1])
+    // 추천 시술이 있는 키워드만 필터링
+    const keywordsWithCategoryMid: Array<{
+      krKeyword: string;
+      translatedKeyword: string;
+      score: number;
+    }> = [];
+
+    for (const [krKeyword, data] of keywordMap.entries()) {
+      // category_mid가 있는지 확인
+      const categoryMid = await getCategoryMidByKeyword(krKeyword);
+      if (categoryMid) {
+        keywordsWithCategoryMid.push(data);
+      }
+    }
+
+    console.log(
+      `[getPopularKeywordsByCountry] 추천 시술이 있는 키워드 수: ${keywordsWithCategoryMid.length}`
+    );
+
+    // 점수 기준으로 정렬하고 상위 N개 반환 (번역된 키워드와 한국어 키워드 함께 반환)
+    const sortedKeywords = keywordsWithCategoryMid
+      .sort((a, b) => b.score - a.score)
       .slice(0, limit)
-      .map(([keyword]) => keyword);
+      .map((item) => ({
+        translated: item.translatedKeyword,
+        original: item.krKeyword,
+      }));
 
     console.log(
       `[getPopularKeywordsByCountry] 최종 키워드 수: ${sortedKeywords.length}`,
@@ -2456,7 +2507,32 @@ export async function loadProcedureReviews(
       return [];
     }
 
-    return data as ProcedureReviewData[];
+    // 이미지 URL 처리 및 닉네임 추가
+    const processedData = await Promise.all(
+      data.map(async (review: any) => {
+        if (review.images && Array.isArray(review.images)) {
+          review.images = review.images.map((imgUrl: string) => {
+            // 이미 전체 URL이면 그대로 반환
+            if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+              return imgUrl;
+            }
+            // Storage 경로인 경우 공개 URL로 변환
+            if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("review_images").getPublicUrl(imgUrl);
+              return publicUrl;
+            }
+            return imgUrl;
+          });
+        }
+        // 닉네임 추가 (이메일의 @ 앞부분)
+        review.nickname = await getUserNickname(review.user_id);
+        return review;
+      })
+    );
+
+    return processedData as ProcedureReviewData[];
   } catch (error) {
     console.error("시술 후기 로드 실패:", error);
     return [];
@@ -2482,7 +2558,32 @@ export async function loadHospitalReviews(
       return [];
     }
 
-    return data as HospitalReviewData[];
+    // 이미지 URL 처리 및 닉네임 추가
+    const processedData = await Promise.all(
+      data.map(async (review: any) => {
+        if (review.images && Array.isArray(review.images)) {
+          review.images = review.images.map((imgUrl: string) => {
+            // 이미 전체 URL이면 그대로 반환
+            if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+              return imgUrl;
+            }
+            // Storage 경로인 경우 공개 URL로 변환
+            if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+              const {
+                data: { publicUrl },
+              } = supabase.storage.from("review_images").getPublicUrl(imgUrl);
+              return publicUrl;
+            }
+            return imgUrl;
+          });
+        }
+        // 닉네임 추가 (이메일의 @ 앞부분)
+        review.nickname = await getUserNickname(review.user_id);
+        return review;
+      })
+    );
+
+    return processedData as HospitalReviewData[];
   } catch (error) {
     console.error("병원 후기 로드 실패:", error);
     return [];
@@ -2508,10 +2609,70 @@ export async function loadConcernPosts(
       return [];
     }
 
-    return data as ConcernPostData[];
+    // 닉네임 추가 (이메일의 @ 앞부분)
+    const processedData = await Promise.all(
+      data.map(async (post: any) => {
+        post.nickname = await getUserNickname(post.user_id);
+        return post;
+      })
+    );
+
+    return processedData as ConcernPostData[];
   } catch (error) {
     console.error("고민글 로드 실패:", error);
     return [];
+  }
+}
+
+// user_id로 닉네임 가져오기
+// ✅ 백엔드에 nickname 컬럼이 추가되면 nickname을 직접 읽습니다.
+// 트리거로 자동 채워지므로 항상 nickname이 있을 것입니다.
+export async function getUserNickname(
+  userId: string | null | undefined
+): Promise<string> {
+  if (!userId) {
+    return "익명";
+  }
+
+  try {
+    // user_profiles에서 nickname 컬럼 직접 읽기 (백엔드에 추가되면)
+    const { data: profile, error } = await supabase
+      .from("user_profiles")
+      .select("nickname, display_name, login_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[getUserNickname] 사용자 프로필 조회 실패:", error);
+      return "익명";
+    }
+
+    if (profile) {
+      // 1순위: nickname 컬럼 (백엔드 트리거로 자동 채워짐)
+      if (profile.nickname) {
+        return profile.nickname;
+      }
+
+      // 2순위: display_name (fallback)
+      if (profile.display_name) {
+        return profile.display_name;
+      }
+
+      // 3순위: login_id에서 @ 앞부분 추출 (fallback)
+      if (profile.login_id && profile.login_id.includes("@")) {
+        return profile.login_id.split("@")[0];
+      }
+
+      // 4순위: login_id 그대로 (fallback)
+      if (profile.login_id) {
+        return profile.login_id;
+      }
+    }
+
+    return "익명";
+  } catch (error) {
+    console.error("[getUserNickname] 닉네임 조회 실패:", error);
+    return "익명";
   }
 }
 
@@ -2527,8 +2688,37 @@ export async function getProcedureReview(
       .single();
 
     if (error) {
+      console.error("Supabase 오류:", error);
       throw new Error(`Supabase 오류: ${error.message}`);
     }
+
+    if (!data) {
+      return null;
+    }
+
+    // 이미지 URL 처리: Storage 경로를 공개 URL로 변환
+    if (data.images && Array.isArray(data.images)) {
+      data.images = data.images.map((imgUrl: string) => {
+        // 이미 전체 URL이면 그대로 반환
+        if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+          return imgUrl;
+        }
+        // Storage 경로인 경우 공개 URL로 변환
+        // 형식: {reviewId}/{index}.{ext} 또는 review_images/{reviewId}/{index}.{ext}
+        if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+          // review_images 버킷의 공개 URL 생성
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("review_images").getPublicUrl(imgUrl);
+          return publicUrl;
+        }
+        return imgUrl;
+      });
+    }
+
+    // 닉네임 추가 (이메일의 @ 앞부분)
+    const nickname = await getUserNickname(data.user_id);
+    (data as any).nickname = nickname;
 
     return data as ProcedureReviewData | null;
   } catch (error) {
@@ -2549,8 +2739,37 @@ export async function getHospitalReview(
       .single();
 
     if (error) {
+      console.error("Supabase 오류:", error);
       throw new Error(`Supabase 오류: ${error.message}`);
     }
+
+    if (!data) {
+      return null;
+    }
+
+    // 이미지 URL 처리: Storage 경로를 공개 URL로 변환
+    if (data.images && Array.isArray(data.images)) {
+      data.images = data.images.map((imgUrl: string) => {
+        // 이미 전체 URL이면 그대로 반환
+        if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
+          return imgUrl;
+        }
+        // Storage 경로인 경우 공개 URL로 변환
+        // 형식: {reviewId}/{index}.{ext} 또는 review_images/{reviewId}/{index}.{ext}
+        if (imgUrl.includes("/") && !imgUrl.startsWith("http")) {
+          // review_images 버킷의 공개 URL 생성
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("review_images").getPublicUrl(imgUrl);
+          return publicUrl;
+        }
+        return imgUrl;
+      });
+    }
+
+    // 닉네임 추가 (이메일의 @ 앞부분)
+    const nickname = await getUserNickname(data.user_id);
+    (data as any).nickname = nickname;
 
     return data as HospitalReviewData | null;
   } catch (error) {
@@ -3681,14 +3900,28 @@ export async function getMidCategoryRankings(
     });
 
     if (error) {
-      console.error("중분류 랭킹 조회 실패:", error);
+      // 에러 객체 상세 로깅
+      const errorDetails = {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        error: error,
+      };
+      console.error("중분류 랭킹 조회 실패:", errorDetails);
+
       // RPC 함수가 아직 준비되지 않은 경우를 위한 상세 에러 로그
       if (error.message?.includes("function") || error.code === "42883") {
         console.warn(
           "⚠️ RPC 함수가 아직 생성되지 않았을 수 있습니다. 백엔드 담당자에게 확인하세요."
         );
       }
-      return { success: false, error: error.message };
+
+      return {
+        success: false,
+        error:
+          error.message || error.code || "랭킹 데이터 조회에 실패했습니다.",
+      };
     }
 
     if (!data) {
@@ -3724,10 +3957,26 @@ export async function getMidCategoryRankings(
 
     return { success: true, data: processedData };
   } catch (error: any) {
-    console.error("중분류 랭킹 조회 중 오류:", error);
+    // catch 블록에서 발생하는 에러도 상세 로깅
+    const errorDetails = {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+      error: error,
+    };
+    console.error("중분류 랭킹 조회 중 예외 발생:", errorDetails);
+
+    // 네트워크 에러인 경우
+    if (error?.message?.includes("fetch") || error?.name === "TypeError") {
+      console.warn("⚠️ 네트워크 에러 또는 Supabase 연결 문제일 수 있습니다.");
+    }
+
     return {
       success: false,
-      error: error?.message || "중분류 랭킹 조회에 실패했습니다.",
+      error:
+        error?.message ||
+        error?.toString() ||
+        "중분류 랭킹 조회에 실패했습니다.",
     };
   }
 }
@@ -3846,6 +4095,13 @@ export async function saveSchedule(
       return { success: false, error: "로그인이 필요합니다." };
     }
 
+    console.log("[saveSchedule] 저장 시도:", {
+      userId,
+      schedulePeriod,
+      treatmentIds,
+      treatmentIdsLength: treatmentIds.length,
+    });
+
     const { data, error } = await client
       .from("saved_schedules")
       .insert({
@@ -3856,17 +4112,119 @@ export async function saveSchedule(
       .select()
       .single();
 
-    if (error) {
-      console.error("일정 저장 실패:", error);
-      return { success: false, error: error.message };
+    console.log("[saveSchedule] 응답:", {
+      hasData: !!data,
+      hasError: !!error,
+      errorType: typeof error,
+      errorStringified: error ? JSON.stringify(error) : null,
+      dataStringified: data ? JSON.stringify(data) : null,
+    });
+
+    // 에러가 있거나 데이터가 없는 경우
+    if (error || !data) {
+      // 에러 객체의 모든 속성을 안전하게 추출
+      const errorCode = error?.code || (error as any)?.code;
+      const errorMessage = error?.message || (error as any)?.message || "";
+      const errorDetails = error?.details || (error as any)?.details || "";
+      const errorHint = error?.hint || (error as any)?.hint || "";
+
+      const fullErrorMessage =
+        errorMessage ||
+        errorDetails ||
+        (error
+          ? "알 수 없는 에러가 발생했습니다."
+          : "데이터가 반환되지 않았습니다.");
+
+      console.error("[saveSchedule] 일정 저장 실패:", {
+        error,
+        errorType: typeof error,
+        errorCode,
+        errorMessage,
+        errorDetails,
+        errorHint,
+        errorStringified: error
+          ? JSON.stringify(error, Object.getOwnPropertyNames(error))
+          : "null",
+        errorKeys: error ? Object.keys(error) : [],
+        hasData: !!data,
+      });
+
+      // PGRST205: 테이블을 찾을 수 없음 (Supabase PostgREST 에러)
+      if (
+        errorCode === "PGRST205" ||
+        errorCode === "42P01" ||
+        fullErrorMessage.includes("saved_schedules") ||
+        fullErrorMessage.includes("does not exist") ||
+        fullErrorMessage.includes("Could not find the table") ||
+        fullErrorMessage.includes("schema cache") ||
+        fullErrorMessage.includes("relation") ||
+        fullErrorMessage.includes("table")
+      ) {
+        return {
+          success: false,
+          error:
+            "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.",
+        };
+      }
+      // 권한 문제
+      else if (
+        errorCode === "42501" ||
+        fullErrorMessage.includes("permission") ||
+        fullErrorMessage.includes("권한")
+      ) {
+        return {
+          success: false,
+          error: "일정 저장 권한이 없습니다. 로그인 상태를 확인해주세요.",
+        };
+      }
+      // 기타 에러
+      return {
+        success: false,
+        error: fullErrorMessage || "일정 저장에 실패했습니다.",
+      };
     }
 
+    console.log("[saveSchedule] 저장 성공:", data);
     return { success: true, data: data as SavedSchedule };
   } catch (error: any) {
-    console.error("일정 저장 중 오류:", error);
+    console.error("일정 저장 중 오류:", {
+      error,
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+    });
+
+    // 에러 메시지 추출
+    let errorMessage = "일정 저장에 실패했습니다.";
+
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (error?.details) {
+      errorMessage = error.details;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+
+    // 테이블이 없는 경우
+    if (
+      error?.code === "42P01" ||
+      errorMessage.includes("saved_schedules") ||
+      errorMessage.includes("does not exist")
+    ) {
+      errorMessage =
+        "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.";
+    }
+    // 권한 문제
+    else if (error?.code === "42501" || errorMessage.includes("permission")) {
+      errorMessage = "일정 저장 권한이 없습니다. 로그인 상태를 확인해주세요.";
+    }
+
     return {
       success: false,
-      error: error?.message || "일정 저장에 실패했습니다.",
+      error: errorMessage,
     };
   }
 }

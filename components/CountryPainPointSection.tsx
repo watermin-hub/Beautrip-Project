@@ -11,6 +11,7 @@ import {
   getPopularKeywordsByCountry,
   getCategoryMidByKeyword,
   type Treatment,
+  type PopularKeyword,
 } from "@/lib/api/beautripApi";
 
 // 고민 키워드와 시술 매핑 (fallback용)
@@ -25,7 +26,7 @@ const CONCERN_KEYWORDS: Record<string, string[]> = {
 
 export default function CountryPainPointSection() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [selectedConcern, setSelectedConcern] = useState<string | null>(null);
   const [recommendedTreatments, setRecommendedTreatments] = useState<
@@ -33,8 +34,10 @@ export default function CountryPainPointSection() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
-  const [popularKeywords, setPopularKeywords] = useState<string[]>([]);
+  const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([]);
   const [keywordsLoading, setKeywordsLoading] = useState(true);
+  // 번역된 키워드 -> 한국어 키워드 매핑
+  const [keywordMap, setKeywordMap] = useState<Map<string, string>>(new Map());
 
   const countries = [
     { id: "all", key: "home.country.all" },
@@ -50,8 +53,21 @@ export default function CountryPainPointSection() {
     const loadKeywords = async () => {
       setKeywordsLoading(true);
       try {
-        const keywords = await getPopularKeywordsByCountry(selectedCountry, 10);
+        const languageCode = language || "KR";
+
+        const keywords = await getPopularKeywordsByCountry(
+          selectedCountry,
+          6, // 6개만 표시
+          languageCode as "KR" | "EN" | "JP" | "CN"
+        );
         setPopularKeywords(keywords.length > 0 ? keywords : []);
+
+        // 번역된 키워드 -> 한국어 키워드 매핑 생성
+        const map = new Map<string, string>();
+        keywords.forEach((kw) => {
+          map.set(kw.translated, kw.original);
+        });
+        setKeywordMap(map);
       } catch (error) {
         console.error("인기 키워드 로드 실패:", error);
         // fallback: 기본 키워드 사용
@@ -62,16 +78,29 @@ export default function CountryPainPointSection() {
           japan: ["모공", "주름", "다크서클", "피부톤", "트러블"],
           usa: ["주름", "다크서클", "피부톤", "모공", "트러블"],
         };
-        setPopularKeywords(
-          fallbackKeywords[selectedCountry] || fallbackKeywords.all
+        const fallbackList =
+          fallbackKeywords[selectedCountry] || fallbackKeywords.all;
+        const fallbackKeywordsFormatted: PopularKeyword[] = fallbackList.map(
+          (kw) => ({
+            translated: kw,
+            original: kw,
+          })
         );
+        setPopularKeywords(fallbackKeywordsFormatted);
+
+        // fallback 키워드 매핑도 생성
+        const fallbackMap = new Map<string, string>();
+        fallbackList.forEach((kw) => {
+          fallbackMap.set(kw, kw);
+        });
+        setKeywordMap(fallbackMap);
       } finally {
         setKeywordsLoading(false);
       }
     };
 
     loadKeywords();
-  }, [selectedCountry]);
+  }, [selectedCountry, language]);
 
   useEffect(() => {
     const savedFavorites = JSON.parse(
@@ -95,18 +124,21 @@ export default function CountryPainPointSection() {
     setLoading(true);
 
     try {
+      // 번역된 키워드인 경우 한국어 키워드로 변환
+      const originalKeyword = keywordMap.get(concern) || concern;
+
       // 1. keyword_monthly_trends의 keyword로 category_treattime_recovery의 keyword_kr 매칭
       // 2. 매칭된 항목의 category_mid (중분류) 찾기
-      const categoryMid = await getCategoryMidByKeyword(concern);
+      const categoryMid = await getCategoryMidByKeyword(originalKeyword);
 
       if (!categoryMid) {
         console.warn(
-          `키워드 "${concern}"에 해당하는 category_mid를 찾을 수 없습니다.`
+          `키워드 "${originalKeyword}"에 해당하는 category_mid를 찾을 수 없습니다.`
         );
         // fallback: 기존 로직 사용
         const result = await loadTreatmentsPaginated(1, 100);
         const allTreatments = result.data;
-        const keywords = CONCERN_KEYWORDS[concern] || [concern];
+        const keywords = CONCERN_KEYWORDS[originalKeyword] || [originalKeyword];
 
         const filtered = allTreatments.filter((treatment) => {
           const name = (treatment.treatment_name || "").toLowerCase();
@@ -236,15 +268,16 @@ export default function CountryPainPointSection() {
                 key={index}
                 onClick={(e) => {
                   // 일반 클릭: 현재 페이지에서 추천 시술 표시
-                  handleConcernClick(keyword);
+                  // 번역된 키워드를 전달하되, 내부에서 한국어 키워드로 변환
+                  handleConcernClick(keyword.translated);
                 }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedConcern === keyword
+                  selectedConcern === keyword.translated
                     ? "bg-primary-main text-white border-primary-main"
                     : "bg-white border border-gray-200 text-gray-700 hover:border-primary-main hover:text-primary-main"
                 }`}
               >
-                #{keyword}
+                #{keyword.translated}
               </button>
             ))
           ) : (

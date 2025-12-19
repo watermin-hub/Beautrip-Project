@@ -160,61 +160,88 @@ export default function ReviewList() {
           created_at?: string;
         })[] = procedureReviews
           .filter((review: ProcedureReviewData) => review.id) // id가 있는 것만 필터링
-          .map((review: ProcedureReviewData) => ({
-            id: review.id!, // id가 있음을 보장
-            category: review.category || "후기",
-            username: `사용자${review.user_id || 0}`,
-            avatar: "👤",
-            content: review.content,
-            images: review.images,
-            timestamp: formatTimeAgo(review.created_at),
-            created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
-            edited: false,
-            upvotes: 0,
-            comments: 0,
-            views: 0,
-            postType: "procedure_review" as const,
-          }));
+          .map((review: ProcedureReviewData) => {
+            const nickname = (review as any).nickname;
+            console.log("[ReviewList] 시술 후기 닉네임:", {
+              reviewId: review.id,
+              userId: review.user_id,
+              nickname,
+              hasNickname: !!nickname,
+            });
+            return {
+              id: review.id!, // id가 있음을 보장
+              category: review.category || "후기",
+              username: nickname || "익명", // nickname이 없으면 "익명"만 표시
+              avatar: "👤",
+              content: review.content,
+              images: review.images,
+              timestamp: formatTimeAgo(review.created_at),
+              created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
+              edited: false,
+              upvotes: 0,
+              comments: 0,
+              views: 0,
+              postType: "procedure_review" as const,
+            };
+          });
 
         // 병원 후기 변환 (created_at 포함)
         const formattedHospitalReviews: (ReviewPost & {
           created_at?: string;
         })[] = hospitalReviews
           .filter((review: HospitalReviewData) => review.id) // id가 있는 것만 필터링
-          .map((review: HospitalReviewData) => ({
-            id: review.id!, // id가 있음을 보장
-            category: review.category_large || "병원후기",
-            username: `사용자${review.user_id || 0}`,
-            avatar: "👤",
-            content: review.content,
-            images: review.images,
-            timestamp: formatTimeAgo(review.created_at),
-            created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
-            edited: false,
-            upvotes: 0,
-            comments: 0,
-            views: 0,
-            postType: "hospital_review" as const,
-          }));
+          .map((review: HospitalReviewData) => {
+            const nickname = (review as any).nickname;
+            console.log("[ReviewList] 병원 후기 닉네임:", {
+              reviewId: review.id,
+              userId: review.user_id,
+              nickname,
+              hasNickname: !!nickname,
+            });
+            return {
+              id: review.id!, // id가 있음을 보장
+              category: review.category_large || "병원후기",
+              username: nickname || "익명", // nickname이 없으면 "익명"만 표시
+              avatar: "👤",
+              content: review.content,
+              images: review.images,
+              timestamp: formatTimeAgo(review.created_at),
+              created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
+              edited: false,
+              upvotes: 0,
+              comments: 0,
+              views: 0,
+              postType: "hospital_review" as const,
+            };
+          });
 
         // 고민글 변환 (created_at 포함)
         const formattedConcernPosts: (ReviewPost & { created_at?: string })[] =
           concernPosts
             .filter((post: ConcernPostData) => post.id) // id가 있는 것만 필터링
-            .map((post: ConcernPostData) => ({
-              id: post.id!, // id가 있음을 보장
-              category: post.concern_category || "고민글",
-              username: `사용자${post.user_id || 0}`,
-              avatar: "👤",
-              content: post.content,
-              timestamp: formatTimeAgo(post.created_at),
-              created_at: post.created_at, // 정렬을 위해 원본 날짜 보관
-              edited: false,
-              upvotes: 0,
-              comments: 0,
-              views: 0,
-              postType: "concern_post" as const,
-            }));
+            .map((post: ConcernPostData) => {
+              const nickname = (post as any).nickname;
+              console.log("[ReviewList] 고민글 닉네임:", {
+                postId: post.id,
+                userId: post.user_id,
+                nickname,
+                hasNickname: !!nickname,
+              });
+              return {
+                id: post.id!, // id가 있음을 보장
+                category: post.concern_category || "고민글",
+                username: nickname || "익명", // nickname이 없으면 "익명"만 표시
+                avatar: "👤",
+                content: post.content,
+                timestamp: formatTimeAgo(post.created_at),
+                created_at: post.created_at, // 정렬을 위해 원본 날짜 보관
+                edited: false,
+                upvotes: 0,
+                comments: 0,
+                views: 0,
+                postType: "concern_post" as const,
+              };
+            });
 
         // 최신순으로 정렬 (created_at 기준, 모든 후기 통합)
         const allSupabaseReviews = [
@@ -295,9 +322,27 @@ export default function ReviewList() {
   }
 
   const handlePostClick = (post: ReviewPost) => {
+    console.log("[ReviewList] 카드 클릭:", {
+      postId: post.id,
+      postType: post.postType,
+      idType: typeof post.id,
+      hasPostType: !!post.postType,
+      hasId: !!post.id,
+    });
+
     // postType이 있고, id가 실제로 존재할 때만 클릭 가능
     if (post.postType && post.id) {
       const postId = String(post.id); // 숫자든 문자열이든 문자열로 변환
+      console.log("[ReviewList] 라우팅 시도:", {
+        postType: post.postType,
+        postId,
+        path:
+          post.postType === "procedure_review"
+            ? `/review/procedure/${postId}`
+            : post.postType === "hospital_review"
+            ? `/review/hospital/${postId}`
+            : `/community?tab=consultation`,
+      });
 
       if (post.postType === "procedure_review") {
         router.push(`/review/procedure/${postId}`);
@@ -309,10 +354,11 @@ export default function ReviewList() {
       }
     } else {
       // 디버깅: 왜 클릭이 안 되는지 확인
-      console.log("클릭 불가:", {
+      console.warn("[ReviewList] 클릭 불가:", {
         postType: post.postType,
         id: post.id,
         idType: typeof post.id,
+        post: post,
       });
     }
   };
@@ -322,7 +368,9 @@ export default function ReviewList() {
       {allReviews.map((post) => (
         <div
           key={post.id}
-          onClick={() => handlePostClick(post)}
+          onClick={() => {
+            handlePostClick(post);
+          }}
           className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
         >
           {/* Category Tag */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
@@ -106,15 +106,23 @@ export default function PromotionBanner({
   );
 
   const totalSlides = bannerSlides.length;
+  const totalSlidesRef = useRef(totalSlides);
+
+  // totalSlides가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    totalSlidesRef.current = totalSlides;
+  }, [totalSlides]);
 
   // Auto slide
   useEffect(() => {
+    if (totalSlidesRef.current === 0) return; // 슬라이드가 없으면 interval 설정하지 않음
+
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
+      setCurrentSlide((prev) => (prev + 1) % totalSlidesRef.current);
     }, 5000); // 5초마다 자동 슬라이드
 
     return () => clearInterval(interval);
-  }, [totalSlides]);
+  }, []); // 의존성 배열을 비워서 한 번만 실행되도록 함
 
   // 언어 변경 시 첫 번째 슬라이드로 리셋
   useEffect(() => {

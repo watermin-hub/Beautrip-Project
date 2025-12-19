@@ -2,6 +2,7 @@
 
 import { FiArrowUp, FiMessageCircle, FiEye, FiHeart } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   loadProcedureReviews,
   loadHospitalReviews,
@@ -448,11 +449,41 @@ export default function PostList({
   activeTab: "recommended" | "latest" | "popular" | "consultation";
   concernCategory?: string | null;
 }) {
+  const router = useRouter();
   const [supabaseReviews, setSupabaseReviews] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [popularSection, setPopularSection] = useState<
     "procedure" | "hospital"
   >("procedure");
+
+  // 카드 클릭 핸들러
+  const handlePostClick = (post: Post) => {
+    console.log("[PostList] 카드 클릭:", {
+      postId: post.id,
+      reviewType: post.reviewType,
+      idType: typeof post.id,
+    });
+
+    // reviewType과 id가 있으면 상세페이지로 이동
+    if (post.reviewType && post.id) {
+      const postId = String(post.id);
+
+      if (post.reviewType === "procedure") {
+        router.push(`/review/procedure/${postId}`);
+      } else if (post.reviewType === "hospital") {
+        router.push(`/review/hospital/${postId}`);
+      } else if (post.reviewType === "concern") {
+        // 고민글 상세보기는 추후 구현
+        router.push(`/community?tab=consultation`);
+      }
+    } else {
+      console.warn("[PostList] 클릭 불가:", {
+        reviewType: post.reviewType,
+        id: post.id,
+        post: post,
+      });
+    }
+  };
 
   // 최신글: Supabase에서 데이터 가져오기
   useEffect(() => {
@@ -474,7 +505,7 @@ export default function PostList({
             (review: ProcedureReviewData) => ({
               id: review.id || `procedure-${Math.random()}`,
               category: review.category || "후기",
-              username: `사용자${review.user_id || 0}`,
+              username: (review as any).nickname || "익명", // nickname 사용
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -493,7 +524,7 @@ export default function PostList({
             (review: HospitalReviewData) => ({
               id: review.id || `hospital-${Math.random()}`,
               category: review.category_large || "병원후기",
-              username: `사용자${review.user_id || 0}`,
+              username: (review as any).nickname || "익명", // nickname 사용
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -512,7 +543,7 @@ export default function PostList({
             (post: ConcernPostData) => ({
               id: post.id || `concern-${Math.random()}`,
               category: post.concern_category || "고민글",
-              username: `사용자${post.user_id || 0}`,
+              username: (post as any).nickname || "익명", // nickname 사용
               avatar: "👤",
               title: post.title, // 제목 추가
               content: post.content,
@@ -580,7 +611,7 @@ export default function PostList({
             (review: ProcedureReviewData) => ({
               id: review.id || `procedure-${Math.random()}`,
               category: review.category || "후기",
-              username: `사용자${review.user_id || 0}`,
+              username: (review as any).nickname || "익명", // nickname 사용
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -598,7 +629,7 @@ export default function PostList({
             (review: HospitalReviewData) => ({
               id: review.id || `hospital-${Math.random()}`,
               category: review.category_large || "병원후기",
-              username: `사용자${review.user_id || 0}`,
+              username: (review as any).nickname || "익명", // nickname 사용
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -643,7 +674,7 @@ export default function PostList({
               (post: ConcernPostData) => ({
                 id: post.id || `concern-${Math.random()}`,
                 category: post.concern_category || "고민글",
-                username: `사용자${post.user_id || 0}`,
+                username: (post as any).nickname || "익명", // nickname 사용
                 avatar: "👤",
                 title: post.title, // 제목 추가
                 content: post.content,
@@ -722,10 +753,39 @@ export default function PostList({
     };
 
     // 공통 포스트 렌더링 함수
+    const handlePostClick = (post: Post) => {
+      console.log("[PostList] 카드 클릭:", {
+        postId: post.id,
+        reviewType: post.reviewType,
+        idType: typeof post.id,
+      });
+
+      // reviewType과 id가 있으면 상세페이지로 이동
+      if (post.reviewType && post.id) {
+        const postId = String(post.id);
+
+        if (post.reviewType === "procedure") {
+          router.push(`/review/procedure/${postId}`);
+        } else if (post.reviewType === "hospital") {
+          router.push(`/review/hospital/${postId}`);
+        } else if (post.reviewType === "concern") {
+          // 고민글 상세보기는 추후 구현
+          router.push(`/community?tab=consultation`);
+        }
+      } else {
+        console.warn("[PostList] 클릭 불가:", {
+          reviewType: post.reviewType,
+          id: post.id,
+          post: post,
+        });
+      }
+    };
+
     const renderPost = (post: Post) => (
       <div
         key={post.id}
-        className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
+        onClick={() => handlePostClick(post)}
+        className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer ${
           post.reviewType === "concern" ? "p-5" : "p-4"
         }`}
       >
@@ -796,20 +856,32 @@ export default function PostList({
         {/* Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+            >
               <FiArrowUp className="text-lg" />
               <span className="text-xs font-medium">{post.upvotes}</span>
             </button>
-            <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+            >
               <FiMessageCircle className="text-lg" />
               <span className="text-xs font-medium">{post.comments}</span>
             </button>
-            <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+            >
               <FiEye className="text-lg" />
               <span className="text-xs font-medium">{post.views}</span>
             </button>
             {post.likes && (
-              <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              >
                 <FiHeart className="text-lg" />
                 <span className="text-xs font-medium">{post.likes}</span>
               </button>
@@ -891,7 +963,20 @@ export default function PostList({
       {posts.map((post) => (
         <div
           key={post.id}
-          className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow ${
+          onClick={() => {
+            // reviewType과 id가 있으면 상세페이지로 이동
+            if (post.reviewType && post.id) {
+              const postId = String(post.id);
+              if (post.reviewType === "procedure") {
+                router.push(`/review/procedure/${postId}`);
+              } else if (post.reviewType === "hospital") {
+                router.push(`/review/hospital/${postId}`);
+              } else if (post.reviewType === "concern") {
+                router.push(`/community?tab=consultation`);
+              }
+            }
+          }}
+          className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer ${
             post.reviewType === "concern" ? "p-5" : "p-4"
           }`}
         >
@@ -962,20 +1047,32 @@ export default function PostList({
           {/* Actions */}
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <div className="flex items-center gap-4">
-              <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              >
                 <FiArrowUp className="text-lg" />
                 <span className="text-xs font-medium">{post.upvotes}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              >
                 <FiMessageCircle className="text-lg" />
                 <span className="text-xs font-medium">{post.comments}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              >
                 <FiEye className="text-lg" />
                 <span className="text-xs font-medium">{post.views}</span>
               </button>
               {post.likes && (
-                <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+                >
                   <FiHeart className="text-lg" />
                   <span className="text-xs font-medium">{post.likes}</span>
                 </button>

@@ -98,12 +98,14 @@ export default function SignupModal({
       }
 
       // 2. user_profiles 테이블에 프로필 정보 저장
+      // nickname: 이메일의 @ 앞부분 (트리거가 있으면 자동 채워지지만, 명시적으로 설정)
       const { error: profileError } = await supabase
         .from("user_profiles")
         .insert({
           user_id: authData.user.id, // Supabase Auth의 UUID
           provider: "local",
           login_id: email.trim(),
+          nickname: email.trim().split("@")[0], // ✅ nickname 추가
           preferred_language: selectedLanguage, // 선택한 언어 저장
         });
 
@@ -157,8 +159,10 @@ export default function SignupModal({
           .eq("user_id", authData.user.id)
           .maybeSingle();
 
+        // nickname 우선 사용 (백엔드 트리거로 자동 채워짐)
         const userInfo = {
           username:
+            profile?.nickname ||
             profile?.display_name ||
             authData.user.email?.split("@")[0] ||
             "사용자",

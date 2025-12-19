@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-const BUCKET_NAME = "review-images";
+const BUCKET_NAME = "review_images"; // Supabase 버킷 이름과 정확히 일치해야 함
 
 /**
  * 후기 이미지를 Supabase Storage에 업로드
@@ -15,6 +15,14 @@ export async function uploadReviewImage(
   imageIndex: number
 ): Promise<string> {
   try {
+    // Supabase 연결 확인
+    console.log("=== Supabase 연결 확인 ===");
+    console.log(
+      "SUPABASE_URL =",
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "기본값 사용"
+    );
+    console.log("BUCKET_NAME =", BUCKET_NAME);
+
     // 파일 확장자 추출
     const fileExt = file.name.split(".").pop();
     if (!fileExt) {
@@ -30,10 +38,31 @@ export async function uploadReviewImage(
       .upload(fileName, file, {
         cacheControl: "3600",
         upsert: false, // 중복 방지
+        contentType: file.type, // 파일 타입 명시
       });
 
+    // 업로드 결과 콘솔 출력 (디버깅용)
+    console.log("=== 이미지 업로드 결과 ===");
+    console.log("upload data:", uploadData);
+    console.log("upload error:", uploadError);
+    console.log("file name:", fileName);
+    console.log("reviewId:", reviewId);
+    console.log("imageIndex:", imageIndex);
+
     if (uploadError) {
+      // 에러 상세 정보 출력 (JSON으로 변환하여 모든 속성 확인)
+      console.error("=== 업로드 에러 상세 ===");
+      console.error("uploadError raw =", uploadError);
+      console.error("uploadError message =", uploadError.message);
+      console.error("uploadError statusCode =", uploadError.statusCode);
+      console.error("uploadError json =", JSON.stringify(uploadError, null, 2));
       throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
+    }
+
+    if (uploadData?.path) {
+      console.log("✅ 업로드 성공! 경로:", uploadData.path);
+    } else {
+      console.warn("⚠️ 업로드 데이터에 path가 없습니다:", uploadData);
     }
 
     // 공개 URL 가져오기

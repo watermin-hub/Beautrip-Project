@@ -558,7 +558,6 @@ function SavedSchedulesTab({
     []
   );
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   // 저장된 일정 목록 로드
   useEffect(() => {
@@ -576,58 +575,6 @@ function SavedSchedulesTab({
       console.error("저장된 일정 로드 실패:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // 현재 일정 저장
-  const handleSaveCurrentSchedule = async () => {
-    if (!travelPeriod) {
-      alert("여행 기간을 먼저 설정해주세요.");
-      return;
-    }
-
-    if (savedSchedules.length === 0) {
-      alert("저장할 일정이 없습니다.");
-      return;
-    }
-
-    // 일정 기간 포맷팅 (예: "25.12.14~25.12.20")
-    const formatPeriod = (start: string, end: string) => {
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      const startStr = `${String(startDate.getFullYear()).slice(-2)}.${String(
-        startDate.getMonth() + 1
-      ).padStart(2, "0")}.${String(startDate.getDate()).padStart(2, "0")}`;
-      const endStr = `${String(endDate.getFullYear()).slice(-2)}.${String(
-        endDate.getMonth() + 1
-      ).padStart(2, "0")}.${String(endDate.getDate()).padStart(2, "0")}`;
-      return `${startStr}~${endStr}`;
-    };
-
-    const periodStr = formatPeriod(travelPeriod.start, travelPeriod.end);
-    const treatmentIds = savedSchedules
-      .map((s) => s.treatmentId)
-      .filter((id): id is number => id !== undefined && id !== null);
-
-    if (treatmentIds.length === 0) {
-      alert("저장할 시술이 없습니다.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const result = await saveSchedule(periodStr, treatmentIds);
-      if (result.success) {
-        alert("일정이 저장되었습니다!");
-        loadSavedSchedules();
-      } else {
-        alert(result.error || "일정 저장에 실패했습니다.");
-      }
-    } catch (error) {
-      console.error("일정 저장 실패:", error);
-      alert("일정 저장에 실패했습니다.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -653,28 +600,6 @@ function SavedSchedulesTab({
 
   return (
     <div className="px-4 py-4">
-      {/* 현재 일정 저장 버튼 */}
-      <div className="mb-6">
-        <button
-          onClick={handleSaveCurrentSchedule}
-          disabled={saving || !travelPeriod || savedSchedules.length === 0}
-          className="w-full bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          <FiCalendar className="text-lg" />
-          {saving ? "저장 중..." : "현재 일정 저장하기"}
-        </button>
-        {!travelPeriod && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            여행 기간을 설정한 후 일정을 저장할 수 있습니다.
-          </p>
-        )}
-        {travelPeriod && savedSchedules.length === 0 && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            저장할 일정이 없습니다.
-          </p>
-        )}
-      </div>
-
       {/* 저장된 일정 목록 */}
       <div>
         <h3 className="text-lg font-bold text-gray-900 mb-4">저장된 일정</h3>
@@ -1013,7 +938,7 @@ function RecoveryCardComponent({
                     : "bg-yellow-200 text-yellow-800"
                 }`}
               >
-                회복 기간
+                회복 기간{rec.recoveryDayIndex ? ` D+${rec.recoveryDayIndex}` : ""}
               </span>
               {isOutsideTravel && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-300 text-red-950 whitespace-nowrap">
@@ -1504,7 +1429,7 @@ export default function MySchedulePage() {
                   // 완전히 비우기 (예시 데이터도 제거)
                   setTravelPeriod(null);
                   setSavedSchedules([]);
-                  // 이벤트 발생
+                  // 이벤트 발생 (홈과 동기화)
                   window.dispatchEvent(new Event("scheduleAdded"));
                   window.dispatchEvent(new Event("travelPeriodUpdated"));
                   alert("데이터가 삭제되었습니다.");
@@ -1563,6 +1488,86 @@ export default function MySchedulePage() {
       {/* Content */}
       {activeTab === "schedule" && (
         <div className="px-4 py-4">
+          {/* 저장하기 버튼 - 여행 일정 탭 상단에 배치 */}
+          <div className="mb-4">
+            <button
+              onClick={async () => {
+                if (!travelPeriod) {
+                  alert("여행 기간을 먼저 설정해주세요.");
+                  return;
+                }
+
+                if (savedSchedules.length === 0) {
+                  alert("저장할 일정이 없습니다.");
+                  return;
+                }
+
+                // 일정 기간 포맷팅 (예: "25.12.14~25.12.20")
+                const formatPeriod = (start: string, end: string) => {
+                  const startDate = new Date(start);
+                  const endDate = new Date(end);
+                  const startStr = `${String(startDate.getFullYear()).slice(-2)}.${String(
+                    startDate.getMonth() + 1
+                  ).padStart(2, "0")}.${String(startDate.getDate()).padStart(2, "0")}`;
+                  const endStr = `${String(endDate.getFullYear()).slice(-2)}.${String(
+                    endDate.getMonth() + 1
+                  ).padStart(2, "0")}.${String(endDate.getDate()).padStart(2, "0")}`;
+                  return `${startStr}~${endStr}`;
+                };
+
+                const periodStr = formatPeriod(travelPeriod.start, travelPeriod.end);
+                const treatmentIds = savedSchedules
+                  .map((s) => s.treatmentId)
+                  .filter((id): id is number => id !== undefined && id !== null);
+
+                if (treatmentIds.length === 0) {
+                  alert("저장할 시술이 없습니다.");
+                  return;
+                }
+
+                try {
+                  const result = await saveSchedule(periodStr, treatmentIds);
+                  if (result.success) {
+                    alert("일정이 저장되었습니다!");
+                  } else {
+                    // 에러 메시지 개선
+                    const errorMessage = result.error || "일정 저장에 실패했습니다.";
+                    if (errorMessage.includes("saved_schedules") || errorMessage.includes("table")) {
+                      alert("일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.");
+                    } else if (errorMessage.includes("로그인")) {
+                      alert("일정을 저장하려면 로그인이 필요합니다.");
+                    } else {
+                      alert(errorMessage);
+                    }
+                  }
+                } catch (error: any) {
+                  console.error("일정 저장 실패:", error);
+                  const errorMessage = error?.message || "일정 저장에 실패했습니다.";
+                  if (errorMessage.includes("saved_schedules") || errorMessage.includes("table")) {
+                    alert("일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.");
+                  } else {
+                    alert(errorMessage);
+                  }
+                }
+              }}
+              disabled={!travelPeriod || savedSchedules.length === 0}
+              className="w-full bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <FiCalendar className="text-lg" />
+              현재 일정 저장하기
+            </button>
+            {!travelPeriod && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                여행 기간을 설정한 후 일정을 저장할 수 있습니다.
+              </p>
+            )}
+            {travelPeriod && savedSchedules.length === 0 && (
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                저장할 일정이 없습니다.
+              </p>
+            )}
+          </div>
+
           {/* 캘린더 헤더 */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -1777,7 +1782,7 @@ export default function MySchedulePage() {
                                 <span>회복 기간: {proc.recoveryDays}일</span>
                               </div>
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap bg-primary-main/20 text-primary-main">
-                                시술 일자
+                                시술 일자 D-DAY
                               </span>
                             </div>
                           )}
@@ -1793,8 +1798,40 @@ export default function MySchedulePage() {
                   );
                 })}
 
-                {/* 비슷한 시술 추천 섹션 - 카드 밖으로 분리 */}
-                {/* 연관 시술 추천 큰 제목 (맨 위에 하나만) */}
+                {/* 회복 기간 카드 (yellow 계열 배경) */}
+                {selectedRecovery.map((rec, idx) => {
+                  // 선택한 날짜가 여행 일정 밖인지 여부를 boolean으로 변환
+                  const isOutsideTravel = !!(
+                    selectedDateObj && isRecoveryOutsideTravel(selectedDateObj)
+                  );
+
+                  const handleDeleteRecovery = (id: number) => {
+                    const schedules = JSON.parse(
+                      localStorage.getItem("schedules") || "[]"
+                    );
+                    const updatedSchedules = schedules.filter(
+                      (s: any) => s.id !== id
+                    );
+                    localStorage.setItem(
+                      "schedules",
+                      JSON.stringify(updatedSchedules)
+                    );
+                    window.dispatchEvent(new Event("scheduleAdded"));
+                    alert("일정이 삭제되었습니다.");
+                  };
+
+                  return (
+                    <RecoveryCardComponent
+                      key={`recovery-${rec.id}-${idx}`}
+                      rec={rec}
+                      isOutsideTravel={isOutsideTravel}
+                      onDelete={handleDeleteRecovery}
+                    />
+                  );
+                })}
+
+                {/* 연관 시술 추천 섹션 - 회복 기간 카드 다음에 표시 (후순위) */}
+                {/* 연관 시술 추천 큰 제목 */}
                 {selectedProcedures.some((proc) => proc.categorySmall) && (
                   <div className="mt-6 mb-4">
                     <h3 className="text-lg font-bold text-gray-900">
@@ -1827,38 +1864,6 @@ export default function MySchedulePage() {
                         travelPeriod={travelPeriod}
                       />
                     </div>
-                  );
-                })}
-
-                {/* 회복 기간 카드 (red 계열 배경) */}
-                {selectedRecovery.map((rec, idx) => {
-                  // 선택한 날짜가 여행 일정 밖인지 여부를 boolean으로 변환
-                  const isOutsideTravel = !!(
-                    selectedDateObj && isRecoveryOutsideTravel(selectedDateObj)
-                  );
-
-                  const handleDeleteRecovery = (id: number) => {
-                    const schedules = JSON.parse(
-                      localStorage.getItem("schedules") || "[]"
-                    );
-                    const updatedSchedules = schedules.filter(
-                      (s: any) => s.id !== id
-                    );
-                    localStorage.setItem(
-                      "schedules",
-                      JSON.stringify(updatedSchedules)
-                    );
-                    window.dispatchEvent(new Event("scheduleAdded"));
-                    alert("일정이 삭제되었습니다.");
-                  };
-
-                  return (
-                    <RecoveryCardComponent
-                      key={`recovery-${rec.id}-${idx}`}
-                      rec={rec}
-                      isOutsideTravel={isOutsideTravel}
-                      onDelete={handleDeleteRecovery}
-                    />
                   );
                 })}
               </div>

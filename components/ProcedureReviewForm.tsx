@@ -247,7 +247,12 @@ export default function ProcedureReviewForm({
       let imageUrls: string[] | undefined = undefined;
       if (imageFiles.length > 0 && result.id) {
         try {
+          console.log("=== 이미지 업로드 시작 ===");
+          console.log("imageFiles 개수:", imageFiles.length);
+          console.log("reviewId:", result.id);
           imageUrls = await uploadReviewImages(imageFiles, result.id);
+          console.log("=== 이미지 업로드 완료 ===");
+          console.log("업로드된 이미지 URL들:", imageUrls);
 
           // 업로드된 이미지 URL로 후기 업데이트
           const { error: updateError } = await supabase

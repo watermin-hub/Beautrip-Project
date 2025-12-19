@@ -25,7 +25,7 @@ export default function CommunityHeader({
 
   return (
     <>
-      <div className="fixed top-[48px] left-1/2 transform -translate-x-1/2 w-full max-w-md z-20 bg-white">
+      <div className="fixed top-[48px] left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 bg-white border-b border-gray-100 shadow-sm">
         {/* Tabs - 아이콘 2개를 우측에 배치 */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">

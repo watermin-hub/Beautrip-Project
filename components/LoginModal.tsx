@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiGlobe, FiEye, FiEyeOff } from "react-icons/fi";
 import Image from "next/image";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
@@ -27,6 +28,7 @@ export default function LoginModal({
   onClose,
   onLoginSuccess,
 }: LoginModalProps) {
+  const router = useRouter();
   const [showIdLogin, setShowIdLogin] = useState(false);
   const [showOtherMethods, setShowOtherMethods] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -144,11 +146,16 @@ export default function LoginModal({
         }
       }
 
+      // display_name과 nickname 설정
+      const displayName =
+        user.user_metadata?.full_name || user.user_metadata?.name || null;
+      const email = user.email || "";
+
       const profileData: any = {
         user_id: user.id,
         provider: provider,
-        display_name:
-          user.user_metadata?.full_name || user.user_metadata?.name || null,
+        display_name: displayName,
+        nickname: displayName || (email ? email.split("@")[0] : null), // ✅ nickname 추가 (display_name 우선, 없으면 이메일 앞부분)
         avatar_url:
           user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
         preferred_language: "KR",
@@ -221,8 +228,10 @@ export default function LoginModal({
       console.log("프로필 저장 성공:", insertedProfile);
 
       // 로그인 성공 처리
+      // nickname 우선 사용 (백엔드 트리거로 자동 채워짐)
       const userInfo = {
         username:
+          insertedProfile?.nickname ||
           insertedProfile?.display_name ||
           user.user_metadata?.full_name ||
           user.user_metadata?.name ||
@@ -614,8 +623,7 @@ export default function LoginModal({
               <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
-                    onClose();
-                    window.location.href = "/signup";
+                    router.push("/signup");
                   }}
                   className="text-gray-600 text-sm hover:text-primary-main transition-colors"
                 >
@@ -717,8 +725,7 @@ export default function LoginModal({
               <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-200">
                 <button
                   onClick={() => {
-                    onClose();
-                    window.location.href = "/signup";
+                    router.push("/signup");
                   }}
                   className="text-gray-600 text-sm hover:text-primary-main transition-colors"
                 >
