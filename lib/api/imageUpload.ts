@@ -54,7 +54,11 @@ export async function uploadReviewImage(
       console.error("=== 업로드 에러 상세 ===");
       console.error("uploadError raw =", uploadError);
       console.error("uploadError message =", uploadError.message);
-      console.error("uploadError statusCode =", uploadError.statusCode);
+      const statusCode = (uploadError as unknown as { statusCode?: number })
+        ?.statusCode;
+      if (statusCode !== undefined) {
+        console.error("uploadError statusCode =", statusCode);
+      }
       console.error("uploadError json =", JSON.stringify(uploadError, null, 2));
       throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
     }
