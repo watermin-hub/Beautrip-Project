@@ -19,12 +19,11 @@ export default function AISkinAnalysisResultPageRoute() {
 
         if (filePath) {
           // Supabase Storage에서 공개 URL 가져오기
-          const { data, error } = supabase.storage
+          const { data } = supabase.storage
             .from("face-images")
             .getPublicUrl(filePath);
 
           console.log("Supabase URL 데이터:", data);
-          console.log("Supabase URL 에러:", error);
 
           if (data?.publicUrl) {
             console.log("공개 URL:", data.publicUrl);
