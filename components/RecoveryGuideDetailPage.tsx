@@ -23,7 +23,7 @@ export default function RecoveryGuideDetailPage({
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-100">
+      <div className="sticky top-[48px] z-[101] bg-white border-b border-gray-100">
         <div className="flex items-center gap-3 px-4 py-4">
           <button
             onClick={() => router.back()}
@@ -38,7 +38,7 @@ export default function RecoveryGuideDetailPage({
       </div>
 
       {/* Content */}
-      <div className="px-4 py-6 pb-20">
+      <div className="px-4 py-6 pb-20 pt-[96px]">
         {/* Badge & Recommended */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">

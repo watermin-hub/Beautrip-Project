@@ -9,7 +9,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 1500); // 1.5초 후 스플래시 종료
+    }, 1000); // 1초 후 스플래시 종료
 
     return () => clearTimeout(timer);
   }, []);
@@ -19,7 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-md bg-white min-h-screen shadow-lg relative overflow-hidden">
         {children}
         {showSplash && (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white">
+          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
             <img
               src="/beautrip-logo.png"
               alt="BeauTrip"

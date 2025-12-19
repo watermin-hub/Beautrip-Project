@@ -199,16 +199,7 @@ function SimilarProcedureRecommendation({
   // 비슷한 시술 로드
   useEffect(() => {
     const loadSimilarTreatments = async () => {
-      console.log("🔍 [연관 시술 추천] 로드 시작:", {
-        categorySmall,
-        currentProcedureId,
-        currentProcedureName,
-      });
-
       if (!categorySmall) {
-        console.warn(
-          "⚠️ [연관 시술 추천] categorySmall이 없어서 추천을 표시하지 않습니다."
-        );
         setSimilarTreatments([]);
         return;
       }
@@ -217,64 +208,9 @@ function SimilarProcedureRecommendation({
       try {
         // 같은 소분류의 시술들을 로드
         const trimmedCategorySmall = categorySmall.trim();
-        console.log("📡 [연관 시술 추천] API 호출:", {
-          original: categorySmall,
-          trimmed: trimmedCategorySmall,
-        });
-
-        // 먼저 필터 없이 전체 데이터에서 "승모근보톡스" 관련 값 찾기 (디버깅용)
-        if (
-          trimmedCategorySmall.includes("승모근") ||
-          trimmedCategorySmall.includes("보톡스")
-        ) {
-          const debugResult = await loadTreatmentsPaginated(1, 200, {});
-          const relatedTreatments = debugResult.data.filter((t: any) => {
-            const cat = (t.category_small || "").toLowerCase();
-            return cat.includes("승모근") || cat.includes("보톡스");
-          });
-          console.log("🔍 [디버깅] 승모근보톡스 관련 시술 찾기:", {
-            total: debugResult.data.length,
-            relatedCount: relatedTreatments.length,
-            relatedCategorySmalls: Array.from(
-              new Set(relatedTreatments.map((t: any) => t.category_small))
-            ),
-            sampleRelated: relatedTreatments.slice(0, 5).map((t: any) => ({
-              id: t.treatment_id,
-              name: t.treatment_name,
-              category_small: t.category_small,
-            })),
-          });
-        }
 
         const result = await loadTreatmentsPaginated(1, 100, {
           categorySmall: trimmedCategorySmall,
-        });
-        console.log("📥 [연관 시술 추천] API 응답:", {
-          total: result.data.length,
-          requestedCategorySmall: trimmedCategorySmall,
-          foundCategorySmalls: Array.from(
-            new Set(
-              result.data.map((t: any) => t.category_small).filter(Boolean)
-            )
-          ),
-          allUniqueCategorySmalls: Array.from(
-            new Set(
-              result.data
-                .map((t: any) => ({
-                  original: t.category_small,
-                  trimmed: t.category_small?.trim(),
-                  lower: t.category_small?.toLowerCase().trim(),
-                }))
-                .filter((c: any) => c.original)
-            )
-          ),
-          sampleData: result.data.slice(0, 10).map((t: any) => ({
-            id: t.treatment_id,
-            name: t.treatment_name,
-            category_small: t.category_small,
-            category_small_trimmed: t.category_small?.trim(),
-            category_mid: t.category_mid,
-          })),
         });
 
         // 이미 일정에 추가된 시술 제외
@@ -311,50 +247,11 @@ function SimilarProcedureRecommendation({
             treatment.treatment_name !== currentProcedureName &&
             treatmentCategorySmall === normalizedCategorySmall;
 
-          if (!matches && treatment.treatment_id) {
-            console.log("❌ [필터링 제외]", {
-              treatment_id: treatment.treatment_id,
-              treatment_name: treatment.treatment_name,
-              category_small: treatment.category_small,
-              normalized: treatmentCategorySmall,
-              expected: normalizedCategorySmall,
-              match: treatmentCategorySmall === normalizedCategorySmall,
-            });
-          }
-
           return matches;
-        });
-
-        console.log("🔍 [연관 시술 추천] 필터링 결과:", {
-          beforeFilter: result.data.length,
-          afterFilter: filtered.length,
-          requestedCategorySmall: categorySmall,
-          normalizedRequested: normalizeCategorySmall(categorySmall),
-          allCategorySmallsInResult: Array.from(
-            new Set(
-              result.data.map((t: any) => t.category_small).filter(Boolean)
-            )
-          ),
-          matchedCategorySmalls: Array.from(
-            new Set(filtered.map((t: any) => t.category_small))
-          ),
-          sampleFiltered: filtered.slice(0, 3).map((t: any) => ({
-            id: t.treatment_id,
-            name: t.treatment_name,
-            category_small: t.category_small,
-            normalized: normalizeCategorySmall(t.category_small),
-          })),
         });
 
         // 최대 3개만 표시
         const limitedTreatments = filtered.slice(0, 3);
-        console.log("✅ [연관 시술 추천] 최종 추천 시술:", {
-          count: limitedTreatments.length,
-          treatments: limitedTreatments.map((t: any) => ({
-            id: t.treatment_id,
-            name: t.treatment_name,
-          })),
-        });
         setSimilarTreatments(limitedTreatments);
 
         // 회복 기간 정보 로드
@@ -938,7 +835,7 @@ function RecoveryCardComponent({
           }
         })
         .catch((error) => {
-          console.warn("회복 기간 정보 로드 실패:", error);
+          // 회복 기간 정보 로드 실패 시 무시
         })
         .finally(() => {
           setLoadingRecoveryText(false);
@@ -953,19 +850,11 @@ function RecoveryCardComponent({
     try {
       setIsNavigating(true);
 
-      console.log("🔍 회복 가이드 찾기 시작:", {
-        categorySmall: rec.categorySmall,
-        categoryMid: rec.categoryMid,
-        treatmentId: rec.treatmentId,
-        procedureName: rec.procedureName,
-      });
-
       // categorySmall이 있으면 바로 사용
       let categorySmall = rec.categorySmall;
 
       // categorySmall이 없고 treatmentId가 있으면 원본 시술 데이터에서 가져오기
       if (!categorySmall && rec.treatmentId) {
-        console.log("📦 treatmentId로 category_small 찾는 중...");
         const { loadTreatmentsPaginated } = await import(
           "@/lib/api/beautripApi"
         );
@@ -976,24 +865,25 @@ function RecoveryCardComponent({
           null;
         if (treatment?.category_small) {
           categorySmall = treatment.category_small;
-          console.log("✅ category_small 찾음:", categorySmall);
-        } else {
-          console.warn("⚠️ treatment에서 category_small을 찾을 수 없음");
         }
       }
 
       // categorySmall이 있으면 categorySmall로 찾기
       if (categorySmall) {
-        console.log("🔍 categorySmall로 회복 가이드 찾기:", categorySmall);
         const { findRecoveryGuideByCategorySmall } = await import(
           "@/lib/api/beautripApi"
         );
+        // 현재 언어 가져오기 (클라이언트 사이드에서만 가능)
+        const currentLanguage =
+          typeof window !== "undefined"
+            ? (localStorage.getItem("language") as string) || "KR"
+            : "KR";
         const recoveryGuideId = await findRecoveryGuideByCategorySmall(
-          categorySmall
+          categorySmall,
+          currentLanguage
         );
 
         if (recoveryGuideId) {
-          console.log("✅ categorySmall로 회복 가이드 찾음:", recoveryGuideId);
           router.push(`/community/recovery-guide/${recoveryGuideId}`);
           return;
         }
@@ -1001,10 +891,6 @@ function RecoveryCardComponent({
 
       // categorySmall이 없거나 실패했고 categoryMid가 있으면 categoryMid로 category_small 찾기 시도
       if (!categorySmall && rec.categoryMid) {
-        console.log(
-          "🔄 categoryMid로 category_small 찾기 시도:",
-          rec.categoryMid
-        );
         const { getCategorySmallByCategoryMid } = await import(
           "@/lib/api/beautripApi"
         );
@@ -1013,7 +899,6 @@ function RecoveryCardComponent({
         );
         if (foundCategorySmall) {
           categorySmall = foundCategorySmall;
-          console.log("✅ categoryMid로 category_small 찾음:", categorySmall);
 
           // 찾은 categorySmall로 회복 가이드 찾기
           const { findRecoveryGuideByCategorySmall } = await import(
@@ -1023,17 +908,12 @@ function RecoveryCardComponent({
             categorySmall
           );
           if (recoveryGuideId) {
-            console.log(
-              "✅ categorySmall로 회복 가이드 찾음:",
-              recoveryGuideId
-            );
             router.push(`/community/recovery-guide/${recoveryGuideId}`);
             return;
           }
         }
 
         // categoryMid로 직접 회복 가이드 찾기 시도 (fallback)
-        console.log("🔄 categoryMid로 직접 회복 가이드 찾기 시도");
         const { getRecoveryGuideIdByCategory } = await import(
           "@/lib/api/beautripApi"
         );
@@ -1041,17 +921,12 @@ function RecoveryCardComponent({
           rec.categoryMid
         );
         if (recoveryGuideIdByCategory) {
-          console.log(
-            "✅ categoryMid로 회복 가이드 찾음:",
-            recoveryGuideIdByCategory
-          );
           router.push(`/community/recovery-guide/${recoveryGuideIdByCategory}`);
           return;
         }
       }
 
       // 모든 방법 실패
-      console.error("❌ 모든 방법으로 회복 가이드를 찾을 수 없음");
       alert(
         `해당 시술에 대한 회복 가이드를 찾을 수 없습니다.\n시술명: ${
           rec.procedureName

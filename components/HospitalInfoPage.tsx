@@ -54,17 +54,6 @@ export default function HospitalInfoPage() {
       const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
       const hasReview = Array.isArray(reviews) && reviews.length > 0;
       setHasWrittenReview(hasReview);
-      // 디버깅: 리뷰 작성 여부 확인
-      console.log(
-        "[HospitalInfoPage] 리뷰 작성 여부:",
-        hasReview,
-        "리뷰 개수:",
-        reviews.length,
-        "hospitals.length:",
-        hospitals.length,
-        "loading:",
-        loading
-      );
     } catch (error) {
       console.error("[HospitalInfoPage] localStorage 읽기 오류:", error);
       setHasWrittenReview(false);
@@ -310,7 +299,7 @@ export default function HospitalInfoPage() {
   return (
     <div className="bg-white">
       {/* 필터 섹션 */}
-      <div className="sticky top-[96px] z-30 bg-white border-b border-gray-100 px-4 py-3">
+      <div className="sticky top-[160px] z-30 bg-white border-b border-gray-100 px-4 py-3">
         <AutocompleteInput
           value={searchTerm}
           onChange={handleSearchChange}

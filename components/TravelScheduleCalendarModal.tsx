@@ -50,6 +50,29 @@ export default function TravelScheduleCalendarModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]); // onModalStateChange는 의존성에서 제외 (무한 루프 방지)
 
+  // 모달이 열릴 때 body scroll 막기 및 전역 이벤트 발생
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      // 모달이 열렸음을 알리는 이벤트 발생
+      window.dispatchEvent(
+        new CustomEvent("calendarModalOpen", { detail: { isOpen: true } })
+      );
+    } else {
+      document.body.style.overflow = "";
+      window.dispatchEvent(
+        new CustomEvent("calendarModalOpen", { detail: { isOpen: false } })
+      );
+    }
+    return () => {
+      document.body.style.overflow = "";
+      window.dispatchEvent(
+        new CustomEvent("calendarModalOpen", { detail: { isOpen: false } })
+      );
+    };
+  }, [isOpen]);
+
+  // early return은 모든 hooks 호출 후에만 가능
   if (!isOpen) return null;
 
   const year = currentDate.getFullYear();
@@ -199,144 +222,152 @@ export default function TravelScheduleCalendarModal({
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl w-full max-w-xs mx-4 max-h-[85vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-3 py-3 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold text-gray-900">
-            {t("calendar.title")}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiX className="text-gray-700 text-xl" />
-          </button>
-        </div>
-
-        {/* Calendar */}
-        <div className="p-2.5">
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-2">
+    <>
+      {/* 모달 배경 - 헤더와 네비게이션을 포함한 전체 화면 덮기 */}
+      <div className="fixed inset-0 z-[70] bg-black/50" onClick={handleClose} />
+      {/* 모달 컨텐츠 */}
+      <div className="fixed inset-0 z-[71] flex items-center justify-center pointer-events-none">
+        <div
+          className="bg-white rounded-2xl w-full max-w-xs mx-4 max-h-[85vh] overflow-y-auto pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-3 py-3 flex items-center justify-between z-10">
+            <h2 className="text-lg font-bold text-gray-900">
+              {t("calendar.title")}
+            </h2>
             <button
-              onClick={goToPreviousMonth}
+              onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <FiChevronLeft className="text-gray-700 text-xl" />
-            </button>
-            <h3 className="text-sm font-semibold text-gray-900">
-              {year}년 {monthNames[month]}
-            </h3>
-            <button
-              onClick={goToNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <FiChevronRight className="text-gray-700 text-xl" />
+              <FiX className="text-gray-700 text-xl" />
             </button>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {/* Day Names Header */}
-            <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
-              {dayNames.map((day) => (
-                <div
-                  key={day}
-                  className="py-1 text-center text-[9px] font-semibold text-gray-600"
-                >
-                  {day}
-                </div>
-              ))}
+          {/* Calendar */}
+          <div className="p-2.5">
+            {/* Month Navigation */}
+            <div className="flex items-center justify-between mb-2">
+              <button
+                onClick={goToPreviousMonth}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FiChevronLeft className="text-gray-700 text-xl" />
+              </button>
+              <h3 className="text-sm font-semibold text-gray-900">
+                {year}년 {monthNames[month]}
+              </h3>
+              <button
+                onClick={goToNextMonth}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FiChevronRight className="text-gray-700 text-xl" />
+              </button>
             </div>
 
-            {/* Date Grid */}
-            <div className="grid grid-cols-7">
-              {calendarDays.map((date, index) => {
-                if (!date)
-                  return <div key={index} className="aspect-square"></div>;
-
-                const isCurrentMonth = date.getMonth() === month;
-                const isTodayDate = isToday(date);
-                const inRange = isInRange(date);
-                const isStart = isStartDate(date);
-                const isEnd = isEndDate(date);
-
-                // 과거 날짜는 비활성화
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const isPast = date < today;
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => !isPast && handleDateClick(date)}
-                    disabled={isPast}
-                    className={`aspect-square border-r border-b border-gray-100 p-0.5 transition-colors relative ${
-                      !isCurrentMonth
-                        ? "text-gray-300 bg-gray-50"
-                        : isPast
-                        ? "text-gray-300 bg-gray-50 cursor-not-allowed"
-                        : isStart || isEnd
-                        ? "bg-primary-main text-white font-semibold"
-                        : inRange
-                        ? "bg-primary-main/20 text-primary-main font-semibold"
-                        : isTodayDate
-                        ? "bg-primary-light/20 text-primary-main font-semibold"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
+            {/* Calendar Grid */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* Day Names Header */}
+              <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                {dayNames.map((day) => (
+                  <div
+                    key={day}
+                    className="py-1 text-center text-[9px] font-semibold text-gray-600"
                   >
-                    <div className="flex items-center justify-center h-full">
-                      <span className="text-xs">{date.getDate()}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Selected Date Range Display */}
-          <div className="mt-2.5 space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 p-2 bg-primary-light/10 rounded-lg">
-                <p className="text-[10px] text-gray-600 mb-0.5">
-                  {t("calendar.startDate")}
-                </p>
-                <p className="text-xs font-semibold text-primary-main">
-                  {tempStartDate || t("calendar.notSelected")}
-                </p>
+                    {day}
+                  </div>
+                ))}
               </div>
-              <div className="flex-1 p-2 bg-primary-light/10 rounded-lg">
-                <p className="text-[10px] text-gray-600 mb-0.5">
-                  {t("calendar.endDate")}
-                </p>
-                <p className="text-xs font-semibold text-primary-main">
-                  {tempEndDate || t("calendar.notSelected")}
-                </p>
+
+              {/* Date Grid */}
+              <div className="grid grid-cols-7">
+                {calendarDays.map((date, index) => {
+                  if (!date)
+                    return <div key={index} className="aspect-square"></div>;
+
+                  const isCurrentMonth = date.getMonth() === month;
+                  const isTodayDate = isToday(date);
+                  const inRange = isInRange(date);
+                  const isStart = isStartDate(date);
+                  const isEnd = isEndDate(date);
+
+                  // 과거 날짜는 비활성화
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isPast = date < today;
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => !isPast && handleDateClick(date)}
+                      disabled={isPast}
+                      className={`aspect-square border-r border-b border-gray-100 p-0.5 transition-colors relative ${
+                        !isCurrentMonth
+                          ? "text-gray-300 bg-gray-50"
+                          : isPast
+                          ? "text-gray-300 bg-gray-50 cursor-not-allowed"
+                          : isStart || isEnd
+                          ? "bg-primary-main text-white font-semibold"
+                          : inRange
+                          ? "bg-primary-main/20 text-primary-main font-semibold"
+                          : isTodayDate
+                          ? "bg-primary-light/20 text-primary-main font-semibold"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center h-full">
+                        <span className="text-xs">{date.getDate()}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* 확인 버튼 (시작일과 종료일이 모두 선택된 경우 표시) */}
-            {tempStartDate && tempEndDate && (
-              <button
-                onClick={handleConfirm}
-                className="w-full bg-primary-main hover:bg-[#2DB8A0] text-white py-2 rounded-lg text-xs font-semibold transition-colors"
-              >
-                {t("common.confirm")}
-              </button>
-            )}
+            {/* Selected Date Range Display */}
+            <div className="mt-2.5 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 p-2 bg-primary-light/10 rounded-lg">
+                  <p className="text-[10px] text-gray-600 mb-0.5">
+                    {t("calendar.startDate")}
+                  </p>
+                  <p className="text-xs font-semibold text-primary-main">
+                    {tempStartDate || t("calendar.notSelected")}
+                  </p>
+                </div>
+                <div className="flex-1 p-2 bg-primary-light/10 rounded-lg">
+                  <p className="text-[10px] text-gray-600 mb-0.5">
+                    {t("calendar.endDate")}
+                  </p>
+                  <p className="text-xs font-semibold text-primary-main">
+                    {tempEndDate || t("calendar.notSelected")}
+                  </p>
+                </div>
+              </div>
 
-            {tempStartDate && !tempEndDate && (
-              <button
-                onClick={() => {}}
-                disabled
-                className="w-full bg-gray-200 text-gray-500 py-2 rounded-lg text-xs font-semibold transition-colors cursor-not-allowed"
-              >
-                {t("calendar.selectEndDate")}
-              </button>
-            )}
+              {/* 확인 버튼 (시작일과 종료일이 모두 선택된 경우 표시) */}
+              {tempStartDate && tempEndDate && (
+                <button
+                  onClick={handleConfirm}
+                  className="w-full bg-primary-main hover:bg-[#2DB8A0] text-white py-2 rounded-lg text-xs font-semibold transition-colors"
+                >
+                  {t("common.confirm")}
+                </button>
+              )}
+
+              {tempStartDate && !tempEndDate && (
+                <button
+                  onClick={() => {}}
+                  disabled
+                  className="w-full bg-gray-200 text-gray-500 py-2 rounded-lg text-xs font-semibold transition-colors cursor-not-allowed"
+                >
+                  {t("calendar.selectEndDate")}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

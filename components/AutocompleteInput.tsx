@@ -70,7 +70,9 @@ export default function AutocompleteInput({
   };
 
   // 한글 입력 조합 종료
-  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+  const handleCompositionEnd = (
+    e: React.CompositionEvent<HTMLInputElement>
+  ) => {
     setIsComposing(false);
     // 조합이 완료되면 최종 값을 onChange로 전달 (이미 handleInputChange에서 호출되지만 확실히 하기 위해)
     onChange(e.currentTarget.value);
@@ -137,7 +139,7 @@ export default function AutocompleteInput({
             }
           }}
           placeholder={placeholder}
-          className={`w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main ${className}`}
+          className={`w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main touch-manipulation ${className}`}
         />
       </div>
 
@@ -145,7 +147,7 @@ export default function AutocompleteInput({
       {showSuggestions && suggestions.length > 0 && (
         <div
           ref={suggestionsRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hide"
         >
           {suggestions.map((suggestion, index) => (
             <button
@@ -153,13 +155,13 @@ export default function AutocompleteInput({
               type="button"
               onClick={() => handleSuggestionClick(suggestion)}
               onMouseEnter={() => setFocusedIndex(index)}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+              className={`w-full text-left px-4 py-3 text-base hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation min-h-[44px] flex items-center ${
                 index === focusedIndex ? "bg-gray-50" : ""
               }`}
             >
               <div className="flex items-center gap-2">
-                <FiSearch className="text-gray-400 text-xs" />
-                <span>{suggestion}</span>
+                <FiSearch className="text-gray-400 text-sm flex-shrink-0" />
+                <span className="text-base">{suggestion}</span>
               </div>
             </button>
           ))}
@@ -168,4 +170,3 @@ export default function AutocompleteInput({
     </div>
   );
 }
-

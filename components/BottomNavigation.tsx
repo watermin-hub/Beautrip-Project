@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { FiHome, FiCompass, FiUsers, FiCalendar, FiUser } from "react-icons/fi";
@@ -17,12 +18,31 @@ interface BottomNavigationProps {
   disabled?: boolean;
 }
 
-export default function BottomNavigation({ disabled = false }: BottomNavigationProps) {
+export default function BottomNavigation({
+  disabled = false,
+}: BottomNavigationProps) {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleModalStateChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsCalendarModalOpen(customEvent.detail?.isOpen || false);
+    };
+
+    window.addEventListener("calendarModalOpen", handleModalStateChange);
+    return () => {
+      window.removeEventListener("calendarModalOpen", handleModalStateChange);
+    };
+  }, []);
 
   return (
-    <nav className={`fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 z-50 ${disabled ? "pointer-events-none" : ""}`}>
+    <nav
+      className={`fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 ${
+        isCalendarModalOpen || disabled ? "z-[30] pointer-events-none" : "z-50"
+      }`}
+    >
       <div className="flex justify-around items-center py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -33,10 +53,10 @@ export default function BottomNavigation({ disabled = false }: BottomNavigationP
               key={item.path}
               href={item.path}
               className={`flex flex-col items-center justify-center gap-1 py-1 px-2 min-w-0 flex-1 transition-colors ${
-                disabled 
-                  ? "text-gray-300 cursor-not-allowed" 
-                  : isActive 
-                  ? "text-primary-main" 
+                disabled
+                  ? "text-gray-300 cursor-not-allowed"
+                  : isActive
+                  ? "text-primary-main"
                   : "text-gray-500"
               }`}
             >
@@ -44,8 +64,8 @@ export default function BottomNavigation({ disabled = false }: BottomNavigationP
                 className={`text-xl ${
                   disabled
                     ? "text-gray-300"
-                    : isActive 
-                    ? "text-primary-main" 
+                    : isActive
+                    ? "text-primary-main"
                     : "text-gray-500"
                 }`}
               />
@@ -53,8 +73,8 @@ export default function BottomNavigation({ disabled = false }: BottomNavigationP
                 className={`text-xs whitespace-nowrap ${
                   disabled
                     ? "text-gray-300"
-                    : isActive 
-                    ? "text-primary-main font-medium" 
+                    : isActive
+                    ? "text-primary-main font-medium"
                     : "text-gray-500"
                 }`}
               >

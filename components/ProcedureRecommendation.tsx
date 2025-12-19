@@ -452,6 +452,12 @@ export default function ProcedureRecommendation({
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // 중분류 카테고리 표시 개수 (초기 5개)
   const [visibleCategoriesCount, setVisibleCategoriesCount] = useState(5);
+  // 이전 scheduleData를 추적하여 초기 로드인지 카테고리 변경인지 구분
+  const prevScheduleDataRef = useRef<TravelScheduleData | null>(null);
+  // 이전 selectedCategoryId를 추적
+  const prevSelectedCategoryIdRef = useRef<string | null | undefined>(
+    undefined
+  );
 
   // 중분류 중복 확인을 위한 로그 (개발용)
   useEffect(() => {
@@ -500,7 +506,30 @@ export default function ProcedureRecommendation({
   useEffect(() => {
     async function fetchData() {
       try {
-        setLoading(true);
+        // scheduleData가 변경되었는지 확인 (초기 로드 또는 일정 변경)
+        const isScheduleDataChanged =
+          prevScheduleDataRef.current === null ||
+          prevScheduleDataRef.current.travelPeriod.start !==
+            scheduleData.travelPeriod.start ||
+          prevScheduleDataRef.current.travelPeriod.end !==
+            scheduleData.travelPeriod.end;
+
+        // 카테고리만 변경되었는지 확인
+        const isCategoryOnlyChanged =
+          prevSelectedCategoryIdRef.current !== undefined &&
+          prevSelectedCategoryIdRef.current !== selectedCategoryId &&
+          !isScheduleDataChanged;
+
+        // 초기 로드 또는 일정 변경 시에만 로딩 상태 표시
+        // 카테고리만 변경될 때는 로딩 상태를 전혀 변경하지 않음
+        const isInitialLoad = recommendations.length === 0;
+        if (
+          (isInitialLoad || isScheduleDataChanged) &&
+          !isCategoryOnlyChanged
+        ) {
+          setLoading(true);
+        }
+
         // selectedCategoryId를 한국어 카테고리 이름으로 변환
         let categoryForLoad: string | undefined;
         if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
@@ -570,7 +599,24 @@ export default function ProcedureRecommendation({
       } catch (error) {
         console.error("데이터 로드 실패:", error);
       } finally {
-        setLoading(false);
+        // 카테고리만 변경되었을 때는 로딩 상태를 변경하지 않음
+        const isScheduleDataChanged =
+          prevScheduleDataRef.current === null ||
+          prevScheduleDataRef.current.travelPeriod.start !==
+            scheduleData.travelPeriod.start ||
+          prevScheduleDataRef.current.travelPeriod.end !==
+            scheduleData.travelPeriod.end;
+        const isCategoryOnlyChanged =
+          prevSelectedCategoryIdRef.current !== undefined &&
+          prevSelectedCategoryIdRef.current !== selectedCategoryId &&
+          !isScheduleDataChanged;
+
+        if (!isCategoryOnlyChanged) {
+          setLoading(false);
+        }
+        // scheduleData와 selectedCategoryId 업데이트
+        prevScheduleDataRef.current = scheduleData;
+        prevSelectedCategoryIdRef.current = selectedCategoryId;
       }
     }
 

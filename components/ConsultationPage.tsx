@@ -27,10 +27,10 @@ export default function ConsultationPage() {
   };
 
   return (
-    <div className="px-4 py-3 space-y-3">
-      {/* 카테고리 탭 버튼 */}
-      <div className="mb-3">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2">
+    <div className="pt-4">
+      {/* 카테고리 탭 버튼 - sticky로 커뮤니티 헤더 아래 고정 */}
+      <div className="sticky top-[104px] z-30 bg-white px-4 py-1">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {CONCERN_CATEGORIES.map((category) => {
             const isActive = selectedCategory === category.id;
             return (
@@ -55,4 +55,3 @@ export default function ConsultationPage() {
     </div>
   );
 }
-

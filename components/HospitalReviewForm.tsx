@@ -10,6 +10,7 @@ import {
   getTreatmentAutocomplete,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
+import { uploadReviewImages } from "@/lib/api/imageUpload";
 
 interface HospitalReviewFormProps {
   onBack: () => void;
@@ -36,6 +37,7 @@ export default function HospitalReviewForm({
   const [translationSatisfaction, setTranslationSatisfaction] = useState(0);
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   // 대분류 카테고리 10개 (고정)
   const categories = [
@@ -143,13 +145,26 @@ export default function HospitalReviewForm({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const newImages = files.map((file) => URL.createObjectURL(file));
-      setImages([...images, ...newImages].slice(0, 4));
+      const newFiles = [...imageFiles, ...files].slice(0, 4);
+      setImageFiles(newFiles);
+      // 미리보기용 URL 생성
+      const newImages = newFiles.map((file) => URL.createObjectURL(file));
+      setImages(newImages);
     }
   };
 
   const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+    const newFiles = imageFiles.filter((_, i) => i !== index);
+    setImageFiles(newFiles);
+    // 미리보기 URL도 정리
+    const newImages = newFiles.map((file) => URL.createObjectURL(file));
+    // 기존 URL 해제
+    images.forEach((url) => {
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    setImages(newImages);
   };
 
   const StarRating = ({
@@ -210,14 +225,11 @@ export default function HospitalReviewForm({
     }
 
     try {
-      // 이미지 URL 배열 생성 (현재는 로컬 URL이므로 추후 Supabase Storage 업로드 필요)
-      const imageUrls = images.length > 0 ? images : undefined;
-
-      // 데이터 저장
       // procedure_name은 selectedProcedure 또는 procedureSearchTerm에서 가져오기
       const finalProcedureName =
         selectedProcedure || procedureSearchTerm.trim() || undefined;
 
+      // 먼저 후기 저장 (이미지 없이)
       const result = await saveHospitalReview({
         hospital_name: hospitalName,
         category_large: categoryLarge,
@@ -232,16 +244,40 @@ export default function HospitalReviewForm({
             ? translationSatisfaction
             : undefined,
         content,
-        images: imageUrls,
+        images: undefined, // 먼저 이미지 없이 저장
         user_id: user.id, // Supabase Auth UUID
       });
 
-      if (result.success) {
-        alert("병원후기가 성공적으로 작성되었습니다!");
-        onSubmit();
-      } else {
+      if (!result.success || !result.id) {
         alert(`병원후기 작성에 실패했습니다: ${result.error}`);
+        return;
       }
+
+      // 이미지가 있으면 업로드
+      let imageUrls: string[] | undefined = undefined;
+      if (imageFiles.length > 0 && result.id) {
+        try {
+          imageUrls = await uploadReviewImages(imageFiles, result.id);
+
+          // 업로드된 이미지 URL로 후기 업데이트
+          const { error: updateError } = await supabase
+            .from("hospital_reviews")
+            .update({ images: imageUrls })
+            .eq("id", result.id);
+
+          if (updateError) {
+            console.error("이미지 URL 업데이트 실패:", updateError);
+            // 이미지는 업로드되었지만 URL 업데이트 실패 - 경고만 표시
+          }
+        } catch (imageError: any) {
+          console.error("이미지 업로드 실패:", imageError);
+          alert(`이미지 업로드에 실패했습니다: ${imageError.message}`);
+          // 이미지 업로드 실패해도 후기는 저장됨
+        }
+      }
+
+      alert("병원후기가 성공적으로 작성되었습니다!");
+      onSubmit();
     } catch (error: any) {
       console.error("병원후기 저장 오류:", error);
       alert(`병원후기 작성 중 오류가 발생했습니다: ${error.message}`);

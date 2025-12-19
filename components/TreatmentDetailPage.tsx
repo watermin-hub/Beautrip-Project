@@ -28,6 +28,7 @@ import {
   toggleProcedureFavorite,
   isProcedureFavorite,
   getFavoriteStatus,
+  saveInquiry,
 } from "@/lib/api/beautripApi";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
@@ -210,7 +211,10 @@ export default function TreatmentDetailPage({
   };
 
   // 문의하기
-  const handleInquiry = (type: "chat" | "phone" | "email") => {
+  const handleInquiry = async (type: "chat" | "phone" | "email") => {
+    if (!currentTreatment) return;
+
+    // 로컬스토리지에 문의 기록 저장
     const inquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");
     inquiries.push({
       treatmentId,
@@ -221,11 +225,52 @@ export default function TreatmentDetailPage({
     setInquiryCount((prev) => prev + 1);
 
     if (type === "chat") {
+      // AI 채팅 - 추후 API 연동 예정
       alert("AI 채팅 문의 기능은 준비 중입니다.");
     } else if (type === "phone") {
-      alert("전화 문의 기능은 준비 중입니다.");
+      // 전화 문의 - treatment_master 테이블의 hospital_phone_safe 컬럼 사용
+      const phoneNumber =
+        (currentTreatment as any).hospital_phone_safe ||
+        (currentTreatment as any).hospital_phone;
+
+      if (phoneNumber) {
+        // 전화번호에서 숫자와 +, -만 추출
+        const cleanedPhone = phoneNumber.replace(/[^\d+\-]/g, "");
+        window.location.href = `tel:${cleanedPhone}`;
+      } else {
+        alert("등록된 전화번호가 없습니다.");
+      }
     } else if (type === "email") {
-      alert("이메일 문의 기능은 준비 중입니다.");
+      // 메일 문의 - yb8259@naver.com으로 전송, Supabase에도 저장
+      const treatmentName = currentTreatment.treatment_name || "시술";
+      const hospitalName = currentTreatment.hospital_name || "";
+      const subject = encodeURIComponent(
+        `[BeauTrip 문의] ${treatmentName}${
+          hospitalName ? ` - ${hospitalName}` : ""
+        }`
+      );
+      const body = encodeURIComponent(
+        `시술명: ${treatmentName}\n병원명: ${
+          hospitalName || "미입력"
+        }\n\n문의 내용을 작성해주세요.`
+      );
+
+      // mailto 링크 생성
+      window.location.href = `mailto:yb8259@naver.com?subject=${subject}&body=${body}`;
+
+      // Supabase에 문의 내역 저장 (CRM - Zapier - KIT 자동화를 위해)
+      try {
+        await saveInquiry({
+          inquiry_type: "email",
+          treatment_id: treatmentId,
+          treatment_name: treatmentName,
+          hospital_name: hospitalName || undefined,
+        });
+        console.log("문의 내역이 Supabase에 저장되었습니다.");
+      } catch (error) {
+        console.error("문의 저장 중 오류:", error);
+        // mailto는 이미 열렸으므로 에러를 사용자에게 알리지 않음
+      }
     }
   };
 

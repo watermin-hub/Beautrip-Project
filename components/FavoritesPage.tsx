@@ -229,28 +229,31 @@ export default function FavoritesPage() {
 
   return (
     <div className="px-4 py-6">
-      {/* 탭 선택 */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setActiveTab("procedure")}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "procedure"
-              ? "bg-primary-main text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          시술 ({procedures.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("clinic")}
-          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === "clinic"
-              ? "bg-primary-main text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          }`}
-        >
-          병원 ({clinics.length})
-        </button>
+      {/* 탭 선택 - sticky로 설정하여 헤더에 가려지지 않도록 */}
+      {/* Header(48px) + 찜 목록 헤더(약 56px: py-3 + 텍스트) = 104px */}
+      <div className="sticky top-[104px] z-[25] bg-white pb-4 pt-2 mb-4 -mx-4 px-4 border-b border-gray-100">
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setActiveTab("procedure")}
+            className={`w-full h-[44px] px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center whitespace-nowrap leading-none ${
+              activeTab === "procedure"
+                ? "bg-primary-main text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            시술 ({procedures.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("clinic")}
+            className={`w-full h-[44px] px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center whitespace-nowrap leading-none ${
+              activeTab === "clinic"
+                ? "bg-primary-main text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            병원 ({clinics.length})
+          </button>
+        </div>
       </div>
 
       {/* 찜 목록 */}

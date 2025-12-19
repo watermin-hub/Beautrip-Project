@@ -8,10 +8,12 @@ import {
   loadTreatmentsPaginated,
   getThumbnailUrl,
   calculateRecommendationScore,
+  getPopularKeywordsByCountry,
+  getCategoryMidByKeyword,
   type Treatment,
 } from "@/lib/api/beautripApi";
 
-// 고민 키워드와 시술 매핑
+// 고민 키워드와 시술 매핑 (fallback용)
 const CONCERN_KEYWORDS: Record<string, string[]> = {
   주름: ["보톡스", "리쥬란", "리프팅", "인모드", "슈링크", "주름"],
   다크서클: ["필러", "지방재배치", "리쥬란", "다크서클", "눈밑"],
@@ -31,6 +33,8 @@ export default function CountryPainPointSection() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [popularKeywords, setPopularKeywords] = useState<string[]>([]);
+  const [keywordsLoading, setKeywordsLoading] = useState(true);
 
   const countries = [
     { id: "all", key: "home.country.all" },
@@ -41,16 +45,33 @@ export default function CountryPainPointSection() {
     // { id: "sea", key: "home.country.sea" }, // 동남아 제거
   ];
 
-  const painPoints: Record<string, string[]> = {
-    all: ["주름", "다크서클", "모공", "피부톤", "트러블"],
-    korea: ["주름", "탄력", "모공", "피부톤", "다크서클"],
-    china: ["주름", "다크서클", "모공", "피부톤", "트러블"],
-    japan: ["모공", "주름", "다크서클", "피부톤", "트러블"],
-    usa: ["주름", "다크서클", "피부톤", "모공", "트러블"],
-    // sea: ["모공", "트러블", "피부톤", "주름", "다크서클"], // 동남아 제거
-  };
+  // 국가별 키워드 로드
+  useEffect(() => {
+    const loadKeywords = async () => {
+      setKeywordsLoading(true);
+      try {
+        const keywords = await getPopularKeywordsByCountry(selectedCountry, 10);
+        setPopularKeywords(keywords.length > 0 ? keywords : []);
+      } catch (error) {
+        console.error("인기 키워드 로드 실패:", error);
+        // fallback: 기본 키워드 사용
+        const fallbackKeywords: Record<string, string[]> = {
+          all: ["주름", "다크서클", "모공", "피부톤", "트러블"],
+          korea: ["주름", "탄력", "모공", "피부톤", "다크서클"],
+          china: ["주름", "다크서클", "모공", "피부톤", "트러블"],
+          japan: ["모공", "주름", "다크서클", "피부톤", "트러블"],
+          usa: ["주름", "다크서클", "피부톤", "모공", "트러블"],
+        };
+        setPopularKeywords(
+          fallbackKeywords[selectedCountry] || fallbackKeywords.all
+        );
+      } finally {
+        setKeywordsLoading(false);
+      }
+    };
 
-  const currentPainPoints = painPoints[selectedCountry] || painPoints.all;
+    loadKeywords();
+  }, [selectedCountry]);
 
   useEffect(() => {
     const savedFavorites = JSON.parse(
@@ -74,31 +95,58 @@ export default function CountryPainPointSection() {
     setLoading(true);
 
     try {
-      // 필요한 만큼만 로드 (100개)
-      const result = await loadTreatmentsPaginated(1, 100);
-      const allTreatments = result.data;
-      const keywords = CONCERN_KEYWORDS[concern] || [concern];
+      // 1. keyword_monthly_trends의 keyword로 category_treattime_recovery의 keyword_kr 매칭
+      // 2. 매칭된 항목의 category_mid (중분류) 찾기
+      const categoryMid = await getCategoryMidByKeyword(concern);
 
-      // 키워드로 필터링
-      const filtered = allTreatments.filter((treatment) => {
-        const name = (treatment.treatment_name || "").toLowerCase();
-        const hashtags = (treatment.treatment_hashtags || "").toLowerCase();
-        const categoryLarge = (treatment.category_large || "").toLowerCase();
-        const categoryMid = (treatment.category_mid || "").toLowerCase();
+      if (!categoryMid) {
+        console.warn(
+          `키워드 "${concern}"에 해당하는 category_mid를 찾을 수 없습니다.`
+        );
+        // fallback: 기존 로직 사용
+        const result = await loadTreatmentsPaginated(1, 100);
+        const allTreatments = result.data;
+        const keywords = CONCERN_KEYWORDS[concern] || [concern];
 
-        return keywords.some((keyword) => {
-          const keywordLower = keyword.toLowerCase();
-          return (
-            name.includes(keywordLower) ||
-            hashtags.includes(keywordLower) ||
-            categoryLarge.includes(keywordLower) ||
-            categoryMid.includes(keywordLower)
-          );
+        const filtered = allTreatments.filter((treatment) => {
+          const name = (treatment.treatment_name || "").toLowerCase();
+          const hashtags = (treatment.treatment_hashtags || "").toLowerCase();
+          const categoryLarge = (treatment.category_large || "").toLowerCase();
+          const treatmentCategoryMid = (
+            treatment.category_mid || ""
+          ).toLowerCase();
+
+          return keywords.some((keyword) => {
+            const keywordLower = keyword.toLowerCase();
+            return (
+              name.includes(keywordLower) ||
+              hashtags.includes(keywordLower) ||
+              categoryLarge.includes(keywordLower) ||
+              treatmentCategoryMid.includes(keywordLower)
+            );
+          });
         });
-      });
 
-      // 추천 점수로 정렬하고 상위 10개 선택
-      const sorted = filtered
+        const sorted = filtered
+          .map((treatment) => ({
+            ...treatment,
+            recommendationScore: calculateRecommendationScore(treatment),
+          }))
+          .sort((a, b) => b.recommendationScore - a.recommendationScore)
+          .slice(0, 10);
+
+        setRecommendedTreatments(sorted);
+        return;
+      }
+
+      // 3. category_mid로 시술 필터링
+      const result = await loadTreatmentsPaginated(1, 200, {
+        categoryMid: categoryMid,
+      });
+      const filteredTreatments = result.data;
+
+      // 4. 추천 점수로 정렬하고 상위 10개 선택
+      const sorted = filteredTreatments
         .map((treatment) => ({
           ...treatment,
           recommendationScore: calculateRecommendationScore(treatment),
@@ -170,34 +218,42 @@ export default function CountryPainPointSection() {
       </div>
 
       {/* 인기 검색어 태그 */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {currentPainPoints.map((point, index) => (
-          <button
-            key={index}
-            onClick={(e) => {
-              // Ctrl/Cmd 키를 누르지 않은 경우에만 탐색 페이지로 이동
-              if (!e.ctrlKey && !e.metaKey) {
-                // 탐색 페이지로 이동하고 검색어와 section 파라미터 전달
-                router.push(
-                  `/explore?section=procedure&search=${encodeURIComponent(
-                    point
-                  )}`
-                );
-              } else {
-                // Ctrl/Cmd 키를 누른 경우 기존 동작 (현재 페이지에서 추천 표시)
-                handleConcernClick(point);
-              }
-            }}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              selectedConcern === point
-                ? "bg-primary-main text-white border-primary-main"
-                : "bg-white border border-gray-200 text-gray-700 hover:border-primary-main hover:text-primary-main"
-            }`}
-          >
-            #{point}
-          </button>
-        ))}
-      </div>
+      {keywordsLoading ? (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="px-4 py-2 rounded-full bg-gray-200 animate-pulse"
+              style={{ width: "80px", height: "36px" }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {popularKeywords.length > 0 ? (
+            popularKeywords.map((keyword, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  // 일반 클릭: 현재 페이지에서 추천 시술 표시
+                  handleConcernClick(keyword);
+                }}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedConcern === keyword
+                    ? "bg-primary-main text-white border-primary-main"
+                    : "bg-white border border-gray-200 text-gray-700 hover:border-primary-main hover:text-primary-main"
+                }`}
+              >
+                #{keyword}
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">
+              인기 검색어를 불러올 수 없습니다.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 선택된 고민에 대한 시술 추천 */}
       {selectedConcern && (

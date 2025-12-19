@@ -40,20 +40,55 @@ const MAIN_CATEGORIES = [
 interface CategoryRankingPageProps {
   isVisible?: boolean;
   shouldStick?: boolean; // procedure 섹션 전까지만 고정
+  activeSection?: string; // ExploreScrollPage의 activeSection 전달
+  // 필터 관련 props
+  selectedCategory?: string | null;
+  selectedMidCategory?: string | null;
+  midCategoriesList?: string[];
+  onCategoryChange?: (categoryId: string | null) => void;
+  onMidCategoryChange?: (midCategory: string | null) => void;
+  // 필터바를 외부에서 렌더링할지 여부
+  renderFilterBar?: boolean;
+  // midCategoriesList 변경 콜백 (RankingSection에서 필터바 렌더링용)
+  onMidCategoriesListChange?: (list: string[]) => void;
 }
 
 export default function CategoryRankingPage({
   isVisible = true,
   shouldStick = true,
+  activeSection = "ranking",
+  selectedCategory: externalSelectedCategory,
+  selectedMidCategory: externalSelectedMidCategory,
+  midCategoriesList: externalMidCategoriesList,
+  onCategoryChange: externalOnCategoryChange,
+  onMidCategoryChange: externalOnMidCategoryChange,
+  renderFilterBar = true,
+  onMidCategoriesListChange,
 }: CategoryRankingPageProps) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 여부
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // null = 전체
-  const [selectedMidCategory, setSelectedMidCategory] = useState<string | null>(
-    null
-  ); // 선택된 중분류
+  // 필터 state: 외부에서 제공되면 사용, 없으면 내부에서 관리
+  const [internalSelectedCategory, setInternalSelectedCategory] = useState<
+    string | null
+  >(null);
+  const [internalSelectedMidCategory, setInternalSelectedMidCategory] =
+    useState<string | null>(null);
+
+  const selectedCategory =
+    externalSelectedCategory !== undefined
+      ? externalSelectedCategory
+      : internalSelectedCategory;
+  const selectedMidCategory =
+    externalSelectedMidCategory !== undefined
+      ? externalSelectedMidCategory
+      : internalSelectedMidCategory;
+
+  const setSelectedCategory =
+    externalOnCategoryChange || setInternalSelectedCategory;
+  const setSelectedMidCategory =
+    externalOnMidCategoryChange || setInternalSelectedMidCategory;
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [visibleCategoriesCount, setVisibleCategoriesCount] = useState(5); // 초기 5개 표시
   const [isAddToScheduleModalOpen, setIsAddToScheduleModalOpen] =
@@ -68,7 +103,9 @@ export default function CategoryRankingPage({
   const [smallCategoryRankings, setSmallCategoryRankings] = useState<
     SmallCategoryRanking[]
   >([]);
-  const [midCategoriesList, setMidCategoriesList] = useState<string[]>([]); // 중분류 목록 유지용
+  const [internalMidCategoriesList, setMidCategoriesList] = useState<string[]>(
+    []
+  ); // 중분류 목록 유지용
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -183,14 +220,32 @@ export default function CategoryRankingPage({
       .filter((name) => !name.includes("�"))
       .sort();
 
-    console.log(
-      `[CategoryRankingPage] 대분류 "${
-        selectedCategory || "전체"
-      }"의 중분류 개수(필터 후): ${sorted.length}개`,
-      sorted.slice(0, 10) // 처음 10개만 로그
-    );
+    // 개발 환경에서만 로그 출력
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[CategoryRankingPage] 대분류 "${
+          selectedCategory || "전체"
+        }"의 중분류 개수(필터 후): ${sorted.length}개`,
+        sorted.slice(0, 10) // 처음 10개만 로그
+      );
+    }
     return sorted;
   }, [midCategoryRankings]);
+
+  // midCategoriesList: externalMidCategoriesList가 제공되면 사용, 없으면 내부 state 또는 useMemo 결과 사용
+  const midCategoriesList =
+    externalMidCategoriesList || internalMidCategoriesList || midCategories;
+
+  // midCategories (useMemo) 변경 시 외부에 알림 (RankingSection에서 필터바 렌더링용)
+  useEffect(() => {
+    if (
+      onMidCategoriesListChange &&
+      !externalMidCategoriesList &&
+      midCategories.length > 0
+    ) {
+      onMidCategoriesListChange(midCategories);
+    }
+  }, [midCategories, externalMidCategoriesList, onMidCategoriesListChange]);
 
   // ✅ RPC 기반 랭킹 데이터 로드
   useEffect(() => {
@@ -253,9 +308,6 @@ export default function CategoryRankingPage({
 
             setSmallCategoryRankings(smallGrouped);
             setMidCategoryRankings([]);
-            console.log(
-              `✅ [소분류 랭킹] ${smallGrouped.length}개 소분류 그룹화 완료 (원본 ${rows.length}개 행)`
-            );
           } else {
             setError(result.error || "소분류 랭킹을 불러올 수 없습니다.");
             setSmallCategoryRankings([]);
@@ -324,18 +376,23 @@ export default function CategoryRankingPage({
             const sorted = Array.from(midCategorySet)
               .filter((name) => name && name.trim() !== "")
               .sort();
-            setMidCategoriesList(sorted);
-            console.log(
-              `✅ [중분류 목록] ${sorted.length}개 중분류 필터 설정:`,
-              sorted
-            );
-            console.log(
-              `✅ [중분류 랭킹] ${midGrouped.length}개 중분류 그룹화 완료 (원본 ${rows.length}개 행)`
-            );
+            // externalMidCategoriesList가 없을 때만 내부 state 업데이트
+            if (!externalMidCategoriesList) {
+              setMidCategoriesList(sorted);
+            }
+            // 외부 콜백이 있으면 호출 (RankingSection에서 필터바 업데이트용)
+            if (onMidCategoriesListChange) {
+              onMidCategoriesListChange(sorted);
+            }
           } else {
             setError(result.error || "중분류 랭킹을 불러올 수 없습니다.");
             setMidCategoryRankings([]);
-            setMidCategoriesList([]);
+            if (!externalMidCategoriesList) {
+              setMidCategoriesList([]);
+            }
+            if (onMidCategoriesListChange) {
+              onMidCategoriesListChange([]);
+            }
           }
         }
       } catch (err) {
@@ -734,95 +791,9 @@ export default function CategoryRankingPage({
 
   return (
     <div className="bg-white">
-      {/* Category Filter Tags - 텍스트만 2줄 그리드 */}
-      <div
-        className={`${shouldStick ? "fixed" : "relative"} ${
-          shouldStick ? "top-[208px]" : ""
-        } left-1/2 transform -translate-x-1/2 w-full max-w-md z-30 bg-white`}
-      >
-        <div className="px-4 pt-2 pb-3">
-          {/* "ALL 전체" 버튼 - 위에 작은 글씨로 */}
-          <div className="mb-2">
-            <button
-              onClick={() => {
-                setSelectedCategory(null);
-                setSelectedMidCategory(null);
-              }}
-              className={`text-sm font-medium transition-colors ${
-                selectedCategory === null
-                  ? "text-primary-main font-bold"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              전체
-            </button>
-          </div>
-
-          {/* 카테고리 버튼들 - 텍스트만 5개씩 2줄 그리드 */}
-          <div className="grid grid-cols-5 gap-x-4 gap-y-3">
-            {MAIN_CATEGORIES.filter((cat) => cat.id !== null).map(
-              (category) => {
-                const isSelected = selectedCategory === category.id;
-                return (
-                  <button
-                    key={category.id || "all"}
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      setSelectedMidCategory(null); // 카테고리 변경 시 중분류 초기화
-                    }}
-                    className={`text-sm font-medium transition-colors whitespace-nowrap ${
-                      isSelected
-                        ? "text-primary-main font-bold"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {category.name}
-                  </button>
-                );
-              }
-            )}
-          </div>
-        </div>
-
-        {/* 중분류 해시태그 필터 */}
-        {midCategoriesList.length > 0 && (
-          <div className="px-4 pb-2">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => setSelectedMidCategory(null)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedMidCategory === null
-                    ? "bg-gray-900 text-white border border-gray-900"
-                    : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                전체
-              </button>
-              {midCategoriesList.map((midCategory) => {
-                const isSelected = selectedMidCategory === midCategory;
-                return (
-                  <button
-                    key={midCategory}
-                    onClick={() => {
-                      setSelectedMidCategory(midCategory);
-                    }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                      isSelected
-                        ? "bg-gray-900 text-white border border-gray-900"
-                        : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    #{midCategory}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 컨텐츠 섹션 */}
-      <div className={`px-4 space-y-6 ${shouldStick ? "pt-[106px]" : "pt-4"}`}>
+      {/* 필터바는 RankingSection에서 sticky로 렌더링되므로 여기서는 제거 */}
+      {/* 컨텐츠 섹션 - 상단 고정 헤더(탭바 + 필터바) 때문에 내용이 가려지지 않도록 padding-top 추가 */}
+      <div className="px-4 space-y-6">
         {/* 중분류 선택 시: 소분류별 랭킹 표시 */}
         {selectedMidCategory !== null ? (
           smallCategoryRankings.length === 0 ? (
@@ -1055,7 +1026,7 @@ export default function CategoryRankingPage({
                                             e
                                           );
                                         }}
-                                        className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                                        className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0 relative z-10"
                                       >
                                         <FiCalendar className="text-base text-primary-main" />
                                       </button>
@@ -1315,7 +1286,7 @@ export default function CategoryRankingPage({
                                         e.stopPropagation();
                                         handleAddToScheduleClick(treatment, e);
                                       }}
-                                      className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0"
+                                      className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0 relative z-10"
                                     >
                                       <FiCalendar className="text-base text-primary-main" />
                                     </button>
@@ -1370,6 +1341,102 @@ export default function CategoryRankingPage({
           }
           categoryMid={selectedTreatmentForSchedule.category_mid || null}
         />
+      )}
+    </div>
+  );
+}
+
+// 필터바 JSX를 외부에서 사용할 수 있도록 export
+export function CategoryFilterBar({
+  selectedCategory,
+  selectedMidCategory,
+  midCategoriesList,
+  onCategoryChange,
+  onMidCategoryChange,
+}: {
+  selectedCategory: string | null;
+  selectedMidCategory: string | null;
+  midCategoriesList: string[];
+  onCategoryChange: (categoryId: string | null) => void;
+  onMidCategoryChange: (midCategory: string | null) => void;
+}) {
+  return (
+    <div className="bg-white">
+      <div className="px-4 pt-2 pb-3">
+        {/* "ALL 전체" 버튼 - 위에 작은 글씨로 */}
+        <div className="mb-2">
+          <button
+            onClick={() => {
+              onCategoryChange(null);
+              onMidCategoryChange(null);
+            }}
+            className={`text-sm font-medium transition-colors ${
+              selectedCategory === null
+                ? "text-primary-main font-bold"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            전체
+          </button>
+        </div>
+
+        {/* 카테고리 버튼들 - 텍스트만 5개씩 2줄 그리드 */}
+        <div className="grid grid-cols-5 gap-x-4 gap-y-3">
+          {MAIN_CATEGORIES.filter((cat) => cat.id !== null).map((category) => {
+            const isSelected = selectedCategory === category.id;
+            return (
+              <button
+                key={category.id || "all"}
+                onClick={() => {
+                  onCategoryChange(category.id);
+                  onMidCategoryChange(null);
+                }}
+                className={`text-sm font-medium transition-colors whitespace-nowrap ${
+                  isSelected
+                    ? "text-primary-main font-bold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {category.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {/* 중분류 해시태그 필터 */}
+      {midCategoriesList.length > 0 && (
+        <div className="px-4 pb-2">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => onMidCategoryChange(null)}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedMidCategory === null
+                  ? "bg-gray-900 text-white border border-gray-900"
+                  : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              전체
+            </button>
+            {midCategoriesList.map((midCategory) => {
+              const isSelected = selectedMidCategory === midCategory;
+              return (
+                <button
+                  key={midCategory}
+                  onClick={() => {
+                    onMidCategoryChange(midCategory);
+                  }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    isSelected
+                      ? "bg-gray-900 text-white border border-gray-900"
+                      : "bg-white text-gray-700 border border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  #{midCategory}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );

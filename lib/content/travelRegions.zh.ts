@@ -1,0 +1,115 @@
+// Travel Region Data - Chinese Version
+
+import type { RegionData } from "./travelRegions";
+
+export const travelRegions: RegionData[] = [
+  {
+    id: "hongdae",
+    name: "弘大入口（Hongdae）",
+    nameEn: "Hongdae",
+    oneLine: "年轻、艺术与街头文化共存的韩国感性中心地带。",
+    description: `弘大入口是首尔最自由、最具创造力氛围的地区之一，也是最能真实感受到"韩国年轻文化"的地方。巷弄之间分布着风格各异的咖啡馆和本地设计师经营的小型买手店，即使只是随意走走，也能不断获得新的灵感。\n\n每到周末傍晚，街头艺人的音乐在各个角落响起，为弘大营造出独有的热闹与活力。由于附近聚集着艺术类大学，涂鸦、街头艺术、实验性展览空间等"弘大式艺术文化"深深融入这片区域，让人可以一次性体验韩国的潮流与创作氛围。夜幕降临后，霓虹灯亮起，人群的笑声与音乐交织在一起，呈现出充满生命力的夜景。`,
+    recommendations: [
+      "氛围感咖啡馆与甜品巡游",
+      "街头艺人表演欣赏",
+      "买手店与潮流服饰购物",
+      "涂鸦与街头艺术拍照点",
+    ],
+    caption: "韩国年轻与艺术汇聚的街区，弘大入口",
+    images: [
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD04.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD01.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD02.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD03.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD05.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD06.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD07.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD08.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HD09.png",
+    ],
+  },
+  {
+    id: "gangnam",
+    name: "江南站（Gangnam Station）",
+    nameEn: "Gangnam Station",
+    oneLine: "购物、美食与都市节奏汇聚的首尔现代文化中心。",
+    description: `江南站是最能代表首尔现代都市氛围的区域之一，购物、美食与韩国人的日常生活在这里高度集中。主干道两侧排列着最新潮的时尚品牌与美妆店铺，走进周边小巷，又能发现风格各异的咖啡馆和餐厅，几乎可以满足任何旅行者想要的城市体验。\n\n白天的江南站以购物和咖啡文化为主，而到了夜晚，整个区域会呈现出截然不同的面貌。霓虹灯亮起，人流穿梭其间，下班后的上班族与年轻人共同营造出充满能量的夜生活氛围。在这里，可以同时感受到"韩国都市职场日常"与"首尔夜间生活方式"的真实样貌，是任何时间到访都不会无聊的地区。`,
+    recommendations: [
+      "路边店与美妆品牌购物",
+      "江南站人气美食探索",
+      "观察韩国上班族生活节奏",
+      "夜晚街景与霓虹灯拍照",
+    ],
+    caption: "想感受首尔的能量与潮流，就来江南站",
+    images: [
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GN01.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GN02.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GN03.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GN04.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GN05.png",
+    ],
+  },
+  {
+    id: "apgujeong",
+    name: "狎鸥亭·清潭（Apgujeong / Cheongdam）",
+    nameEn: "Apgujeong / Cheongdam",
+    oneLine: "K-POP娱乐产业与高端时尚汇聚的首尔奢华生活方式代表区。",
+    description: `狎鸥亭与清潭一带，是最能体现"首尔高端感"的区域之一。这里聚集了多家知名K-POP娱乐公司总部，不少粉丝会专程前来打卡喜爱的艺人所属公司，感受真实的韩流文化氛围。同时，街道两侧分布着大量国际奢侈品牌旗舰店和高端买手店，是体验韩国高端购物文化的重要地点。\n\n清潭洞整体氛围安静而精致，融合了高级咖啡馆、设计感餐厅以及顶级美妆与造型空间，形成一种独特的生活方式聚集区。相比热闹的商业街，这里更强调质感与品味，非常适合想要感受"精致版首尔日常"的旅行者。无论是K-POP粉丝、时尚爱好者，还是偏好高端体验的游客，都能在这里找到属于自己的节奏。`,
+    recommendations: [
+      "K-POP娱乐公司周边打卡",
+      "奢侈品牌旗舰店购物",
+      "清潭洞高端咖啡馆体验",
+      "安静精致的街区散步",
+    ],
+    caption: "韩流与高端时尚交汇的地方，狎鸥亭·清潭",
+    images: [
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/AGJ01.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/AGJ02.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/AGJ03.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/AGJ04.png",
+    ],
+  },
+  {
+    id: "myeongdong",
+    name: "明洞",
+    nameEn: "Myeongdong",
+    oneLine: "韩国代表性的购物街区，集街头美食与潮流购物于一体。",
+    description: `明洞是外国游客最熟悉、也最具代表性的首尔购物街区之一。街道两侧汇集了各类品牌门店与摊位，行走其间可以一次性体验韩国的街头美食文化与购物氛围。芝士热狗、烤串、饺子、年糕等多样的小吃，让人轻松感受"边走边吃"的韩国式街头风景。\n\n这里同时也是美妆爱好者的必访之地，国际美妆品牌与韩国本土化妆品店密集分布，能够第一时间接触到最新的美妆趋势。除了购物，明洞圣堂及周边街头表演也为区域增添了文化元素。夜晚灯光亮起，人潮与摊位交织在一起，呈现出最具活力的首尔夜景之一。`,
+    recommendations: [
+      "韩国街头美食巡游",
+      "美妆品牌集中购物",
+      "明洞圣堂参观",
+      "夜晚街景拍照",
+    ],
+    caption: "边吃边逛，感受最热闹的首尔街头——明洞",
+    images: [
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/MD01.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/MD02.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/MD03.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/MD04.png",
+    ],
+  },
+  {
+    id: "gwanghwamun",
+    name: "光化门",
+    nameEn: "Gwanghwamun",
+    oneLine: "韩国历史与现代城市景观交汇的首尔象征性中心区域。",
+    description:
+      "光化门位于首尔城市轴线的中心，是最能同时感受到韩国历史与现代都市氛围的地区之一。以光化门广场为中心，一侧是拥有数百年历史的景福宫，另一侧则是现代化的高层建筑群，形成传统与当代并存的独特城市景观。\n\n在景福宫内，可以近距离欣赏韩国传统建筑之美，身着韩服拍照也是深受游客欢迎的体验。光化门周边还分布着多座博物馆与美术馆，帮助旅行者更深入地理解韩国的历史、文化与艺术。沿着世宗大路漫步，可以感受到首尔作为首都所特有的庄重与从容，是适合慢慢游览、静静感受的区域。",
+    recommendations: [
+      "景福宫参观与韩服体验",
+      "光化门广场与世宗大王雕像",
+      "国立博物馆与美术馆巡览",
+      "首尔代表性城市风景拍照",
+    ],
+    caption: "历史与现代并肩而立的首尔中心，光化门",
+    images: [
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GHM01.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GHM02.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GHM03.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GHM04.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GHM05.png",
+      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/GHM06.png",
+    ],
+  },
+];

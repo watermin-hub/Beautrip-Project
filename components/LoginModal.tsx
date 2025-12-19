@@ -534,7 +534,7 @@ export default function LoginModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white max-w-md mx-auto left-1/2 transform -translate-x-1/2 w-full flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-white max-w-md mx-auto left-1/2 transform -translate-x-1/2 w-full md:max-w-md flex flex-col">
       {/* Header with back button */}
       <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 z-10 flex items-center">
         <button

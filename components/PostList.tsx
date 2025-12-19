@@ -822,11 +822,11 @@ export default function PostList({
     return (
       <div className="pb-4">
         {/* 탭 메뉴 */}
-        <div className="sticky top-[141px] z-10 bg-white border-b border-gray-200 px-4">
+        <div className="sticky top-[104px] z-30 bg-white px-4">
           <div className="flex gap-2 py-3">
             <button
               onClick={() => switchSection("procedure")}
-              className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${
+              className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
                 popularSection === "procedure"
                   ? "bg-primary-main text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -836,7 +836,7 @@ export default function PostList({
             </button>
             <button
               onClick={() => switchSection("hospital")}
-              className={`flex-1 py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${
+              className={`flex-1 py-2 px-4 rounded-lg font-medium text-sm transition-colors ${
                 popularSection === "hospital"
                   ? "bg-primary-main text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -887,7 +887,7 @@ export default function PostList({
 
   // 최신글/추천글: 섞여서 표시
   return (
-    <div className="px-4 pt-3 space-y-4 pb-4">
+    <div className="px-4 pt-4 space-y-4 pb-4">
       {posts.map((post) => (
         <div
           key={post.id}

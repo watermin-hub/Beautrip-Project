@@ -64,7 +64,7 @@ export default function RankingBanner() {
   return (
     <div className="relative">
       <div
-        className="bg-white border-b border-gray-100 px-4 py-2.5 fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 cursor-pointer"
+        className="bg-white border-b border-gray-100 px-4 py-2.5 fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-[65] cursor-pointer"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
       >
         <div className="flex items-center justify-between">
@@ -111,7 +111,7 @@ export default function RankingBanner() {
       {isDropdownOpen && (
         <div
           ref={dropdownRef}
-          className="fixed top-[41px] left-1/2 transform -translate-x-1/2 z-[60] bg-white max-w-md w-full shadow-lg flex flex-col"
+          className="fixed top-[41px] left-1/2 transform -translate-x-1/2 z-[66] bg-white max-w-md w-full shadow-lg flex flex-col"
           style={{ height: "420px" }}
         >
           <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between">

@@ -2,6 +2,8 @@
 
 import { FiArrowUp, FiMessageCircle, FiEye, FiHeart } from "react-icons/fi";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   loadProcedureReviews,
   loadHospitalReviews,
@@ -134,6 +136,7 @@ const formatTimeAgo = (dateString?: string): string => {
 };
 
 export default function ReviewList() {
+  const router = useRouter();
   const [supabaseReviews, setSupabaseReviews] = useState<ReviewPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -155,57 +158,63 @@ export default function ReviewList() {
         // 시술 후기 변환 (created_at 포함)
         const formattedProcedureReviews: (ReviewPost & {
           created_at?: string;
-        })[] = procedureReviews.map((review: ProcedureReviewData) => ({
-          id: review.id || `procedure-${Math.random()}`,
-          category: review.category || "후기",
-          username: `사용자${review.user_id || 0}`,
-          avatar: "👤",
-          content: review.content,
-          images: review.images,
-          timestamp: formatTimeAgo(review.created_at),
-          created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
-          edited: false,
-          upvotes: 0,
-          comments: 0,
-          views: 0,
-          postType: "procedure_review" as const,
-        }));
-
-        // 병원 후기 변환 (created_at 포함)
-        const formattedHospitalReviews: (ReviewPost & {
-          created_at?: string;
-        })[] = hospitalReviews.map((review: HospitalReviewData) => ({
-          id: review.id || `hospital-${Math.random()}`,
-          category: review.category_large || "병원후기",
-          username: `사용자${review.user_id || 0}`,
-          avatar: "👤",
-          content: review.content,
-          images: review.images,
-          timestamp: formatTimeAgo(review.created_at),
-          created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
-          edited: false,
-          upvotes: 0,
-          comments: 0,
-          views: 0,
-          postType: "hospital_review" as const,
-        }));
-
-        // 고민글 변환 (created_at 포함)
-        const formattedConcernPosts: (ReviewPost & { created_at?: string })[] =
-          concernPosts.map((post: ConcernPostData) => ({
-            id: post.id || `concern-${Math.random()}`,
-            category: post.concern_category || "고민글",
-            username: `사용자${post.user_id || 0}`,
+        })[] = procedureReviews
+          .filter((review: ProcedureReviewData) => review.id) // id가 있는 것만 필터링
+          .map((review: ProcedureReviewData) => ({
+            id: review.id!, // id가 있음을 보장
+            category: review.category || "후기",
+            username: `사용자${review.user_id || 0}`,
             avatar: "👤",
-            content: post.content,
-            timestamp: formatTimeAgo(post.created_at),
-            created_at: post.created_at, // 정렬을 위해 원본 날짜 보관
+            content: review.content,
+            images: review.images,
+            timestamp: formatTimeAgo(review.created_at),
+            created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
             edited: false,
             upvotes: 0,
             comments: 0,
             views: 0,
-            postType: "concern_post" as const,
+            postType: "procedure_review" as const,
           }));
+
+        // 병원 후기 변환 (created_at 포함)
+        const formattedHospitalReviews: (ReviewPost & {
+          created_at?: string;
+        })[] = hospitalReviews
+          .filter((review: HospitalReviewData) => review.id) // id가 있는 것만 필터링
+          .map((review: HospitalReviewData) => ({
+            id: review.id!, // id가 있음을 보장
+            category: review.category_large || "병원후기",
+            username: `사용자${review.user_id || 0}`,
+            avatar: "👤",
+            content: review.content,
+            images: review.images,
+            timestamp: formatTimeAgo(review.created_at),
+            created_at: review.created_at, // 정렬을 위해 원본 날짜 보관
+            edited: false,
+            upvotes: 0,
+            comments: 0,
+            views: 0,
+            postType: "hospital_review" as const,
+          }));
+
+        // 고민글 변환 (created_at 포함)
+        const formattedConcernPosts: (ReviewPost & { created_at?: string })[] =
+          concernPosts
+            .filter((post: ConcernPostData) => post.id) // id가 있는 것만 필터링
+            .map((post: ConcernPostData) => ({
+              id: post.id!, // id가 있음을 보장
+              category: post.concern_category || "고민글",
+              username: `사용자${post.user_id || 0}`,
+              avatar: "👤",
+              content: post.content,
+              timestamp: formatTimeAgo(post.created_at),
+              created_at: post.created_at, // 정렬을 위해 원본 날짜 보관
+              edited: false,
+              upvotes: 0,
+              comments: 0,
+              views: 0,
+              postType: "concern_post" as const,
+            }));
 
         // 최신순으로 정렬 (created_at 기준, 모든 후기 통합)
         const allSupabaseReviews = [
@@ -285,12 +294,36 @@ export default function ReviewList() {
     );
   }
 
+  const handlePostClick = (post: ReviewPost) => {
+    // postType이 있고, id가 실제로 존재할 때만 클릭 가능
+    if (post.postType && post.id) {
+      const postId = String(post.id); // 숫자든 문자열이든 문자열로 변환
+
+      if (post.postType === "procedure_review") {
+        router.push(`/review/procedure/${postId}`);
+      } else if (post.postType === "hospital_review") {
+        router.push(`/review/hospital/${postId}`);
+      } else if (post.postType === "concern_post") {
+        // 고민글 상세보기는 추후 구현
+        router.push(`/community?tab=consultation`);
+      }
+    } else {
+      // 디버깅: 왜 클릭이 안 되는지 확인
+      console.log("클릭 불가:", {
+        postType: post.postType,
+        id: post.id,
+        idType: typeof post.id,
+      });
+    }
+  };
+
   return (
     <div className="px-4 space-y-4 pb-4">
       {allReviews.map((post) => (
         <div
           key={post.id}
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
+          onClick={() => handlePostClick(post)}
+          className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
         >
           {/* Category Tag */}
           <div className="mb-3">
@@ -328,13 +361,24 @@ export default function ReviewList() {
               {post.images.slice(0, 4).map((img, idx) => (
                 <div
                   key={idx}
-                  className={`relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden ${
+                  className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden ${
                     post.images!.length === 1 ? "max-h-96" : ""
                   }`}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                    이미지
-                  </div>
+                  {img.startsWith("http") || img.startsWith("blob:") ? (
+                    <Image
+                      src={img}
+                      alt={`후기 이미지 ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                      이미지
+                    </div>
+                  )}
                   {idx === 3 && post.images!.length > 4 && (
                     <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-lg">
                       +{post.images!.length - 4}
@@ -369,7 +413,8 @@ export default function ReviewList() {
             {/* 좋아요 버튼 */}
             {post.postType && typeof post.id === "string" && (
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation(); // 카드 클릭 이벤트 방지
                   const postId = post.id as string;
                   const postType = post.postType!;
                   const key = `${postId}-${postType}`;

@@ -6,7 +6,6 @@ import {
   FiPhone,
   FiMail,
   FiMessageCircle,
-  FiEdit3,
   FiStar,
   FiCalendar,
 } from "react-icons/fi";
@@ -21,7 +20,6 @@ import {
   getRecoveryInfoByCategoryMid,
   Treatment,
 } from "@/lib/api/beautripApi";
-import CommunityWriteModal from "./CommunityWriteModal";
 import AutocompleteInput from "./AutocompleteInput";
 import AddToScheduleModal from "./AddToScheduleModal";
 
@@ -32,6 +30,7 @@ interface ProcedureListPageProps {
 export default function ProcedureListPage({
   activeSection = "procedure",
 }: ProcedureListPageProps) {
+  const isActive = activeSection === "procedure";
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,8 +40,6 @@ export default function ProcedureListPage({
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [inquiryModalOpen, setInquiryModalOpen] = useState<number | null>(null);
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
-  const [hasWrittenReview, setHasWrittenReview] = useState(false);
 
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,29 +71,6 @@ export default function ProcedureListPage({
       setSearchTerm(searchQuery);
     }
   }, [searchParams]);
-
-  // 리뷰 작성 여부 확인
-  useEffect(() => {
-    try {
-      const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-      const hasReview = Array.isArray(reviews) && reviews.length > 0;
-      setHasWrittenReview(hasReview);
-      // 디버깅: 리뷰 작성 여부 확인
-      console.log(
-        "[ProcedureListPage] 리뷰 작성 여부:",
-        hasReview,
-        "리뷰 개수:",
-        reviews.length,
-        "treatments.length:",
-        treatments.length,
-        "loading:",
-        loading
-      );
-    } catch (error) {
-      console.error("[ProcedureListPage] localStorage 읽기 오류:", error);
-      setHasWrittenReview(false);
-    }
-  }, [treatments.length, loading]);
 
   // 카테고리 옵션 (정적 데이터로 관리 - 필요시 별도 API 호출)
   const largeCategories = useMemo(() => {
@@ -471,7 +445,11 @@ export default function ProcedureListPage({
   return (
     <div className="bg-white">
       {/* 타이틀 + 필터 섹션 (하나의 고정 덩어리) */}
-      <div className="sticky top-[96px] z-40 bg-white px-4 py-3 shadow-md border-b border-gray-200">
+      <div
+        className={`${
+          isActive ? "sticky top-[104px]" : "relative"
+        } z-40 bg-white px-4 py-3 shadow-md border-b border-gray-200`}
+      >
         <h2 className="text-lg font-bold text-gray-900">
           {t("explore.section.procedure")}
         </h2>
@@ -529,7 +507,7 @@ export default function ProcedureListPage({
       </div>
 
       {/* 시술 목록 */}
-      <div className="px-4 py-4 pt-[220px]">
+      <div className="px-4 py-4">
         {treatments.length === 0 && !loading ? (
           <div className="text-center py-12">
             <p className="text-gray-600">검색 결과가 없습니다.</p>
@@ -668,39 +646,9 @@ export default function ProcedureListPage({
                 </button>
               </div>
             )}
-
-            {/* 글 작성 유도 섹션 (리뷰 미작성 시에만 표시) */}
-            {!hasWrittenReview && !loading && treatments.length > 0 && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-primary-main/30 text-center">
-                <FiEdit3 className="text-primary-main text-2xl mx-auto mb-2" />
-                <p className="text-sm font-semibold text-gray-900 mb-1">
-                  리뷰를 작성하면
-                </p>
-                <p className="text-xs text-gray-600 mb-3">
-                  더 많은 시술 정보를 볼 수 있어요!
-                </p>
-                <button
-                  onClick={() => setIsWriteModalOpen(true)}
-                  className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                >
-                  리뷰 작성하기
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
-
-      {/* 커뮤니티 글쓰기 모달 */}
-      <CommunityWriteModal
-        isOpen={isWriteModalOpen}
-        onClose={() => {
-          setIsWriteModalOpen(false);
-          // 리뷰 작성 후 상태 업데이트
-          const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-          setHasWrittenReview(reviews.length > 0);
-        }}
-      />
 
       {/* 일정 추가 모달 */}
       {selectedTreatment && (

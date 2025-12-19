@@ -1,4 +1,4 @@
-// 19개 회복 가이드 글 데이터
+// 18개 회복 가이드 글 데이터
 // 각 글은 시술/수술명에 대한 회복 가이드입니다.
 
 export interface RecoveryGuidePost {
@@ -1673,8 +1673,92 @@ export const recoveryGuidePosts: RecoveryGuidePost[] = [
   },
 ];
 
+// 언어별 가이드 로드 함수
+async function getRecoveryGuidePostsByLanguage(
+  language: string
+): Promise<RecoveryGuidePost[]> {
+  try {
+    if (language === "JP") {
+      console.log(
+        "[getRecoveryGuidePostsByLanguage] Loading Japanese posts..."
+      );
+      const { recoveryGuidePosts: jpPosts } = await import(
+        "./recoveryGuidePosts.ja"
+      );
+      console.log(
+        "[getRecoveryGuidePostsByLanguage] Loaded",
+        jpPosts?.length || 0,
+        "Japanese posts"
+      );
+      return jpPosts || recoveryGuidePosts;
+    }
+    if (language === "CN") {
+      console.log("[getRecoveryGuidePostsByLanguage] Loading Chinese posts...");
+      const { recoveryGuidePosts: zhPosts } = await import(
+        "./recoveryGuidePosts.zh"
+      );
+      console.log(
+        "[getRecoveryGuidePostsByLanguage] Loaded",
+        zhPosts?.length || 0,
+        "Chinese posts"
+      );
+      return zhPosts || recoveryGuidePosts;
+    }
+    if (language === "EN") {
+      console.log("[getRecoveryGuidePostsByLanguage] Loading English posts...");
+      const { recoveryGuidePosts: enPosts } = await import(
+        "./recoveryGuidePosts.en"
+      );
+      console.log(
+        "[getRecoveryGuidePostsByLanguage] Loaded",
+        enPosts?.length || 0,
+        "English posts"
+      );
+      return enPosts || recoveryGuidePosts;
+    }
+    // 기본값은 한국어 (KR 등)
+    console.log(
+      "[getRecoveryGuidePostsByLanguage] Using Korean posts, language:",
+      language
+    );
+    return recoveryGuidePosts;
+  } catch (error) {
+    console.error(
+      `[getRecoveryGuidePostsByLanguage] Failed to load recovery guide posts for ${language}:`,
+      error
+    );
+    // 실패 시 한국어 기본값 반환
+    return recoveryGuidePosts;
+  }
+}
+
 // 시술명 또는 키워드로 회복 가이드 찾기
-export function findRecoveryGuideByKeyword(
+export async function findRecoveryGuideByKeyword(
+  keyword: string,
+  language: string = "KR"
+): Promise<RecoveryGuidePost | null> {
+  const posts = await getRecoveryGuidePostsByLanguage(language);
+  const normalizedKeyword = keyword.toLowerCase().trim();
+
+  for (const post of posts) {
+    // 시술명 직접 매칭
+    if (post.procedureName.toLowerCase().includes(normalizedKeyword)) {
+      return post;
+    }
+    // 키워드 매칭
+    if (
+      post.keywords.some((k) => k.toLowerCase().includes(normalizedKeyword)) ||
+      post.keywords.some((k) => normalizedKeyword.includes(k.toLowerCase()))
+    ) {
+      return post;
+    }
+  }
+
+  return null;
+}
+
+// 동기 버전 (하위 호환성)
+export function findRecoveryGuideByKeywordSync(
   keyword: string
 ): RecoveryGuidePost | null {
   const normalizedKeyword = keyword.toLowerCase().trim();
@@ -1697,11 +1781,42 @@ export function findRecoveryGuideByKeyword(
 }
 
 // ID로 회복 가이드 찾기
-export function findRecoveryGuideById(id: string): RecoveryGuidePost | null {
+export async function findRecoveryGuideById(
+  id: string,
+  language: string = "KR"
+): Promise<RecoveryGuidePost | null> {
+  if (!id) {
+    console.warn("[findRecoveryGuideById] id is empty");
+    return null;
+  }
+  console.log(
+    "[findRecoveryGuideById] Searching for id:",
+    id,
+    "language:",
+    language
+  );
+  const posts = await getRecoveryGuidePostsByLanguage(language);
+  console.log("[findRecoveryGuideById] Total posts available:", posts.length);
+  const found = posts.find((post) => post.id === id) || null;
+  console.log("[findRecoveryGuideById] Found:", found ? "Yes" : "No");
+  return found;
+}
+
+// 동기 버전 (하위 호환성)
+export function findRecoveryGuideByIdSync(
+  id: string
+): RecoveryGuidePost | null {
   return recoveryGuidePosts.find((post) => post.id === id) || null;
 }
 
 // 모든 회복 가이드 가져오기
-export function getAllRecoveryGuides(): RecoveryGuidePost[] {
+export async function getAllRecoveryGuides(
+  language: string = "KR"
+): Promise<RecoveryGuidePost[]> {
+  return await getRecoveryGuidePostsByLanguage(language);
+}
+
+// 동기 버전 (하위 호환성)
+export function getAllRecoveryGuidesSync(): RecoveryGuidePost[] {
   return recoveryGuidePosts;
 }

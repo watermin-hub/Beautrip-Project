@@ -1,0 +1,130 @@
+import { supabase } from "@/lib/supabase";
+
+const BUCKET_NAME = "review-images";
+
+/**
+ * 후기 이미지를 Supabase Storage에 업로드
+ * @param file 업로드할 이미지 파일
+ * @param reviewId 후기 ID (UUID)
+ * @param imageIndex 이미지 인덱스 (0부터 시작)
+ * @returns 업로드된 이미지의 공개 URL
+ */
+export async function uploadReviewImage(
+  file: File,
+  reviewId: string,
+  imageIndex: number
+): Promise<string> {
+  try {
+    // 파일 확장자 추출
+    const fileExt = file.name.split(".").pop();
+    if (!fileExt) {
+      throw new Error("파일 확장자를 찾을 수 없습니다.");
+    }
+
+    // 파일명 생성: {reviewId}/{imageIndex}.{ext}
+    const fileName = `${reviewId}/${imageIndex}.${fileExt}`;
+
+    // 이미지 업로드
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false, // 중복 방지
+      });
+
+    if (uploadError) {
+      throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
+    }
+
+    // 공개 URL 가져오기
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error: any) {
+    console.error("이미지 업로드 오류:", error);
+    throw error;
+  }
+}
+
+/**
+ * 여러 이미지를 한 번에 업로드
+ * @param files 업로드할 이미지 파일 배열
+ * @param reviewId 후기 ID (UUID)
+ * @returns 업로드된 이미지들의 공개 URL 배열
+ */
+export async function uploadReviewImages(
+  files: File[],
+  reviewId: string
+): Promise<string[]> {
+  try {
+    const uploadPromises = files.map((file, index) =>
+      uploadReviewImage(file, reviewId, index)
+    );
+
+    const urls = await Promise.all(uploadPromises);
+    return urls;
+  } catch (error: any) {
+    console.error("이미지 일괄 업로드 오류:", error);
+    throw error;
+  }
+}
+
+/**
+ * 이미지 삭제
+ * @param reviewId 후기 ID
+ * @param imageIndex 이미지 인덱스 (선택사항, 없으면 모든 이미지 삭제)
+ */
+export async function deleteReviewImage(
+  reviewId: string,
+  imageIndex?: number
+): Promise<void> {
+  try {
+    if (imageIndex !== undefined) {
+      // 특정 이미지만 삭제
+      const { data: files } = await supabase.storage
+        .from(BUCKET_NAME)
+        .list(reviewId);
+
+      if (files && files.length > imageIndex) {
+        const fileName = `${reviewId}/${imageIndex}.${files[imageIndex].name
+          .split(".")
+          .pop()}`;
+        await supabase.storage.from(BUCKET_NAME).remove([fileName]);
+      }
+    } else {
+      // 모든 이미지 삭제
+      const { data: files } = await supabase.storage
+        .from(BUCKET_NAME)
+        .list(reviewId);
+
+      if (files && files.length > 0) {
+        const filePaths = files.map((file) => `${reviewId}/${file.name}`);
+        await supabase.storage.from(BUCKET_NAME).remove(filePaths);
+      }
+    }
+  } catch (error: any) {
+    console.error("이미지 삭제 오류:", error);
+    throw error;
+  }
+}
+
+/**
+ * 이미지 URL이 Supabase Storage URL인지 확인
+ */
+export function isSupabaseStorageUrl(url: string): boolean {
+  return url.includes("supabase.co/storage");
+}
+
+/**
+ * 이미지 URL에서 파일명 추출
+ */
+export function getImageFileName(url: string): string | null {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.pathname.split("/").pop() || null;
+  } catch {
+    return null;
+  }
+}

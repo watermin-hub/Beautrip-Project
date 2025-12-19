@@ -170,9 +170,9 @@ export default function HomePage() {
       <RankingBanner />
       {/* Header - 배너 아래 고정 */}
       <Header hasRankingBanner={true} />
-      {/* 배너 높이만큼 여백 추가 (pt-[41px] = 배너 높이) */}
-      <div className="pt-[41px] px-4 pb-20">
-        {/* 헤더와 일정 입력창 사이 여백 */}
+      {/* 배너 높이(41px) + 헤더 높이(48px) = 89px, 추가 여유 공간 확보 */}
+      <div className="pt-[96px] px-4 pb-20">
+        {/* 헤더와 일정 입력창 사이 여백 - TravelScheduleBar 상단 테두리가 헤더에 가려지지 않도록 충분한 여백 */}
         <div className="mt-4">
           {/* 여행 일정 입력 바 (빨간 테두리 - 높은 중요도) */}
           <TravelScheduleBar

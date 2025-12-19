@@ -52,6 +52,8 @@ export interface Treatment {
 export interface CategoryTreatTimeRecovery {
   category_large?: string;
   중분류?: string; // 중분류 (category_mid와 매칭)
+  category_mid?: string; // category_mid (중분류와 동일)
+  keyword_kr?: string; // 한국어 키워드 (keyword_monthly_trends의 keyword와 매칭)
   소분류_리스트?: string; // 소분류 리스트
   그룹?: string;
   procedure_type?: string;
@@ -92,10 +94,20 @@ export interface HospitalMaster {
 
 // 키워드 월별 트렌드 인터페이스
 export interface KeywordMonthlyTrend {
-  keyword?: string;
-  month?: string;
-  trend_count?: number;
-  [key: string]: any;
+  id?: number;
+  KR?: string; // 한국어 키워드 - category_treattime_recovery의 keyword_kr과 매칭
+  EN?: string; // 영어 키워드
+  CN?: string; // 중국어 키워드
+  JP?: string; // 일본어 키워드
+  keyword?: string; // 하위 호환성을 위한 필드 (KR과 동일)
+  month?: string; // 월 정보
+  // 국가별 월별 관심도 컬럼들 (예: CN_2023-12, JP_2023-12, EN_2023-12 등)
+  // 국가별 평균 관심도 컬럼들
+  Avg_CN?: number; // 중국 평균 관심도
+  Avg_JP?: number; // 일본 평균 관심도
+  Avg_EN?: number; // 영어권(미국 등) 평균 관심도
+  Avg_KR?: number; // 한국 평균 관심도 (있는 경우)
+  [key: string]: any; // 동적 컬럼들 (CN_2023-12, JP_2023-12 등)
 }
 
 // ---------------------------
@@ -1015,29 +1027,207 @@ export async function getHospitalAutocomplete(
 }
 
 // 키워드 월별 트렌드 데이터 로드
-export async function loadKeywordMonthlyTrends(): Promise<
-  KeywordMonthlyTrend[]
-> {
+export async function loadKeywordMonthlyTrends(filters?: {
+  country?: string; // 국가 필터 (korea, china, japan, usa, all 등)
+  limit?: number; // 최대 개수
+}): Promise<KeywordMonthlyTrend[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const { data, error } = await client
-      .from(TABLE_NAMES.KEYWORD_MONTHLY_TRENDS)
-      .select("*");
+    let query = client.from(TABLE_NAMES.KEYWORD_MONTHLY_TRENDS).select("*");
+
+    // 국가별 평균 컬럼 기준으로 정렬
+    // 주의: Avg_KR 컬럼이 없을 수 있으므로 한국은 Avg_CN으로 fallback
+    let orderColumn = "Avg_CN"; // 기본값: 중국 평균
+    if (filters?.country) {
+      switch (filters.country) {
+        case "china":
+          orderColumn = "Avg_CN";
+          break;
+        case "japan":
+          orderColumn = "Avg_JP";
+          break;
+        case "usa":
+          orderColumn = "Avg_EN";
+          break;
+        case "korea":
+          // Avg_KR이 없을 수 있으므로 Avg_CN 사용 (나중에 클라이언트에서 처리)
+          orderColumn = "Avg_CN";
+          break;
+        case "all":
+        default:
+          // 전체일 때는 모든 국가 평균의 합계를 계산하기 위해 Avg_CN 사용 (나중에 클라이언트에서 합산)
+          orderColumn = "Avg_CN";
+          break;
+      }
+    }
+
+    // 국가별 평균 기준으로 내림차순 정렬
+    // null 값이 많은 경우를 대비해 nullsLast로 설정
+    query = query.order(orderColumn, { ascending: false, nullsFirst: false });
+
+    // limit 적용
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
+      console.error(`[loadKeywordMonthlyTrends] Supabase 오류:`, error);
       throw new Error(`Supabase 오류: ${error.message}`);
     }
 
     if (!data || !Array.isArray(data)) {
+      console.warn(
+        `[loadKeywordMonthlyTrends] 데이터가 없거나 배열이 아닙니다.`,
+        data
+      );
       return [];
+    }
+
+    console.log(
+      `[loadKeywordMonthlyTrends] 로드된 데이터 수: ${data.length}, 정렬 컬럼: ${orderColumn}`
+    );
+    if (data.length > 0) {
+      const firstItem = data[0];
+      console.log(
+        `[loadKeywordMonthlyTrends] 첫 번째 데이터 샘플 (전체):`,
+        firstItem
+      );
+      console.log(
+        `[loadKeywordMonthlyTrends] 첫 번째 데이터 키 목록:`,
+        Object.keys(firstItem)
+      );
+      console.log(`[loadKeywordMonthlyTrends] 첫 번째 데이터 상세:`, {
+        keyword: firstItem.keyword,
+        keyword_type: typeof firstItem.keyword,
+        keyword_exists: "keyword" in firstItem,
+        Avg_CN: firstItem.Avg_CN,
+        Avg_JP: firstItem.Avg_JP,
+        Avg_EN: firstItem.Avg_EN,
+        month: firstItem.month,
+      });
     }
 
     return cleanData<KeywordMonthlyTrend>(data);
   } catch (error) {
     console.error("키워드 트렌드 데이터 로드 실패:", error);
     throw error;
+  }
+}
+
+// keyword_kr로 category_mid 찾기
+export async function getCategoryMidByKeyword(
+  keyword: string
+): Promise<string | null> {
+  try {
+    if (!keyword) return null;
+
+    const recoveryData = await loadCategoryTreatTimeRecovery();
+    const keywordTrimmed = keyword.trim();
+
+    // keyword_kr 컬럼과 정확히 일치하는 항목 찾기
+    const matched = recoveryData.find((item) => {
+      const keywordKr = (item.keyword_kr || "").trim();
+      return keywordKr === keywordTrimmed;
+    });
+
+    if (matched) {
+      // 중분류 또는 category_mid 반환
+      return matched.중분류 || matched.category_mid || null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("키워드로 category_mid 찾기 실패:", error);
+    return null;
+  }
+}
+
+// 국가별 인기 키워드 가져오기 (상위 N개)
+// Avg_CN, Avg_JP, Avg_EN 컬럼을 기준으로 국가별 인기 키워드 반환
+export async function getPopularKeywordsByCountry(
+  country: string = "all",
+  limit: number = 10
+): Promise<string[]> {
+  try {
+    // 한국의 경우 모든 국가 평균값을 합산하기 위해 더 많은 데이터를 가져옴
+    const loadLimit =
+      country === "korea" || country === "all"
+        ? limit * 10 // 한국/전체는 더 많이 로드
+        : limit * 5; // 특정 국가는 적게 로드
+
+    // 국가별 평균 기준으로 정렬된 데이터 가져오기
+    // 한국의 경우 정렬 컬럼은 Avg_CN 사용 (실제 점수는 모든 국가 합산)
+    const trends = await loadKeywordMonthlyTrends({
+      country: country === "korea" ? "all" : country, // 한국은 전체 데이터 가져오기
+      limit: loadLimit,
+    });
+
+    console.log(
+      `[getPopularKeywordsByCountry] 국가: ${country}, 로드된 트렌드 수: ${trends.length}`
+    );
+
+    // 키워드별로 그룹화하고 국가별 평균값 합산 (같은 키워드가 여러 월에 있을 수 있음)
+    const keywordMap = new Map<string, number>();
+
+    // 한국어 키워드는 KR 컬럼에서 가져옴
+    trends.forEach((trend, index) => {
+      // KR 컬럼에서 한국어 키워드 가져오기
+      const keyword = trend.KR || trend.keyword || null;
+
+      if (keyword && typeof keyword === "string" && keyword.trim()) {
+        let score = 0;
+
+        if (country === "all" || country === "korea") {
+          // 전체 또는 한국: 모든 국가 평균의 합계
+          score =
+            (trend.Avg_CN || 0) + (trend.Avg_JP || 0) + (trend.Avg_EN || 0);
+        } else {
+          // 특정 국가일 때는 해당 국가 평균값 사용
+          switch (country) {
+            case "china":
+              score = trend.Avg_CN || 0;
+              break;
+            case "japan":
+              score = trend.Avg_JP || 0;
+              break;
+            case "usa":
+              score = trend.Avg_EN || 0;
+              break;
+            default:
+              score = 0;
+          }
+        }
+
+        if (score > 0) {
+          const currentScore = keywordMap.get(keyword) || 0;
+          keywordMap.set(keyword, currentScore + score);
+        }
+      }
+    });
+
+    console.log(
+      `[getPopularKeywordsByCountry] 키워드 맵 크기: ${keywordMap.size}`
+    );
+
+    // 점수 기준으로 정렬하고 상위 N개 반환
+    const sortedKeywords = Array.from(keywordMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([keyword]) => keyword);
+
+    console.log(
+      `[getPopularKeywordsByCountry] 최종 키워드 수: ${sortedKeywords.length}`,
+      sortedKeywords
+    );
+
+    return sortedKeywords;
+  } catch (error) {
+    console.error("국가별 인기 키워드 로드 실패:", error);
+    return [];
   }
 }
 
@@ -2047,6 +2237,20 @@ export interface ConcernPostData {
   updated_at?: string; // ISO timestamp
 }
 
+// 문의 데이터 인터페이스
+export interface InquiryData {
+  id?: string; // UUID
+  inquiry_type: "chat" | "phone" | "email";
+  treatment_id: number;
+  treatment_name?: string;
+  hospital_name?: string;
+  hospital_phone?: string; // 전화 문의인 경우
+  user_email?: string; // 메일 문의인 경우
+  user_id?: string; // Supabase Auth UUID (선택적)
+  created_at?: string; // ISO timestamp
+  updated_at?: string; // ISO timestamp
+}
+
 // 시술후기 저장
 export async function saveProcedureReview(
   data: ProcedureReviewData
@@ -2057,7 +2261,7 @@ export async function saveProcedureReview(
       category: data.category,
       procedure_name: data.procedure_name,
       hospital_name: data.hospital_name || null,
-      cost: data.cost || null, // 비필수 항목으로 변경
+      cost: data.cost || null, // 비필수 항목 (NULL 허용)
       procedure_rating: data.procedure_rating,
       hospital_rating: data.hospital_rating,
       gender: data.gender,
@@ -2164,6 +2368,75 @@ export async function saveConcernPost(
   }
 }
 
+// 문의 저장 (메일 문의인 경우 Supabase에 저장)
+export async function saveInquiry(
+  data: InquiryData
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    // 메일 문의인 경우에만 Supabase에 저장
+    if (data.inquiry_type === "email") {
+      // 현재 사용자 정보 가져오기 (선택적)
+      let userId: string | null = data.user_id || null;
+      if (!userId) {
+        try {
+          const {
+            data: { session },
+          } = await client.auth.getSession();
+          if (session?.user) {
+            userId = session.user.id;
+          }
+        } catch (authError) {
+          // 인증 정보가 없어도 계속 진행 (비로그인 사용자도 문의 가능)
+          console.log("로그인 정보를 가져올 수 없습니다:", authError);
+        }
+      }
+
+      const inquiryData = {
+        inquiry_type: data.inquiry_type,
+        treatment_id: data.treatment_id,
+        treatment_name: data.treatment_name || null,
+        hospital_name: data.hospital_name || null,
+        hospital_phone: data.hospital_phone || null,
+        user_email: data.user_email || null,
+        user_id: userId || null,
+      };
+
+      const { data: insertedData, error } = await client
+        .from("inquiries")
+        .insert([inquiryData])
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("문의 저장 실패:", error);
+        // 테이블이 없을 수도 있으므로 에러를 반환하지 않고 로그만 남김
+        console.warn(
+          "inquiries 테이블이 없거나 저장에 실패했습니다. 테이블을 생성해주세요."
+        );
+        // 에러가 나도 mailto는 작동하므로 성공으로 처리
+        return { success: true };
+      }
+
+      return { success: true, id: insertedData?.id };
+    }
+
+    // 전화 또는 AI 채팅 문의는 저장하지 않음 (로컬스토리지만 사용)
+    return { success: true };
+  } catch (error: any) {
+    console.error("문의 저장 중 오류:", error);
+    // 에러가 나도 mailto/tel 링크는 작동하므로 성공으로 처리
+    return { success: true };
+  }
+}
+
 // 시술 후기 목록 가져오기 (최신순)
 export async function loadProcedureReviews(
   limit: number = 50
@@ -2239,6 +2512,50 @@ export async function loadConcernPosts(
   } catch (error) {
     console.error("고민글 로드 실패:", error);
     return [];
+  }
+}
+
+// 시술 후기 상세 가져오기
+export async function getProcedureReview(
+  reviewId: string
+): Promise<ProcedureReviewData | null> {
+  try {
+    const { data, error } = await supabase
+      .from("procedure_reviews")
+      .select("*")
+      .eq("id", reviewId)
+      .single();
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    return data as ProcedureReviewData | null;
+  } catch (error) {
+    console.error("시술 후기 상세 로드 실패:", error);
+    return null;
+  }
+}
+
+// 병원 후기 상세 가져오기
+export async function getHospitalReview(
+  reviewId: string
+): Promise<HospitalReviewData | null> {
+  try {
+    const { data, error } = await supabase
+      .from("hospital_reviews")
+      .select("*")
+      .eq("id", reviewId)
+      .single();
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    return data as HospitalReviewData | null;
+  } catch (error) {
+    console.error("병원 후기 상세 로드 실패:", error);
+    return null;
   }
 }
 
@@ -2468,7 +2785,8 @@ export async function getToggleFamilyByCategorySmall(
 
 // category_small로 회복 가이드 찾기 (toggle_family를 회복 가이드 제목과 매칭)
 export async function findRecoveryGuideByCategorySmall(
-  categorySmall: string
+  categorySmall: string,
+  language: string = "KR"
 ): Promise<string | null> {
   try {
     if (!categorySmall) {
@@ -2484,7 +2802,7 @@ export async function findRecoveryGuideByCategorySmall(
       return null;
     }
 
-    return await findRecoveryGuideByToggleFamily(toggleFamily);
+    return await findRecoveryGuideByToggleFamily(toggleFamily, language);
   } catch (error) {
     console.error("❌ 회복 가이드 찾기 실패:", error);
     return null;
@@ -2493,7 +2811,8 @@ export async function findRecoveryGuideByCategorySmall(
 
 // toggle_family로 회복 가이드 찾기 (공통 함수)
 async function findRecoveryGuideByToggleFamily(
-  toggleFamily: string
+  toggleFamily: string,
+  language: string = "KR"
 ): Promise<string | null> {
   try {
     if (!toggleFamily) {
@@ -2503,13 +2822,15 @@ async function findRecoveryGuideByToggleFamily(
 
     console.log(
       "🔍 회복 가이드 목록에서 매칭 중... toggle_family:",
-      toggleFamily
+      toggleFamily,
+      "language:",
+      language
     );
     // 회복 가이드 목록 가져오기 (recoveryGuidePosts에서)
     const { getAllRecoveryGuides } = await import(
       "@/lib/content/recoveryGuidePosts"
     );
-    const recoveryGuides = getAllRecoveryGuides();
+    const recoveryGuides = await getAllRecoveryGuides(language);
 
     console.log("📋 회복 가이드 개수:", recoveryGuides.length);
 

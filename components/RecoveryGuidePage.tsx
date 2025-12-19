@@ -30,7 +30,7 @@ export default function RecoveryGuidePage() {
       <Header />
 
       {/* 상단 제목 영역 */}
-      <div className="sticky top-[48px] z-20 bg-white border-b border-gray-100">
+      <div className="sticky top-[48px] z-[101] bg-white border-b border-gray-100">
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
             <button
@@ -52,7 +52,7 @@ export default function RecoveryGuidePage() {
       </div>
 
       {/* 본문 */}
-      <main className="px-4 pb-12 pt-4 space-y-6">
+      <main className="px-4 pb-12 pt-[96px] space-y-6">
         {/* 그룹 선택 카드 */}
         <section>
           <h2 className="text-sm font-semibold text-gray-900 mb-2">

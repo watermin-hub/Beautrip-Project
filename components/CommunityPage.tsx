@@ -38,7 +38,7 @@ export default function CommunityPage() {
       <CommunityHeader activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Content */}
-      <div className="pt-[141px]">
+      <div className="pt-[104px]">
         {activeTab === "popular" ? (
           <PostList activeTab="popular" />
         ) : activeTab === "latest" ? (

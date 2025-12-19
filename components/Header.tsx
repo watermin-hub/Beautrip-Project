@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FiSearch, FiGlobe, FiBell, FiChevronDown } from "react-icons/fi";
 import { BsCloud } from "react-icons/bs";
@@ -16,12 +16,22 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const router = useRouter();
-  const globeButtonRef = useRef<HTMLButtonElement>(null);
   const { language, setLanguage } = useLanguage();
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    right: 0,
-  });
+
+  // 캘린더 모달이 열려있는지 확인
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleModalStateChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsCalendarModalOpen(customEvent.detail?.isOpen || false);
+    };
+
+    window.addEventListener("calendarModalOpen", handleModalStateChange);
+    return () => {
+      window.removeEventListener("calendarModalOpen", handleModalStateChange);
+    };
+  }, []);
 
   const languages = [
     { code: "KR" as const, name: "한국어", flag: "🇰🇷" },
@@ -33,22 +43,14 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
   const selectedLanguage =
     languages.find((lang) => lang.code === language) || languages[0];
 
-  useEffect(() => {
-    if (isLanguageOpen && globeButtonRef.current) {
-      const rect = globeButtonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 8,
-        right: window.innerWidth - rect.right,
-      });
-    }
-  }, [isLanguageOpen]);
-
   return (
     <>
       <header
         className={`fixed left-1/2 transform -translate-x-1/2 w-full max-w-md ${
           hasRankingBanner ? "top-[41px]" : "top-0"
-        } z-[60] bg-white border-b border-gray-100 px-4 py-3`}
+        } ${
+          isCalendarModalOpen ? "z-[30]" : "z-[60]"
+        } bg-white border-b border-gray-100 px-4 py-3`}
       >
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -82,7 +84,6 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
             </button>
             <div className="relative">
               <button
-                ref={globeButtonRef}
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                 className="p-2 hover:bg-gray-50 rounded-full transition-colors relative z-[100]"
               >
@@ -95,10 +96,10 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
                     onClick={() => setIsLanguageOpen(false)}
                   />
                   <div
-                    className="fixed bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[150px]"
+                    className="absolute bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[150px] max-w-[200px]"
                     style={{
-                      top: `${dropdownPosition.top}px`,
-                      right: `${dropdownPosition.right}px`,
+                      top: "calc(100% + 8px)",
+                      right: "-10px",
                     }}
                   >
                     {languages.map((lang) => (

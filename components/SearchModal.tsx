@@ -207,13 +207,14 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white overflow-y-auto max-w-md mx-auto left-1/2 transform -translate-x-1/2 pb-20 w-full">
+    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-full z-[100] bg-white overflow-y-auto pb-20 safe-area-inset">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-3">
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-3 safe-area-top">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-50 active:bg-gray-100 rounded-full transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="닫기"
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
@@ -231,12 +232,14 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 }, 100);
               }}
               onEnter={handleSearch}
-              className="bg-gray-50 border border-gray-200"
+              className="bg-gray-50 border border-gray-200 text-base"
+              style={{ fontSize: "16px" }}
             />
           </div>
           <button
             onClick={handleSearch}
-            className="px-3 py-2 text-primary-main text-sm font-medium hover:bg-primary-main/10 rounded-lg transition-colors"
+            className="px-4 py-2.5 text-primary-main text-sm font-medium hover:bg-primary-main/10 active:bg-primary-main/20 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label="검색"
           >
             검색
           </button>
@@ -244,7 +247,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
         {/* Region Selector */}
         <div className="mt-3">
-          <button className="flex items-center gap-1 text-gray-700 text-sm hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
+          <button className="flex items-center gap-1 text-gray-700 text-sm hover:bg-gray-50 active:bg-gray-100 px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-h-[44px]">
             <span>{selectedRegion}</span>
             <FiChevronDown className="text-gray-500 text-sm" />
           </button>
@@ -313,7 +316,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     );
                     onClose();
                   }}
-                  className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm transition-colors"
+                  className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 px-4 py-2.5 rounded-full text-sm transition-colors touch-manipulation min-h-[36px]"
                 >
                   <span>{search}</span>
                   <span
@@ -321,9 +324,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                       e.stopPropagation();
                       removeRecentSearch(search, e);
                     }}
-                    className="hover:bg-gray-300 rounded-full p-0.5 transition-colors cursor-pointer"
+                    className="hover:bg-gray-300 active:bg-gray-400 rounded-full p-1 transition-colors cursor-pointer touch-manipulation min-w-[24px] min-h-[24px] flex items-center justify-center"
+                    aria-label={`${search} 삭제`}
                   >
-                    <IoClose className="text-gray-500 text-sm" />
+                    <IoClose className="text-gray-500 text-xs" />
                   </span>
                 </button>
               ))}
@@ -332,13 +336,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         )}
 
         {/* Quick Icons */}
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-5 gap-3 sm:gap-4">
           {quickIcons.map((item) => (
             <button
               key={item.id}
-              className="flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition-colors"
+              className="flex flex-col items-center gap-2 p-2 sm:p-3 hover:bg-gray-50 active:bg-gray-100 rounded-xl transition-colors touch-manipulation min-h-[80px]"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-light/20 to-primary-main/30 rounded-full flex items-center justify-center text-xl">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary-light/20 to-primary-main/30 rounded-full flex items-center justify-center text-lg sm:text-xl">
                 {item.icon}
               </div>
               <span className="text-xs text-gray-700 text-center leading-tight">
@@ -353,7 +357,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           <h3 className="text-base font-bold text-gray-900 mb-4">
             추천 검색어
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {recommendedSearches.map((item) => (
               <button
                 key={item.id}
@@ -367,7 +371,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   );
                   onClose();
                 }}
-                className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+                className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors text-left touch-manipulation min-h-[52px]"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-primary-main font-bold text-sm min-w-[20px]">
