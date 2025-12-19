@@ -11,6 +11,7 @@ interface AutocompleteInputProps {
   onSuggestionSelect?: (suggestion: string) => void;
   onEnter?: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export default function AutocompleteInput({
@@ -21,6 +22,7 @@ export default function AutocompleteInput({
   onSuggestionSelect,
   onEnter,
   className = "",
+  style,
 }: AutocompleteInputProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -140,6 +142,7 @@ export default function AutocompleteInput({
           }}
           placeholder={placeholder}
           className={`w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main touch-manipulation ${className}`}
+          style={style}
         />
       </div>
 
