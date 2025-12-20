@@ -62,6 +62,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.noTreatmentName": "시술명 없음",
     "common.noHospitalName": "병원명 없음",
     "common.all": "전체",
+    "common.readTime": "분",
+    "common.views": "조회수",
     // Form validation messages
     "form.loginRequired": "로그인 후에만 사용할 수 있습니다.",
     "form.loginRequiredConcern": "로그인 후에만 고민글을 작성할 수 있습니다.",
@@ -541,6 +543,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.noTreatmentName": "No treatment name",
     "common.noHospitalName": "No hospital name",
     "common.all": "All",
+    "common.readTime": "min",
+    "common.views": "Views",
     // Form validation messages
     "form.loginRequired": "Please log in to continue.",
     "form.loginRequiredConcern": "Please log in to write a concern post.",
@@ -951,6 +955,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.noItems": "No items registered.",
     "community.top20.title":
       "TOP 20 Popular Korean Procedures for Foreign Travelers!",
+    "community.top20.description":
+      "Check out the TOP 20 most popular procedures in Korea.",
     "community.travelRecommendation.title":
       "Perfect Korean Travel Spots for Your Schedule ✈️",
     "community.travelRecommendation.subtitle":
@@ -1028,6 +1034,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.noTreatmentName": "施術名なし",
     "common.noHospitalName": "病院名なし",
     "common.all": "すべて",
+    "common.readTime": "分",
+    "common.views": "閲覧数",
     // Form validation messages
     "form.loginRequired": "ログインして続行してください。",
     "form.loginRequiredConcern":
@@ -1435,6 +1443,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.writePost": "投稿作成",
     "community.noItems": "登録された項目がありません。",
     "community.top20.title": "外国人旅行者のための韓国人気施術情報 TOP 20！",
+    "community.top20.description":
+      "韓国で最も人気のある施術 TOP 20を確認してください。",
     "community.travelRecommendation.title":
       "あなたのスケジュールにぴったりの韓国旅行地おすすめ ✈️",
     "community.travelRecommendation.subtitle": "旅行ルートを自動生成します！",
@@ -1516,6 +1526,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.noTreatmentName": "无疗程名称",
     "common.noHospitalName": "无医院名称",
     "common.all": "全部",
+    "common.readTime": "分钟",
+    "common.views": "浏览量",
     // Form validation messages
     "form.loginRequired": "请登录后继续。",
     "form.loginRequiredConcern": "请登录后发布咨询。",
@@ -1900,6 +1912,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.writePost": "写帖子",
     "community.noItems": "没有注册的项目。",
     "community.top20.title": "外国游客的韩国热门疗程信息 TOP 20！",
+    "community.top20.description": "查看韩国最受欢迎的疗程 TOP 20。",
     "community.travelRecommendation.title": "适合您日程的韩国旅游地推荐 ✈️",
     "community.travelRecommendation.subtitle": "自动为您生成旅行路线！",
     "community.travelRecommendation.recommendedHighlights": "推荐看点",

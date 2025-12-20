@@ -5043,6 +5043,22 @@ export async function deleteSavedSchedule(
       return { success: false, error: "로그인이 필요합니다." };
     }
 
+    // 인증 상태 확인 (디버깅용)
+    const {
+      data: { user: authUser },
+    } = await client.auth.getUser();
+    
+    if (!authUser || authUser.id !== userId) {
+      console.error("인증 불일치:", {
+        userId,
+        authUserId: authUser?.id,
+      });
+      return {
+        success: false,
+        error: "인증 정보가 일치하지 않습니다.",
+      };
+    }
+
     // Soft delete: 실제 삭제 대신 deleted_at만 업데이트
     const { data, error } = await client
       .from("saved_schedules")
