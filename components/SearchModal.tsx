@@ -97,6 +97,7 @@ const categories = [
 ];
 
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("지역");

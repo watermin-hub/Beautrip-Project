@@ -32,6 +32,7 @@ interface ReviewData {
 }
 
 export default function ReviewWriteModal({ isOpen, onClose, filterData }: ReviewWriteModalProps) {
+  const { t } = useLanguage()
   const [content, setContent] = useState('')
   const [rating, setRating] = useState(0)
   const [procedure, setProcedure] = useState('')
