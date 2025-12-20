@@ -14,13 +14,14 @@ import {
 } from "@/lib/api/beautripApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
+import { translateText, type LanguageCode } from "@/lib/utils/translation";
 import Image from "next/image";
-import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft } from "react-icons/fi";
+import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft, FiGlobe } from "react-icons/fi";
 
 function PostDetailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const postId = searchParams.get("id");
   const postType = searchParams.get("type") as
     | "procedure"
@@ -31,12 +32,23 @@ function PostDetailContent() {
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [commentCount, setCommentCount] = useState(0);
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslated, setIsTranslated] = useState(false);
 
   useEffect(() => {
     if (postId && postType) {
       loadPostData();
     }
   }, [postId, postType]);
+
+  // 언어 변경 시 번역 상태 초기화
+  useEffect(() => {
+    setIsTranslated(false);
+    setTranslatedTitle(null);
+    setTranslatedContent(null);
+  }, [language]);
 
   const loadPostData = async () => {
     if (!postId || !postType) return;
@@ -74,6 +86,52 @@ function PostDetailContent() {
       const count = await getCommentCount(postId, postType);
       setCommentCount(count);
     }
+  };
+
+  const handleTranslate = async () => {
+    if (!post || isTranslating) return;
+
+    setIsTranslating(true);
+    try {
+      const targetLang = language as LanguageCode;
+
+      // 현재 언어가 한국어가 아니고, 원본 텍스트가 한국어인 경우에만 번역
+      if (targetLang === "KR") {
+        // 한국어로 설정되어 있으면 번역하지 않음
+        setIsTranslated(false);
+        setTranslatedTitle(null);
+        setTranslatedContent(null);
+        setIsTranslating(false);
+        return;
+      }
+
+      // 제목과 내용을 번역
+      const translationPromises: Promise<string>[] = [];
+      
+      if (postType === "concern" && post.title) {
+        translationPromises.push(translateText(post.title, targetLang, "KR"));
+      } else {
+        translationPromises.push(Promise.resolve(""));
+      }
+      
+      translationPromises.push(translateText(post.content || "", targetLang, "KR"));
+
+      const [translatedTitleResult, translatedContentResult] = await Promise.all(translationPromises);
+
+      if (postType === "concern" && post.title) {
+        setTranslatedTitle(translatedTitleResult);
+      }
+      setTranslatedContent(translatedContentResult);
+      setIsTranslated(true);
+    } catch (error) {
+      console.error("번역 실패:", error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleShowOriginal = () => {
+    setIsTranslated(false);
   };
 
   if (loading) {
@@ -117,14 +175,31 @@ function PostDetailContent() {
 
       {/* 상단 헤더 */}
       <div className="sticky top-[48px] z-20 bg-white border-b border-gray-100">
-        <div className="flex items-center gap-3 px-4 py-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-50 rounded-full transition-colors"
-          >
-            <FiArrowLeft className="text-gray-700 text-xl" />
-          </button>
-          <h1 className="text-lg font-bold text-gray-900">게시글</h1>
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+            >
+              <FiArrowLeft className="text-gray-700 text-xl" />
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">게시글</h1>
+          </div>
+          {/* 번역 버튼 */}
+          {language !== "KR" && (
+            <button
+              onClick={isTranslated ? handleShowOriginal : handleTranslate}
+              disabled={isTranslating}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                isTranslated
+                  ? "bg-primary-main text-white hover:bg-primary-main/90"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <FiGlobe className="text-base" />
+              <span>{isTranslating ? "번역 중..." : isTranslated ? "원문 보기" : "번역하기"}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -172,15 +247,23 @@ function PostDetailContent() {
         {/* 제목 (고민글인 경우) */}
         {postType === "concern" && post.title && (
           <h2 className="text-xl font-bold text-gray-900 mb-4 leading-relaxed">
-            {post.title}
+            {isTranslated && translatedTitle ? translatedTitle : post.title}
           </h2>
         )}
 
         {/* 게시글 내용 */}
         <div className="mb-6">
           <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-            {post.content}
+            {isTranslated && translatedContent ? translatedContent : post.content}
           </p>
+          {isTranslated && (
+            <button
+              onClick={handleShowOriginal}
+              className="mt-2 text-xs text-primary-main hover:text-primary-main/80 underline"
+            >
+              원문 보기
+            </button>
+          )}
         </div>
 
         {/* 이미지 */}

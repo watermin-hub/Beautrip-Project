@@ -8,21 +8,21 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RankingItem {
   rank: number;
-  name: string;
+  nameKey: string;
   status: "best" | "up" | "down";
 }
 
 const rankings: RankingItem[] = [
-  { rank: 1, name: "리쥬란힐러", status: "best" },
-  { rank: 2, name: "써마지", status: "best" },
-  { rank: 3, name: "쥬베룩", status: "best" },
-  { rank: 4, name: "울쎄라", status: "up" },
-  { rank: 5, name: "LDM", status: "up" },
-  { rank: 6, name: "스킨부스터", status: "up" },
-  { rank: 7, name: "올리지오", status: "down" },
-  { rank: 8, name: "튠페이스", status: "up" },
-  { rank: 9, name: "쎄라필", status: "up" },
-  { rank: 10, name: "리프테라", status: "down" },
+  { rank: 1, nameKey: "ranking.procedure.rejuranHealer", status: "best" },
+  { rank: 2, nameKey: "ranking.procedure.thermage", status: "best" },
+  { rank: 3, nameKey: "ranking.procedure.juvelook", status: "best" },
+  { rank: 4, nameKey: "ranking.procedure.ultherapy", status: "up" },
+  { rank: 5, nameKey: "ranking.procedure.ldm", status: "up" },
+  { rank: 6, nameKey: "ranking.procedure.skinBooster", status: "up" },
+  { rank: 7, nameKey: "ranking.procedure.oligio", status: "down" },
+  { rank: 8, nameKey: "ranking.procedure.tuneFace", status: "up" },
+  { rank: 9, nameKey: "ranking.procedure.thermavel", status: "up" },
+  { rank: 10, nameKey: "ranking.procedure.lifterra", status: "down" },
 ];
 
 export default function RankingBanner() {
@@ -77,7 +77,7 @@ export default function RankingBanner() {
               <IoChevronUp className="text-primary-main text-sm" />
             </div>
             <span className="text-gray-800 text-sm font-medium truncate">
-              {currentRanking.name}
+              {t(currentRanking.nameKey)}
             </span>
             {currentRanking.status === "best" && (
               <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap ml-1">
@@ -100,7 +100,7 @@ export default function RankingBanner() {
                     ? "bg-primary-main w-2"
                     : "bg-gray-300 w-1.5 hover:bg-gray-400"
                 }`}
-                aria-label={`${index + 1}순위: ${rankings[index].name}`}
+                aria-label={`${index + 1}순위: ${t(rankings[index].nameKey)}`}
               />
             ))}
           </div>
@@ -135,7 +135,7 @@ export default function RankingBanner() {
                   // 탐색 페이지로 이동
                   router.push(
                     `/explore?section=procedure&search=${encodeURIComponent(
-                      item.name
+                      t(item.nameKey)
                     )}`
                   );
                   setIsDropdownOpen(false);
@@ -152,7 +152,7 @@ export default function RankingBanner() {
                   <IoChevronUp className="text-primary-main text-xs" />
                 </div>
                 <span className="text-gray-800 text-xs font-medium flex-1">
-                  {item.name}
+                  {t(item.nameKey)}
                 </span>
                 {item.status === "best" && (
                   <span className="bg-primary-light/20 text-primary-main px-1.5 py-0.5 rounded text-[10px] font-semibold">

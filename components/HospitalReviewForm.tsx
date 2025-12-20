@@ -26,7 +26,7 @@ export default function HospitalReviewForm({
   onSubmit,
   editData,
 }: HospitalReviewFormProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [hospitalName, setHospitalName] = useState("");
   const [visitDate, setVisitDate] = useState("");
   const [categoryLarge, setCategoryLarge] = useState("");
@@ -49,27 +49,11 @@ export default function HospitalReviewForm({
   // 언어별 카테고리 목록 로드
   useEffect(() => {
     const loadCategories = async () => {
-      const categoryList = await getCategoryLargeList();
-      if (categoryList.length > 0) {
-        setCategories(categoryList);
-      } else {
-        // Fallback: 기본 카테고리
-        setCategories([
-          "눈성형",
-          "리프팅",
-          "보톡스",
-          "안면윤곽/양악",
-          "제모",
-          "지방성형",
-          "코성형",
-          "피부",
-          "필러",
-          "가슴성형",
-        ]);
-      }
+      const categoryList = await getCategoryLargeList(language);
+      setCategories(categoryList);
     };
     loadCategories();
-  }, []);
+  }, [language]);
 
   // 한국어 완성형 글자 체크 (자음만 입력 방지)
   const hasCompleteCharacter = (text: string): boolean => {
@@ -475,12 +459,28 @@ export default function HospitalReviewForm({
         <label className="block text-sm font-semibold text-gray-900 mb-2">
           {t("form.visitDateLabel")}
         </label>
-        <input
-          type="date"
-          value={visitDate}
-          onChange={(e) => setVisitDate(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
-        />
+        <div className="relative">
+          <input
+            type="date"
+            value={visitDate}
+            onChange={(e) => setVisitDate(e.target.value)}
+            onClick={(e) => {
+              const input = e.currentTarget as HTMLInputElement;
+              if (input.showPicker) {
+                input.showPicker();
+              }
+            }}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main cursor-pointer"
+            style={{
+              color: visitDate ? "inherit" : "transparent",
+            }}
+          />
+          {!visitDate && (
+            <div className="absolute inset-0 flex items-center px-4 pointer-events-none text-gray-500">
+              {t("placeholder.selectDate")}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 글 작성 */}

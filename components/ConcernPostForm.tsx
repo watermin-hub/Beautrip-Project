@@ -26,15 +26,15 @@ export default function ConcernPostForm({
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
 
-  // 커뮤니티 - 고민상담소 카테고리 (현재 선택 가능한 카테고리대로)
+  // 커뮤니티 - 고민상담소 카테고리 (번역 지원)
   const concernCategories = [
-    "피부 고민",
-    "시술 고민",
-    "병원 선택",
-    "가격 문의",
-    "회복 기간",
-    "부작용",
-    "기타",
+    { key: "concernCategory.skinConcern", value: "피부 고민" },
+    { key: "concernCategory.procedureConcern", value: "시술 고민" },
+    { key: "concernCategory.hospitalSelection", value: "병원 선택" },
+    { key: "concernCategory.priceInquiry", value: "가격 문의" },
+    { key: "concernCategory.recoveryPeriod", value: "회복 기간" },
+    { key: "concernCategory.sideEffect", value: "부작용" },
+    { key: "concernCategory.other", value: "기타" },
   ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,8 +148,8 @@ export default function ConcernPostForm({
         >
           <option value="">{t("form.selectConcernCategory")}</option>
           {concernCategories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
+            <option key={cat.value} value={cat.value}>
+              {t(cat.key)}
             </option>
           ))}
         </select>

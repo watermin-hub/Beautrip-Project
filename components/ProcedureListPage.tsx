@@ -74,16 +74,19 @@ export default function ProcedureListPage({
     }
   }, [searchParams]);
 
-  // 카테고리 옵션 (정적 데이터로 관리 - 필요시 별도 API 호출)
-  const largeCategories = useMemo(() => {
-    const categorySet = new Set<string>();
-    treatments.forEach((t) => {
-      if (t.category_large) {
-        categorySet.add(t.category_large);
-      }
-    });
-    return Array.from(categorySet).sort();
-  }, [treatments]);
+  // 대분류 카테고리 10개 (정적 목록 - 번역 지원)
+  const largeCategories = [
+    { key: "category.eyes", value: "눈성형" },
+    { key: "category.lifting", value: "리프팅" },
+    { key: "category.botox", value: "보톡스" },
+    { key: "category.facial", value: "안면윤곽/양악" },
+    { key: "category.hairRemoval", value: "제모" },
+    { key: "category.liposuction", value: "지방성형" },
+    { key: "category.nose", value: "코성형" },
+    { key: "category.skin", value: "피부" },
+    { key: "category.filler", value: "필러" },
+    { key: "category.breast", value: "가슴성형" },
+  ];
 
   const midCategories = useMemo(() => {
     if (!categoryLarge) return [];
@@ -461,10 +464,10 @@ export default function ProcedureListPage({
               onChange={(e) => setCategoryLarge(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main"
             >
-              <option value="">전체 카테고리</option>
+              <option value="">{t("home.category.all")}</option>
               {largeCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+                <option key={category.value} value={category.value}>
+                  {t(category.key)}
                 </option>
               ))}
             </select>

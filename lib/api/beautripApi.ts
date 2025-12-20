@@ -162,15 +162,31 @@ export interface KeywordMonthlyTrend {
 // ---------------------------
 // 카테고리 관련 함수
 // ---------------------------
+// 기본 카테고리 목록 (Fallback용)
+const DEFAULT_CATEGORIES = [
+  "눈성형",
+  "리프팅",
+  "보톡스",
+  "안면윤곽/양악",
+  "제모",
+  "지방성형",
+  "코성형",
+  "피부",
+  "필러",
+  "가슴성형",
+];
+
 // 언어별 treatment_master 테이블에서 대분류 카테고리 목록 가져오기
 export async function getCategoryLargeList(
   language?: LanguageCode
 ): Promise<string[]> {
   try {
     const client = getSupabaseOrNull();
-    if (!client) return [];
+    if (!client) return DEFAULT_CATEGORIES;
 
     const treatmentTable = getTreatmentTableName(language);
+    console.log(`[getCategoryLargeList] 언어: ${language}, 테이블: ${treatmentTable}`);
+    
     const { data, error } = await client
       .from(treatmentTable)
       .select("category_large")
@@ -178,22 +194,34 @@ export async function getCategoryLargeList(
 
     if (error) {
       console.error("카테고리 목록 로드 실패:", error);
-      return [];
+      // 테이블이 없거나 에러가 발생하면 기본 카테고리 반환
+      return DEFAULT_CATEGORIES;
     }
 
     if (!data || !Array.isArray(data)) {
-      return [];
+      console.warn(`[getCategoryLargeList] 데이터가 없거나 배열이 아닙니다.`, data);
+      return DEFAULT_CATEGORIES;
     }
 
+    console.log(`[getCategoryLargeList] 원본 데이터 개수: ${data.length}`);
+    
     // 중복 제거 및 정렬
     const uniqueCategories = Array.from(
       new Set(data.map((item) => item.category_large).filter(Boolean))
     ).sort();
 
+    console.log(`[getCategoryLargeList] 중복 제거 후 카테고리 개수: ${uniqueCategories.length}`, uniqueCategories);
+
+    // 카테고리가 5개 미만이면 기본 카테고리 사용 (데이터 부족으로 판단)
+    if (uniqueCategories.length < 5) {
+      console.warn(`[getCategoryLargeList] 카테고리가 ${uniqueCategories.length}개만 있어 기본 카테고리 사용`);
+      return DEFAULT_CATEGORIES;
+    }
+
     return uniqueCategories as string[];
   } catch (error) {
     console.error("카테고리 목록 로드 실패:", error);
-    return [];
+    return DEFAULT_CATEGORIES;
   }
 }
 

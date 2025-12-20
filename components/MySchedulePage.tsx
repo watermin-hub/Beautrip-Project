@@ -1104,7 +1104,7 @@ function SavedSchedulesTab({
               }}
               className="text-sm text-gray-600 hover:text-red-600 transition-colors"
             >
-              모두 지우기
+              {t("schedule.deleteAll")}
             </button>
           )}
         </div>
@@ -1229,7 +1229,7 @@ function SavedSchedulesTab({
                   {(names.length > 0 || ids.length > 0) && (
                     <div className="pt-3 border-t border-gray-100">
                       <p className="text-xs text-gray-500 mb-2 font-medium">
-                        시술
+                        {t("schedule.procedure")}
                       </p>
                       <div className="space-y-1.5">
                         {names.length > 0

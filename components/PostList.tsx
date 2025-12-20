@@ -1,6 +1,12 @@
 "use client";
 
-import { FiArrowUp, FiMessageCircle, FiEye, FiHeart } from "react-icons/fi";
+import {
+  FiArrowUp,
+  FiMessageCircle,
+  FiEye,
+  FiHeart,
+  FiStar,
+} from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -34,6 +40,12 @@ interface Post {
   likes?: number;
   reviewType?: "procedure" | "hospital" | "concern"; // 후기 타입 구분
   created_at?: string; // 정렬용 (Supabase에서 오는 데이터에 포함, 정렬 후 제거)
+  // 후기 관련 필드
+  procedure_name?: string; // 시술명
+  hospital_name?: string; // 병원명
+  procedure_rating?: number; // 시술 만족도
+  hospital_rating?: number; // 병원 만족도
+  overall_satisfaction?: number; // 전체 만족도 (병원 후기용)
 }
 
 const recommendedPosts: Post[] = [
@@ -649,6 +661,10 @@ export default function PostList({
               comments: 0,
               views: 0,
               reviewType: "procedure" as const,
+              procedure_name: review.procedure_name,
+              hospital_name: review.hospital_name,
+              procedure_rating: review.procedure_rating,
+              hospital_rating: review.hospital_rating,
             })
           );
 
@@ -668,6 +684,10 @@ export default function PostList({
               comments: 0,
               views: 0,
               reviewType: "hospital" as const,
+              hospital_name: review.hospital_name,
+              procedure_name: review.procedure_name,
+              overall_satisfaction: review.overall_satisfaction,
+              hospital_rating: review.hospital_kindness,
             })
           );
 
@@ -757,6 +777,10 @@ export default function PostList({
               comments: 0,
               views: 0,
               reviewType: "procedure" as const,
+              procedure_name: review.procedure_name,
+              hospital_name: review.hospital_name,
+              procedure_rating: review.procedure_rating,
+              hospital_rating: review.hospital_rating,
             })
           );
 
@@ -775,6 +799,10 @@ export default function PostList({
               comments: 0,
               views: 0,
               reviewType: "hospital" as const,
+              hospital_name: review.hospital_name,
+              procedure_name: review.procedure_name,
+              overall_satisfaction: review.overall_satisfaction,
+              hospital_rating: review.hospital_kindness,
             })
           );
 
@@ -972,6 +1000,52 @@ export default function PostList({
               {post.title}
             </span>
           </h3>
+        )}
+
+        {/* 시술 후기: 시술명과 별점 표시 */}
+        {post.reviewType === "procedure" && post.procedure_name && (
+          <div className="mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {post.procedure_name}
+            </h3>
+            {post.procedure_rating && (
+              <div className="flex items-center gap-1">
+                <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                <span className="text-sm font-semibold text-gray-700">
+                  {post.procedure_rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 병원 후기: 병원명과 별점 표시 */}
+        {post.reviewType === "hospital" && post.hospital_name && (
+          <div className="mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {post.hospital_name}
+            </h3>
+            {(post.overall_satisfaction || post.hospital_rating) && (
+              <div className="flex items-center gap-3">
+                {post.overall_satisfaction && (
+                  <div className="flex items-center gap-1">
+                    <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      시술 {post.overall_satisfaction.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+                {post.hospital_rating && (
+                  <div className="flex items-center gap-1">
+                    <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      병원 {post.hospital_rating.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Post Content */}
@@ -1195,6 +1269,52 @@ export default function PostList({
                 {post.title}
               </span>
             </h3>
+          )}
+
+          {/* 시술 후기: 시술명과 별점 표시 */}
+          {post.reviewType === "procedure" && post.procedure_name && (
+            <div className="mb-3">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {post.procedure_name}
+              </h3>
+              {post.procedure_rating && (
+                <div className="flex items-center gap-1">
+                  <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                  <span className="text-sm font-semibold text-gray-700">
+                    {post.procedure_rating.toFixed(1)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 병원 후기: 병원명과 별점 표시 */}
+          {post.reviewType === "hospital" && post.hospital_name && (
+            <div className="mb-3">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {post.hospital_name}
+              </h3>
+              {(post.overall_satisfaction || post.hospital_rating) && (
+                <div className="flex items-center gap-3">
+                  {post.overall_satisfaction && (
+                    <div className="flex items-center gap-1">
+                      <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        시술 {post.overall_satisfaction.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                  {post.hospital_rating && (
+                    <div className="flex items-center gap-1">
+                      <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        병원 {post.hospital_rating.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Post Content */}

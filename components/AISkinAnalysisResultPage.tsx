@@ -8,6 +8,7 @@ import {
   type SkinAnalysisResult,
 } from "@/lib/aiAnalysisTemplates";
 import Header from "./Header";
+import BottomNavigation from "./BottomNavigation";
 
 interface AISkinAnalysisResultPageProps {
   imageUrl?: string;
@@ -91,12 +92,23 @@ export default function AISkinAnalysisResultPage({
     <div className="min-h-screen bg-gray-50 pb-20">
       <Header />
 
+      {/* 뒤로가기 버튼이 있는 헤더 */}
+      <div className="sticky top-[48px] z-30 bg-white border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+          >
+            <FiArrowLeft className="text-gray-700 text-xl" />
+          </button>
+          <h1 className="text-lg font-bold text-gray-900">피부 분석 결과</h1>
+          <div className="w-10" /> {/* 공간 맞추기 */}
+        </div>
+      </div>
+
       <div className="max-w-md mx-auto bg-white">
         {/* 결과 헤더 */}
         <div className="text-center pt-6 pb-4 px-5">
-          <h1 className="text-lg font-semibold text-gray-900 mb-1">
-            피부 분석 결과
-          </h1>
           <p className="text-xs text-gray-400">
             AI가 분석한 당신의 피부 상태입니다
           </p>
@@ -447,8 +459,11 @@ export default function AISkinAnalysisResultPage({
           }
         }
       `}</style>
+
+      <BottomNavigation />
     </div>
   );
 }
+
 
 

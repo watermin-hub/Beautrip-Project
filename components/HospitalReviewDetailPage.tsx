@@ -140,7 +140,7 @@ export default function HospitalReviewDetailPage({
       <Header />
       <div className="max-w-md mx-auto w-full bg-white">
         {/* 헤더 */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center gap-3 shadow-sm">
+        <div className="sticky top-[48px] bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center gap-3 shadow-sm">
           <button
             onClick={() => router.back()}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -151,7 +151,7 @@ export default function HospitalReviewDetailPage({
         </div>
 
         {/* 카테고리 태그 */}
-        <div className="px-4 pt-6 pb-2">
+        <div className="px-4 pt-18 pb-2">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-4 py-2 rounded-full text-xs font-semibold border border-primary-main/20">
             {review.category_large}
           </span>
