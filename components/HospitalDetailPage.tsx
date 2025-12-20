@@ -16,7 +16,7 @@ import {
 
 import {
   loadHospitalByIdRd,
-  loadTreatmentsByKey,
+  loadTreatmentsByHospitalIdRd,
   HospitalPdp,
   Treatment,
 } from "@/lib/api/beautripApi";
@@ -37,16 +37,12 @@ export default function HospitalDetailPage({
   const [hospital, setHospital] = useState<HospitalPdp | null>(null);
   const [hospitalTreatments, setHospitalTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [detectedPlatform, setDetectedPlatform] = useState<string | null>(null);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
 
-  // ✅ 즐겨찾기 저장 키(플랫폼+병원idrd) - 충돌 방지
-  const favoriteKey = useMemo(
-    () => (detectedPlatform ? `${detectedPlatform}:${hospitalIdRd}` : null),
-    [detectedPlatform, hospitalIdRd]
-  );
+  // ✅ 즐겨찾기 저장 키(hospital_id_rd)
+  const favoriteKey = useMemo(() => `hospital:${hospitalIdRd}`, [hospitalIdRd]);
 
   // ✅ 데이터 로드 (hospital_id_rd로만 조회)
   useEffect(() => {
@@ -66,27 +62,13 @@ export default function HospitalDetailPage({
           return;
         }
 
-        // 병원 객체에서 platform 추출
-        const actualPlatform = foundHospital.platform;
-        if (actualPlatform) {
-          setDetectedPlatform(actualPlatform);
-        }
-
         setHospital(foundHospital);
 
-        // 2) 해당 병원의 시술 목록 조회 (treatment_master)
-        // platform이 있는 경우에만 시술 목록 조회
-        if (actualPlatform) {
-          const treatments = await loadTreatmentsByKey(
-            actualPlatform,
-            hospitalIdRd
-          );
-          setHospitalTreatments(treatments ?? []);
-        } else {
-          setHospitalTreatments([]);
-        }
+        // 해당 병원의 시술 목록 조회 (treatment_master) - hospital_id_rd만으로 조회
+        const treatments = await loadTreatmentsByHospitalIdRd(hospitalIdRd);
+        setHospitalTreatments(treatments ?? []);
 
-        // 3) 찜 상태 로드 (platform:idrd 기준)
+        // 찜 상태 로드 (hospital_id_rd 기준)
         const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
         setIsFavorite(
           favorites.some(
@@ -105,7 +87,7 @@ export default function HospitalDetailPage({
     };
 
     loadData();
-  }, [hospitalIdRd]);
+  }, [hospitalIdRd, favoriteKey]);
 
   // ✅ 진료과 파싱 (기존 로직 유지)
   const departments: string[] = useMemo(() => {
@@ -167,7 +149,6 @@ export default function HospitalDetailPage({
       type: "clinic" as const,
 
       // 화면 표시용 데이터(선택)
-      platform,
       hospitalIdRd,
 
       title: hospital?.hospital_name || "병원명 없음",
@@ -315,13 +296,6 @@ export default function HospitalDetailPage({
                 </div>
                 <span className="text-gray-500">({reviewCount}개 리뷰)</span>
               </div>
-
-              {/* 플랫폼 표시 (디버그/UX 필요시) */}
-              {detectedPlatform && (
-                <div className="text-xs text-gray-400 mt-1">
-                  {detectedPlatform} · {hospitalIdRd}
-                </div>
-              )}
             </div>
 
             {/* 찜 버튼(상단) - 선택 */}
@@ -447,13 +421,8 @@ export default function HospitalDetailPage({
 
               <button
                 onClick={() => {
-                  // ✅ 기존 explore가 hospital_name 기반이면 유지 (추후 키 기반으로 개선 권장)
                   router.push(
-                    `/explore?section=procedure&hospital_id_rd=${hospitalIdRd}${
-                      detectedPlatform
-                        ? `&platform=${encodeURIComponent(detectedPlatform)}`
-                        : ""
-                    }`
+                    `/explore?section=procedure&hospital_id_rd=${hospitalIdRd}`
                   );
                 }}
                 className="flex items-center gap-1 text-primary-main text-sm font-medium"

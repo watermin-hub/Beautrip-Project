@@ -974,7 +974,7 @@ export async function loadHospitalByIdRd(
   }
 }
 
-// 병원 시술 목록 조회 (treatment_master) - (platform, hospital_id_rd) 기준
+// 병원 시술 목록 조회 (treatment_master) - (platform, hospital_id_rd) 기준 (레거시)
 export async function loadTreatmentsByKey(
   platform: string,
   hospitalIdRd: number
@@ -987,6 +987,34 @@ export async function loadTreatmentsByKey(
       .from(TABLE_NAMES.TREATMENT_MASTER)
       .select("*")
       .eq("platform", platform)
+      .eq("hospital_id_rd", hospitalIdRd);
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return cleanData<Treatment>(data);
+  } catch (error) {
+    console.error("병원 시술 데이터 로드 실패:", error);
+    return [];
+  }
+}
+
+// 병원 시술 목록 조회 (treatment_master) - hospital_id_rd만으로 조회
+export async function loadTreatmentsByHospitalIdRd(
+  hospitalIdRd: number
+): Promise<Treatment[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return [];
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .select("*")
       .eq("hospital_id_rd", hospitalIdRd);
 
     if (error) {
