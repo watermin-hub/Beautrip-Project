@@ -187,6 +187,7 @@ function SimilarProcedureRecommendation({
   currentProcedureName: string;
   travelPeriod: TravelPeriod | null;
 }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [similarTreatments, setSimilarTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -570,6 +571,7 @@ function SavedSchedulesTab({
   monthNames: string[];
   dayNames: string[];
 }) {
+  const { t } = useLanguage();
   const [savedSchedulesList, setSavedSchedulesList] = useState<SavedSchedule[]>(
     []
   );
@@ -1275,6 +1277,7 @@ function RecoveryCardComponent({
   isOutsideTravel: boolean;
   onDelete: (id: number) => void;
 }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [recoveryText, setRecoveryText] = useState<string | null>(
     rec.recoveryText || null

@@ -474,17 +474,6 @@ export default function HospitalInfoPage() {
           </>
         )}
       </div>
-
-      {/* 커뮤니티 글쓰기 모달 */}
-      <CommunityWriteModal
-        isOpen={isWriteModalOpen}
-        onClose={() => {
-          setIsWriteModalOpen(false);
-          // 리뷰 작성 후 상태 업데이트
-          const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-          setHasWrittenReview(reviews.length > 0);
-        }}
-      />
     </div>
   );
 }
