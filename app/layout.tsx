@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import Script from "next/script";
@@ -7,13 +7,14 @@ import AppShell from "@/components/AppShell";
 export const metadata: Metadata = {
   title: "☁️BeauTrip - 믿고 찾는 K-Beauty 메디컬 여행 플랫폼✈️",
   // description: "뷰티 여행을 떠나세요",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-    viewportFit: "cover", // iOS 노치 영역 대응
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover", // iOS 노치 영역 대응
 };
 
 export default function RootLayout({

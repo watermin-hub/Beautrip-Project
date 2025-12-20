@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AISkinAnalysisResultPage from "@/components/AISkinAnalysisResultPage";
 import { supabase } from "@/lib/supabase";
 
-export default function AISkinAnalysisResultPageRoute() {
+function AISkinAnalysisResultContent() {
   const searchParams = useSearchParams();
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -82,4 +82,21 @@ export default function AISkinAnalysisResultPageRoute() {
   }
 
   return <AISkinAnalysisResultPage imageUrl={imageUrl} />;
+}
+
+export default function AISkinAnalysisResultPageRoute() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-main mx-auto mb-4"></div>
+            <p className="text-gray-600">분석 결과를 불러오는 중...</p>
+          </div>
+        </div>
+      }
+    >
+      <AISkinAnalysisResultContent />
+    </Suspense>
+  );
 }
