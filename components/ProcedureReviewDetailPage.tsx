@@ -37,6 +37,7 @@ export default function ProcedureReviewDetailPage({
   reviewId,
 }: ProcedureReviewDetailPageProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [review, setReview] = useState<ProcedureReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);

@@ -9,6 +9,7 @@ import {
   saveProcedureReview,
   getTreatmentAutocomplete,
   getTreatmentTableName,
+  getCategoryLargeList,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
@@ -44,21 +45,34 @@ export default function ProcedureReviewForm({
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
 
-  // 대분류 카테고리 10개 (고정)
-  const categories = [
-    "눈성형",
-    "리프팅",
-    "보톡스",
-    "안면윤곽/양악",
-    "제모",
-    "지방성형",
-    "코성형",
-    "피부",
-    "필러",
-    "가슴성형",
-  ];
   const ageGroups = ["20대", "30대", "40대", "50대"];
+
+  // 언어별 카테고리 목록 로드
+  useEffect(() => {
+    const loadCategories = async () => {
+      const categoryList = await getCategoryLargeList();
+      if (categoryList.length > 0) {
+        setCategories(categoryList);
+      } else {
+        // Fallback: 기본 카테고리
+        setCategories([
+          "눈성형",
+          "리프팅",
+          "보톡스",
+          "안면윤곽/양악",
+          "제모",
+          "지방성형",
+          "코성형",
+          "피부",
+          "필러",
+          "가슴성형",
+        ]);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // 한국어 완성형 글자 체크 (자음만 입력 방지)
   const hasCompleteCharacter = (text: string): boolean => {

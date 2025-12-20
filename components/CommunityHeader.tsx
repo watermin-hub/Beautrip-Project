@@ -2,6 +2,7 @@
 
 import { FiEdit3 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type CommunityTab = "popular" | "latest" | "info" | "consultation";
 
@@ -15,11 +16,12 @@ export default function CommunityHeader({
   onTabChange,
 }: CommunityHeaderProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const tabs = [
-    { id: "popular" as const, label: "인기글" },
-    { id: "latest" as const, label: "최신글" },
-    { id: "info" as const, label: "가이드" },
-    { id: "consultation" as const, label: "고민상담소" },
+    { id: "popular" as const, labelKey: "community.tab.popular" },
+    { id: "latest" as const, labelKey: "community.tab.latest" },
+    { id: "info" as const, labelKey: "community.tab.guide" },
+    { id: "consultation" as const, labelKey: "community.tab.consultation" },
   ];
 
   return (
@@ -37,7 +39,7 @@ export default function CommunityHeader({
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
               {activeTab === tab.id && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-main"></span>
               )}

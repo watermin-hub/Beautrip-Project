@@ -140,7 +140,13 @@ export default function InformationalContentSection() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {category === "all" ? "전체" : category}
+              {category === "all" 
+                ? t("home.category.all")
+                : category === "가이드"
+                ? t("home.category.guide")
+                : category === "회복 가이드"
+                ? t("home.category.recoveryGuide")
+                : category}
             </button>
           ))}
         </div>
@@ -155,8 +161,8 @@ export default function InformationalContentSection() {
         ) : displayedContents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
             {selectedCategory === "회복 가이드"
-              ? "회복 가이드 글이 준비 중입니다."
-              : "컨텐츠가 없습니다."}
+              ? t("home.recoveryGuideEmpty")
+              : t("common.noData")}
           </div>
         ) : (
           displayedContents.map((content) => {

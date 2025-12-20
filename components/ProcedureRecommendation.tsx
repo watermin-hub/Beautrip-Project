@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDateWithDay, formatTravelPeriod } from "@/lib/utils/dateFormat";
 import { TravelScheduleData } from "./TravelScheduleForm";
 import {
   FiStar,
@@ -428,7 +429,7 @@ export default function ProcedureRecommendation({
   mainCategories = [],
 }: ProcedureRecommendationProps) {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState<ProcedureFilter>({
     duration: null,
@@ -678,8 +679,10 @@ export default function ProcedureRecommendation({
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
-    const procedureName = selectedTreatment.treatment_name || t("common.noTreatmentName");
-    const hospital = selectedTreatment.hospital_name || t("common.noHospitalName");
+    const procedureName =
+      selectedTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital =
+      selectedTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatment.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -749,15 +752,7 @@ export default function ProcedureRecommendation({
         ) + 1
       : 0;
 
-  // 날짜 포맷팅 함수 (예: 12월 18일 (목))
-  const formatDateWithDay = (dateString: string): string => {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-    const dayName = dayNames[date.getDay()];
-    return `${month}월 ${day}일 (${dayName})`;
-  };
+  // 날짜 포맷팅은 utils/dateFormat.ts의 formatDateWithDay 사용
 
   // 필터링된 추천 데이터
   const filteredRecommendations = useMemo(() => {
@@ -941,12 +936,13 @@ export default function ProcedureRecommendation({
         <div className="flex items-center gap-2 flex-wrap">
           <FiCalendar className="text-primary-main" />
           <span className="text-sm text-gray-700">
-            {t("procedure.travelPeriod")}: {travelDays - 1}박 {travelDays}일
+            {t("procedure.travelPeriod")}:{" "}
+            {formatTravelPeriod(travelDays - 1, travelDays, language)}
           </span>
           {scheduleData.travelPeriod.start && scheduleData.travelPeriod.end && (
             <div className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-700 font-medium">
-              {formatDateWithDay(scheduleData.travelPeriod.start)} ~{" "}
-              {formatDateWithDay(scheduleData.travelPeriod.end)}
+              {formatDateWithDay(scheduleData.travelPeriod.start, language)} ~{" "}
+              {formatDateWithDay(scheduleData.travelPeriod.end, language)}
             </div>
           )}
         </div>
@@ -1341,7 +1337,9 @@ export default function ProcedureRecommendation({
             setSelectedTreatment(null);
           }}
           onDateSelect={handleDateSelect}
-          treatmentName={selectedTreatment.treatment_name || t("common.noTreatmentName")}
+          treatmentName={
+            selectedTreatment.treatment_name || t("common.noTreatmentName")
+          }
           categoryMid={selectedTreatment.category_mid || null}
         />
       )}

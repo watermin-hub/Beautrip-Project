@@ -157,6 +157,44 @@ export interface KeywordMonthlyTrend {
 }
 
 // ---------------------------
+// 카테고리 관련 함수
+// ---------------------------
+// 언어별 treatment_master 테이블에서 대분류 카테고리 목록 가져오기
+export async function getCategoryLargeList(
+  language?: LanguageCode
+): Promise<string[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return [];
+
+    const treatmentTable = getTreatmentTableName(language);
+    const { data, error } = await client
+      .from(treatmentTable)
+      .select("category_large")
+      .not("category_large", "is", null);
+
+    if (error) {
+      console.error("카테고리 목록 로드 실패:", error);
+      return [];
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+
+    // 중복 제거 및 정렬
+    const uniqueCategories = Array.from(
+      new Set(data.map((item) => item.category_large).filter(Boolean))
+    ).sort();
+
+    return uniqueCategories as string[];
+  } catch (error) {
+    console.error("카테고리 목록 로드 실패:", error);
+    return [];
+  }
+}
+
+// ---------------------------
 // 캐시 및 유틸
 // ---------------------------
 // category_mid -> 회복정보 캐시 (중복 호출/로그 폭주 방지)

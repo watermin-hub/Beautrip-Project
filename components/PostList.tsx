@@ -1098,7 +1098,7 @@ export default function PostList({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              시술 후기
+              {t("community.tab.procedureReview")}
             </button>
             <button
               onClick={() => switchSection("hospital")}
@@ -1108,7 +1108,7 @@ export default function PostList({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              병원 후기
+              {t("community.tab.hospitalReview")}
             </button>
           </div>
         </div>

@@ -81,7 +81,7 @@ export default function RankingBanner() {
             </span>
             {currentRanking.status === "best" && (
               <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">
-                BEST
+                {t("banner.ranking.best")}
               </span>
             )}
           </div>

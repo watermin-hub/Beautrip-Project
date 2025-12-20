@@ -6,6 +6,7 @@ import CategoryRankingPage, { CategoryFilterBar } from "./CategoryRankingPage";
 import KBeautyRankingPage from "./KBeautyRankingPage";
 import HospitalRankingPage from "./HospitalRankingPage";
 import ScheduleBasedRankingPage from "./ScheduleBasedRankingPage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type RankingTab = "category" | "kbeauty" | "hospital" | "schedule";
 
@@ -36,11 +37,12 @@ export default function RankingSection({
     }
   }, [searchParams]);
 
+  const { t } = useLanguage();
   const tabs = [
-    { id: "category" as RankingTab, label: "카테고리별" },
+    { id: "category" as RankingTab, labelKey: "explore.filter.category" },
     { id: "kbeauty" as RankingTab, label: "Kbeauty" },
-    { id: "hospital" as RankingTab, label: "병원별" },
-    { id: "schedule" as RankingTab, label: "일정 맞춤" },
+    { id: "hospital" as RankingTab, labelKey: "explore.filter.hospital" },
+    { id: "schedule" as RankingTab, labelKey: "explore.filter.schedule" },
   ];
 
   return (
@@ -59,7 +61,7 @@ export default function RankingSection({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {tab.label}
+              {tab.labelKey ? t(tab.labelKey) : tab.label}
             </button>
           ))}
         </div>

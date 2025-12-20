@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiCalendar, FiChevronDown, FiX } from "react-icons/fi";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
+import { formatDateWithDay } from "@/lib/utils/dateFormat";
 
 interface TravelScheduleBarProps {
   onScheduleChange?: (
@@ -20,7 +21,7 @@ export default function TravelScheduleBar({
   onModalStateChange,
   initialOpen = false,
 }: TravelScheduleBarProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // initialOpen prop이 변경되면 모달 상태 업데이트
@@ -156,12 +157,7 @@ export default function TravelScheduleBar({
   };
 
   const formatDisplayDate = (dateStr: string): string => {
-    const date = new Date(dateStr);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-    const dayName = dayNames[date.getDay()];
-    return `${month}월 ${day}일 (${dayName})`;
+    return formatDateWithDay(dateStr, language);
   };
 
   const getDisplayText = (): string => {
@@ -170,7 +166,7 @@ export default function TravelScheduleBar({
         selectedEndDate
       )}`;
     } else if (selectedStartDate) {
-      return `${formatDisplayDate(selectedStartDate)} ~ 종료일 선택`;
+      return `${formatDisplayDate(selectedStartDate)} ~ ${t("date.selectEndDate")}`;
     }
     return "";
   };

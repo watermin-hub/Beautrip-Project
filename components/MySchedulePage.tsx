@@ -20,6 +20,7 @@ import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatTravelPeriod, formatDateWithDay } from "@/lib/utils/dateFormat";
 import {
   getRecoveryInfoByCategoryMid,
   findRecoveryGuideByCategorySmall,
@@ -571,7 +572,7 @@ function SavedSchedulesTab({
   monthNames: string[];
   dayNames: string[];
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [savedSchedulesList, setSavedSchedulesList] = useState<SavedSchedule[]>(
     []
   );
@@ -908,7 +909,15 @@ function SavedSchedulesTab({
               <FiChevronLeft className="text-gray-700 text-lg" />
             </button>
             <h2 className="text-lg font-bold text-gray-900">
-              {selectedScheduleYear}년 {monthNames[selectedScheduleMonth]}
+              {selectedScheduleYear}
+              {language === "KR"
+                ? "년"
+                : language === "EN"
+                ? ""
+                : language === "JP"
+                ? "年"
+                : "年"}{" "}
+              {monthNames[selectedScheduleMonth]}
             </h2>
             <button
               onClick={() =>
@@ -1050,7 +1059,10 @@ function SavedSchedulesTab({
               onClick={async () => {
                 if (
                   !confirm(
-                    `저장된 일정 ${savedSchedulesList.length}개를 모두 삭제하시겠습니까?`
+                    t("schedule.deleteAllConfirm").replace(
+                      "{count}",
+                      savedSchedulesList.length.toString()
+                    )
                   )
                 ) {
                   return;
@@ -1104,7 +1116,7 @@ function SavedSchedulesTab({
           <div className="text-center py-12">
             <FiCalendar className="text-gray-300 text-5xl mx-auto mb-3" />
             <p className="text-gray-500 text-sm mb-1">
-              저장된 일정이 없습니다.
+              {t("schedule.noSavedSchedules")}
             </p>
             <p className="text-gray-400 text-xs">
               일정을 저장하면 여기서 확인할 수 있습니다.
@@ -1149,11 +1161,18 @@ function SavedSchedulesTab({
                   ) || 0;
                 const days = nights + 1;
 
-                return `${parseInt(startMonth)}월 ${parseInt(
-                  startDay
-                )}일 ~ ${parseInt(endMonth)}월 ${parseInt(
-                  endDay
-                )}일 (${nights}박 ${days}일)`;
+                // 날짜 포맷팅
+                const startDateStr = formatDateWithDay(
+                  startDate.toISOString().split("T")[0],
+                  language
+                );
+                const endDateStr = formatDateWithDay(
+                  endDate.toISOString().split("T")[0],
+                  language
+                );
+                const periodStr = formatTravelPeriod(nights, days, language);
+
+                return `${startDateStr} ~ ${endDateStr} (${periodStr})`;
               };
 
               // 시술별 날짜 정보 가져오기 (배열)
@@ -1218,9 +1237,17 @@ function SavedSchedulesTab({
                               const dateStr = treatmentDates[i]
                                 ? (() => {
                                     const date = new Date(treatmentDates[i]!);
-                                    return `${
-                                      date.getMonth() + 1
-                                    }월 ${date.getDate()}일`;
+                                    const month = date.getMonth() + 1;
+                                    const day = date.getDate();
+                                    if (language === "KR") {
+                                      return `${month}월 ${day}일`;
+                                    } else if (language === "EN") {
+                                      return `${monthNames[month - 1]} ${day}`;
+                                    } else if (language === "JP") {
+                                      return `${month}月 ${day}日`;
+                                    } else {
+                                      return `${month}月 ${day}日`;
+                                    }
                                   })()
                                 : "";
 
@@ -1239,9 +1266,17 @@ function SavedSchedulesTab({
                               const dateStr = treatmentDates[i]
                                 ? (() => {
                                     const date = new Date(treatmentDates[i]!);
-                                    return `${
-                                      date.getMonth() + 1
-                                    }월 ${date.getDate()}일`;
+                                    const month = date.getMonth() + 1;
+                                    const day = date.getDate();
+                                    if (language === "KR") {
+                                      return `${month}월 ${day}일`;
+                                    } else if (language === "EN") {
+                                      return `${monthNames[month - 1]} ${day}`;
+                                    } else if (language === "JP") {
+                                      return `${month}月 ${day}日`;
+                                    } else {
+                                      return `${month}月 ${day}日`;
+                                    }
                                   })()
                                 : "";
 
@@ -1517,7 +1552,10 @@ function RecoveryCardComponent({
                     isOutsideTravel ? "text-red-600" : "text-yellow-600"
                   }
                 />
-                <span>회복 기간: {rec.recoveryDays}일</span>
+                <span>
+                  {t("schedule.recoveryPeriod")}: {rec.recoveryDays}
+                  {t("date.day")}
+                </span>
               </div>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
@@ -1526,12 +1564,12 @@ function RecoveryCardComponent({
                     : "bg-yellow-200 text-yellow-800"
                 }`}
               >
-                회복 기간
+                {t("schedule.recoveryPeriod")}
                 {rec.recoveryDayIndex ? ` D+${rec.recoveryDayIndex}` : ""}
               </span>
               {isOutsideTravel && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-300 text-red-950 whitespace-nowrap">
-                  ⚠️ 여행 기간 밖
+                  ⚠️ {t("schedule.recoveryPeriodOutside")}
                 </span>
               )}
             </div>
@@ -1565,7 +1603,7 @@ function RecoveryCardComponent({
 }
 
 export default function MySchedulePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"schedule" | "saved">("schedule");
 
@@ -2021,22 +2059,77 @@ export default function MySchedulePage() {
     calendarDays.push(new Date(year, month + 1, day));
   }
 
-  const monthNames = [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
-  ];
+  // 언어별 월 이름
+  const monthNames =
+    language === "KR"
+      ? [
+          "1월",
+          "2월",
+          "3월",
+          "4월",
+          "5월",
+          "6월",
+          "7월",
+          "8월",
+          "9월",
+          "10월",
+          "11월",
+          "12월",
+        ]
+      : language === "EN"
+      ? [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ]
+      : language === "JP"
+      ? [
+          "1月",
+          "2月",
+          "3月",
+          "4月",
+          "5月",
+          "6月",
+          "7月",
+          "8月",
+          "9月",
+          "10月",
+          "11月",
+          "12月",
+        ]
+      : [
+          "1月",
+          "2月",
+          "3月",
+          "4月",
+          "5月",
+          "6月",
+          "7月",
+          "8月",
+          "9月",
+          "10月",
+          "11月",
+          "12月",
+        ];
 
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  // 언어별 요일 이름
+  const dayNames =
+    language === "KR"
+      ? ["일", "월", "화", "수", "목", "금", "토"]
+      : language === "EN"
+      ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+      : language === "JP"
+      ? ["日", "月", "火", "水", "木", "金", "土"]
+      : ["日", "一", "二", "三", "四", "五", "六"];
 
   const selectedDateObj = selectedDate
     ? new Date(
@@ -2070,10 +2163,13 @@ export default function MySchedulePage() {
             <FiCalendar className="text-primary-main" />
             {travelPeriod ? (
               <span className="text-gray-700 font-medium">
-                여행 기간: {travelPeriod.start} ~ {travelPeriod.end}
+                {t("schedule.travelPeriodLabel")} {travelPeriod.start} ~{" "}
+                {travelPeriod.end}
               </span>
             ) : (
-              <span className="text-gray-500">여행 기간을 설정해주세요</span>
+              <span className="text-gray-500">
+                {t("schedule.setTravelPeriod")}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -2095,14 +2191,14 @@ export default function MySchedulePage() {
               className="text-xs text-gray-500 hover:text-red-500 px-2 py-1"
               title="캐시 데이터 삭제"
             >
-              초기화
+              {t("schedule.reset")}
             </button>
             <button
               onClick={() => setIsTravelModalOpen(true)}
               className="flex items-center gap-1 px-3 py-1.5 bg-primary-main text-white text-xs font-medium rounded-lg hover:bg-primary-main/90 transition-colors"
             >
               <FiEdit2 className="text-sm" />
-              {travelPeriod ? "수정" : "설정"}
+              {travelPeriod ? t("schedule.edit") : t("schedule.set")}
             </button>
           </div>
         </div>
@@ -2119,7 +2215,7 @@ export default function MySchedulePage() {
           >
             <div className="flex items-center gap-2">
               <FiCalendar className="text-lg" />
-              <span>여행 일정</span>
+              <span>{t("schedule.travelSchedule")}</span>
             </div>
             {activeTab === "schedule" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-main"></span>
@@ -2133,7 +2229,7 @@ export default function MySchedulePage() {
           >
             <div className="flex items-center gap-2">
               <FiCalendar className="text-lg" />
-              <span>저장된 일정</span>
+              <span>{t("schedule.savedSchedule")}</span>
             </div>
             {activeTab === "saved" && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-main"></span>
@@ -2279,11 +2375,11 @@ export default function MySchedulePage() {
               className="w-full bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <FiCalendar className="text-lg" />
-              현재 일정 저장하기
+              {t("schedule.saveCurrentSchedule")}
             </button>
             {!travelPeriod && (
               <p className="text-xs text-gray-500 mt-2 text-center">
-                여행 기간을 설정한 후 일정을 저장할 수 있습니다.
+                {t("schedule.saveAfterSettingPeriod")}
               </p>
             )}
             {travelPeriod && savedSchedules.length === 0 && (
@@ -2302,7 +2398,15 @@ export default function MySchedulePage() {
               <FiChevronLeft className="text-gray-700 text-xl" />
             </button>
             <h2 className="text-xl font-bold text-gray-900">
-              {year}년 {monthNames[month]}
+              {year}
+              {language === "KR"
+                ? "년"
+                : language === "EN"
+                ? ""
+                : language === "JP"
+                ? "年"
+                : "年"}{" "}
+              {monthNames[month]}
             </h2>
             <button
               onClick={goToNextMonth}
@@ -2449,7 +2553,9 @@ export default function MySchedulePage() {
           <div className="mt-4 flex flex-wrap gap-3 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 bg-sky-100 border border-sky-300 rounded"></div>
-              <span className="text-gray-600">여행 기간</span>
+              <span className="text-gray-600">
+                {t("schedule.travelPeriod")}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-1.5 bg-primary-main rounded-sm"></div>
@@ -2457,11 +2563,15 @@ export default function MySchedulePage() {
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-1.5 bg-yellow-400 rounded-sm"></div>
-              <span className="text-gray-600">회복 기간</span>
+              <span className="text-gray-600">
+                {t("schedule.recoveryPeriod")}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-1.5 bg-red-500 rounded-sm"></div>
-              <span className="text-gray-600">회복 기간 (여행 밖)</span>
+              <span className="text-gray-600">
+                {t("schedule.recoveryPeriodOutside")}
+              </span>
             </div>
           </div>
 
@@ -2531,7 +2641,11 @@ export default function MySchedulePage() {
                             <div className="flex items-center gap-2 text-sm text-primary-main font-medium mb-2 flex-wrap">
                               <div className="flex items-center gap-1">
                                 <FiClock className="text-primary-main" />
-                                <span>회복 기간: {proc.recoveryDays}일</span>
+                                <span>
+                                  {t("schedule.recoveryPeriod")}:{" "}
+                                  {proc.recoveryDays}
+                                  {t("date.day")}
+                                </span>
                               </div>
                               <span className="text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap bg-primary-main/20 text-primary-main">
                                 시술 일자 D-DAY

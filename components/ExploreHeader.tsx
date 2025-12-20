@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FiHeart } from "react-icons/fi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ExploreHeaderProps {
   activeSection: string;
@@ -13,11 +14,12 @@ export default function ExploreHeader({
   onSectionClick,
 }: ExploreHeaderProps) {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const sections = [
-    { id: "ranking", label: "랭킹" },
-    { id: "procedure", label: "전체 시술•수술" },
-    { id: "hospital", label: "전체 병원" },
+    { id: "ranking", labelKey: "explore.tab.ranking" },
+    { id: "procedure", labelKey: "explore.tab.allProcedures" },
+    { id: "hospital", labelKey: "explore.tab.allHospitals" },
   ];
 
   return (
@@ -35,7 +37,7 @@ export default function ExploreHeader({
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {section.label}
+              {t(section.labelKey)}
               {activeSection === section.id && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-main"></span>
               )}
