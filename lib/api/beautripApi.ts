@@ -4,6 +4,8 @@ import { supabase } from "../supabase";
 // Supabase 테이블 이름
 const TABLE_NAMES = {
   TREATMENT_MASTER: "treatment_master",
+  TREATMENT_PDP_VIEW: "v_treatment_pdp", // 시술 PDP용 뷰 테이블
+  HOSPITAL_PDP_VIEW: "v_hospital_pdp", // 병원 PDP용 뷰 테이블
   CATEGORY_TREATTIME_RECOVERY: "category_treattime_recovery",
   HOSPITAL_MASTER: "hospital_master",
   KEYWORD_MONTHLY_TRENDS: "keyword_monthly_trends",
@@ -89,6 +91,24 @@ export interface HospitalMaster {
   opening_hours?: string;
   hospital_img?: string; // 곧 추가될 예정
   hospital_img_url?: string; // 병원 썸네일 이미지 URL
+  [key: string]: any;
+}
+
+// 병원 PDP 뷰 데이터 인터페이스 (v_hospital_pdp)
+export interface HospitalPdp {
+  platform: "gangnamunni" | "yeoshinticket" | "babitalk" | string;
+  hospital_id_rd: number;
+  hospital_name?: string | null;
+  hospital_address?: string | null;
+  opening_hours?: string | null;
+  hospital_departments?: string | string[] | null;
+  hospital_intro?: string | null;
+  hospital_info_raw?: string | null;
+  hospital_img_url?: string | null;
+  hospital_rating?: number | null;
+  review_count?: number | null;
+  hospital_phone_safe?: string | null;
+  hospital_language_support?: string | null;
   [key: string]: any;
 }
 
@@ -793,6 +813,7 @@ export async function loadHospitalMaster(): Promise<HospitalMaster[]> {
 }
 
 // ID로 단일 시술 데이터 로드 (PDP 페이지용)
+// v_treatment_pdp 뷰 테이블 사용 (JOIN된 모든 데이터 포함)
 export async function loadTreatmentById(
   treatmentId: number
 ): Promise<Treatment | null> {
@@ -801,7 +822,7 @@ export async function loadTreatmentById(
     if (!client) return null;
 
     const { data, error } = await client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(TABLE_NAMES.TREATMENT_PDP_VIEW)
       .select("*")
       .eq("treatment_id", treatmentId)
       .single();
@@ -856,7 +877,7 @@ export async function loadRelatedTreatments(
   }
 }
 
-// 같은 병원의 다른 시술들 로드 (PDP 페이지용)
+// 같은 병원의 다른 시술들 로드 (PDP 페이지용) - hospital_name 기반 (레거시)
 export async function loadHospitalTreatments(
   hospitalName: string,
   excludeId?: number
@@ -875,6 +896,98 @@ export async function loadHospitalTreatments(
     }
 
     const { data, error } = await query.limit(10);
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    return cleanData<Treatment>(data);
+  } catch (error) {
+    console.error("병원 시술 데이터 로드 실패:", error);
+    return [];
+  }
+}
+
+// 병원 단건 조회 (v_hospital_pdp 뷰 사용) - (platform, hospital_id_rd) 기준
+export async function loadHospitalByKey(
+  platform: string,
+  hospitalIdRd: number
+): Promise<HospitalPdp | null> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return null;
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.HOSPITAL_PDP_VIEW)
+      .select("*")
+      .eq("platform", platform)
+      .eq("hospital_id_rd", hospitalIdRd)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return cleanData<HospitalPdp>([data])[0];
+  } catch (error) {
+    console.error("병원 데이터 로드 실패:", error);
+    return null;
+  }
+}
+
+// 병원 단건 조회 (hospital_id_rd만으로) - platform 자동 감지
+export async function loadHospitalByIdRd(
+  hospitalIdRd: number
+): Promise<HospitalPdp | null> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return null;
+
+    // hospital_id_rd로 조회 (여러 platform 결과 중 첫 번째 사용)
+    const { data, error } = await client
+      .from(TABLE_NAMES.HOSPITAL_PDP_VIEW)
+      .select("*")
+      .eq("hospital_id_rd", hospitalIdRd)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    return cleanData<HospitalPdp>([data])[0];
+  } catch (error) {
+    console.error("병원 데이터 로드 실패:", error);
+    return null;
+  }
+}
+
+// 병원 시술 목록 조회 (treatment_master) - (platform, hospital_id_rd) 기준
+export async function loadTreatmentsByKey(
+  platform: string,
+  hospitalIdRd: number
+): Promise<Treatment[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return [];
+
+    const { data, error } = await client
+      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .select("*")
+      .eq("platform", platform)
+      .eq("hospital_id_rd", hospitalIdRd);
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -2790,6 +2903,46 @@ export async function loadMyConcernPosts(
   }
 }
 
+// 사용자 프로필 전체 정보 가져오기 (timezone, locale 포함)
+export interface UserProfile {
+  user_id: string;
+  nickname?: string | null;
+  display_name?: string | null;
+  login_id?: string | null;
+  timezone?: string | null;
+  locale?: string | null;
+  preferred_language?: string | null;
+  [key: string]: any;
+}
+
+export async function getUserProfile(
+  userId: string | null | undefined
+): Promise<UserProfile | null> {
+  if (!userId) {
+    return null;
+  }
+
+  try {
+    const { data: profile, error } = await supabase
+      .from("user_profiles")
+      .select(
+        "user_id, nickname, display_name, login_id, timezone, locale, preferred_language"
+      )
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[getUserProfile] 사용자 프로필 조회 실패:", error);
+      return null;
+    }
+
+    return profile;
+  } catch (error) {
+    console.error("[getUserProfile] 사용자 프로필 조회 중 오류:", error);
+    return null;
+  }
+}
+
 // user_id로 닉네임 가져오기
 // ✅ 백엔드에 nickname 컬럼이 추가되면 nickname을 직접 읽습니다.
 // 트리거로 자동 채워지므로 항상 nickname이 있을 것입니다.
@@ -2814,6 +2967,13 @@ export async function getUserNickname(
     }
 
     if (profile) {
+      console.log("[getUserNickname] 프로필 조회 성공:", {
+        userId: userId,
+        nickname: profile.nickname,
+        display_name: profile.display_name,
+        login_id: profile.login_id,
+      });
+
       // 1순위: nickname 컬럼 (백엔드 트리거로 자동 채워짐)
       if (profile.nickname) {
         return profile.nickname;
@@ -2833,6 +2993,10 @@ export async function getUserNickname(
       if (profile.login_id) {
         return profile.login_id;
       }
+    } else {
+      console.log("[getUserNickname] 프로필 없음:", {
+        userId: userId,
+      });
     }
 
     return "익명";
@@ -2882,9 +3046,36 @@ export async function getProcedureReview(
       });
     }
 
-    // 닉네임 추가 (이메일의 @ 앞부분)
-    const nickname = await getUserNickname(data.user_id);
+    // 닉네임 추가 (user_id는 내부 식별자로만 사용, 화면에는 nickname만 표시)
+    const userId = data.user_id ? String(data.user_id) : null;
+
+    console.log("[getProcedureReview] user_id 체크:", {
+      reviewId: reviewId,
+      raw_user_id: data.user_id,
+      userId_string: userId,
+    });
+
+    // UUID 형식 체크 (user_id가 유효한 UUID인지 확인)
+    const isUuid =
+      userId &&
+      userId !== "0" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        userId
+      );
+
+    console.log("[getProcedureReview] nickname 조회:", {
+      reviewId: reviewId,
+      userId: userId,
+      isUuid: isUuid,
+    });
+
+    const nickname = isUuid ? await getUserNickname(userId) : "익명";
     (data as any).nickname = nickname;
+
+    console.log("[getProcedureReview] nickname 결과:", {
+      reviewId: reviewId,
+      nickname: nickname,
+    });
 
     return data as ProcedureReviewData | null;
   } catch (error) {
@@ -2933,9 +3124,29 @@ export async function getHospitalReview(
       });
     }
 
-    // 닉네임 추가 (이메일의 @ 앞부분)
-    const nickname = await getUserNickname(data.user_id);
+    // 닉네임 추가 (user_id는 내부 식별자로만 사용, 화면에는 nickname만 표시)
+    const userId = data.user_id ? String(data.user_id) : null;
+    // UUID 형식 체크 (user_id가 유효한 UUID인지 확인)
+    const isUuid =
+      userId &&
+      userId !== "0" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        userId
+      );
+
+    console.log("[getHospitalReview] nickname 조회:", {
+      reviewId: reviewId,
+      userId: userId,
+      isUuid: isUuid,
+    });
+
+    const nickname = isUuid ? await getUserNickname(userId) : "익명";
     (data as any).nickname = nickname;
+
+    console.log("[getHospitalReview] nickname 결과:", {
+      reviewId: reviewId,
+      nickname: nickname,
+    });
 
     return data as HospitalReviewData | null;
   } catch (error) {

@@ -15,6 +15,9 @@ const nextConfig = {
       { protocol: "https", hostname: "play-lh.googleusercontent.com" },
       { protocol: "https", hostname: "upload.wikimedia.org" },
       { protocol: "https", hostname: "ecimg.cafe24img.com" },
+      // Supabase Storage 도메인
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "*.supabase.in" },
     ],
   },
 };

@@ -443,6 +443,31 @@ export default function TreatmentDetailPage({
     ? currentTreatment.treatment_hashtags.split(",").map((tag) => tag.trim())
     : [];
 
+  // 뷰 테이블에서 가져온 추가 데이터 (v_treatment_pdp)
+  // 범위 문자열 (백엔드에서 포맷된 값 우선 사용)
+  const surgeryTimeRange = (currentTreatment as any).surgery_time_range || null;
+  const downtimeRange = (currentTreatment as any).downtime_range || null;
+
+  // 범위 문자열이 없을 경우 min/max로 fallback
+  const procedureTimeMin = (currentTreatment as any).surgery_time_min || null;
+  const procedureTimeMax = (currentTreatment as any).surgery_time_max || null;
+  const recoveryPeriodMin = (currentTreatment as any).downtime_min || null;
+  const recoveryPeriodMax = (currentTreatment as any).downtime_max || null;
+  const recommendedStayDays =
+    (currentTreatment as any).recommended_stay_days ||
+    (currentTreatment as any).권장체류일수 ||
+    (currentTreatment as any)["권장체류일수(일)"] ||
+    null;
+  const tripFriendlyLevel =
+    (currentTreatment as any).trip_friendly_level ||
+    (currentTreatment as any).Trip_friendly_level ||
+    null;
+  const downtimeLevel =
+    (currentTreatment as any).downtime_level ||
+    (currentTreatment as any).다운타임레벨 ||
+    null;
+  const hospitalAddress = (currentTreatment as any).hospital_address || null;
+
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">
       <Header />
@@ -547,31 +572,133 @@ export default function TreatmentDetailPage({
           </h3>
           <div className="space-y-3">
             {/* 시술 시간 */}
-            {surgeryTime !== null && surgeryTime !== undefined && (
+            {(surgeryTimeRange ||
+              procedureTimeMin !== null ||
+              procedureTimeMax !== null ||
+              surgeryTime !== null) && (
               <div className="flex items-center gap-3">
                 <FiClock className="text-gray-400 flex-shrink-0" />
                 <div className="flex-1">
                   <span className="text-sm text-gray-600">시술 시간</span>
                   <p className="text-sm font-medium text-gray-900">
-                    {surgeryTime > 0
-                      ? `${surgeryTime}분`
-                      : surgeryTime || "정보 없음"}
+                    {surgeryTimeRange
+                      ? surgeryTimeRange
+                      : procedureTimeMin !== null && procedureTimeMax !== null
+                      ? `${procedureTimeMin}~${procedureTimeMax}분`
+                      : procedureTimeMin !== null
+                      ? `${procedureTimeMin}분 이상`
+                      : procedureTimeMax !== null
+                      ? `${procedureTimeMax}분 이하`
+                      : surgeryTime !== null && surgeryTime !== undefined
+                      ? surgeryTime > 0
+                        ? `${surgeryTime}분`
+                        : surgeryTime || "정보 없음"
+                      : "정보 없음"}
                   </p>
                 </div>
               </div>
             )}
 
             {/* 회복 기간 */}
-            {downtime !== null && downtime !== undefined && (
+            {(downtimeRange ||
+              recoveryPeriodMin !== null ||
+              recoveryPeriodMax !== null ||
+              downtime !== null) && (
               <div className="flex items-center gap-3">
                 <FiCalendar className="text-gray-400 flex-shrink-0" />
                 <div className="flex-1">
                   <span className="text-sm text-gray-600">회복 기간</span>
                   <p className="text-sm font-medium text-gray-900">
-                    {typeof downtime === "number" && downtime > 0
-                      ? `${downtime}일`
-                      : downtime || "정보 없음"}
+                    {downtimeRange
+                      ? downtimeRange
+                      : recoveryPeriodMin !== null && recoveryPeriodMax !== null
+                      ? `${recoveryPeriodMin}~${recoveryPeriodMax}일`
+                      : recoveryPeriodMin !== null
+                      ? `${recoveryPeriodMin}일 이상`
+                      : recoveryPeriodMax !== null
+                      ? `${recoveryPeriodMax}일 이하`
+                      : downtime !== null && downtime !== undefined
+                      ? typeof downtime === "number" && downtime > 0
+                        ? `${downtime}일`
+                        : downtime || "정보 없음"
+                      : "정보 없음"}
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* 권장 체류 일수 */}
+            {recommendedStayDays !== null && recommendedStayDays > 0 && (
+              <div className="flex items-center gap-3">
+                <div className="text-gray-400 flex-shrink-0">✈️</div>
+                <div className="flex-1">
+                  <span className="text-sm text-gray-600">권장 체류 일수</span>
+                  <p className="text-sm font-medium text-gray-900">
+                    {recommendedStayDays}일
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 여행 친화도 */}
+            {tripFriendlyLevel !== null && tripFriendlyLevel !== undefined && (
+              <div className="flex items-center gap-3">
+                <div className="text-gray-400 flex-shrink-0">🌏</div>
+                <div className="flex-1">
+                  <span className="text-sm text-gray-600">여행 친화도</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-sm font-medium text-gray-900">
+                      여행 친화
+                    </span>
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <span
+                        key={i}
+                        className={`text-sm ${
+                          i < tripFriendlyLevel
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        ⭐
+                      </span>
+                    ))}
+                    <span className="text-xs text-gray-500 ml-1">
+                      ({tripFriendlyLevel}/3)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 다운타임 레벨 */}
+            {downtimeLevel !== null && downtimeLevel !== undefined && (
+              <div className="flex items-center gap-3">
+                <div className="text-gray-400 flex-shrink-0">⏱️</div>
+                <div className="flex-1">
+                  <span className="text-sm text-gray-600">회복 정도</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500">
+                      {downtimeLevel === 0
+                        ? "거의 없음"
+                        : downtimeLevel === 1
+                        ? "가벼움"
+                        : downtimeLevel === 2
+                        ? "보통"
+                        : "심함"}
+                    </span>
+                    <div className="flex gap-1">
+                      {Array.from({ length: 4 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`w-2 h-2 rounded-full ${
+                            i <= downtimeLevel
+                              ? "bg-primary-main"
+                              : "bg-gray-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -674,34 +801,6 @@ export default function TreatmentDetailPage({
           </div>
         )}
 
-        {/* 리뷰 섹션 */}
-        <div className="px-4 py-4 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">리뷰</h3>
-              <div className="flex items-center gap-1">
-                <FiStar className="text-yellow-400 fill-yellow-400" />
-                <span className="text-gray-900 font-semibold">
-                  {rating.toFixed(1)}
-                </span>
-                <span className="text-gray-500 text-sm">({reviewCount}개)</span>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                // 후기 작성 모달 열기 (추후 구현)
-                alert("후기 작성 기능은 준비 중입니다.");
-              }}
-              className="text-primary-main text-sm font-medium"
-            >
-              후기 작성
-            </button>
-          </div>
-          <p className="text-sm text-gray-500">
-            리뷰 내용은 추후 구현 예정입니다.
-          </p>
-        </div>
-
         {/* 병원 정보 */}
         {currentTreatment.hospital_name && (
           <div className="px-4 py-4 border-b border-gray-100">
@@ -709,15 +808,31 @@ export default function TreatmentDetailPage({
               병원 정보
             </h3>
             <div className="space-y-3">
-              <div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <FiMapPin className="text-gray-400" />
-                  <span className="font-medium">위치</span>
+              {/* 병원 주소 */}
+              {hospitalAddress && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <FiMapPin className="text-gray-400" />
+                    <span className="font-medium">주소</span>
+                  </div>
+                  <p className="text-sm text-gray-500 pl-6">
+                    {hospitalAddress}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-500 pl-6">
-                  {currentTreatment.hospital_name}
-                </p>
-              </div>
+              )}
+
+              {/* 병원명 (주소가 없을 때만 표시) */}
+              {!hospitalAddress && (
+                <div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                    <FiMapPin className="text-gray-400" />
+                    <span className="font-medium">위치</span>
+                  </div>
+                  <p className="text-sm text-gray-500 pl-6">
+                    {currentTreatment.hospital_name}
+                  </p>
+                </div>
+              )}
 
               {/* 가능 시술 목록 */}
               {hospitalTreatments.length > 0 && (
@@ -746,6 +861,34 @@ export default function TreatmentDetailPage({
             </div>
           </div>
         )}
+
+        {/* 리뷰 섹션 */}
+        <div className="px-4 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900">리뷰</h3>
+              <div className="flex items-center gap-1">
+                <FiStar className="text-yellow-400 fill-yellow-400" />
+                <span className="text-gray-900 font-semibold">
+                  {rating.toFixed(1)}
+                </span>
+                <span className="text-gray-500 text-sm">({reviewCount}개)</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // 후기 작성 모달 열기 (추후 구현)
+                alert("후기 작성 기능은 준비 중입니다.");
+              }}
+              className="text-primary-main text-sm font-medium"
+            >
+              후기 작성
+            </button>
+          </div>
+          <p className="text-sm text-gray-500">
+            리뷰 내용은 추후 구현 예정입니다.
+          </p>
+        </div>
 
         {/* 하단 고정 버튼 영역 */}
         <div className="fixed bottom-[56px] left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 z-40">

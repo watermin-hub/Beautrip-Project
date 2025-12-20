@@ -99,15 +99,27 @@ export default function SignupModal({
 
       // 2. user_profiles 테이블에 프로필 정보 저장
       // nickname: 이메일의 @ 앞부분 (트리거가 있으면 자동 채워지지만, 명시적으로 설정)
+      // timezone과 locale 자동 감지
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const locale =
+        navigator.language || (selectedLanguage === "KR" ? "ko-KR" : "en-US");
+
       const { error: profileError } = await supabase
         .from("user_profiles")
-        .insert({
-          user_id: authData.user.id, // Supabase Auth의 UUID
-          provider: "local",
-          login_id: email.trim(),
-          nickname: email.trim().split("@")[0], // ✅ nickname 추가
-          preferred_language: selectedLanguage, // 선택한 언어 저장
-        });
+        .upsert(
+          {
+            user_id: authData.user.id, // Supabase Auth의 UUID
+            provider: "local",
+            login_id: email.trim(),
+            nickname: email.trim().split("@")[0], // ✅ nickname 추가
+            preferred_language: selectedLanguage, // 선택한 언어 저장
+            timezone: timezone, // ✅ timezone 추가
+            locale: locale, // ✅ locale 추가
+          },
+          {
+            onConflict: "user_id",
+          }
+        );
 
       if (profileError) {
         // 프로필 저장 실패 시 Auth 사용자도 삭제해야 할 수 있지만,

@@ -151,6 +151,10 @@ export default function LoginModal({
         user.user_metadata?.full_name || user.user_metadata?.name || null;
       const email = user.email || "";
 
+      // timezone과 locale 자동 감지
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const locale = navigator.language || "ko-KR";
+
       const profileData: any = {
         user_id: user.id,
         provider: provider,
@@ -159,6 +163,8 @@ export default function LoginModal({
         avatar_url:
           user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
         preferred_language: "KR",
+        timezone: timezone, // ✅ timezone 추가
+        locale: locale, // ✅ locale 추가
       };
 
       // provider가 'google'일 때만 provider_user_id 추가
@@ -166,9 +172,12 @@ export default function LoginModal({
         profileData.provider_user_id = providerUserId;
       }
 
+      // upsert 사용 (기존 프로필이 있으면 업데이트, 없으면 생성)
       const { data: insertedProfile, error: profileError } = await supabase
         .from("user_profiles")
-        .insert(profileData)
+        .upsert(profileData, {
+          onConflict: "user_id",
+        })
         .select()
         .single();
 

@@ -20,35 +20,16 @@ import {
   togglePostLike,
   isPostLiked,
   getPostLikeCount,
+  getUserProfile,
 } from "@/lib/api/beautripApi";
+import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
+import { supabase } from "@/lib/supabase";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 
 interface HospitalReviewDetailPageProps {
   reviewId: string;
 }
-
-const formatTimeAgo = (dateString?: string): string => {
-  if (!dateString) return "방금 전";
-
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "방금 전";
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays < 7) return `${diffDays}일 전`;
-
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
 
 export default function HospitalReviewDetailPage({
   reviewId,
@@ -61,12 +42,27 @@ export default function HospitalReviewDetailPage({
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
+  const [userTimezone, setUserTimezone] = useState<string | null>(null);
+  const [userLocale, setUserLocale] = useState<string | null>(null);
 
   useEffect(() => {
     const loadReview = async () => {
       try {
         setLoading(true);
         console.log("후기 로드 시작, reviewId:", reviewId);
+
+        // 사용자 프로필 로드 (timezone, locale)
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const profile = await getUserProfile(user.id);
+          if (profile) {
+            setUserTimezone(profile.timezone || null);
+            setUserLocale(profile.locale || null);
+          }
+        }
+
         const data = await getHospitalReview(reviewId);
         console.log("후기 데이터:", data);
         setReview(data);
@@ -143,10 +139,10 @@ export default function HospitalReviewDetailPage({
       <Header />
       <div className="max-w-md mx-auto w-full bg-white">
         {/* 헤더 */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 z-10 px-4 py-3 flex items-center gap-3">
+        <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center gap-3 shadow-sm">
           <button
             onClick={() => router.back()}
-            className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
@@ -154,123 +150,160 @@ export default function HospitalReviewDetailPage({
         </div>
 
         {/* 카테고리 태그 */}
-        <div className="px-4 pt-4">
-          <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
+        <div className="px-4 pt-6 pb-2">
+          <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-4 py-2 rounded-full text-xs font-semibold border border-primary-main/20">
             {review.category_large}
           </span>
         </div>
 
         {/* 작성자 정보 */}
-        <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-100">
-          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xl">
-            <FiUser />
+        <div className="px-4 py-4 flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
+          <div className="relative">
+            <div className="w-14 h-14 bg-gradient-to-br from-primary-light/30 to-primary-main/20 rounded-full flex items-center justify-center text-2xl shadow-md ring-2 ring-white">
+              <FiUser />
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-gray-900">
+            <div className="text-base font-bold text-gray-900 mb-1">
               {(review as any).nickname || "익명"}
             </div>
-            <div className="text-xs text-gray-500">
-              {formatTimeAgo(review.created_at)}
+            <div className="text-xs text-gray-500 space-y-0.5">
+              <div className="font-medium">
+                {formatTimeAgo(review.created_at)}
+              </div>
+              {review.created_at && (
+                <div className="text-xs text-gray-400">
+                  {formatAbsoluteTime(
+                    review.created_at,
+                    userTimezone,
+                    userLocale
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* 병원 정보 */}
-        <div className="px-4 py-4 space-y-3 border-b border-gray-100">
-          <div>
-            <span className="text-xs text-gray-500">병원명</span>
-            <p className="text-base font-semibold text-gray-900 mt-1">
-              {review.hospital_name}
-            </p>
-          </div>
-
-          {review.procedure_name && (
-            <div>
-              <span className="text-xs text-gray-500">시술명</span>
-              <p className="text-base text-gray-900 mt-1">
-                {review.procedure_name}
+        <div className="px-4 py-6 space-y-4 border-b border-gray-100">
+          {/* 병원명 & 시술명 */}
+          <div className="space-y-3">
+            <div className="bg-gradient-to-r from-primary-light/5 to-primary-main/5 rounded-xl p-4 border border-primary-main/10">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                병원명
+              </span>
+              <p className="text-lg font-bold text-gray-900 mt-2">
+                {review.hospital_name}
               </p>
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-3">
+            {review.procedure_name && (
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  시술명
+                </span>
+                <p className="text-base font-semibold text-gray-900 mt-2">
+                  {review.procedure_name}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 만족도 */}
+          <div className="grid grid-cols-2 gap-4">
             {review.overall_satisfaction && (
-              <div>
-                <span className="text-xs text-gray-500">시술 만족도</span>
-                <div className="flex items-center gap-1 mt-1">
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200/50">
+                <span className="text-xs font-semibold text-gray-600 block mb-2">
+                  시술 만족도
+                </span>
+                <div className="flex items-center gap-1.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
                       key={star}
-                      className={`text-lg ${
+                      className={`text-xl transition-all ${
                         star <= review.overall_satisfaction!
-                          ? "text-yellow-400 fill-yellow-400"
+                          ? "text-yellow-500 fill-yellow-500 scale-110"
                           : "text-gray-300"
                       }`}
                     />
                   ))}
-                  <span className="text-sm text-gray-700 ml-1">
-                    {review.overall_satisfaction}
+                  <span className="text-base font-bold text-gray-900 ml-2">
+                    {review.overall_satisfaction}.0
                   </span>
                 </div>
               </div>
             )}
 
             {review.hospital_kindness && (
-              <div>
-                <span className="text-xs text-gray-500">병원 만족도</span>
-                <div className="flex items-center gap-1 mt-1">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200/50">
+                <span className="text-xs font-semibold text-gray-600 block mb-2">
+                  병원 만족도
+                </span>
+                <div className="flex items-center gap-1.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
                       key={star}
-                      className={`text-lg ${
+                      className={`text-xl transition-all ${
                         star <= review.hospital_kindness!
-                          ? "text-yellow-400 fill-yellow-400"
+                          ? "text-yellow-500 fill-yellow-500 scale-110"
                           : "text-gray-300"
                       }`}
                     />
                   ))}
-                  <span className="text-sm text-gray-700 ml-1">
-                    {review.hospital_kindness}
+                  <span className="text-base font-bold text-gray-900 ml-2">
+                    {review.hospital_kindness}.0
                   </span>
                 </div>
               </div>
             )}
           </div>
 
-          <div>
-            <span className="text-xs text-gray-500">통역 여부</span>
-            <p className="text-base text-gray-900 mt-1">
-              {review.has_translation ? "있음" : "없음"}
+          {/* 통역 정보 */}
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <span className="text-xs font-semibold text-gray-500 block mb-2">
+              통역 여부
+            </span>
+            <p
+              className={`text-base font-semibold ${
+                review.has_translation ? "text-green-600" : "text-gray-600"
+              }`}
+            >
+              {review.has_translation ? "✓ 있음" : "없음"}
             </p>
           </div>
 
           {review.has_translation && review.translation_satisfaction && (
-            <div>
-              <span className="text-xs text-gray-500">통역 만족도</span>
-              <div className="flex items-center gap-1 mt-1">
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200/50">
+              <span className="text-xs font-semibold text-gray-600 block mb-2">
+                통역 만족도
+              </span>
+              <div className="flex items-center gap-1.5">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <FiStar
                     key={star}
-                    className={`text-lg ${
+                    className={`text-xl transition-all ${
                       star <= review.translation_satisfaction!
-                        ? "text-yellow-400 fill-yellow-400"
+                        ? "text-yellow-500 fill-yellow-500 scale-110"
                         : "text-gray-300"
                     }`}
                   />
                 ))}
-                <span className="text-sm text-gray-700 ml-1">
-                  {review.translation_satisfaction}
+                <span className="text-base font-bold text-gray-900 ml-2">
+                  {review.translation_satisfaction}.0
                 </span>
               </div>
             </div>
           )}
 
           {review.visit_date && (
-            <div>
-              <span className="text-xs text-gray-500">병원 방문일</span>
-              <div className="flex items-center gap-1 mt-1">
-                <FiCalendar className="text-gray-400 text-sm" />
-                <p className="text-base text-gray-900">
+            <div className="bg-white rounded-xl p-4 border border-gray-200">
+              <span className="text-xs font-semibold text-gray-500 block mb-2">
+                병원 방문일
+              </span>
+              <div className="flex items-center gap-2">
+                <FiCalendar className="text-primary-main text-lg" />
+                <p className="text-base font-semibold text-gray-900">
                   {new Date(review.visit_date).toLocaleDateString("ko-KR", {
                     year: "numeric",
                     month: "long",
@@ -283,17 +316,19 @@ export default function HospitalReviewDetailPage({
         </div>
 
         {/* 글 내용 */}
-        <div className="px-4 py-4 border-b border-gray-100">
-          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-            {review.content}
-          </p>
+        <div className="px-4 py-6 border-b border-gray-100">
+          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
+            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
+              {review.content}
+            </p>
+          </div>
         </div>
 
         {/* 이미지 */}
         {review.images && review.images.length > 0 && (
-          <div className="px-4 py-4 border-b border-gray-100">
+          <div className="px-4 py-6 border-b border-gray-100">
             <div
-              className={`grid gap-2 ${
+              className={`grid gap-3 ${
                 review.images.length === 1
                   ? "grid-cols-1"
                   : review.images.length === 2
@@ -305,15 +340,17 @@ export default function HospitalReviewDetailPage({
                 <div
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity ${
-                    review.images!.length === 1 ? "max-h-96" : ""
+                  className={`relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden cursor-pointer group/image shadow-md hover:shadow-xl transition-all duration-300 ${
+                    review.images!.length === 1
+                      ? "aspect-video"
+                      : "aspect-square"
                   }`}
                 >
                   <Image
                     src={img}
                     alt={`후기 이미지 ${idx + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-cover group-hover/image:scale-105 transition-transform duration-300"
                     unoptimized
                     onError={(e) => {
                       // 이미지 로딩 실패 시 처리
@@ -321,6 +358,7 @@ export default function HospitalReviewDetailPage({
                       target.style.display = "none";
                     }}
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/10 transition-colors duration-300"></div>
                 </div>
               ))}
             </div>

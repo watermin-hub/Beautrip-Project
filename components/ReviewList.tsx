@@ -371,34 +371,47 @@ export default function ReviewList() {
           onClick={() => {
             handlePostClick(post);
           }}
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
+          className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-lg hover:border-primary-main/20 transition-all duration-300 cursor-pointer overflow-hidden group"
         >
           {/* Category Tag */}
-          <div className="mb-3">
-            <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
+          <div className="mb-4">
+            <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
               {post.category}
             </span>
           </div>
 
           {/* User Info */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-2xl">
-              {post.avatar}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-light/30 to-primary-main/20 rounded-full flex items-center justify-center text-2xl shadow-sm ring-2 ring-white">
+                {post.avatar}
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
             </div>
-            <span className="text-sm font-semibold text-gray-900">
-              {post.username}
-            </span>
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-bold text-gray-900 block truncate">
+                {post.username}
+              </span>
+              <p className="text-xs text-gray-500 mt-1">
+                {post.timestamp}{" "}
+                {post.edited && (
+                  <span className="text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                    수정됨
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
 
           {/* Post Content */}
-          <p className="text-gray-800 text-sm mb-3 leading-relaxed line-clamp-3">
+          <p className="text-gray-800 text-sm mb-4 leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all">
             {post.content}
           </p>
 
           {/* Images */}
           {post.images && post.images.length > 0 && (
             <div
-              className={`grid gap-2 mb-3 ${
+              className={`grid gap-2 mb-4 rounded-xl overflow-hidden ${
                 post.images.length === 1
                   ? "grid-cols-1"
                   : post.images.length === 2
@@ -409,8 +422,8 @@ export default function ReviewList() {
               {post.images.slice(0, 4).map((img, idx) => (
                 <div
                   key={idx}
-                  className={`relative aspect-square bg-gray-100 rounded-lg overflow-hidden ${
-                    post.images!.length === 1 ? "max-h-96" : ""
+                  className={`relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden group/image ${
+                    post.images!.length === 1 ? "aspect-video" : "aspect-square"
                   }`}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -419,7 +432,7 @@ export default function ReviewList() {
                       src={img}
                       alt={`후기 이미지 ${idx + 1}`}
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover/image:scale-105 transition-transform duration-300"
                       unoptimized
                     />
                   ) : (
@@ -428,7 +441,7 @@ export default function ReviewList() {
                     </div>
                   )}
                   {idx === 3 && post.images!.length > 4 && (
-                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-lg">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm z-10">
                       +{post.images!.length - 4}
                     </div>
                   )}
@@ -437,27 +450,31 @@ export default function ReviewList() {
             </div>
           )}
 
-          {/* Timestamp */}
-          <p className="text-xs text-gray-500 mb-3">
-            {post.timestamp} {post.edited && "(수정됨)"}
-          </p>
-
           {/* Engagement Metrics */}
-          <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
-            <div className="flex items-center gap-1 text-gray-600">
-              <FiArrowUp className="text-primary-main" />
-              <span className="text-xs">{post.upvotes}</span>
-            </div>
-            <div className="flex items-center gap-1 text-gray-600">
-              <FiMessageCircle className="text-primary-main" />
-              <span className="text-xs">{post.comments}</span>
-            </div>
-            <div className="flex items-center gap-1 text-gray-600">
-              <FiEye className="text-gray-400" />
-              <span className="text-xs text-gray-400">
+          <div className="flex items-center gap-5 pt-4 border-t border-gray-100">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
+            >
+              <FiArrowUp className="text-lg" />
+              <span className="text-xs font-semibold">{post.upvotes}</span>
+            </button>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
+            >
+              <FiMessageCircle className="text-lg" />
+              <span className="text-xs font-semibold">{post.comments}</span>
+            </button>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-all hover:scale-110 active:scale-95"
+            >
+              <FiEye className="text-base" />
+              <span className="text-xs font-medium">
                 {post.views.toLocaleString()}
               </span>
-            </div>
+            </button>
             {/* 좋아요 버튼 */}
             {post.postType && typeof post.id === "string" && (
               <button

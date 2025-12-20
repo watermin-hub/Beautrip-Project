@@ -18,34 +18,74 @@ function AISkinAnalysisResultContent() {
         console.log("이미지 경로:", filePath);
 
         if (filePath) {
-          // Supabase Storage에서 공개 URL 가져오기
-          const { data } = supabase.storage
-            .from("face-images")
-            .getPublicUrl(filePath);
+          try {
+            // Supabase Storage에서 공개 URL 가져오기
+            const { data, error: urlError } = supabase.storage
+              .from("face-images")
+              .getPublicUrl(filePath);
 
-          console.log("Supabase URL 데이터:", data);
+            console.log("Supabase URL 데이터:", data);
+            console.log("URL 에러:", urlError);
 
-          if (data?.publicUrl) {
-            console.log("공개 URL:", data.publicUrl);
-            // 이미지가 실제로 로드되는지 확인
-            const img = new Image();
-            img.onload = () => {
-              console.log("이미지 로드 성공!");
-              setImageUrl(data.publicUrl);
-              setLoading(false);
-            };
-            img.onerror = () => {
-              console.error("이미지 로드 실패:", data.publicUrl);
-              // fallback으로 localStorage 확인
-              const localImage = localStorage.getItem("capturedFaceImage");
-              if (localImage) {
-                console.log("localStorage에서 이미지 사용");
-                setImageUrl(localImage);
+            if (urlError) {
+              console.error("공개 URL 생성 실패:", urlError);
+              throw urlError;
+            }
+
+            if (data?.publicUrl) {
+              console.log("공개 URL:", data.publicUrl);
+
+              // URL이 유효한지 검증 (Supabase 도메인인지 확인)
+              if (
+                !data.publicUrl.includes("supabase.co") &&
+                !data.publicUrl.includes("supabase.in")
+              ) {
+                console.warn("의심스러운 URL 형식:", data.publicUrl);
+                throw new Error("유효하지 않은 이미지 URL");
               }
+
+              // 이미지가 실제로 로드되는지 확인
+              const img = new Image();
+              img.onload = () => {
+                console.log("이미지 로드 성공!");
+                setImageUrl(data.publicUrl);
+                setLoading(false);
+              };
+              img.onerror = (error) => {
+                console.error("이미지 로드 실패:", data.publicUrl, error);
+                // fallback으로 localStorage 확인
+                const localImage = localStorage.getItem("capturedFaceImage");
+                if (localImage) {
+                  console.log("localStorage에서 이미지 사용");
+                  setImageUrl(localImage);
+                } else {
+                  console.error(
+                    "이미지를 찾을 수 없습니다. filePath:",
+                    filePath
+                  );
+                }
+                setLoading(false);
+              };
+              img.src = data.publicUrl;
+              return;
+            } else {
+              console.error(
+                "공개 URL이 생성되지 않았습니다. filePath:",
+                filePath
+              );
+              throw new Error("공개 URL 생성 실패");
+            }
+          } catch (urlError) {
+            console.error("URL 생성 중 오류:", urlError);
+            // fallback으로 localStorage 확인
+            const localImage = localStorage.getItem("capturedFaceImage");
+            if (localImage) {
+              console.log("localStorage에서 이미지 사용 (URL 생성 실패 후)");
+              setImageUrl(localImage);
               setLoading(false);
-            };
-            img.src = data.publicUrl;
-            return;
+              return;
+            }
+            throw urlError;
           }
         }
 

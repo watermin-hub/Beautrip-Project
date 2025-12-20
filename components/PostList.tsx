@@ -786,30 +786,37 @@ export default function PostList({
       <div
         key={post.id}
         onClick={() => handlePostClick(post)}
-        className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer ${
-          post.reviewType === "concern" ? "p-5" : "p-4"
+        className={`bg-white border border-gray-200 rounded-2xl hover:shadow-lg hover:border-primary-main/20 transition-all duration-300 cursor-pointer overflow-hidden group ${
+          post.reviewType === "concern" ? "p-5" : "p-5"
         }`}
       >
         {/* Category Tag */}
-        <div className="mb-3">
-          <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
+        <div className="mb-4">
+          <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
             {post.category}
           </span>
         </div>
 
         {/* User Info */}
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-2xl">
-            {post.avatar}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary-light/30 to-primary-main/20 rounded-full flex items-center justify-center text-2xl shadow-sm ring-2 ring-white">
+              {post.avatar}
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
-          <div className="flex-1">
-            <span className="text-sm font-semibold text-gray-900">
-              {post.username}
-            </span>
-            <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-gray-900 truncate">
+                {post.username}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
               <span className="text-xs text-gray-500">{post.timestamp}</span>
               {post.edited && (
-                <span className="text-xs text-gray-400">수정됨</span>
+                <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                  수정됨
+                </span>
               )}
             </div>
           </div>
@@ -826,8 +833,8 @@ export default function PostList({
 
         {/* Post Content */}
         <p
-          className={`text-gray-800 text-sm leading-[1.8] line-clamp-3 ${
-            post.reviewType === "concern" ? "mb-4" : "mb-3"
+          className={`text-gray-800 text-sm leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all ${
+            post.reviewType === "concern" ? "mb-4" : "mb-4"
           }`}
         >
           {post.content}
@@ -835,11 +842,21 @@ export default function PostList({
 
         {/* Images */}
         {post.images && post.images.length > 0 && (
-          <div className="flex gap-2 mb-3 flex-wrap">
+          <div
+            className={`grid gap-2 mb-4 rounded-xl overflow-hidden ${
+              post.images.length === 1
+                ? "grid-cols-1"
+                : post.images.length === 2
+                ? "grid-cols-2"
+                : "grid-cols-2"
+            }`}
+          >
             {post.images.slice(0, 4).map((img, idx) => (
               <div
                 key={idx}
-                className="relative w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden flex-shrink-0"
+                className={`relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden group/image ${
+                  post.images!.length === 1 ? "aspect-video" : "aspect-square"
+                }`}
               >
                 {img &&
                 (img.startsWith("http") ||
@@ -849,9 +866,9 @@ export default function PostList({
                     src={img}
                     alt={`후기 이미지 ${idx + 1}`}
                     fill
-                    className="object-cover"
+                    className="object-cover group-hover/image:scale-105 transition-transform duration-300"
                     unoptimized
-                    sizes="80px"
+                    sizes="(max-width: 768px) 50vw, 25vw"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
@@ -859,7 +876,7 @@ export default function PostList({
                   </div>
                 )}
                 {idx === 3 && post.images!.length > 4 && (
-                  <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center text-white font-semibold text-xs z-10">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm z-10">
                     +{post.images!.length - 4}
                   </div>
                 )}
@@ -869,36 +886,36 @@ export default function PostList({
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-5">
             <button
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
             >
               <FiArrowUp className="text-lg" />
-              <span className="text-xs font-medium">{post.upvotes}</span>
+              <span className="text-xs font-semibold">{post.upvotes}</span>
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
             >
               <FiMessageCircle className="text-lg" />
-              <span className="text-xs font-medium">{post.comments}</span>
+              <span className="text-xs font-semibold">{post.comments}</span>
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-all hover:scale-110 active:scale-95"
             >
-              <FiEye className="text-lg" />
+              <FiEye className="text-base" />
               <span className="text-xs font-medium">{post.views}</span>
             </button>
             {post.likes && (
               <button
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
+                className="flex items-center gap-1.5 text-gray-600 hover:text-red-500 transition-all hover:scale-110 active:scale-95 ml-auto"
               >
                 <FiHeart className="text-lg" />
-                <span className="text-xs font-medium">{post.likes}</span>
+                <span className="text-xs font-semibold">{post.likes}</span>
               </button>
             )}
           </div>
