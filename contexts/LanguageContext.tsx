@@ -702,8 +702,6 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "date.days": "days",
     "date.selectEndDate": "Select end date",
     "date.year": "",
-    // Ranking banner
-    "banner.ranking.best": "BEST",
     // Schedule page
     "schedule.setTravelPeriod": "Please set your travel period",
     "schedule.reset": "Reset",
