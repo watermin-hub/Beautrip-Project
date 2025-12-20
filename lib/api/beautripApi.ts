@@ -3527,7 +3527,7 @@ export interface PostLike {
   id?: string;
   user_id: string;
   post_id: string;
-  post_type: "procedure_review" | "hospital_review" | "concern_post";
+  post_type: "treatment_review" | "hospital_review" | "concern_post";
   created_at?: string;
   updated_at?: string;
 }
@@ -3877,7 +3877,7 @@ export async function getFavoriteStatus(
 // 커뮤니티 글 좋아요 추가
 export async function addPostLike(
   postId: string,
-  postType: "procedure_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -3906,6 +3906,31 @@ export async function addPostLike(
       return { success: false, error: "이미 좋아요를 누른 글입니다." };
     }
 
+    // 입력값 검증
+    const validPostTypes = [
+      "treatment_review",
+      "hospital_review",
+      "concern_post",
+    ];
+    if (!validPostTypes.includes(postType)) {
+      console.error("잘못된 post_type:", postType);
+      return {
+        success: false,
+        error: `잘못된 글 타입입니다: ${postType}`,
+      };
+    }
+
+    // UUID 형식 검증 (post_id는 UUID여야 함)
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(postId)) {
+      console.error("잘못된 post_id 형식:", postId);
+      return {
+        success: false,
+        error: `잘못된 글 ID 형식입니다: ${postId}`,
+      };
+    }
+
     // 좋아요 추가
     const { error } = await client.from("post_likes").insert({
       user_id: userId,
@@ -3914,8 +3939,20 @@ export async function addPostLike(
     });
 
     if (error) {
-      console.error("글 좋아요 추가 실패:", error);
-      return { success: false, error: error.message };
+      console.error("글 좋아요 추가 실패:", {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        postId,
+        postType,
+        userId,
+      });
+      return {
+        success: false,
+        error: error.message || error.details || "글 좋아요에 실패했습니다.",
+      };
     }
 
     return { success: true };
@@ -3931,7 +3968,7 @@ export async function addPostLike(
 // 커뮤니티 글 좋아요 삭제
 export async function removePostLike(
   postId: string,
-  postType: "procedure_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -3972,7 +4009,7 @@ export async function removePostLike(
 // 커뮤니티 글 좋아요 토글
 export async function togglePostLike(
   postId: string,
-  postType: "procedure_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post"
 ): Promise<{ success: boolean; isLiked: boolean; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -4063,7 +4100,7 @@ export async function getLikedPosts(): Promise<{
 // 특정 글의 좋아요 여부 확인
 export async function isPostLiked(
   postId: string,
-  postType: "procedure_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post"
 ): Promise<boolean> {
   try {
     const client = getSupabaseOrNull();
@@ -4090,7 +4127,7 @@ export async function isPostLiked(
 // 글의 좋아요 개수 조회
 export async function getPostLikeCount(
   postId: string,
-  postType: "procedure_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post"
 ): Promise<number> {
   try {
     const client = getSupabaseOrNull();
@@ -4117,7 +4154,7 @@ export async function getPostLikeCount(
 // 좋아요한 글의 상세 정보 조회 (카테고리명, 글 제목, 작성자 이름 포함)
 export interface LikedPostDetail {
   id: string;
-  postType: "procedure_review" | "hospital_review" | "concern_post";
+  postType: "treatment_review" | "hospital_review" | "concern_post";
   categoryName: string; // "후기", "가이드", "고민"
   title: string; // 글 제목
   authorName: string; // 작성자 이름(닉네임)
@@ -4170,7 +4207,7 @@ export async function getLikedPostsWithDetails(): Promise<{
         let authorName = "익명";
 
         // 글 타입에 따라 다른 테이블에서 데이터 가져오기
-        if (like.post_type === "procedure_review") {
+        if (like.post_type === "treatment_review") {
           const { data, error } = await client
             .from("procedure_reviews")
             .select("id, category, procedure_name, user_id")

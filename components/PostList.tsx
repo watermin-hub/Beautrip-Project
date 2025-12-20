@@ -11,6 +11,9 @@ import {
   ProcedureReviewData,
   HospitalReviewData,
   ConcernPostData,
+  togglePostLike,
+  isPostLiked,
+  getPostLikeCount,
 } from "@/lib/api/beautripApi";
 
 interface Post {
@@ -456,6 +459,139 @@ export default function PostList({
   const [popularSection, setPopularSection] = useState<
     "procedure" | "hospital"
   >("procedure");
+  // 좋아요 상태 관리: { postId: { isLiked: boolean, likeCount: number } }
+  const [likesState, setLikesState] = useState<
+    Record<string, { isLiked: boolean; likeCount: number }>
+  >({});
+
+  // 좋아요 상태 로드 함수
+  const loadLikesForPosts = async (posts: Post[]) => {
+    const newLikesState: Record<
+      string,
+      { isLiked: boolean; likeCount: number }
+    > = {};
+
+    // UUID 형식 검증
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    for (const post of posts) {
+      if (post.reviewType && post.id) {
+        const postId = String(post.id);
+
+        // UUID 형식이 아니면 스킵 (더미 데이터)
+        if (!uuidRegex.test(postId)) {
+          continue;
+        }
+
+        const postType =
+          post.reviewType === "procedure"
+            ? "treatment_review"
+            : post.reviewType === "hospital"
+            ? "hospital_review"
+            : "concern_post";
+
+        try {
+          const [liked, count] = await Promise.all([
+            isPostLiked(postId, postType),
+            getPostLikeCount(postId, postType),
+          ]);
+
+          newLikesState[postId] = {
+            isLiked: liked,
+            likeCount: count,
+          };
+        } catch (error) {
+          console.error(`좋아요 상태 로드 실패 (${postId}):`, error);
+          newLikesState[postId] = {
+            isLiked: false,
+            likeCount: 0,
+          };
+        }
+      }
+    }
+
+    setLikesState((prev) => ({ ...prev, ...newLikesState }));
+  };
+
+  // 좋아요 버튼 클릭 핸들러
+  const handleLikeClick = async (e: React.MouseEvent, post: Post) => {
+    e.stopPropagation();
+
+    if (!post.reviewType || !post.id) {
+      console.warn("좋아요 불가: reviewType 또는 id가 없습니다", post);
+      return;
+    }
+
+    const postId = String(post.id);
+    const postType =
+      post.reviewType === "procedure"
+        ? "treatment_review"
+        : post.reviewType === "hospital"
+        ? "hospital_review"
+        : "concern_post";
+
+    // UUID 형식 검증 (더미 데이터는 좋아요 불가)
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(postId)) {
+      console.warn("더미 데이터는 좋아요할 수 없습니다:", postId);
+      alert("실제 글이 아니어서 좋아요할 수 없습니다.");
+      return;
+    }
+
+    console.log("좋아요 클릭:", {
+      postId,
+      postType,
+      reviewType: post.reviewType,
+    });
+
+    // 낙관적 업데이트
+    const currentState = likesState[postId] || { isLiked: false, likeCount: 0 };
+    const newIsLiked = !currentState.isLiked;
+    const newLikeCount = newIsLiked
+      ? currentState.likeCount + 1
+      : Math.max(0, currentState.likeCount - 1);
+
+    setLikesState((prev) => ({
+      ...prev,
+      [postId]: {
+        isLiked: newIsLiked,
+        likeCount: newLikeCount,
+      },
+    }));
+
+    // 실제 API 호출
+    try {
+      const result = await togglePostLike(postId, postType);
+      if (!result.success) {
+        // 실패 시 원래 상태로 복구
+        setLikesState((prev) => ({
+          ...prev,
+          [postId]: currentState,
+        }));
+        alert(result.error || "좋아요 처리에 실패했습니다.");
+      } else {
+        // 성공 시 최신 개수 다시 가져오기
+        const count = await getPostLikeCount(postId, postType);
+        setLikesState((prev) => ({
+          ...prev,
+          [postId]: {
+            isLiked: result.isLiked,
+            likeCount: count,
+          },
+        }));
+      }
+    } catch (error) {
+      console.error("좋아요 처리 중 오류:", error);
+      // 실패 시 원래 상태로 복구
+      setLikesState((prev) => ({
+        ...prev,
+        [postId]: currentState,
+      }));
+      alert("좋아요 처리 중 오류가 발생했습니다.");
+    }
+  };
 
   // 카드 클릭 핸들러
   const handlePostClick = (post: Post) => {
@@ -575,6 +711,9 @@ export default function PostList({
             .map(({ created_at, ...rest }) => rest); // created_at 제거
 
           setSupabaseReviews(allReviews);
+
+          // 좋아요 상태 로드
+          await loadLikesForPosts(allReviews);
         } catch (error) {
           console.error("❌ 최신글 데이터 로드 실패:", error);
         } finally {
@@ -644,10 +783,14 @@ export default function PostList({
           );
 
           // 시술 후기와 병원 후기를 별도로 저장 (섹션으로 나누기 위해)
-          setSupabaseReviews([
+          const allPopularReviews = [
             ...formattedProcedureReviews,
             ...formattedHospitalReviews,
-          ]);
+          ];
+          setSupabaseReviews(allPopularReviews);
+
+          // 좋아요 상태 로드
+          await loadLikesForPosts(allPopularReviews);
         } catch (error) {
           console.error("❌ 인기글 데이터 로드 실패:", error);
         } finally {
@@ -706,6 +849,9 @@ export default function PostList({
           });
 
           setSupabaseReviews(filteredConcernPosts);
+
+          // 좋아요 상태 로드
+          await loadLikesForPosts(filteredConcernPosts);
         } finally {
           setLoading(false);
         }
@@ -888,13 +1034,34 @@ export default function PostList({
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center gap-5">
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
-            >
-              <FiArrowUp className="text-lg" />
-              <span className="text-xs font-semibold">{post.upvotes}</span>
-            </button>
+            {post.reviewType &&
+              post.id &&
+              (() => {
+                const postId = String(post.id);
+                const uuidRegex =
+                  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                // UUID 형식인 경우에만 좋아요 버튼 표시 (실제 Supabase 데이터만)
+                if (!uuidRegex.test(postId)) return null;
+                return (
+                  <button
+                    onClick={(e) => handleLikeClick(e, post)}
+                    className={`flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95 ${
+                      likesState[postId]?.isLiked
+                        ? "text-red-500"
+                        : "text-gray-600 hover:text-red-500"
+                    }`}
+                  >
+                    <FiHeart
+                      className={`text-lg ${
+                        likesState[postId]?.isLiked ? "fill-red-500" : ""
+                      }`}
+                    />
+                    <span className="text-xs font-semibold">
+                      {likesState[postId]?.likeCount || 0}
+                    </span>
+                  </button>
+                );
+              })()}
             <button
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
@@ -909,15 +1076,6 @@ export default function PostList({
               <FiEye className="text-base" />
               <span className="text-xs font-medium">{post.views}</span>
             </button>
-            {post.likes && (
-              <button
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 text-gray-600 hover:text-red-500 transition-all hover:scale-110 active:scale-95 ml-auto"
-              >
-                <FiHeart className="text-lg" />
-                <span className="text-xs font-semibold">{post.likes}</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -1087,13 +1245,25 @@ export default function PostList({
           {/* Actions */}
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <div className="flex items-center gap-4">
-              <button
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
-              >
-                <FiArrowUp className="text-lg" />
-                <span className="text-xs font-medium">{post.upvotes}</span>
-              </button>
+              {post.reviewType && post.id && (
+                <button
+                  onClick={(e) => handleLikeClick(e, post)}
+                  className={`flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95 ${
+                    likesState[String(post.id)]?.isLiked
+                      ? "text-red-500"
+                      : "text-gray-600 hover:text-red-500"
+                  }`}
+                >
+                  <FiHeart
+                    className={`text-lg ${
+                      likesState[String(post.id)]?.isLiked ? "fill-red-500" : ""
+                    }`}
+                  />
+                  <span className="text-xs font-medium">
+                    {likesState[String(post.id)]?.likeCount || 0}
+                  </span>
+                </button>
+              )}
               <button
                 onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
@@ -1108,15 +1278,6 @@ export default function PostList({
                 <FiEye className="text-lg" />
                 <span className="text-xs font-medium">{post.views}</span>
               </button>
-              {post.likes && (
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
-                >
-                  <FiHeart className="text-lg" />
-                  <span className="text-xs font-medium">{post.likes}</span>
-                </button>
-              )}
             </div>
           </div>
         </div>

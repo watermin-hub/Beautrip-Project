@@ -54,14 +54,17 @@ export default function CommunityPostCard({
     e.stopPropagation();
     setIsScrapped(!isScrapped);
     if (onScrap) onScrap(post.id);
-    
+
     // localStorage에 저장
     const scraps = JSON.parse(localStorage.getItem("communityScraps") || "[]");
     if (isScrapped) {
       const updated = scraps.filter((id: number) => id !== post.id);
       localStorage.setItem("communityScraps", JSON.stringify(updated));
     } else {
-      localStorage.setItem("communityScraps", JSON.stringify([...scraps, post.id]));
+      localStorage.setItem(
+        "communityScraps",
+        JSON.stringify([...scraps, post.id])
+      );
     }
   };
 
@@ -87,7 +90,9 @@ export default function CommunityPostCard({
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <FiBookmark className={`text-sm ${isScrapped ? "fill-primary-main" : ""}`} />
+            <FiBookmark
+              className={`text-sm ${isScrapped ? "fill-primary-main" : ""}`}
+            />
           </button>
           {post.hospitalName && (
             <button
@@ -171,12 +176,12 @@ export default function CommunityPostCard({
       <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
         <button
           onClick={handleLike}
-          className={`flex items-center gap-1.5 transition-colors ${
-            isLiked ? "text-primary-main" : "text-gray-600 hover:text-primary-main"
+          className={`flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95 ${
+            isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
           }`}
         >
-          <FiArrowUp className={`text-base ${isLiked ? "fill-primary-main" : ""}`} />
-          <span className="text-xs font-medium">{upvotes}</span>
+          <FiHeart className={`text-base ${isLiked ? "fill-red-500" : ""}`} />
+          <span className="text-xs font-medium">{post.likes || 0}</span>
         </button>
         <button className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors">
           <FiMessageCircle className="text-base" />
@@ -186,14 +191,7 @@ export default function CommunityPostCard({
           <FiEye className="text-sm" />
           <span className="text-xs">{post.views.toLocaleString()}</span>
         </div>
-        {post.likes && (
-          <div className="flex items-center gap-1.5 text-gray-600 ml-auto">
-            <FiHeart className="text-base text-primary-main fill-primary-main" />
-            <span className="text-xs font-medium">{post.likes}</span>
-          </div>
-        )}
       </div>
     </div>
   );
 }
-

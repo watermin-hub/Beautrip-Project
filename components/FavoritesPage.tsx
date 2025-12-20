@@ -98,16 +98,34 @@ export default function FavoritesPage() {
 
         // 병원 찜 FavoriteItem 형식으로 변환
         const hospitalFavorites: FavoriteItem[] = clinicFavorites.map(
-          (f: any) => ({
-            id: f.id || f.name?.hashCode?.() || 0, // 임시 ID 생성
-            title: f.title || f.name || f.clinic || "병원명 없음",
-            clinic: f.clinic || f.name || "병원명 없음",
-            address: f.address || "",
-            location: f.location || "",
-            rating: f.rating ? f.rating.toFixed(1) : "0.0",
-            reviewCount: f.reviewCount ? `${f.reviewCount}` : undefined,
-            type: "clinic" as const,
-          })
+          (f: any, index: number) => {
+            // 고유 ID 생성: 기존 ID가 있으면 사용, 없으면 이름 기반 해시 생성
+            let uniqueId: number;
+            if (f.id && typeof f.id === "number") {
+              uniqueId = f.id;
+            } else {
+              // 이름 기반 간단한 해시 생성 (고유성 보장)
+              const name = f.title || f.name || f.clinic || `clinic-${index}`;
+              let hash = 0;
+              for (let i = 0; i < name.length; i++) {
+                const char = name.charCodeAt(i);
+                hash = (hash << 5) - hash + char;
+                hash = hash & hash; // Convert to 32bit integer
+              }
+              uniqueId = Math.abs(hash) || index + 1000000; // 절대값 또는 index 기반
+            }
+
+            return {
+              id: uniqueId,
+              title: f.title || f.name || f.clinic || "병원명 없음",
+              clinic: f.clinic || f.name || "병원명 없음",
+              address: f.address || "",
+              location: f.location || "",
+              rating: f.rating ? f.rating.toFixed(1) : "0.0",
+              reviewCount: f.reviewCount ? `${f.reviewCount}` : undefined,
+              type: "clinic" as const,
+            };
+          }
         );
 
         allFavorites.push(...hospitalFavorites);
@@ -132,10 +150,9 @@ export default function FavoritesPage() {
 
     loadFavorites();
 
-    // localStorage 업데이트 이벤트 리스너 (하위 호환성)
+    // 찜하기 업데이트 이벤트 리스너 - Supabase와 localStorage 모두 반영
     const handleFavoritesUpdate = () => {
-      const updated = JSON.parse(localStorage.getItem("favorites") || "[]");
-      setFavorites(updated);
+      loadFavorites();
     };
 
     window.addEventListener("favoritesUpdated", handleFavoritesUpdate);

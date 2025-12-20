@@ -95,13 +95,13 @@ export default function LikedPostsPage() {
             key={`${post.postType}-${post.id}`}
             className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => {
-              // 글 타입에 따라 다른 페이지로 이동
-              if (post.postType === "procedure_review") {
-                router.push(`/community/posts?section=reviews&type=procedure`);
+              // 글 타입에 따라 다른 상세 페이지로 이동
+              if (post.postType === "treatment_review") {
+                router.push(`/review/procedure/${post.id}`);
               } else if (post.postType === "hospital_review") {
-                router.push(`/community/posts?section=reviews&type=hospital`);
+                router.push(`/review/hospital/${post.id}`);
               } else if (post.postType === "concern_post") {
-                router.push(`/community/posts?section=concerns`);
+                router.push(`/community?tab=consultation`);
               }
             }}
           >

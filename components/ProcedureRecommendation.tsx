@@ -22,6 +22,8 @@ import {
   parseRecoveryPeriod,
   parseProcedureTime,
   getRecoveryInfoByCategoryMid,
+  toggleProcedureFavorite,
+  getFavoriteStatus,
   type Treatment,
   type ScheduleBasedRecommendation,
 } from "@/lib/api/beautripApi";
@@ -623,6 +625,26 @@ export default function ProcedureRecommendation({
     fetchData();
   }, [scheduleData, selectedCategoryId]);
 
+  // 찜 상태 로드 (recommendations가 변경될 때마다)
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (recommendations.length === 0) return;
+
+      // 모든 시술의 ID 추출
+      const treatmentIds = recommendations
+        .flatMap((rec) => rec.treatments)
+        .map((t) => t.treatment_id)
+        .filter((id): id is number => id !== undefined);
+
+      if (treatmentIds.length > 0) {
+        const favoriteStatus = await getFavoriteStatus(treatmentIds);
+        setFavorites(favoriteStatus);
+      }
+    };
+
+    loadFavorites();
+  }, [recommendations]);
+
   // 일정 추가 핸들러
   const handleDateSelect = async (date: string) => {
     if (!selectedTreatment) return;
@@ -1111,19 +1133,28 @@ export default function ProcedureRecommendation({
                       ? favorites.has(treatment.treatment_id)
                       : false;
 
-                    const handleFavoriteClick = (e: React.MouseEvent) => {
+                    const handleFavoriteClick = async (e: React.MouseEvent) => {
                       e.stopPropagation();
-                      if (treatment.treatment_id) {
+                      if (!treatment.treatment_id) return;
+
+                      const result = await toggleProcedureFavorite(
+                        treatment.treatment_id
+                      );
+
+                      if (result.success) {
+                        // Supabase 업데이트 성공 시 로컬 상태 업데이트
                         setFavorites((prev) => {
                           const newSet = new Set(prev);
-                          if (newSet.has(treatment.treatment_id!)) {
-                            newSet.delete(treatment.treatment_id!);
-                          } else {
+                          if (result.isFavorite) {
                             newSet.add(treatment.treatment_id!);
+                          } else {
+                            newSet.delete(treatment.treatment_id!);
                           }
                           return newSet;
                         });
-                        // TODO: 로컬 스토리지 또는 API에 저장
+                        window.dispatchEvent(new Event("favoritesUpdated"));
+                      } else {
+                        console.error("찜하기 처리 실패:", result.error);
                       }
                     };
 

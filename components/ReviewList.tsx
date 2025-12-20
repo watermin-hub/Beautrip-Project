@@ -29,7 +29,7 @@ interface ReviewPost {
   comments: number;
   views: number;
   likes?: number;
-  postType?: "procedure_review" | "hospital_review" | "concern_post"; // Supabase 글 타입
+  postType?: "treatment_review" | "hospital_review" | "concern_post"; // Supabase 글 타입
   isLiked?: boolean; // 현재 사용자가 좋아요를 눌렀는지
 }
 
@@ -181,7 +181,7 @@ export default function ReviewList() {
               upvotes: 0,
               comments: 0,
               views: 0,
-              postType: "procedure_review" as const,
+              postType: "treatment_review" as const,
             };
           });
 
@@ -337,14 +337,14 @@ export default function ReviewList() {
         postType: post.postType,
         postId,
         path:
-          post.postType === "procedure_review"
+          post.postType === "treatment_review"
             ? `/review/procedure/${postId}`
             : post.postType === "hospital_review"
             ? `/review/hospital/${postId}`
             : `/community?tab=consultation`,
       });
 
-      if (post.postType === "procedure_review") {
+      if (post.postType === "treatment_review") {
         router.push(`/review/procedure/${postId}`);
       } else if (post.postType === "hospital_review") {
         router.push(`/review/hospital/${postId}`);
@@ -452,29 +452,6 @@ export default function ReviewList() {
 
           {/* Engagement Metrics */}
           <div className="flex items-center gap-5 pt-4 border-t border-gray-100">
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
-            >
-              <FiArrowUp className="text-lg" />
-              <span className="text-xs font-semibold">{post.upvotes}</span>
-            </button>
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
-            >
-              <FiMessageCircle className="text-lg" />
-              <span className="text-xs font-semibold">{post.comments}</span>
-            </button>
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-all hover:scale-110 active:scale-95"
-            >
-              <FiEye className="text-base" />
-              <span className="text-xs font-medium">
-                {post.views.toLocaleString()}
-              </span>
-            </button>
             {/* 좋아요 버튼 */}
             {post.postType && typeof post.id === "string" && (
               <button
@@ -517,7 +494,7 @@ export default function ReviewList() {
                     alert("좋아요 처리 중 오류가 발생했습니다.");
                   }
                 }}
-                className={`flex items-center gap-1 ml-auto transition-colors ${
+                className={`flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95 ${
                   likedPosts.has(`${post.id}-${post.postType}`)
                     ? "text-red-500"
                     : "text-gray-600 hover:text-red-500"
@@ -530,18 +507,37 @@ export default function ReviewList() {
                       : ""
                   }`}
                 />
-                <span className="text-xs">
+                <span className="text-xs font-semibold">
                   {likeCounts.get(`${post.id}-${post.postType}`) || 0}
                 </span>
               </button>
             )}
             {/* 기존 하드코딩된 좋아요 표시 (postType이 없는 경우) */}
             {!post.postType && post.likes && (
-              <div className="flex items-center gap-1 text-gray-600 ml-auto">
-                <FiHeart className="text-primary-main fill-primary-main" />
-                <span className="text-xs">{post.likes}</span>
-              </div>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1.5 text-red-500 hover:text-red-600 transition-all hover:scale-110 active:scale-95"
+              >
+                <FiHeart className="text-lg fill-red-500" />
+                <span className="text-xs font-semibold">{post.likes}</span>
+              </button>
             )}
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
+            >
+              <FiMessageCircle className="text-lg" />
+              <span className="text-xs font-semibold">{post.comments}</span>
+            </button>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-all hover:scale-110 active:scale-95"
+            >
+              <FiEye className="text-base" />
+              <span className="text-xs font-medium">
+                {post.views.toLocaleString()}
+              </span>
+            </button>
           </div>
         </div>
       ))}

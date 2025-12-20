@@ -75,8 +75,8 @@ export default function ProcedureReviewDetailPage({
         if (data) {
           // 좋아요 상태 및 개수 로드
           const [liked, count] = await Promise.all([
-            isPostLiked(reviewId, "procedure_review"),
-            getPostLikeCount(reviewId, "procedure_review"),
+            isPostLiked(reviewId, "treatment_review"),
+            getPostLikeCount(reviewId, "treatment_review"),
           ]);
           setIsLiked(liked);
           setLikeCount(count);
@@ -100,10 +100,10 @@ export default function ProcedureReviewDetailPage({
 
   const handleLike = async () => {
     try {
-      const result = await togglePostLike(reviewId, "procedure_review");
+      const result = await togglePostLike(reviewId, "treatment_review");
       if (result.success) {
         setIsLiked(result.isLiked);
-        const newCount = await getPostLikeCount(reviewId, "procedure_review");
+        const newCount = await getPostLikeCount(reviewId, "treatment_review");
         setLikeCount(newCount);
       } else {
         if (result.error?.includes("로그인이 필요")) {
