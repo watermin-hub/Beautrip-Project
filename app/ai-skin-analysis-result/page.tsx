@@ -19,18 +19,12 @@ function AISkinAnalysisResultContent() {
 
         if (filePath) {
           try {
-            // Supabase Storage에서 공개 URL 가져오기
-            const { data, error: urlError } = supabase.storage
+            // Supabase Storage에서 공개 URL 가져오기 (getPublicUrl은 error를 반환하지 않음)
+            const { data } = supabase.storage
               .from("face-images")
               .getPublicUrl(filePath);
 
             console.log("Supabase URL 데이터:", data);
-            console.log("URL 에러:", urlError);
-
-            if (urlError) {
-              console.error("공개 URL 생성 실패:", urlError);
-              throw urlError;
-            }
 
             if (data?.publicUrl) {
               console.log("공개 URL:", data.publicUrl);
