@@ -13,6 +13,7 @@ import {
   FiChevronRight,
   FiChevronLeft,
   FiHeart,
+  FiX,
 } from "react-icons/fi";
 import ProcedureFilterModal, { ProcedureFilter } from "./ProcedureFilterModal";
 import AddToScheduleModal from "./AddToScheduleModal";
