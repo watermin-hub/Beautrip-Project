@@ -29,28 +29,7 @@ import {
   type ScheduleBasedRecommendation,
 } from "@/lib/api/beautripApi";
 
-// 필터 옵션 상수 (ProcedureFilterModal과 동일)
-const DURATION_OPTIONS = [
-  { value: "same-day", label: "당일" },
-  { value: "half-day", label: "반나절" },
-  { value: "1-day", label: "1일" },
-  { value: "2-3-days", label: "2~3일" },
-  { value: "surgery", label: "수술 포함" },
-];
-
-const RECOVERY_OPTIONS = [
-  { value: "same-day", label: "당일 생활 가능" },
-  { value: "1-3-days", label: "1~3일" },
-  { value: "4-7-days", label: "4~7일" },
-  { value: "1-week-plus", label: "1주 이상" },
-];
-
-const BUDGET_OPTIONS = [
-  { value: "under-50", label: "~50만원" },
-  { value: "50-100", label: "50~100만원" },
-  { value: "100-200", label: "100~200만원" },
-  { value: "200-plus", label: "200만원+" },
-];
+// 필터 옵션은 ProcedureFilterModal에서 동일하게 사용
 
 interface Recommendation {
   id: number;
@@ -995,21 +974,67 @@ export default function ProcedureRecommendation({
         <div className="mb-4">
           <div className="flex flex-wrap gap-1.5">
             {filter.duration && (
-              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
-                {DURATION_OPTIONS.find((opt) => opt.value === filter.duration)
-                  ?.label || filter.duration}
+              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
+                {(() => {
+                  const keyMap: Record<string, string> = {
+                    "same-day": "procedure.filterDuration.sameDay",
+                    "half-day": "procedure.filterDuration.halfDay",
+                    "1-day": "procedure.filterDuration.1Day",
+                    "2-3-days": "procedure.filterDuration.2-3Days",
+                    "surgery": "procedure.filterDuration.surgery",
+                  };
+                  return t(keyMap[filter.duration] || filter.duration);
+                })()}
+                <button
+                  onClick={() =>
+                    setFilter((prev) => ({ ...prev, duration: null }))
+                  }
+                  className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
+                >
+                  <FiX className="text-xs text-gray-500" />
+                </button>
               </span>
             )}
             {filter.recovery && (
-              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
-                {RECOVERY_OPTIONS.find((opt) => opt.value === filter.recovery)
-                  ?.label || filter.recovery}
+              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
+                {(() => {
+                  const keyMap: Record<string, string> = {
+                    "same-day": "procedure.filterRecovery.sameDay",
+                    "1-3-days": "procedure.filterRecovery.1-3Days",
+                    "4-7-days": "procedure.filterRecovery.4-7Days",
+                    "1-week-plus": "procedure.filterRecovery.1WeekPlus",
+                  };
+                  return t(keyMap[filter.recovery] || filter.recovery);
+                })()}
+                <button
+                  onClick={() =>
+                    setFilter((prev) => ({ ...prev, recovery: null }))
+                  }
+                  className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
+                >
+                  <FiX className="text-xs text-gray-500" />
+                </button>
               </span>
             )}
             {filter.budget && (
-              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200">
-                {BUDGET_OPTIONS.find((opt) => opt.value === filter.budget)
-                  ?.label || filter.budget}
+              <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded-full border border-gray-200 flex items-center gap-1.5">
+                {(() => {
+                  const keyMap: Record<string, string> = {
+                    "under-50": "procedure.filterBudget.under50",
+                    "50-100": "procedure.filterBudget.50-100",
+                    "100-200": "procedure.filterBudget.100-200",
+                    "200-plus": "procedure.filterBudget.200Plus",
+                  };
+                  return t(keyMap[filter.budget] || filter.budget);
+                })()}
+                <button
+                  onClick={() =>
+                    setFilter((prev) => ({ ...prev, budget: null }))
+                  }
+                  className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
+                >
+                  <FiX className="text-xs text-gray-500" />
+                </button>
               </span>
             )}
           </div>
@@ -1069,26 +1094,26 @@ export default function ProcedureRecommendation({
                   {rec.categoryMid}
                 </h4>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  평균 시술시간{" "}
+                  {t("procedure.averageProcedureTime")}{" "}
                   {rec.averageProcedureTimeMin > 0 ||
                   rec.averageProcedureTimeMax > 0
                     ? rec.averageProcedureTimeMin ===
                       rec.averageProcedureTimeMax
-                      ? `${rec.averageProcedureTimeMax}분`
-                      : `${rec.averageProcedureTimeMin}~${rec.averageProcedureTimeMax}분`
+                      ? `${rec.averageProcedureTimeMax}${t("procedure.procedureTime")}`
+                      : `${rec.averageProcedureTimeMin}~${rec.averageProcedureTimeMax}${t("procedure.procedureTime")}`
                     : rec.averageProcedureTime > 0
-                    ? `${rec.averageProcedureTime}분`
-                    : "정보 없음"}{" "}
-                  · 회복기간{" "}
+                    ? `${rec.averageProcedureTime}${t("procedure.procedureTime")}`
+                    : t("pdp.noInfo")}{" "}
+                  · {t("procedure.recoveryPeriod")}{" "}
                   {rec.averageRecoveryPeriodMin > 0 ||
                   rec.averageRecoveryPeriodMax > 0
                     ? rec.averageRecoveryPeriodMin ===
                       rec.averageRecoveryPeriodMax
-                      ? `${rec.averageRecoveryPeriodMax}일`
-                      : `${rec.averageRecoveryPeriodMin}~${rec.averageRecoveryPeriodMax}일`
+                      ? `${rec.averageRecoveryPeriodMax}${t("procedure.recoveryDays")}`
+                      : `${rec.averageRecoveryPeriodMin}~${rec.averageRecoveryPeriodMax}${t("procedure.recoveryDays")}`
                     : rec.averageRecoveryPeriod > 0
-                    ? `${rec.averageRecoveryPeriod}일`
-                    : "정보 없음"}
+                    ? `${rec.averageRecoveryPeriod}${t("procedure.recoveryDays")}`
+                    : t("pdp.noInfo")}
                 </p>
               </div>
             </div>

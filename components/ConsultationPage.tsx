@@ -12,14 +12,14 @@ export default function ConsultationPage() {
   
   // 고민상담소 카테고리 7가지
   const CONCERN_CATEGORIES = [
-    { id: null, label: "전체" },
-    { id: "피부 고민", label: "피부 고민" },
-    { id: "시술 고민", label: "시술 고민" },
-    { id: "병원 선택", label: "병원 선택" },
-    { id: "가격 문의", label: t("common.priceInquiry") },
-    { id: "회복 기간", label: "회복 기간" },
-    { id: "부작용", label: "부작용" },
-    { id: "기타", label: "기타" },
+    { id: null, label: t("concernCategory.all") },
+    { id: "피부 고민", label: t("concernCategory.skinConcern") },
+    { id: "시술 고민", label: t("concernCategory.procedureConcern") },
+    { id: "병원 선택", label: t("concernCategory.hospitalSelection") },
+    { id: "가격 문의", label: t("concernCategory.priceInquiry") },
+    { id: "회복 기간", label: t("concernCategory.recoveryPeriod") },
+    { id: "부작용", label: t("concernCategory.sideEffect") },
+    { id: "기타", label: t("concernCategory.other") },
   ];
 
   const handleCategoryClick = (categoryId: string | null) => {

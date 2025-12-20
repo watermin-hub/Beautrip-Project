@@ -1199,15 +1199,17 @@ function SavedSchedulesTab({
                       </div>
                       {schedule.created_at && (
                         <p className="text-xs text-gray-400">
-                          저장일:{" "}
-                          {new Date(schedule.created_at).toLocaleDateString(
-                            "ko-KR",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )}
+                          {t("schedule.savedDate")}{" "}
+                          {(() => {
+                            const date = new Date(schedule.created_at);
+                            const year = String(date.getFullYear()).slice(-2);
+                            const month = String(date.getMonth() + 1).padStart(
+                              2,
+                              "0"
+                            );
+                            const day = String(date.getDate()).padStart(2, "0");
+                            return `${year}-${month}-${day}`;
+                          })()}
                         </p>
                       )}
                     </div>

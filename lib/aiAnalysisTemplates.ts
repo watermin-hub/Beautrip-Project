@@ -429,3 +429,4 @@ export function getRandomAnalysisResult(): SkinAnalysisResult {
   return analysisTemplates[randomIndex];
 }
 
+

@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiX, FiCamera, FiFileText, FiHome, FiUser, FiEdit2, FiArrowLeft } from "react-icons/fi";
+import {
+  FiX,
+  FiCamera,
+  FiFileText,
+  FiHome,
+  FiUser,
+  FiEdit2,
+  FiArrowLeft,
+} from "react-icons/fi";
 import ProcedureReviewForm from "./ProcedureReviewForm";
 import HospitalReviewForm from "./HospitalReviewForm";
 import ConcernPostForm from "./ConcernPostForm";
@@ -15,42 +23,47 @@ import {
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CommunityWriteModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const writeOptions = [
-  {
-    id: "procedure-review",
-    icon: FiCamera,
-    title: "시술 후기",
-    description: "시술 경험을 공유해보세요",
-    color: "from-pink-500 to-rose-500",
-  },
-  {
-    id: "hospital-review",
-    icon: FiHome,
-    title: "병원 후기",
-    description: "병원 방문 경험을 공유해보세요",
-    color: "from-blue-500 to-cyan-500",
-  },
-  {
-    id: "concern-post",
-    icon: FiFileText,
-    title: "고민글",
-    description: "고민이나 질문을 올려보세요",
-    color: "from-purple-500 to-pink-500",
-  },
-];
-
 export default function CommunityWriteModal({
   isOpen,
   onClose,
 }: CommunityWriteModalProps) {
+  const { t } = useLanguage();
+
+  const writeOptions = [
+    {
+      id: "procedure-review",
+      icon: FiCamera,
+      title: t("writePage.procedureReview"),
+      description: t("writePage.procedureReviewDesc"),
+      color: "from-pink-500 to-rose-500",
+    },
+    {
+      id: "hospital-review",
+      icon: FiHome,
+      title: t("writePage.hospitalReview"),
+      description: t("writePage.hospitalReviewDesc"),
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      id: "concern-post",
+      icon: FiFileText,
+      title: t("writePage.concernPost"),
+      description: t("writePage.concernPostDesc"),
+      color: "from-purple-500 to-pink-500",
+    },
+  ];
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showMyPosts, setShowMyPosts] = useState(false);
+  const [activeMyPostsTab, setActiveMyPostsTab] = useState<
+    "all" | "procedure" | "hospital" | "concern"
+  >("all");
   const [myPosts, setMyPosts] = useState<{
     procedures: ProcedureReviewData[];
     hospitals: HospitalReviewData[];
@@ -75,7 +88,7 @@ export default function CommunityWriteModal({
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      
+
       if (!user) {
         const savedUserId = localStorage.getItem("userId");
         if (!savedUserId) {
@@ -83,13 +96,13 @@ export default function CommunityWriteModal({
           setShowMyPosts(false);
           return;
         }
-        
+
         const [procedures, hospitals, concerns] = await Promise.all([
           loadMyProcedureReviews(savedUserId),
           loadMyHospitalReviews(savedUserId),
           loadMyConcernPosts(savedUserId),
         ]);
-        
+
         setMyPosts({ procedures, hospitals, concerns });
         return;
       }
@@ -174,7 +187,9 @@ export default function CommunityWriteModal({
                 >
                   <FiArrowLeft className="text-gray-600 text-xl" />
                 </button>
-                <h2 className="text-xl font-bold text-gray-900">내 글 관리</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {t("writePage.managePosts")}
+                </h2>
               </div>
             ) : (
               <h2 className="text-xl font-bold text-gray-900">
@@ -190,7 +205,7 @@ export default function CommunityWriteModal({
           </div>
           {!showMyPosts && !editingPost && (
             <p className="text-sm text-gray-500 mt-1">
-              어떤 이야기를 공유하고 싶으신가요?
+              {t("writePage.whatStory")}
             </p>
           )}
         </div>
@@ -199,124 +214,189 @@ export default function CommunityWriteModal({
         <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
           {showMyPosts ? (
             <div className="space-y-4">
+              {/* 필터 탭 */}
+              <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-2">
+                <button
+                  onClick={() => setActiveMyPostsTab("all")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+                    activeMyPostsTab === "all"
+                      ? "bg-primary-main text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {t("writePage.all")}
+                </button>
+                <button
+                  onClick={() => setActiveMyPostsTab("procedure")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+                    activeMyPostsTab === "procedure"
+                      ? "bg-primary-main text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {t("writePage.procedureReview")}
+                </button>
+                <button
+                  onClick={() => setActiveMyPostsTab("hospital")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+                    activeMyPostsTab === "hospital"
+                      ? "bg-primary-main text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {t("writePage.hospitalReview")}
+                </button>
+                <button
+                  onClick={() => setActiveMyPostsTab("concern")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+                    activeMyPostsTab === "concern"
+                      ? "bg-primary-main text-white"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  {t("writePage.concernPost")}
+                </button>
+              </div>
+
               {loadingMyPosts ? (
                 <div className="text-center py-8 text-gray-500">
-                  내 글을 불러오는 중...
+                  {t("mypage.loadingMyPosts")}
                 </div>
               ) : (
                 <>
                   {/* 시술 후기 */}
-                  {myPosts.procedures.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                        시술 후기 ({myPosts.procedures.length})
-                      </h3>
-                      <div className="space-y-2">
-                        {myPosts.procedures.map((post) => (
-                          <div
-                            key={post.id}
-                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {post.content?.substring(0, 50)}
-                                {post.content && post.content.length > 50
-                                  ? "..."
-                                  : ""}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {formatTimeAgo(post.created_at)}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleEditPost("procedure", post)}
-                              className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                  {(activeMyPostsTab === "all" ||
+                    activeMyPostsTab === "procedure") &&
+                    myPosts.procedures.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                          {t("writePage.procedureReview")} (
+                          {myPosts.procedures.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {myPosts.procedures.map((post) => (
+                            <div
+                              key={post.id}
+                              className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
                             >
-                              <FiEdit2 className="text-lg" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 병원 후기 */}
-                  {myPosts.hospitals.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                        병원 후기 ({myPosts.hospitals.length})
-                      </h3>
-                      <div className="space-y-2">
-                        {myPosts.hospitals.map((post) => (
-                          <div
-                            key={post.id}
-                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {post.content?.substring(0, 50)}
-                                {post.content && post.content.length > 50
-                                  ? "..."
-                                  : ""}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {formatTimeAgo(post.created_at)}
-                              </p>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {post.content?.substring(0, 50)}
+                                  {post.content && post.content.length > 50
+                                    ? "..."
+                                    : ""}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {formatTimeAgo(post.created_at)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() =>
+                                  handleEditPost("procedure", post)
+                                }
+                                className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                              >
+                                <FiEdit2 className="text-lg" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleEditPost("hospital", post)}
-                              className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
-                            >
-                              <FiEdit2 className="text-lg" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 고민글 */}
-                  {myPosts.concerns.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                        고민글 ({myPosts.concerns.length})
-                      </h3>
-                      <div className="space-y-2">
-                        {myPosts.concerns.map((post) => (
-                          <div
-                            key={post.id}
-                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {(post as any).title || post.content?.substring(0, 50)}
-                                {!post.title && post.content && post.content.length > 50
-                                  ? "..."
-                                  : ""}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {formatTimeAgo(post.created_at)}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleEditPost("concern", post)}
-                              className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
-                            >
-                              <FiEdit2 className="text-lg" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {myPosts.procedures.length === 0 &&
-                    myPosts.hospitals.length === 0 &&
-                    myPosts.concerns.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        작성한 글이 없습니다.
+                          ))}
+                        </div>
                       </div>
                     )}
+
+                  {/* 병원 후기 */}
+                  {(activeMyPostsTab === "all" ||
+                    activeMyPostsTab === "hospital") &&
+                    myPosts.hospitals.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                          {t("writePage.hospitalReview")} (
+                          {myPosts.hospitals.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {myPosts.hospitals.map((post) => (
+                            <div
+                              key={post.id}
+                              className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {post.content?.substring(0, 50)}
+                                  {post.content && post.content.length > 50
+                                    ? "..."
+                                    : ""}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {formatTimeAgo(post.created_at)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleEditPost("hospital", post)}
+                                className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                              >
+                                <FiEdit2 className="text-lg" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* 고민상담소 */}
+                  {(activeMyPostsTab === "all" ||
+                    activeMyPostsTab === "concern") &&
+                    myPosts.concerns.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                          {t("writePage.concernPost")} (
+                          {myPosts.concerns.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {myPosts.concerns.map((post) => (
+                            <div
+                              key={post.id}
+                              className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {(post as any).title ||
+                                    post.content?.substring(0, 50)}
+                                  {!post.title &&
+                                  post.content &&
+                                  post.content.length > 50
+                                    ? "..."
+                                    : ""}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {formatTimeAgo(post.created_at)}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleEditPost("concern", post)}
+                                className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                              >
+                                <FiEdit2 className="text-lg" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {((activeMyPostsTab === "all" &&
+                    myPosts.procedures.length === 0 &&
+                    myPosts.hospitals.length === 0 &&
+                    myPosts.concerns.length === 0) ||
+                    (activeMyPostsTab === "procedure" &&
+                      myPosts.procedures.length === 0) ||
+                    (activeMyPostsTab === "hospital" &&
+                      myPosts.hospitals.length === 0) ||
+                    (activeMyPostsTab === "concern" &&
+                      myPosts.concerns.length === 0)) && (
+                    <div className="text-center py-8 text-gray-500">
+                      {t("writePage.noPosts")}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -366,10 +446,10 @@ export default function CommunityWriteModal({
                     </div>
                     <div className="flex-1">
                       <h3 className="text-base font-bold text-gray-900 mb-1">
-                        내 글 관리
+                        {t("writePage.managePosts")}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        작성한 글을 관리해보세요
+                        {t("writePage.managePostsDesc")}
                       </p>
                     </div>
                     <div className="text-gray-400 group-hover:text-primary-main transition-colors">
@@ -385,21 +465,33 @@ export default function CommunityWriteModal({
                 <ProcedureReviewForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
-                  editData={editingPost?.type === "procedure" ? editingPost.data : undefined}
+                  editData={
+                    editingPost?.type === "procedure"
+                      ? editingPost.data
+                      : undefined
+                  }
                 />
               )}
               {selectedOption === "hospital-review" && (
                 <HospitalReviewForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
-                  editData={editingPost?.type === "hospital" ? editingPost.data : undefined}
+                  editData={
+                    editingPost?.type === "hospital"
+                      ? editingPost.data
+                      : undefined
+                  }
                 />
               )}
               {selectedOption === "concern-post" && (
                 <ConcernPostForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
-                  editData={editingPost?.type === "concern" ? editingPost.data : undefined}
+                  editData={
+                    editingPost?.type === "concern"
+                      ? editingPost.data
+                      : undefined
+                  }
                 />
               )}
             </div>

@@ -19,10 +19,13 @@ const TABLE_NAMES = {
 export function getTreatmentTableName(language?: LanguageCode): string {
   // 클라이언트 사이드에서 언어 가져오기 (localStorage 또는 기본값)
   let lang: LanguageCode = language || "KR";
-  
+
   if (typeof window !== "undefined" && !language) {
     const saved = localStorage.getItem("language") as LanguageCode;
-    if (saved && (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")) {
+    if (
+      saved &&
+      (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")
+    ) {
       lang = saved;
     }
   }
@@ -323,9 +326,7 @@ export async function loadTreatmentsPaginated(
     }
 
     const treatmentTable = getTreatmentTableName();
-    let query = client
-      .from(treatmentTable)
-      .select("*", { count: "exact" });
+    let query = client.from(treatmentTable).select("*", { count: "exact" });
 
     // 필터 적용 (최소 2글자 이상일 때만 검색)
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
@@ -341,7 +342,10 @@ export async function loadTreatmentsPaginated(
           queryError,
           searchTerm: term,
           errorType: typeof queryError,
-          errorMessage: queryError instanceof Error ? queryError.message : String(queryError),
+          errorMessage:
+            queryError instanceof Error
+              ? queryError.message
+              : String(queryError),
         });
         // 쿼리 생성 실패 시 빈 결과 반환
         return { data: [], total: 0, hasMore: false };
@@ -423,7 +427,7 @@ export async function loadTreatmentsPaginated(
         // 에러 객체의 모든 속성을 확인하기 위해 JSON.stringify 사용
         const errorString = JSON.stringify(error, null, 2);
         const errorKeys = Object.keys(error || {});
-        
+
         console.error("Supabase 쿼리 오류 (랜덤 정렬):", {
           error,
           errorString,
@@ -444,7 +448,7 @@ export async function loadTreatmentsPaginated(
             filters,
           },
         });
-        
+
         // 에러 메시지 추출 (다양한 형식 지원)
         let errorMessage = "알 수 없는 Supabase 오류";
         if (error?.message) {
@@ -458,7 +462,7 @@ export async function loadTreatmentsPaginated(
         } else if (errorString && errorString !== "{}") {
           errorMessage = `Supabase 오류: ${errorString}`;
         }
-        
+
         throw new Error(`Supabase 오류: ${errorMessage}`);
       }
 
@@ -507,7 +511,7 @@ export async function loadTreatmentsPaginated(
         // 에러 객체의 모든 속성을 확인하기 위해 JSON.stringify 사용
         const errorString = JSON.stringify(error, null, 2);
         const errorKeys = Object.keys(error || {});
-        
+
         console.error("Supabase 쿼리 오류 (일반 정렬):", {
           error,
           errorString,
@@ -528,7 +532,7 @@ export async function loadTreatmentsPaginated(
             filters,
           },
         });
-        
+
         // 에러 메시지 추출 (다양한 형식 지원)
         let errorMessage = "알 수 없는 Supabase 오류";
         if (error?.message) {
@@ -542,7 +546,7 @@ export async function loadTreatmentsPaginated(
         } else if (errorString && errorString !== "{}") {
           errorMessage = `Supabase 오류: ${errorString}`;
         }
-        
+
         throw new Error(`Supabase 오류: ${errorMessage}`);
       }
 
@@ -2698,7 +2702,10 @@ export async function saveConcernPost(
       title: data.title,
       concern_category: data.concern_category,
       content: data.content,
-      image_paths: data.image_paths && data.image_paths.length > 0 ? data.image_paths : null,
+      image_paths:
+        data.image_paths && data.image_paths.length > 0
+          ? data.image_paths
+          : null,
     };
 
     const { data: insertedData, error } = await supabase
@@ -3150,7 +3157,13 @@ export async function getUserNickname(
       .maybeSingle();
 
     if (error) {
-      console.error("[getUserNickname] 사용자 프로필 조회 실패:", error);
+      console.error("[getUserNickname] 사용자 프로필 조회 실패:", {
+        userId: userId,
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
       return "익명";
     }
 
@@ -3182,8 +3195,9 @@ export async function getUserNickname(
         return profile.login_id;
       }
     } else {
-      console.log("[getUserNickname] 프로필 없음:", {
+      console.warn("[getUserNickname] 프로필 없음 (RLS 정책 문제 가능성):", {
         userId: userId,
+        hint: "user_profiles 테이블에 공개 읽기 정책이 있는지 확인하세요.",
       });
     }
 
@@ -5084,5 +5098,295 @@ export async function deleteSavedSchedule(
       success: false,
       error: error?.message || "저장된 일정 삭제에 실패했습니다.",
     };
+  }
+}
+
+// ==================== 댓글 관련 인터페이스 및 함수 ====================
+
+export interface CommentData {
+  id?: string;
+  post_id: string;
+  post_type: "procedure" | "hospital" | "concern";
+  user_id?: string; // ✅ UUID (Supabase Auth의 auth.users.id)
+  content: string;
+  parent_comment_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CommentWithUser extends CommentData {
+  user_nickname?: string;
+  user_display_name?: string;
+  user_avatar_url?: string;
+}
+
+// 댓글 저장
+export async function saveComment(
+  data: CommentData
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    // 현재 로그인한 사용자 ID 가져오기 (UUID)
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+    const userId = user?.id || null;
+
+    if (!userId) {
+      return {
+        success: false,
+        error: "로그인이 필요합니다.",
+      };
+    }
+
+    // ✅ RLS 정책을 위해 반드시 auth.uid()를 user_id에 사용
+    // data.user_id는 무시하고 항상 현재 로그인한 사용자의 ID 사용
+    const commentData = {
+      post_id: data.post_id,
+      post_type: data.post_type,
+      user_id: userId, // ✅ 무조건 auth.uid() 사용 (RLS 정책과 일치)
+      content: data.content.trim(),
+      parent_comment_id: data.parent_comment_id || null,
+    };
+
+    const { data: insertedData, error } = await client
+      .from("community_comments")
+      .insert([commentData])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("댓글 저장 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, id: insertedData?.id };
+  } catch (error: any) {
+    console.error("댓글 저장 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "댓글 저장에 실패했습니다.",
+    };
+  }
+}
+
+// 댓글 목록 조회 (게시글별)
+export async function loadComments(
+  postId: string,
+  postType: "procedure" | "hospital" | "concern"
+): Promise<CommentWithUser[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return [];
+    }
+
+    const { data, error } = await client
+      .from("community_comments")
+      .select("*")
+      .eq("post_id", postId)
+      .eq("post_type", postType)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("댓글 조회 실패:", error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // user_profiles에서 사용자 정보 가져오기 (UUID)
+    const userIds = Array.from(
+      new Set(
+        data.map((comment) => comment.user_id).filter((id) => id && id !== "0")
+      )
+    );
+
+    const commentsWithUser: CommentWithUser[] = await Promise.all(
+      data.map(async (comment) => {
+        if (comment.user_id && comment.user_id !== "0") {
+          const { data: profile } = await client
+            .from("user_profiles")
+            .select("nickname, display_name, avatar_url")
+            .eq("user_id", comment.user_id)
+            .maybeSingle();
+
+          return {
+            ...comment,
+            user_nickname: profile?.nickname || null,
+            user_display_name: profile?.display_name || null,
+            user_avatar_url: profile?.avatar_url || null,
+          };
+        }
+        return {
+          ...comment,
+          user_nickname: null,
+          user_display_name: null,
+          user_avatar_url: null,
+        };
+      })
+    );
+
+    return commentsWithUser;
+  } catch (error: any) {
+    console.error("댓글 조회 중 오류:", error);
+    return [];
+  }
+}
+
+// 댓글 삭제
+export async function deleteComment(
+  commentId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    // 현재 로그인한 사용자 확인 (UUID)
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+    const userId = user?.id || null;
+
+    if (!userId) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    // 댓글 작성자 확인
+    const { data: comment, error: fetchError } = await client
+      .from("community_comments")
+      .select("user_id")
+      .eq("id", commentId)
+      .single();
+
+    if (fetchError || !comment) {
+      return { success: false, error: "댓글을 찾을 수 없습니다." };
+    }
+
+    // 작성자 확인 (본인만 삭제 가능)
+    if (comment.user_id !== userId) {
+      return { success: false, error: "본인의 댓글만 삭제할 수 있습니다." };
+    }
+
+    const { error } = await client
+      .from("community_comments")
+      .delete()
+      .eq("id", commentId);
+
+    if (error) {
+      console.error("댓글 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("댓글 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "댓글 삭제에 실패했습니다.",
+    };
+  }
+}
+
+// 내가 작성한 댓글 조회
+export async function loadMyComments(
+  userId?: string // ✅ UUID
+): Promise<CommentWithUser[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return [];
+    }
+
+    // 현재 로그인한 사용자 ID 가져오기 (UUID)
+    let currentUserId = userId;
+    if (!currentUserId) {
+      const {
+        data: { user },
+      } = await client.auth.getUser();
+      currentUserId = user?.id || null;
+    }
+
+    if (!currentUserId) {
+      return [];
+    }
+
+    const { data, error } = await client
+      .from("community_comments")
+      .select("*")
+      .eq("user_id", currentUserId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("내 댓글 조회 실패:", error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // user_profiles에서 사용자 정보 가져오기
+    const { data: profile } = await client
+      .from("user_profiles")
+      .select("nickname, display_name, avatar_url")
+      .eq("user_id", currentUserId)
+      .maybeSingle();
+
+    // 게시글 정보도 함께 가져오기 (선택사항)
+    const commentsWithUser: CommentWithUser[] = data.map((comment) => ({
+      ...comment,
+      user_nickname: profile?.nickname || null,
+      user_display_name: profile?.display_name || null,
+      user_avatar_url: profile?.avatar_url || null,
+    }));
+
+    return commentsWithUser;
+  } catch (error: any) {
+    console.error("내 댓글 조회 중 오류:", error);
+    return [];
+  }
+}
+
+// 댓글 수 조회
+export async function getCommentCount(
+  postId: string,
+  postType: "procedure" | "hospital" | "concern"
+): Promise<number> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return 0;
+    }
+
+    const { count, error } = await client
+      .from("community_comments")
+      .select("*", { count: "exact", head: true })
+      .eq("post_id", postId)
+      .eq("post_type", postType);
+
+    if (error) {
+      console.error("댓글 수 조회 실패:", error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error: any) {
+    console.error("댓글 수 조회 중 오류:", error);
+    return 0;
   }
 }

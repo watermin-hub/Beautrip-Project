@@ -79,13 +79,22 @@ export function formatDateWithDay(
     CN: ["日", "一", "二", "三", "四", "五", "六"],
   };
 
+  // 언어별 "일" 표시
+  const dayLabel: Record<LanguageCode, string> = {
+    KR: "일",
+    EN: "",
+    JP: "日",
+    CN: "日",
+  };
+
   const monthName = monthNames[language][month] || `${month}월`;
   const dayName = dayNames[language][dayIndex] || "";
+  const currentDayLabel = dayLabel[language] || dayLabel.KR;
 
   if (language === "EN") {
     return `${monthName} ${day} (${dayName})`;
   } else {
-    return `${monthName} ${day}일 (${dayName})`;
+    return `${monthName} ${day}${currentDayLabel} (${dayName})`;
   }
 }
 

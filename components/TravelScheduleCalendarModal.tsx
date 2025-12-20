@@ -25,7 +25,7 @@ export default function TravelScheduleCalendarModal({
   selectedEndDate,
   onModalStateChange,
 }: TravelScheduleCalendarModalProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tempStartDate, setTempStartDate] = useState<string | null>(
     selectedStartDate || null
@@ -204,22 +204,33 @@ export default function TravelScheduleCalendarModal({
     calendarDays.push(new Date(year, month + 1, day));
   }
 
-  const monthNames = [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
-  ];
+  // 언어별 월 이름
+  const monthNames: Record<string, string[]> = {
+    KR: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+    EN: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    JP: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+    CN: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+  };
 
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  // 언어별 요일 이름
+  const dayNames: Record<string, string[]> = {
+    KR: ["일", "월", "화", "수", "목", "금", "토"],
+    EN: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    JP: ["日", "月", "火", "水", "木", "金", "土"],
+    CN: ["日", "一", "二", "三", "四", "五", "六"],
+  };
+
+  // 언어별 "년" 표시
+  const yearLabel: Record<string, string> = {
+    KR: "년",
+    EN: "",
+    JP: "年",
+    CN: "年",
+  };
+
+  const currentMonthNames = monthNames[language] || monthNames.KR;
+  const currentDayNames = dayNames[language] || dayNames.KR;
+  const currentYearLabel = yearLabel[language] || yearLabel.KR;
 
   return (
     <>
@@ -255,7 +266,10 @@ export default function TravelScheduleCalendarModal({
                 <FiChevronLeft className="text-gray-700 text-xl" />
               </button>
               <h3 className="text-sm font-semibold text-gray-900">
-                {year}년 {monthNames[month]}
+                {language === "EN" 
+                  ? `${currentMonthNames[month]} ${year}`
+                  : `${year}${currentYearLabel} ${currentMonthNames[month]}`
+                }
               </h3>
               <button
                 onClick={goToNextMonth}
@@ -269,7 +283,7 @@ export default function TravelScheduleCalendarModal({
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               {/* Day Names Header */}
               <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
-                {dayNames.map((day) => (
+                {currentDayNames.map((day) => (
                   <div
                     key={day}
                     className="py-1 text-center text-[9px] font-semibold text-gray-600"

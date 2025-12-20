@@ -20,35 +20,34 @@ interface ContentItem {
   slug?: string; // 회복 가이드용 slug
 }
 
-// 정보성 컨텐츠 데이터 (임시 - 추후 API 연동)
-const informationalContents: ContentItem[] = [
-  {
-    id: "top20",
-    title: "한국 인기 시술 정보 TOP 20!",
-    description:
-      "한국을 방문하는 외국인 여행객을 위한 인기 시술 정보를 한눈에 확인하세요",
-    category: "가이드",
-    readTime: "5분",
-    views: 2341,
-    slug: "top20", // 라우팅용 slug
-    thumbnail:
-      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/top20/top20_kr.png", // 썸네일 이미지
-  },
-  {
-    id: "travel-recommendation",
-    title: "내 일정에 딱 맞는 한국 여행지 추천 ✈️",
-    description: "여행 루트 자동 생성해드려요!",
-    category: "가이드",
-    readTime: "6분",
-    views: 1892,
-    slug: "travel-recommendation",
-    thumbnail:
-      "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HAN01.png",
-  },
-];
-
 export default function InformationalContentSection() {
   const { t, language } = useLanguage();
+
+  // 정보성 컨텐츠 데이터 (언어별 번역 적용)
+  const informationalContents: ContentItem[] = [
+    {
+      id: "top20",
+      title: t("community.top20.title"),
+      description: t("community.top20.description"),
+      category: t("home.category.guide"),
+      readTime: "5",
+      views: 2341,
+      slug: "top20", // 라우팅용 slug
+      thumbnail:
+        "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/top20/top20_kr.png", // 썸네일 이미지
+    },
+    {
+      id: "travel-recommendation",
+      title: t("community.travelRecommendation.title"),
+      description: t("community.travelRecommendation.subtitle"),
+      category: t("home.category.guide"),
+      readTime: "6",
+      views: 1892,
+      slug: "travel-recommendation",
+      thumbnail:
+        "https://ecimg.cafe24img.com/pg1989b96667141076/pagesoomin/beautrip/contents_place/HAN01.png",
+    },
+  ];
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
@@ -80,13 +79,16 @@ export default function InformationalContentSection() {
     loadGuides();
   }, [language]);
 
+  // 카테고리 키 가져오기
+  const guideCategoryKey = t("home.category.guide");
+  const recoveryGuideCategoryKey = t("home.category.recoveryGuide");
+
   // 회복 가이드를 ContentItem 형식으로 변환
-  // 언어에 관계없이 "회복 가이드"로 통일하여 필터링
   const recoveryGuideItems: ContentItem[] = recoveryGuidePosts.map((post) => ({
     id: post.id,
     title: post.title,
     description: post.description,
-    category: "회복 가이드", // 언어에 관계없이 통일된 카테고리명 사용
+    category: recoveryGuideCategoryKey, // 번역된 카테고리명 사용
     readTime: post.readTime,
     views: post.views || 0,
     thumbnail: post.thumbnail,
@@ -99,22 +101,22 @@ export default function InformationalContentSection() {
     ...recoveryGuideItems,
   ];
 
-  const categories = ["all", "가이드", "회복 가이드"];
+  const categories = ["all", guideCategoryKey, recoveryGuideCategoryKey];
 
   const filteredContents =
     selectedCategory === "all"
       ? (() => {
           // 전체 탭에서는 회복 가이드를 5개만 표시
           const recoveryGuides = allContents.filter(
-            (item) => item.category === "회복 가이드"
+            (item) => item.category === recoveryGuideCategoryKey
           );
           const otherContents = allContents.filter(
-            (item) => item.category !== "회복 가이드"
+            (item) => item.category !== recoveryGuideCategoryKey
           );
           return [...otherContents, ...recoveryGuides.slice(0, 5)];
         })()
-      : selectedCategory === "회복 가이드"
-      ? allContents.filter((item) => item.category === "회복 가이드")
+      : selectedCategory === recoveryGuideCategoryKey
+      ? allContents.filter((item) => item.category === recoveryGuideCategoryKey)
       : allContents.filter((item) => item.category === selectedCategory);
 
   // 전체 탭에서 5개만 표시
@@ -140,13 +142,7 @@ export default function InformationalContentSection() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {category === "all" 
-                ? t("home.category.all")
-                : category === "가이드"
-                ? t("home.category.guide")
-                : category === "회복 가이드"
-                ? t("home.category.recoveryGuide")
-                : category}
+              {category}
             </button>
           ))}
         </div>
@@ -156,23 +152,23 @@ export default function InformationalContentSection() {
       <div className="space-y-2.5">
         {loading ? (
           <div className="text-center py-8 text-gray-500 text-sm">
-            読み込み中...
+            {t("common.loading")}
           </div>
         ) : displayedContents.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
-            {selectedCategory === "회복 가이드"
+            {selectedCategory === recoveryGuideCategoryKey
               ? t("home.recoveryGuideEmpty")
               : t("common.noData")}
           </div>
         ) : (
           displayedContents.map((content) => {
-            const isRecoveryGuide = content.category === "회복 가이드";
+            const isRecoveryGuide = content.category === recoveryGuideCategoryKey;
             return (
               <button
                 key={content.id}
                 onClick={() => {
                   // 회복 가이드인 경우 상세 페이지로 이동
-                  if (content.category === "회복 가이드" && content.slug) {
+                  if (content.category === recoveryGuideCategoryKey && content.slug) {
                     router.push(`/community/recovery-guide/${content.slug}`);
                   } else if (content.slug === "top20") {
                     // TOP 20 정보 페이지로 이동
@@ -235,7 +231,7 @@ export default function InformationalContentSection() {
                       </span>
                       {content.readTime && (
                         <span className="text-[10px] text-gray-500 font-medium">
-                          {content.readTime} 읽기
+                          {content.readTime}{t("common.readTime")}
                         </span>
                       )}
                     </div>
@@ -253,7 +249,7 @@ export default function InformationalContentSection() {
                     </p>
                     {content.views !== undefined && (
                       <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
-                        <span>조회 {content.views.toLocaleString()}</span>
+                        <span>{t("common.views")} {content.views.toLocaleString()}</span>
                       </div>
                     )}
                   </div>

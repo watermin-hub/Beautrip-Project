@@ -10,36 +10,38 @@ import {
 } from "react-icons/fi";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
-
-const writeOptions = [
-  {
-    id: "procedure-review",
-    icon: FiCamera,
-    title: "시술 후기",
-    description: "시술 경험을 공유해보세요",
-    color: "from-pink-500 to-rose-500",
-    path: "/community/write/procedure",
-  },
-  {
-    id: "hospital-review",
-    icon: FiHome,
-    title: "병원 후기",
-    description: "병원 방문 경험을 공유해보세요",
-    color: "from-blue-500 to-cyan-500",
-    path: "/community/write/hospital",
-  },
-  {
-    id: "concern-post",
-    icon: FiFileText,
-    title: "고민글",
-    description: "고민이나 질문을 올려보세요",
-    color: "from-purple-500 to-pink-500",
-    path: "/community/write/concern",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function WritePage() {
   const router = useRouter();
+  const { t } = useLanguage();
+
+  const writeOptions = [
+    {
+      id: "procedure-review",
+      icon: FiCamera,
+      title: t("writePage.procedureReview"),
+      description: t("writePage.procedureReviewDesc"),
+      color: "from-pink-500 to-rose-500",
+      path: "/community/write/procedure",
+    },
+    {
+      id: "hospital-review",
+      icon: FiHome,
+      title: t("writePage.hospitalReview"),
+      description: t("writePage.hospitalReviewDesc"),
+      color: "from-blue-500 to-cyan-500",
+      path: "/community/write/hospital",
+    },
+    {
+      id: "concern-post",
+      icon: FiFileText,
+      title: t("writePage.concernPost"),
+      description: t("writePage.concernPostDesc"),
+      color: "from-purple-500 to-pink-500",
+      path: "/community/write/concern",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">
@@ -55,9 +57,9 @@ export default function WritePage() {
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">글 작성하기</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t("writePage.title")}</h2>
             <p className="text-sm text-gray-500 mt-1">
-              어떤 이야기를 공유하고 싶으신가요?
+              {t("writePage.subtitle")}
             </p>
           </div>
         </div>
@@ -105,10 +107,10 @@ export default function WritePage() {
               </div>
               <div className="flex-1">
                 <h3 className="text-base font-bold text-gray-900 mb-1">
-                  내 글 관리
+                  {t("writePage.managePosts")}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  작성한 글을 관리해보세요
+                  {t("writePage.managePostsDesc")}
                 </p>
               </div>
               <div className="text-gray-400 group-hover:text-primary-main transition-colors">

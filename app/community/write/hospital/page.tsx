@@ -6,9 +6,11 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HospitalReviewWritePage() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const handleBack = () => {
     router.push("/community/write");
@@ -33,12 +35,12 @@ export default function HospitalReviewWritePage() {
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h2 className="text-xl font-bold text-gray-900">병원 후기 작성</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t("writePage.hospitalReviewWrite")}</h2>
         </div>
       </div>
 
       {/* Form - 양옆 간격과 상단 여백 추가 */}
-      <div className="px-6 pt-14 pb-24">
+      <div className="px-6 pt-[70px] pb-24">
         <Suspense
           fallback={
             <div className="p-4 text-center text-gray-500">로딩 중...</div>

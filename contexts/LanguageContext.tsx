@@ -347,6 +347,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "banner.weekend.subheadline": "주말 예약 시 할인",
     "banner.weekend.description": "주말 예약 고객 특별 혜택",
     "banner.ranking.title": "실시간 인기 검색어",
+    "banner.ranking.best": "BEST",
 
     // Home Page
     "home.selectSchedule": "여행 일정을 선택해 주세요.",
@@ -373,6 +374,14 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "calendar.notSelected": "선택 안 함",
     "calendar.selectCategory": "카테고리 선택",
     "calendar.selectEndDate": "종료일을 선택해주세요",
+    "comment.placeholder": "댓글을 입력하세요...",
+    "comment.empty": "아직 댓글이 없습니다.",
+    "comment.submit": "등록",
+    "comment.edit": "수정",
+    "comment.delete": "삭제",
+    "comment.deleteConfirm": "댓글을 삭제하시겠습니까?",
+    "comment.myComments": "내 댓글",
+    "comment.noComments": "작성한 댓글이 없습니다.",
     "procedure.filter": "필터",
     "procedure.customRecommendations": "여행 일정에 딱 맞는 시술 추천",
     "procedure.travelInfo": "여행 일정 정보",
@@ -467,8 +476,11 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.section.hospital": "전체 병원",
     "explore.section.hospitalDesc": "다양한 병원을 만나보세요",
     "explore.ranking.category": "카테고리별",
-    "explore.ranking.kbeauty": "K-beauty",
+    "explore.ranking.kbeauty": "K-Beauty",
     "explore.ranking.hospital": "추천 병원",
+    "kbeauty.title": "K-Beauty 인기 랭킹",
+    "kbeauty.description": "K-Beauty 트렌드를 반영한 인기 시술 랭킹입니다.",
+    "kbeauty.empty": "K-Beauty 시술이 없습니다.",
     // Explore tabs
     "explore.tab.ranking": "랭킹",
     "explore.tab.allProcedures": "전체 시술",
@@ -722,6 +734,14 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "home.category.guide": "Guide",
     "home.category.recoveryGuide": "Recovery Guide",
     "home.recoveryGuideTitle": "Recovery Guide",
+    "comment.placeholder": "Enter a comment...",
+    "comment.empty": "No comments yet.",
+    "comment.submit": "Submit",
+    "comment.edit": "Edit",
+    "comment.delete": "Delete",
+    "comment.deleteConfirm": "Are you sure you want to delete this comment?",
+    "comment.myComments": "My Comments",
+    "comment.noComments": "You haven't written any comments yet.",
     "home.recoveryGuideEmpty": "Recovery guide articles are being prepared.",
 
     // Favorites
@@ -831,6 +851,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "banner.weekend.description":
       "Special benefits for weekend appointment customers",
     "banner.ranking.title": "Real-time Popular Searches",
+    "banner.ranking.best": "BEST",
 
     // Home Page
     "home.selectSchedule": "Please select your travel schedule.",
@@ -951,8 +972,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.section.hospital": "Hospital List",
     "explore.section.hospitalDesc": "Top 10 Popular Hospitals",
     "explore.ranking.category": "By Category",
-    "explore.ranking.kbeauty": "K-beauty",
+    "explore.ranking.kbeauty": "K-Beauty",
     "explore.ranking.hospital": "Recommended Hospitals",
+    "kbeauty.title": "K-Beauty Popular Rankings",
+    "kbeauty.description":
+      "Popular procedure rankings reflecting K-Beauty trends.",
+    "kbeauty.empty": "No K-Beauty procedures available.",
 
     // Recovery guide page
     "recovery.headerTitle": "Recovery Timeline and Precautions by Procedure",
@@ -1299,6 +1324,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "banner.weekend.subheadline": "週末予約時割引",
     "banner.weekend.description": "週末予約のお客様特別特典",
     "banner.ranking.title": "リアルタイム人気検索語",
+    "banner.ranking.best": "BEST",
 
     // Home Page
     "home.selectSchedule": "旅行日程を選択してください。",
@@ -1317,6 +1343,14 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "home.category.body": "体型/脂肪",
     "home.category.other": "その他",
     "home.category.recoveryGuide": "回復ガイド",
+    "comment.placeholder": "コメントを入力してください...",
+    "comment.empty": "まだコメントがありません。",
+    "comment.submit": "投稿",
+    "comment.edit": "編集",
+    "comment.delete": "削除",
+    "comment.deleteConfirm": "このコメントを削除してもよろしいですか？",
+    "comment.myComments": "私のコメント",
+    "comment.noComments": "まだコメントを書いていません。",
     "home.recoveryGuideTitle": "回復ガイド",
     "home.recoveryGuideEmpty": "回復ガイドの記事を準備中です。",
     "calendar.title": "旅行日程を選択",
@@ -1419,8 +1453,11 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.section.hospital": "病院リスト",
     "explore.section.hospitalDesc": "上位10の人気病院",
     "explore.ranking.category": "カテゴリ別",
-    "explore.ranking.kbeauty": "K-beauty",
+    "explore.ranking.kbeauty": "K-Beauty",
     "explore.ranking.hospital": "おすすめ病院",
+    "kbeauty.title": "K-Beauty人気ランキング",
+    "kbeauty.description": "K-Beautyトレンドを反映した人気施術ランキングです。",
+    "kbeauty.empty": "K-Beauty施術がありません。",
     // Explore tabs
     "explore.tab.ranking": "ランキング",
     "explore.tab.allProcedures": "全施術",
@@ -1755,6 +1792,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "banner.weekend.subheadline": "周末预约折扣",
     "banner.weekend.description": "周末预约客户特别优惠",
     "banner.ranking.title": "实时热门搜索",
+    "banner.ranking.best": "BEST",
 
     // Home Page
     "home.selectSchedule": "请选择您的旅行日程。",
@@ -1772,6 +1810,14 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "home.category.body": "体型/脂肪",
     "home.category.other": "其他",
     "home.category.recoveryGuide": "恢复指南",
+    "comment.placeholder": "请输入评论...",
+    "comment.empty": "还没有评论。",
+    "comment.submit": "提交",
+    "comment.edit": "编辑",
+    "comment.delete": "删除",
+    "comment.deleteConfirm": "确定要删除这条评论吗？",
+    "comment.myComments": "我的评论",
+    "comment.noComments": "您还没有写过评论。",
     "home.recoveryGuideTitle": "恢复指南",
     "home.recoveryGuideEmpty": "恢复指南文章正在准备中。",
     "calendar.title": "选择旅行日程",
@@ -1871,8 +1917,11 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.section.hospital": "医院列表",
     "explore.section.hospitalDesc": "前10个热门医院",
     "explore.ranking.category": "按类别",
-    "explore.ranking.kbeauty": "K-beauty",
+    "explore.ranking.kbeauty": "K-Beauty",
     "explore.ranking.hospital": "推荐医院",
+    "kbeauty.title": "K-Beauty热门排名",
+    "kbeauty.description": "反映K-Beauty趋势的热门疗程排名。",
+    "kbeauty.empty": "没有K-Beauty疗程。",
     // Explore tabs
     "explore.tab.ranking": "排名",
     "explore.tab.allProcedures": "全部疗程",

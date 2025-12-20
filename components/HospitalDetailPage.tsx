@@ -244,7 +244,7 @@ export default function HospitalDetailPage({
           >
             <FiChevronRight className="text-gray-700 text-xl rotate-180" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">병원 상세</h1>
+          <h1 className="text-lg font-bold text-gray-900">{t("pdp.hospitalInfo")}</h1>
           <button
             onClick={handleShare}
             className="p-2 hover:bg-gray-50 rounded-full transition-colors"
@@ -294,7 +294,7 @@ export default function HospitalDetailPage({
                     {Number(rating).toFixed(1)}
                   </span>
                 </div>
-                <span className="text-gray-500">({reviewCount}개 리뷰)</span>
+                <span className="text-gray-500">({reviewCount}{t("pdp.count")} {t("pdp.reviews")})</span>
               </div>
             </div>
 
@@ -316,7 +316,7 @@ export default function HospitalDetailPage({
         {/* 병원 정보 */}
         <div className="px-4 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            병원 정보
+            {t("pdp.hospitalInfo")}
           </h3>
           <div className="space-y-3">
             {hospital.hospital_address && (
@@ -335,7 +335,7 @@ export default function HospitalDetailPage({
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                   <FiClock className="text-gray-400" />
-                  <span className="font-medium">운영 시간</span>
+                  <span className="font-medium">{t("pdp.operatingHours")}</span>
                 </div>
                 <p className="text-sm text-gray-500 pl-6">
                   {hospital.opening_hours}
@@ -361,7 +361,7 @@ export default function HospitalDetailPage({
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                   <FiGlobe className="text-gray-400" />
-                  <span className="font-medium">언어 지원</span>
+                  <span className="font-medium">{t("pdp.languageSupport")}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 pl-6">
                   {languageSupports.map((lang, idx) => (
@@ -381,7 +381,7 @@ export default function HospitalDetailPage({
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                   <FiGlobe className="text-gray-400" />
-                  <span className="font-medium">진료과</span>
+                  <span className="font-medium">{t("pdp.departments")}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 pl-6">
                   {departments.map((dept, idx) => (
@@ -401,7 +401,7 @@ export default function HospitalDetailPage({
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                   <FiMessageCircle className="text-gray-400" />
-                  <span className="font-medium">병원 소개</span>
+                  <span className="font-medium">{t("pdp.hospitalIntro")}</span>
                 </div>
                 <p className="text-sm text-gray-500 pl-6 whitespace-pre-line">
                   {hospital.hospital_intro}
@@ -416,7 +416,7 @@ export default function HospitalDetailPage({
           <div className="px-4 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-900">
-                제공 시술 ({hospitalTreatments.length}개)
+                {t("pdp.providedProcedures")} ({hospitalTreatments.length}{t("pdp.count")})
               </h3>
 
               <button
@@ -427,7 +427,7 @@ export default function HospitalDetailPage({
                 }}
                 className="flex items-center gap-1 text-primary-main text-sm font-medium"
               >
-                전체보기 <FiChevronRight className="text-sm" />
+                {t("pdp.viewAll")} <FiChevronRight className="text-sm" />
               </button>
             </div>
 
@@ -448,7 +448,7 @@ export default function HospitalDetailPage({
                       {new Intl.NumberFormat("ko-KR").format(
                         treatment.selling_price
                       )}
-                      원
+                      {t("pdp.currencyWon")}
                     </p>
                   )}
                 </div>
@@ -460,12 +460,12 @@ export default function HospitalDetailPage({
         {/* 리뷰 섹션 (MVP: 별점/리뷰수만) */}
         <div className="px-4 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">리뷰</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t("pdp.reviews")}</h3>
             <button
               onClick={() => router.push("/community/write")}
               className="text-primary-main text-sm font-medium"
             >
-              후기 작성
+              {t("pdp.writeReview")}
             </button>
           </div>
 
@@ -479,12 +479,12 @@ export default function HospitalDetailPage({
               </div>
             </div>
             <div className="text-gray-600">
-              <span className="font-semibold">{reviewCount}개</span> 리뷰
+              <span className="font-semibold">{reviewCount}{t("pdp.count")}</span> {t("pdp.reviews")}
             </div>
           </div>
 
           <p className="text-sm text-gray-500 mt-2">
-            리뷰 내용은 추후 구현 예정입니다.
+            {t("pdp.reviewContentComingSoon")}
           </p>
         </div>
       </div>
@@ -515,7 +515,7 @@ export default function HospitalDetailPage({
             onClick={() => alert(t("alert.inquiryComingSoon"))}
             className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors"
           >
-            문의하기
+            {t("pdp.inquiry")}
           </button>
         </div>
       </div>

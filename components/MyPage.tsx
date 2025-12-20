@@ -25,7 +25,7 @@ import {
   loadMyConcernPosts,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage, type LanguageCode } from "@/contexts/LanguageContext";
 
 interface UserInfo {
   username: string;
@@ -140,7 +140,7 @@ export default function MyPage() {
         setShowLogin(true);
         return;
       }
-      
+
       console.log("🔍 [MyPage] Supabase 세션 확인 중...");
       const {
         data: { session },
@@ -221,7 +221,9 @@ export default function MyPage() {
         setShowLogin(false);
       } else {
         // 세션이 없고 localStorage에도 없으면 로그아웃 상태
-        console.warn("⚠️ [MyPage] 세션과 localStorage 모두 없음 - 로그아웃 상태");
+        console.warn(
+          "⚠️ [MyPage] 세션과 localStorage 모두 없음 - 로그아웃 상태"
+        );
         setIsLoggedIn(false);
         setUserInfo(null);
         setShowLogin(true);
@@ -374,7 +376,9 @@ export default function MyPage() {
                 <p className="text-xs text-gray-500">
                   {userInfo.provider === "id"
                     ? t("mypage.normalLogin")
-                    : `${userInfo.provider.toUpperCase()} ${t("mypage.normalLogin")}`}
+                    : `${userInfo.provider.toUpperCase()} ${t(
+                        "mypage.normalLogin"
+                      )}`}
                 </p>
               )}
             </div>
@@ -386,7 +390,9 @@ export default function MyPage() {
               <div className="w-6 h-6 bg-primary-main rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">P</span>
               </div>
-              <span className="text-sm text-gray-700">{t("mypage.myPoints")}</span>
+              <span className="text-sm text-gray-700">
+                {t("mypage.myPoints")}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-primary-main">
@@ -416,15 +422,45 @@ function MainContent({
   router: any;
   onLogout: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [favoriteCount, setFavoriteCount] = useState({
     procedures: 0,
     hospitals: 0,
   });
   const [likedPostsCount, setLikedPostsCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
-  const [language, setLanguage] = useState("KR");
   const [currency, setCurrency] = useState("KRW");
+  const [isLanguageCurrencyOpen, setIsLanguageCurrencyOpen] = useState(false);
+
+  const languages = [
+    {
+      code: "KR" as const,
+      nameKey: "header.language.korean",
+      flag: "🇰🇷",
+      currency: "KRW",
+    },
+    {
+      code: "EN" as const,
+      nameKey: "header.language.english",
+      flag: "🇺🇸",
+      currency: "USD",
+    },
+    {
+      code: "JP" as const,
+      nameKey: "header.language.japanese",
+      flag: "🇯🇵",
+      currency: "JPY",
+    },
+    {
+      code: "CN" as const,
+      nameKey: "header.language.chinese",
+      flag: "🇨🇳",
+      currency: "CNY",
+    },
+  ];
+
+  const selectedLanguage =
+    languages.find((lang) => lang.code === language) || languages[0];
 
   useEffect(() => {
     // Supabase에서 찜한 시술 개수 로드
@@ -525,7 +561,8 @@ function MainContent({
     loadMyPostsCount();
 
     // 설정 로드
-    const savedLanguage = localStorage.getItem("language") || "KR";
+    const savedLanguage = (localStorage.getItem("language") ||
+      "KR") as LanguageCode;
     setLanguage(savedLanguage);
 
     const savedCurrency = localStorage.getItem("currency") || "KRW";
@@ -547,7 +584,7 @@ function MainContent({
     const languages = ["KR", "EN", "JP", "CN"];
     const currentIndex = languages.indexOf(language);
     const nextIndex = (currentIndex + 1) % languages.length;
-    const nextLanguage = languages[nextIndex];
+    const nextLanguage = languages[nextIndex] as LanguageCode;
     setLanguage(nextLanguage);
     localStorage.setItem("language", nextLanguage);
     window.dispatchEvent(new Event("languageChanged"));
@@ -605,7 +642,9 @@ function MainContent({
       {/* 찜목록 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">{t("mypage.favoritesTitle")}</h3>
+          <h3 className="text-sm font-semibold text-gray-900">
+            {t("mypage.favoritesTitle")}
+          </h3>
         </div>
         <MenuItem
           icon={FiHeart}
@@ -679,40 +718,58 @@ function MainContent({
       </div>
 
       {/* 언어 / 통화 설정 */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <MenuItem
-          icon={FiGlobe}
-          label={t("mypage.languageCurrency")}
-          value={`${
-            language === "KR"
-              ? "한국어"
-              : language === "EN"
-              ? "English"
-              : language === "JP"
-              ? "日本語"
-              : "中文"
-          } / ${currency}`}
-          onClick={() => {
-            // 언어와 통화를 함께 변경
-            const languages = ["KR", "EN", "JP", "CN"];
-            const currencies = ["KRW", "USD", "JPY", "CNY"];
-            const currentLangIndex = languages.indexOf(language);
-            const currentCurrIndex = currencies.indexOf(currency);
-            
-            // 다음 언어/통화 조합으로 변경
-            const nextLangIndex = (currentLangIndex + 1) % languages.length;
-            const nextCurrIndex = (currentCurrIndex + 1) % currencies.length;
-            
-            const nextLanguage = languages[nextLangIndex];
-            const nextCurrency = currencies[nextCurrIndex];
-            
-            setLanguage(nextLanguage);
-            setCurrency(nextCurrency);
-            localStorage.setItem("language", nextLanguage);
-            localStorage.setItem("currency", nextCurrency);
-            window.dispatchEvent(new Event("languageChanged"));
-          }}
-        />
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden relative">
+        <div className="relative">
+          <MenuItem
+            icon={FiGlobe}
+            label={t("mypage.languageCurrency")}
+            value={`${t(selectedLanguage.nameKey)} / ${t(
+              `currency.${selectedLanguage.currency}`
+            )}`}
+            onClick={() => setIsLanguageCurrencyOpen(!isLanguageCurrencyOpen)}
+          />
+          {isLanguageCurrencyOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-[10000]"
+                onClick={() => setIsLanguageCurrencyOpen(false)}
+              />
+              <div className="absolute bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[200px] max-w-[250px] top-full mt-2 left-0">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setCurrency(lang.currency);
+                      localStorage.setItem("language", lang.code);
+                      localStorage.setItem("currency", lang.currency);
+                      setIsLanguageCurrencyOpen(false);
+                      window.dispatchEvent(new Event("languageChanged"));
+                    }}
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                      selectedLanguage.code === lang.code
+                        ? "bg-primary-main/10"
+                        : ""
+                    }`}
+                  >
+                    <span className="text-xl">{lang.flag}</span>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        {t(lang.nameKey)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {t(`currency.${lang.currency}`)}
+                      </div>
+                    </div>
+                    {selectedLanguage.code === lang.code && (
+                      <span className="text-primary-main text-lg">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 로그아웃 */}

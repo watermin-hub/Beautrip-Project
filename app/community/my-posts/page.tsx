@@ -16,6 +16,7 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   loadMyProcedureReviews,
   loadMyHospitalReviews,
@@ -58,6 +59,7 @@ const formatTimeAgo = (dateString?: string): string => {
 
 export default function MyPostsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<PostType>("all");
   const [posts, setPosts] = useState<UnifiedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export default function MyPostsPage() {
             id: post.id!,
             type: "concern" as const,
             title: post.title,
-            category: post.concern_category || "고민글",
+            category: post.concern_category || t("writePage.concernPost"),
             content: post.content,
             timestamp: formatTimeAgo(post.created_at),
             created_at: post.created_at || "",
@@ -177,13 +179,13 @@ export default function MyPostsPage() {
   const getTypeLabel = (type: string) => {
     switch (type) {
       case "procedure":
-        return "시술 후기";
+        return t("writePage.procedureReview");
       case "hospital":
-        return "병원 후기";
+        return t("writePage.hospitalReview");
       case "concern":
-        return "고민글";
+        return t("writePage.concernPost");
       default:
-        return "글";
+        return t("writePage.writePost");
     }
   };
 
@@ -200,16 +202,16 @@ export default function MyPostsPage() {
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h2 className="text-xl font-bold text-gray-900">내 글 관리</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t("writePage.managePosts")}</h2>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2">
           {[
-            { id: "all" as PostType, label: "전체" },
-            { id: "procedure" as PostType, label: "시술 후기" },
-            { id: "hospital" as PostType, label: "병원 후기" },
-            { id: "concern" as PostType, label: "고민글" },
+            { id: "all" as PostType, label: t("writePage.all") },
+            { id: "procedure" as PostType, label: t("writePage.procedureReview") },
+            { id: "hospital" as PostType, label: t("writePage.hospitalReview") },
+            { id: "concern" as PostType, label: t("writePage.concernPost") },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -229,16 +231,16 @@ export default function MyPostsPage() {
       {/* Posts List - 헤더 아래에서 시작하도록 여백 추가 */}
       <div className="px-4 pt-16 pb-24">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">로딩 중...</div>
+          <div className="text-center py-8 text-gray-500">{t("common.loading")}</div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
             <FiEdit3 className="text-4xl text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">작성한 글이 없습니다</p>
+            <p className="text-gray-500 mb-2">{t("writePage.noPosts")}</p>
             <button
               onClick={() => router.push("/community/write")}
               className="mt-4 px-6 py-2 bg-primary-main text-white rounded-lg font-medium hover:bg-[#2DB8A0] transition-colors"
             >
-              글 작성하기
+              {t("writePage.writePost")}
             </button>
           </div>
         ) : (

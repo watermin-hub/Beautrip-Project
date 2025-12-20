@@ -1,4 +1,171 @@
-# 작업 로그 - 2025년 12월 13일
+# 작업 로그 - 2025년 12월
+
+## 2025-12-21 (오늘 작업)
+
+### 📋 작업 개요
+
+- **다국어 지원 개선** ⭐⭐
+  - 달력 모달의 월/일/년 표시 언어별 지원 추가
+  - 날짜 포맷 함수의 "일" 표시 언어별 지원 추가
+- **UI/UX 개선**
+  - 랭킹배너 레이아웃 간격 조정
+  - Kbeauty → K-Beauty 통일 (탭, 제목, 설명, 빈 상태 메시지)
+- **번역 키 추가 및 하드코딩 텍스트 제거**
+
+---
+
+### ✅ 완료된 작업
+
+#### 1. TravelScheduleCalendarModal 다국어 지원 개선 ⭐⭐
+
+**수정 파일:**
+- `components/TravelScheduleCalendarModal.tsx`
+
+**주요 변경사항:**
+- 월 이름을 언어별로 표시하도록 변경 (KR: "1월", EN: "Jan", JP: "1月", CN: "1月")
+- 요일 이름을 언어별로 표시하도록 변경 (KR: "일", EN: "Sun", JP: "日", CN: "日")
+- "년" 표시를 언어별로 변경 (KR: "년", JP/CN: "年", EN: 없음)
+- 언어 변경 시 달력의 모든 텍스트가 즉시 반영되도록 개선
+
+**문제 해결:**
+- 이전: 언어를 변경해도 달력 팝업의 월/일/년이 한국어로만 표시됨
+- 해결: `useLanguage`의 `language` 값을 사용하여 동적으로 언어별 텍스트 표시
+
+#### 2. formatDateWithDay 함수의 "일" 표시 언어 지원
+
+**수정 파일:**
+- `lib/utils/dateFormat.ts`
+
+**주요 변경사항:**
+- "일" 표시를 언어별로 변경 (KR: "일", JP/CN: "日", EN: 없음)
+- 이전: "월"은 언어별로 변경되지만 "일"은 항상 한국어 "일"로 표시됨
+- 해결: `dayLabel` 객체를 추가하여 언어별 "일" 표시 지원
+
+**예시:**
+- 한국어: "12월 20일 (토)"
+- 일본어: "12月 20日 (土)"
+- 영어: "Dec 20 (Sat)"
+
+#### 3. 랭킹배너 레이아웃 개선
+
+**수정 파일:**
+- `components/RankingBanner.tsx`
+
+**주요 변경사항:**
+- 요소 간 간격을 `gap-2`에서 `gap-2.5`로 증가
+- "best" 태그에 `ml-1` 추가하여 간격 확보
+- 랭킹 번호, 이름, 태그 간 시각적 간격 개선
+
+#### 4. Kbeauty → K-Beauty 통일
+
+**수정 파일:**
+- `contexts/LanguageContext.tsx`
+- `components/RankingSection.tsx`
+- `components/KBeautyRankingPage.tsx`
+
+**주요 변경사항:**
+- 모든 언어의 `"explore.ranking.kbeauty"` 번역을 "K-Beauty"로 통일
+- KBeautyRankingPage의 하드코딩된 텍스트를 번역 키로 변경:
+  - `"kbeauty.title"`: "K-Beauty 인기 랭킹"
+  - `"kbeauty.description"`: "K-Beauty 트렌드를 반영한 인기 시술 랭킹입니다."
+  - `"kbeauty.empty"`: "K-Beauty 시술이 없습니다."
+- RankingSection에서 하드코딩된 "Kbeauty"를 번역 키 `"explore.ranking.kbeauty"`로 변경
+
+**번역 지원:**
+- 한국어: "K-Beauty"
+- 영어: "K-Beauty"
+- 일본어: "K-Beauty"
+- 중국어: "K-Beauty"
+
+---
+
+### 📊 작업 통계
+
+- **수정된 파일 수**: 4개
+- **추가된 번역 키**: 3개 (kbeauty.title, kbeauty.description, kbeauty.empty)
+- **수정된 번역 키**: 4개 (모든 언어의 explore.ranking.kbeauty)
+- **주요 개선사항**: 다국어 지원 완성도 향상, UI 일관성 개선
+
+---
+
+### 💡 기술적 세부사항
+
+1. **언어별 데이터 구조**
+   - `monthNames`, `dayNames`, `yearLabel을 Record<LanguageCode, ...>` 타입으로 정의
+   - 언어 코드에 따라 동적으로 텍스트 선택
+
+2. **번역 키 체계**
+   - `kbeauty.*`: K-Beauty 관련 텍스트
+   - `explore.ranking.*`: 탐색 페이지 랭킹 탭 관련 텍스트
+
+3. **레이아웃 개선**
+   - Tailwind CSS의 spacing scale 활용 (`gap-2.5`, `ml-1`)
+   - 시각적 계층 구조 개선
+
+---
+
+### 🔮 향후 작업 제안
+
+#### 커뮤니티 댓글 기능 구현 가능 여부 분석
+
+**현재 상태:**
+- ✅ 댓글 수 표시: `CommunityPostCard`, `PostList`에서 댓글 수는 표시됨
+- ❌ 댓글 테이블: Supabase에 `comments` 테이블이 없음
+- ❌ 게시글 상세 페이지: 현재는 목록만 있고 상세 페이지가 없음
+- ❌ 댓글 작성/조회/삭제 API: 구현되지 않음
+
+**구현 가능 여부: ✅ 가능**
+
+**필요한 작업:**
+
+1. **Supabase 테이블 생성**
+   ```sql
+   CREATE TABLE comments (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     post_id UUID NOT NULL,  -- procedure_reviews, hospital_reviews, concern_posts의 id
+     post_type TEXT NOT NULL,  -- 'procedure', 'hospital', 'concern'
+     user_id BIGINT NOT NULL DEFAULT 0,
+     content TEXT NOT NULL,
+     parent_comment_id UUID,  -- 대댓글 지원 (선택사항)
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+   );
+   ```
+
+2. **게시글 상세 페이지 구현**
+   - `/community/posts/[id]` 페이지 생성
+   - 게시글 내용, 이미지, 작성자 정보 표시
+   - 댓글 목록 표시
+   - 댓글 작성 폼
+
+3. **API 함수 추가** (`lib/api/beautripApi.ts`)
+   - `saveComment(postId, postType, content)`: 댓글 저장
+   - `loadComments(postId, postType)`: 댓글 목록 조회
+   - `deleteComment(commentId)`: 댓글 삭제 (선택사항)
+   - `updateCommentCount(postId, postType)`: 댓글 수 업데이트
+
+4. **UI 컴포넌트**
+   - `CommentList.tsx`: 댓글 목록 표시
+   - `CommentForm.tsx`: 댓글 작성 폼
+   - `CommentItem.tsx`: 개별 댓글 아이템
+
+5. **라우팅 연결**
+   - `CommunityPostCard`의 댓글 버튼 클릭 시 상세 페이지로 이동
+   - `PostList`의 게시글 클릭 시 상세 페이지로 이동
+
+**예상 작업 시간:**
+- 테이블 생성: 30분
+- API 함수 구현: 2-3시간
+- UI 컴포넌트: 3-4시간
+- 상세 페이지: 2-3시간
+- 통합 및 테스트: 1-2시간
+- **총 예상 시간: 8-12시간**
+
+**우선순위:**
+- 중간 우선순위 (커뮤니티 활성화에 중요하지만 필수는 아님)
+- 게시글 상세 페이지가 먼저 필요할 수 있음
+
+---
 
 ## 2025-12-13_v3 (밤-새벽)
 

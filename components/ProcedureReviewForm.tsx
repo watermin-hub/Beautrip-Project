@@ -47,7 +47,12 @@ export default function ProcedureReviewForm({
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
-  const ageGroups = ["20대", "30대", "40대", "50대"];
+  const ageGroups = [
+    { value: "20대", label: t("label.age20s") },
+    { value: "30대", label: t("label.age30s") },
+    { value: "40대", label: t("label.age40s") },
+    { value: "50대", label: t("label.age50s") },
+  ];
 
   // 언어별 카테고리 목록 로드
   useEffect(() => {
@@ -338,7 +343,7 @@ export default function ProcedureReviewForm({
       {/* 시술 카테고리 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          시술 카테고리 <span className="text-red-500">*</span>
+          {t("form.procedureCategory")} <span className="text-red-500">*</span>
         </label>
         <select
           value={category}
@@ -351,7 +356,7 @@ export default function ProcedureReviewForm({
           }}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         >
-          <option value="">카테고리를 선택하세요</option>
+          <option value="">{t("form.selectCategoryPlaceholder")}</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -363,7 +368,7 @@ export default function ProcedureReviewForm({
       {/* 시술명(수술명) (자동완성 - 소분류) */}
       <div className="relative">
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          시술명(수술명) <span className="text-red-500">*</span>
+          {t("form.procedureName")} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
@@ -428,20 +433,20 @@ export default function ProcedureReviewForm({
       <StarRating
         rating={procedureRating}
         onRatingChange={setProcedureRating}
-        label="전체적인 시술 만족도 (1~5)"
+        label={t("form.overallSatisfactionLabel")}
       />
 
       {/* 병원 만족도 */}
       <StarRating
         rating={hospitalRating}
         onRatingChange={setHospitalRating}
-        label="병원 만족도 (1~5)"
+        label={t("form.hospitalSatisfactionLabel")}
       />
 
       {/* 성별 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          성별 <span className="text-red-500">*</span>
+          {t("label.gender")} <span className="text-red-500">*</span>
         </label>
         <div className="flex gap-3">
           <button
@@ -453,7 +458,7 @@ export default function ProcedureReviewForm({
                 : "border-gray-300 text-gray-700"
             }`}
           >
-            여
+            {t("label.genderFemale")}
           </button>
           <button
             type="button"
@@ -464,7 +469,7 @@ export default function ProcedureReviewForm({
                 : "border-gray-300 text-gray-700"
             }`}
           >
-            남
+            {t("label.genderMale")}
           </button>
         </div>
       </div>
@@ -472,21 +477,21 @@ export default function ProcedureReviewForm({
       {/* 연령 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          연령 <span className="text-red-500">*</span>
+          {t("label.age")} <span className="text-red-500">*</span>
         </label>
         <div className="grid grid-cols-2 gap-3">
           {ageGroups.map((age) => (
             <button
-              key={age}
+              key={age.value}
               type="button"
-              onClick={() => setAgeGroup(age)}
+              onClick={() => setAgeGroup(age.value)}
               className={`py-3 rounded-xl border-2 transition-colors ${
-                ageGroup === age
+                ageGroup === age.value
                   ? "border-primary-main bg-primary-main/10 text-primary-main"
                   : "border-gray-300 text-gray-700"
               }`}
             >
-              {age}
+              {age.label}
             </button>
           ))}
         </div>
@@ -495,7 +500,7 @@ export default function ProcedureReviewForm({
       {/* 비용(선택사항) */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          비용(선택사항)
+          {t("form.costOptional")}
         </label>
         <div className="flex items-center gap-2">
           <span className="text-gray-700">₩</span>
@@ -506,14 +511,14 @@ export default function ProcedureReviewForm({
             placeholder={t("placeholder.surgeryCost")}
             className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
-          <span className="text-gray-700">만원</span>
+          <span className="text-gray-700">{t("label.tenThousandWon")}</span>
         </div>
       </div>
 
       {/* 병원명 (선택사항) */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          병원명(선택사항)
+          {t("form.hospitalNameOptional")}
         </label>
         <input
           type="text"
@@ -527,12 +532,13 @@ export default function ProcedureReviewForm({
       {/* 시술 날짜 (선택사항) */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          시술 날짜(선택사항)
+          {t("form.surgeryDateOptional")}
         </label>
         <input
           type="date"
           value={surgeryDate}
           onChange={(e) => setSurgeryDate(e.target.value)}
+          aria-label={t("placeholder.selectDate")}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
       </div>
@@ -540,17 +546,17 @@ export default function ProcedureReviewForm({
       {/* 글 작성 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          글 작성 <span className="text-red-500">*</span>
+          {t("form.writeReview")} <span className="text-red-500">*</span>
         </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="시술 경험을 자세히 작성해주세요 (10자 이상)"
+          placeholder={t("placeholder.reviewContent")}
           rows={8}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main resize-none"
         />
         <p className="text-xs text-gray-500 mt-1">
-          {content.length}자 / 최소 10자 이상 작성해주세요
+          {content.length}{t("form.minCharacters")}
         </p>
       </div>
 
@@ -558,7 +564,7 @@ export default function ProcedureReviewForm({
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
           <FiCamera className="text-primary-main" />
-          사진첨부 (최대 4장)
+          {t("form.photoAttachmentMax")}
         </label>
         <div className="grid grid-cols-2 gap-3">
           {images.map((img, index) => (
@@ -592,7 +598,7 @@ export default function ProcedureReviewForm({
               />
               <div className="text-center">
                 <FiCamera className="text-2xl text-gray-400 mx-auto mb-2" />
-                <span className="text-xs text-gray-500">사진 추가</span>
+                <span className="text-xs text-gray-500">{t("form.addPhoto")}</span>
               </div>
             </label>
           )}
@@ -606,14 +612,14 @@ export default function ProcedureReviewForm({
           onClick={onBack}
           className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
         >
-          취소
+          {t("common.cancel")}
         </button>
         <button
           type="button"
           onClick={handleSubmit}
           className="flex-1 py-3 bg-primary-main hover:bg-primary-light text-white rounded-xl font-semibold transition-colors"
         >
-          작성완료
+          {t("common.writeComplete")}
         </button>
       </div>
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FiX, FiFilter } from "react-icons/fi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export interface ProcedureFilter {
   duration: string | null; // 소요시간 기반 일정표
@@ -16,35 +17,45 @@ interface ProcedureFilterModalProps {
   currentFilter: ProcedureFilter;
 }
 
-const DURATION_OPTIONS = [
-  { value: "same-day", label: "당일" },
-  { value: "half-day", label: "반나절" },
-  { value: "1-day", label: "1일" },
-  { value: "2-3-days", label: "2~3일" },
-  { value: "surgery", label: "수술 포함" },
-];
-
-const RECOVERY_OPTIONS = [
-  { value: "same-day", label: "당일 생활 가능" },
-  { value: "1-3-days", label: "1~3일" },
-  { value: "4-7-days", label: "4~7일" },
-  { value: "1-week-plus", label: "1주 이상" },
-];
-
-const BUDGET_OPTIONS = [
-  { value: "under-50", label: "~50만원" },
-  { value: "50-100", label: "50~100만원" },
-  { value: "100-200", label: "100~200만원" },
-  { value: "200-plus", label: "200만원+" },
-];
-
 export default function ProcedureFilterModal({
   isOpen,
   onClose,
   onApply,
   currentFilter,
 }: ProcedureFilterModalProps) {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState<ProcedureFilter>(currentFilter);
+
+  const DURATION_OPTIONS = useMemo(
+    () => [
+      { value: "same-day", label: t("procedure.filterDuration.sameDay") },
+      { value: "half-day", label: t("procedure.filterDuration.halfDay") },
+      { value: "1-day", label: t("procedure.filterDuration.1Day") },
+      { value: "2-3-days", label: t("procedure.filterDuration.2-3Days") },
+      { value: "surgery", label: t("procedure.filterDuration.surgery") },
+    ],
+    [t]
+  );
+
+  const RECOVERY_OPTIONS = useMemo(
+    () => [
+      { value: "same-day", label: t("procedure.filterRecovery.sameDay") },
+      { value: "1-3-days", label: t("procedure.filterRecovery.1-3Days") },
+      { value: "4-7-days", label: t("procedure.filterRecovery.4-7Days") },
+      { value: "1-week-plus", label: t("procedure.filterRecovery.1WeekPlus") },
+    ],
+    [t]
+  );
+
+  const BUDGET_OPTIONS = useMemo(
+    () => [
+      { value: "under-50", label: t("procedure.filterBudget.under50") },
+      { value: "50-100", label: t("procedure.filterBudget.50-100") },
+      { value: "100-200", label: t("procedure.filterBudget.100-200") },
+      { value: "200-plus", label: t("procedure.filterBudget.200Plus") },
+    ],
+    [t]
+  );
 
   const handleOptionClick = (
     type: "duration" | "recovery" | "budget",
@@ -92,7 +103,7 @@ export default function ProcedureFilterModal({
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <FiFilter className="text-primary-main" />
-            <h3 className="text-lg font-bold text-gray-900">필터</h3>
+            <h3 className="text-lg font-bold text-gray-900">{t("procedure.filter")}</h3>
           </div>
           <button
             onClick={onClose}
@@ -107,7 +118,7 @@ export default function ProcedureFilterModal({
           {/* 소요시간 기반 일정표 */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-900 mb-3">
-              소요시간 기반 일정표
+              {t("procedure.filterDuration")}
             </h4>
             <div className="flex flex-wrap gap-2">
               {DURATION_OPTIONS.map((option) => {
@@ -116,13 +127,25 @@ export default function ProcedureFilterModal({
                   <button
                     key={option.value}
                     onClick={() => handleOptionClick("duration", option.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       isSelected
                         ? "bg-primary-main text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
-                    {option.label}
+                    <span>{option.label}</span>
+                    {isSelected && (
+                      <button
+                        type="button"
+                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFilter((prev) => ({ ...prev, duration: null }));
+                        }}
+                      >
+                        <FiX className="text-xs" />
+                      </button>
+                    )}
                   </button>
                 );
               })}
@@ -132,7 +155,7 @@ export default function ProcedureFilterModal({
           {/* 회복기간 */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-900 mb-3">
-              회복기간
+              {t("procedure.filterRecovery")}
             </h4>
             <div className="flex flex-wrap gap-2">
               {RECOVERY_OPTIONS.map((option) => {
@@ -141,13 +164,25 @@ export default function ProcedureFilterModal({
                   <button
                     key={option.value}
                     onClick={() => handleOptionClick("recovery", option.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       isSelected
                         ? "bg-primary-main text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
-                    {option.label}
+                    <span>{option.label}</span>
+                    {isSelected && (
+                      <button
+                        type="button"
+                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFilter((prev) => ({ ...prev, recovery: null }));
+                        }}
+                      >
+                        <FiX className="text-xs" />
+                      </button>
+                    )}
                   </button>
                 );
               })}
@@ -157,7 +192,7 @@ export default function ProcedureFilterModal({
           {/* 예산 비용 */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-gray-900 mb-3">
-              예산 비용
+              {t("procedure.filterBudget")}
             </h4>
             <div className="flex flex-wrap gap-2">
               {BUDGET_OPTIONS.map((option) => {
@@ -166,13 +201,25 @@ export default function ProcedureFilterModal({
                   <button
                     key={option.value}
                     onClick={() => handleOptionClick("budget", option.value)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
                       isSelected
                         ? "bg-primary-main text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
-                    {option.label}
+                    <span>{option.label}</span>
+                    {isSelected && (
+                      <button
+                        type="button"
+                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFilter((prev) => ({ ...prev, budget: null }));
+                        }}
+                      >
+                        <FiX className="text-xs" />
+                      </button>
+                    )}
                   </button>
                 );
               })}
@@ -186,7 +233,7 @@ export default function ProcedureFilterModal({
             onClick={handleReset}
             className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg text-sm font-semibold transition-colors"
           >
-            초기화
+            {t("procedure.filterReset")}
           </button>
           <button
             onClick={handleApply}
@@ -197,7 +244,7 @@ export default function ProcedureFilterModal({
             }`}
             disabled={!hasActiveFilters}
           >
-            찾기
+            {t("procedure.filterSearch")}
           </button>
         </div>
       </div>

@@ -40,7 +40,7 @@ export default function RankingSection({
   const { t } = useLanguage();
   const tabs = [
     { id: "category" as RankingTab, labelKey: "explore.filter.category" },
-    { id: "kbeauty" as RankingTab, label: "Kbeauty" },
+    { id: "kbeauty" as RankingTab, labelKey: "explore.ranking.kbeauty" },
     { id: "hospital" as RankingTab, labelKey: "explore.filter.hospital" },
     { id: "schedule" as RankingTab, labelKey: "explore.filter.schedule" },
   ];
@@ -61,7 +61,7 @@ export default function RankingSection({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {tab.labelKey ? t(tab.labelKey) : tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>

@@ -69,7 +69,7 @@ export default function RankingBanner() {
       >
         <div className="flex items-center justify-between">
           {/* Left: Ranking indicator */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <div className="flex items-center gap-0.5">
               <span className="text-primary-main font-bold text-base">
                 {currentRanking.rank}
@@ -80,7 +80,7 @@ export default function RankingBanner() {
               {currentRanking.name}
             </span>
             {currentRanking.status === "best" && (
-              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap">
+              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap ml-1">
                 {t("banner.ranking.best")}
               </span>
             )}

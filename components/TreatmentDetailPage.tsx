@@ -420,7 +420,7 @@ export default function TreatmentDetailPage({
       <div className="min-h-screen bg-white max-w-md mx-auto w-full">
         <Header />
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">시술 정보를 찾을 수 없습니다.</div>
+          <div className="text-gray-500">{t("common.notFound")}</div>
         </div>
         <BottomNavigation />
       </div>
@@ -483,7 +483,7 @@ export default function TreatmentDetailPage({
           >
             <FiChevronRight className="text-gray-700 text-xl rotate-180" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">시술 상세</h1>
+          <h1 className="text-lg font-bold text-gray-900">{t("pdp.treatmentDetail")}</h1>
           <button
             onClick={handleShare}
             className="p-2 hover:bg-gray-50 rounded-full transition-colors"
@@ -513,7 +513,7 @@ export default function TreatmentDetailPage({
           />
           {discountRate && (
             <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-              {discountRate} 할인
+              {discountRate} {t("pdp.discount")}
             </div>
           )}
         </div>
@@ -536,7 +536,7 @@ export default function TreatmentDetailPage({
                 {rating.toFixed(1)}
               </span>
             </div>
-            <span className="text-gray-500">({reviewCount}개 리뷰)</span>
+            <span className="text-gray-500">({reviewCount}{t("pdp.reviewCount")})</span>
           </div>
         </div>
 
@@ -545,7 +545,7 @@ export default function TreatmentDetailPage({
           <div className="flex items-baseline gap-2 mb-1">
             {price && (
               <span className="text-2xl font-bold text-gray-900">
-                {price}원
+                {price}{t("pdp.currencyWon")}
               </span>
             )}
             {!price && (
@@ -570,7 +570,7 @@ export default function TreatmentDetailPage({
         {/* 시술 정보 */}
         <div className="px-4 py-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            시술 정보
+            {t("pdp.treatmentInfo")}
           </h3>
           <div className="space-y-3">
             {/* 시술 시간 */}
@@ -581,7 +581,7 @@ export default function TreatmentDetailPage({
               <div className="flex items-center gap-3">
                 <FiClock className="text-gray-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <span className="text-sm text-gray-600">시술 시간</span>
+                  <span className="text-sm text-gray-600">{t("pdp.procedureTime")}</span>
                   <p className="text-sm font-medium text-gray-900">
                     {surgeryTimeRange
                       ? surgeryTimeRange
@@ -594,8 +594,8 @@ export default function TreatmentDetailPage({
                       : surgeryTime !== null && surgeryTime !== undefined
                       ? surgeryTime > 0
                         ? `${surgeryTime}분`
-                        : surgeryTime || "정보 없음"
-                      : "정보 없음"}
+                        : surgeryTime || t("pdp.noInfo")
+                      : t("pdp.noInfo")}
                   </p>
                 </div>
               </div>
@@ -609,7 +609,7 @@ export default function TreatmentDetailPage({
               <div className="flex items-center gap-3">
                 <FiCalendar className="text-gray-400 flex-shrink-0" />
                 <div className="flex-1">
-                  <span className="text-sm text-gray-600">회복 기간</span>
+                  <span className="text-sm text-gray-600">{t("pdp.recoveryPeriod")}</span>
                   <p className="text-sm font-medium text-gray-900">
                     {downtimeRange
                       ? downtimeRange
@@ -622,8 +622,8 @@ export default function TreatmentDetailPage({
                       : downtime !== null && downtime !== undefined
                       ? typeof downtime === "number" && downtime > 0
                         ? `${downtime}일`
-                        : downtime || "정보 없음"
-                      : "정보 없음"}
+                        : downtime || t("pdp.noInfo")
+                      : t("pdp.noInfo")}
                   </p>
                 </div>
               </div>
@@ -634,7 +634,7 @@ export default function TreatmentDetailPage({
               <div className="flex items-center gap-3">
                 <div className="text-gray-400 flex-shrink-0">✈️</div>
                 <div className="flex-1">
-                  <span className="text-sm text-gray-600">권장 체류 일수</span>
+                  <span className="text-sm text-gray-600">{t("pdp.recommendedStayDays")}</span>
                   <p className="text-sm font-medium text-gray-900">
                     {recommendedStayDays}일
                   </p>
@@ -647,10 +647,10 @@ export default function TreatmentDetailPage({
               <div className="flex items-center gap-3">
                 <div className="text-gray-400 flex-shrink-0">🌏</div>
                 <div className="flex-1">
-                  <span className="text-sm text-gray-600">여행 친화도</span>
+                  <span className="text-sm text-gray-600">{t("pdp.tripFriendly")}</span>
                   <div className="flex items-center gap-1 mt-1">
                     <span className="text-sm font-medium text-gray-900">
-                      여행 친화
+                      {t("pdp.tripFriendly")}
                     </span>
                     {Array.from({ length: 3 }, (_, i) => (
                       <span
@@ -677,16 +677,16 @@ export default function TreatmentDetailPage({
               <div className="flex items-center gap-3">
                 <div className="text-gray-400 flex-shrink-0">⏱️</div>
                 <div className="flex-1">
-                  <span className="text-sm text-gray-600">회복 정도</span>
+                  <span className="text-sm text-gray-600">{t("pdp.recoveryLevel")}</span>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-gray-500">
                       {downtimeLevel === 0
-                        ? "거의 없음"
+                        ? t("pdp.recoveryLevel.almostNone")
                         : downtimeLevel === 1
-                        ? "가벼움"
+                        ? t("pdp.recoveryLevel.light")
                         : downtimeLevel === 2
-                        ? "보통"
-                        : "심함"}
+                        ? t("pdp.recoveryLevel.normal")
+                        : t("pdp.recoveryLevel.severe")}
                     </span>
                     <div className="flex gap-1">
                       {Array.from({ length: 4 }, (_, i) => (
@@ -709,10 +709,10 @@ export default function TreatmentDetailPage({
             <div className="flex items-center gap-3">
               <FiGlobe className="text-gray-400 flex-shrink-0" />
               <div className="flex-1">
-                <span className="text-sm text-gray-600">번역 서비스</span>
+                <span className="text-sm text-gray-600">{t("pdp.translationService")}</span>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-semibold">
-                    통역 가능
+                    {t("pdp.translationAvailable")}
                   </span>
                 </div>
               </div>
@@ -778,7 +778,7 @@ export default function TreatmentDetailPage({
                 }}
                 className="flex items-center gap-1 text-primary-main text-sm font-medium"
               >
-                병원정보 보러가기 <FiChevronRight className="text-sm" />
+                {t("pdp.viewHospitalInfo")} <FiChevronRight className="text-sm" />
               </button>
             </div>
           </div>
@@ -788,7 +788,7 @@ export default function TreatmentDetailPage({
         {hashtags.length > 0 && (
           <div className="px-4 py-4 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              시술 키워드
+              {t("pdp.treatmentKeywords")}
             </h3>
             <div className="flex flex-wrap gap-2">
               {hashtags.map((tag, index) => (
@@ -807,7 +807,7 @@ export default function TreatmentDetailPage({
         {currentTreatment.hospital_name && (
           <div className="px-4 py-4 border-b border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              병원 정보
+              {t("pdp.hospitalInfo")}
             </h3>
             <div className="space-y-3">
               {/* 병원 주소 */}
@@ -815,7 +815,7 @@ export default function TreatmentDetailPage({
                 <div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                     <FiMapPin className="text-gray-400" />
-                    <span className="font-medium">주소</span>
+                    <span className="font-medium">{t("pdp.address")}</span>
                   </div>
                   <p className="text-sm text-gray-500 pl-6">
                     {hospitalAddress}
@@ -841,7 +841,7 @@ export default function TreatmentDetailPage({
                 <div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                     <FiGlobe className="text-gray-400" />
-                    <span className="font-medium">가능 시술 목록</span>
+                    <span className="font-medium">{t("pdp.availableProcedures")}</span>
                   </div>
                   <div className="flex flex-wrap gap-2 pl-6">
                     {hospitalTreatments.slice(0, 5).map((treatment, idx) => (
@@ -854,7 +854,7 @@ export default function TreatmentDetailPage({
                     ))}
                     {hospitalTreatments.length > 5 && (
                       <span className="text-xs text-gray-500">
-                        +{hospitalTreatments.length - 5}개 더
+                        +{hospitalTreatments.length - 5}{t("pdp.count")} 더
                       </span>
                     )}
                   </div>
@@ -868,13 +868,13 @@ export default function TreatmentDetailPage({
         <div className="px-4 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">리뷰</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("pdp.reviews")}</h3>
               <div className="flex items-center gap-1">
                 <FiStar className="text-yellow-400 fill-yellow-400" />
                 <span className="text-gray-900 font-semibold">
                   {rating.toFixed(1)}
                 </span>
-                <span className="text-gray-500 text-sm">({reviewCount}개)</span>
+                <span className="text-gray-500 text-sm">({reviewCount}{t("pdp.count")})</span>
               </div>
             </div>
             <button
@@ -884,11 +884,11 @@ export default function TreatmentDetailPage({
               }}
               className="text-primary-main text-sm font-medium"
             >
-              후기 작성
+              {t("pdp.writeReview")}
             </button>
           </div>
           <p className="text-sm text-gray-500">
-            리뷰 내용은 추후 구현 예정입니다.
+            {t("pdp.reviewContentComingSoon")}
           </p>
         </div>
 
@@ -932,7 +932,7 @@ export default function TreatmentDetailPage({
                 onClick={() => setIsInquiryDropdownOpen(!isInquiryDropdownOpen)}
                 className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors relative"
               >
-                문의하기
+                {t("pdp.inquiry")}
               </button>
               {/* 문의 옵션 드롭다운 (별도 레이어, 버튼 내부에 중첩 버튼 없음) */}
               {isInquiryDropdownOpen && (

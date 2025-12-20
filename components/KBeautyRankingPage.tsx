@@ -197,15 +197,15 @@ export default function KBeautyRankingPage() {
     <div className="min-h-screen bg-white">
       <div className="px-4 pt-4 pb-6">
         <h3 className="text-lg font-bold mb-2 text-gray-900">
-          K-beauty 인기 랭킹
+          {t("kbeauty.title")}
         </h3>
         <p className="text-sm text-gray-600 mb-6">
-          K-beauty 트렌드를 반영한 인기 시술 랭킹입니다.
+          {t("kbeauty.description")}
         </p>
 
         {rankings.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">K-beauty 시술이 없습니다.</p>
+            <p className="text-gray-600">{t("kbeauty.empty")}</p>
           </div>
         ) : (
           <div className="space-y-4">
