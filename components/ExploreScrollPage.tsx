@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiEdit3 } from "react-icons/fi";
 import Header from "./Header";
@@ -10,17 +10,16 @@ import RankingSection from "./RankingSection";
 import ProcedureListPage from "./ProcedureListPage";
 import HospitalInfoPage from "./HospitalInfoPage";
 import BottomNavigation from "./BottomNavigation";
-import CommunityWriteModal from "./CommunityWriteModal";
 
 export default function ExploreScrollPage() {
   const { t } = useLanguage();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState<string>("ranking");
   const rankingRef = useRef<HTMLDivElement>(null);
   const procedureRef = useRef<HTMLDivElement>(null);
   const hospitalRef = useRef<HTMLDivElement>(null);
   const isAutoScrolling = useRef(false);
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const [showProcedureSection, setShowProcedureSection] = useState(true);
 
@@ -191,7 +190,7 @@ export default function ExploreScrollPage() {
               더 많은 시술 정보를 볼 수 있어요!
             </p>
             <button
-              onClick={() => setIsWriteModalOpen(true)}
+              onClick={() => router.push("/community/write")}
               className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               리뷰 작성하기
@@ -217,16 +216,6 @@ export default function ExploreScrollPage() {
         <BottomNavigation />
       </div>
 
-      {/* 커뮤니티 글쓰기 모달 */}
-      <CommunityWriteModal
-        isOpen={isWriteModalOpen}
-        onClose={() => {
-          setIsWriteModalOpen(false);
-          // 리뷰 작성 후 상태 업데이트
-          const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
-          setHasWrittenReview(reviews.length > 0);
-        }}
-      />
     </div>
   );
 }

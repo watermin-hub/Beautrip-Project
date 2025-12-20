@@ -23,7 +23,7 @@ import {
 
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
-import CommunityWriteModal from "./CommunityWriteModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HospitalDetailPageProps {
   hospitalIdRd: number;
@@ -32,6 +32,7 @@ interface HospitalDetailPageProps {
 export default function HospitalDetailPage({
   hospitalIdRd,
 }: HospitalDetailPageProps) {
+  const { t } = useLanguage();
   const router = useRouter();
 
   const [hospital, setHospital] = useState<HospitalPdp | null>(null);
@@ -39,7 +40,6 @@ export default function HospitalDetailPage({
   const [loading, setLoading] = useState(true);
 
   const [isFavorite, setIsFavorite] = useState(false);
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
 
   // ✅ 즐겨찾기 저장 키(hospital_id_rd)
   const favoriteKey = useMemo(() => `hospital:${hospitalIdRd}`, [hospitalIdRd]);
@@ -151,7 +151,7 @@ export default function HospitalDetailPage({
       // 화면 표시용 데이터(선택)
       hospitalIdRd,
 
-      title: hospital?.hospital_name || "병원명 없음",
+      title: hospital?.hospital_name || t("common.noHospitalName"),
       clinic: hospital?.hospital_name || "",
       location: hospital?.hospital_address || "",
       rating:
@@ -200,7 +200,7 @@ export default function HospitalDetailPage({
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert("링크가 클립보드에 복사되었습니다.");
+      alert(t("alert.linkCopied"));
     }
   };
 
@@ -209,7 +209,7 @@ export default function HospitalDetailPage({
       <div className="min-h-screen bg-white max-w-md mx-auto w-full">
         <Header />
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">로딩 중...</div>
+          <div className="text-gray-500">{t("common.loading")}</div>
         </div>
         <BottomNavigation />
       </div>
@@ -285,7 +285,7 @@ export default function HospitalDetailPage({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {hospital.hospital_name || "병원명 없음"}
+                {hospital.hospital_name || t("common.noHospitalName")}
               </h2>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
@@ -323,7 +323,7 @@ export default function HospitalDetailPage({
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                   <FiMapPin className="text-gray-400" />
-                  <span className="font-medium">주소</span>
+                  <span className="font-medium">{t("label.address")}</span>
                 </div>
                 <p className="text-sm text-gray-500 pl-6">
                   {hospital.hospital_address}
@@ -462,7 +462,7 @@ export default function HospitalDetailPage({
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-gray-900">리뷰</h3>
             <button
-              onClick={() => setIsWriteModalOpen(true)}
+              onClick={() => router.push("/community/write")}
               className="text-primary-main text-sm font-medium"
             >
               후기 작성
@@ -504,7 +504,7 @@ export default function HospitalDetailPage({
           </button>
 
           <button
-            onClick={() => setIsWriteModalOpen(true)}
+            onClick={() => router.push("/community/write")}
             className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
           >
             <FiMessageCircle className="text-lg" />
@@ -512,7 +512,7 @@ export default function HospitalDetailPage({
           </button>
 
           <button
-            onClick={() => alert("문의하기 기능은 준비 중입니다.")}
+            onClick={() => alert(t("alert.inquiryComingSoon"))}
             className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors"
           >
             문의하기
@@ -521,12 +521,6 @@ export default function HospitalDetailPage({
       </div>
 
       <BottomNavigation />
-
-      {/* 후기 작성 모달 */}
-      <CommunityWriteModal
-        isOpen={isWriteModalOpen}
-        onClose={() => setIsWriteModalOpen(false)}
-      />
     </div>
   );
 }

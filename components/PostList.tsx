@@ -15,6 +15,8 @@ import {
   isPostLiked,
   getPostLikeCount,
 } from "@/lib/api/beautripApi";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { maskNickname } from "@/lib/utils/nicknameMask";
 
 interface Post {
   id: number | string;
@@ -453,6 +455,7 @@ export default function PostList({
   activeTab: "recommended" | "latest" | "popular" | "consultation";
   concernCategory?: string | null;
 }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [supabaseReviews, setSupabaseReviews] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -536,7 +539,7 @@ export default function PostList({
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(postId)) {
       console.warn("더미 데이터는 좋아요할 수 없습니다:", postId);
-      alert("실제 글이 아니어서 좋아요할 수 없습니다.");
+      alert(t("alert.cannotLikeDummy"));
       return;
     }
 
@@ -589,7 +592,7 @@ export default function PostList({
         ...prev,
         [postId]: currentState,
       }));
-      alert("좋아요 처리 중 오류가 발생했습니다.");
+      alert(t("alert.likeError"));
     }
   };
 
@@ -642,7 +645,7 @@ export default function PostList({
             (review: ProcedureReviewData) => ({
               id: review.id || `procedure-${Math.random()}`,
               category: review.category || "후기",
-              username: (review as any).nickname || "익명", // nickname 사용
+              username: maskNickname((review as any).nickname), // nickname 마스킹
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -661,7 +664,7 @@ export default function PostList({
             (review: HospitalReviewData) => ({
               id: review.id || `hospital-${Math.random()}`,
               category: review.category_large || "병원후기",
-              username: (review as any).nickname || "익명", // nickname 사용
+              username: maskNickname((review as any).nickname), // nickname 마스킹
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -680,7 +683,7 @@ export default function PostList({
             (post: ConcernPostData) => ({
               id: post.id || `concern-${Math.random()}`,
               category: post.concern_category || "고민글",
-              username: (post as any).nickname || "익명", // nickname 사용
+              username: maskNickname((post as any).nickname), // nickname 마스킹
               avatar: "👤",
               title: post.title, // 제목 추가
               content: post.content,
@@ -751,7 +754,7 @@ export default function PostList({
             (review: ProcedureReviewData) => ({
               id: review.id || `procedure-${Math.random()}`,
               category: review.category || "후기",
-              username: (review as any).nickname || "익명", // nickname 사용
+              username: maskNickname((review as any).nickname), // nickname 마스킹
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -769,7 +772,7 @@ export default function PostList({
             (review: HospitalReviewData) => ({
               id: review.id || `hospital-${Math.random()}`,
               category: review.category_large || "병원후기",
-              username: (review as any).nickname || "익명", // nickname 사용
+              username: maskNickname((review as any).nickname), // nickname 마스킹
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -818,10 +821,11 @@ export default function PostList({
               (post: ConcernPostData) => ({
                 id: post.id || `concern-${Math.random()}`,
                 category: post.concern_category || "고민글",
-                username: (post as any).nickname || "익명", // nickname 사용
+                username: maskNickname((post as any).nickname), // nickname 마스킹
                 avatar: "👤",
                 title: post.title, // 제목 추가
                 content: post.content,
+                images: (post as any).image_paths || undefined, // image_paths를 images로 매핑
                 timestamp: formatTimeAgo(post.created_at),
                 upvotes: 0,
                 comments: 0,
@@ -1118,7 +1122,7 @@ export default function PostList({
                   procedurePosts.map(renderPost)
                 ) : (
                   <div className="text-center py-8 text-gray-500 text-sm">
-                    시술 후기가 없습니다.
+                    {t("common.noData")}
                   </div>
                 )}
               </div>
@@ -1130,7 +1134,7 @@ export default function PostList({
                   hospitalPosts.map(renderPost)
                 ) : (
                   <div className="text-center py-8 text-gray-500 text-sm">
-                    병원 후기가 없습니다.
+                    {t("common.noData")}
                   </div>
                 )}
               </div>
@@ -1183,7 +1187,7 @@ export default function PostList({
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-gray-500">{post.timestamp}</span>
                 {post.edited && (
-                  <span className="text-xs text-gray-400">수정됨</span>
+                  <span className="text-xs text-gray-400">{t("label.edited")}</span>
                 )}
               </div>
             </div>

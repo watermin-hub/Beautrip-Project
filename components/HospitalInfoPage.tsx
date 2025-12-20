@@ -19,10 +19,11 @@ import {
   HospitalMaster,
   getThumbnailUrl,
 } from "@/lib/api/beautripApi";
-import CommunityWriteModal from "./CommunityWriteModal";
 import AutocompleteInput from "./AutocompleteInput";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HospitalInfoPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [hospitals, setHospitals] = useState<HospitalMaster[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,6 @@ export default function HospitalInfoPage() {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [inquiryModalOpen, setInquiryModalOpen] = useState<string | null>(null);
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
 
   // 페이지네이션 상태
@@ -303,7 +303,7 @@ export default function HospitalInfoPage() {
         <AutocompleteInput
           value={searchTerm}
           onChange={handleSearchChange}
-          placeholder="병원명을 입력해 주세요."
+          placeholder={t("placeholder.hospitalName")}
           suggestions={autocompleteSuggestions}
           onSuggestionSelect={handleSuggestionSelect}
           onEnter={handleSearchEnter}
@@ -313,14 +313,14 @@ export default function HospitalInfoPage() {
       <div className="px-4 py-6">
         {hospitals.length === 0 && !loading ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">검색 결과가 없습니다.</p>
+            <p className="text-gray-600">{t("common.noSearchResults")}</p>
           </div>
         ) : (
           <>
             {/* 그리드 레이아웃 (2열 4행) - 상세 정보 포함 */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               {hospitals.map((hospital: HospitalMaster) => {
-                const hospitalName = hospital.hospital_name || "병원명 없음";
+                const hospitalName = hospital.hospital_name || t("common.noHospitalName");
                 const isFavorite = favorites.has(hospitalName);
 
                 // hospital_img_url 우선 사용, 없으면 hospital_img 사용
@@ -448,7 +448,7 @@ export default function HospitalInfoPage() {
                   disabled={loadingMore}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loadingMore ? "로딩 중..." : "더보기"}
+                  {loadingMore ? t("common.loading") : t("common.seeMore")}
                 </button>
               </div>
             )}
@@ -464,7 +464,7 @@ export default function HospitalInfoPage() {
                   더 많은 병원 정보를 볼 수 있어요!
                 </p>
                 <button
-                  onClick={() => setIsWriteModalOpen(true)}
+                  onClick={() => router.push("/community/write")}
                   className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
                 >
                   리뷰 작성하기

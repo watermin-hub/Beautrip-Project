@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiCalendar, FiChevronDown } from "react-icons/fi";
+import { FiCalendar, FiChevronDown, FiX } from "react-icons/fi";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
 
 interface TravelScheduleBarProps {
@@ -139,6 +139,22 @@ export default function TravelScheduleBar({
     }
   };
 
+  const handleClearDates = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 모달이 열리지 않도록 클릭 이벤트 전파 방지
+    setSelectedStartDate(null);
+    setSelectedEndDate(null);
+    
+    // localStorage에서 여행 기간 제거
+    localStorage.removeItem("travelPeriod");
+    // 여행 기간 업데이트 이벤트 발생
+    window.dispatchEvent(new Event("travelPeriodUpdated"));
+    
+    // 부모 컴포넌트에 알림
+    if (onScheduleChange) {
+      onScheduleChange(null, null);
+    }
+  };
+
   const formatDisplayDate = (dateStr: string): string => {
     const date = new Date(dateStr);
     const month = date.getMonth() + 1;
@@ -171,8 +187,17 @@ export default function TravelScheduleBar({
           placeholder={t("home.selectSchedule")}
           onClick={handleModalOpen}
           readOnly
-          className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent cursor-pointer"
+          className={`w-full pl-10 ${selectedStartDate && selectedEndDate ? 'pr-20' : 'pr-10'} py-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent cursor-pointer`}
         />
+        {selectedStartDate && selectedEndDate && (
+          <button
+            onClick={handleClearDates}
+            className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="날짜 선택 취소"
+          >
+            <FiX className="text-gray-400 text-lg hover:text-gray-600" />
+          </button>
+        )}
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
           <FiChevronDown className="text-gray-400 text-lg" />
         </div>

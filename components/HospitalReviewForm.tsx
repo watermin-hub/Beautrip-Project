@@ -8,19 +8,24 @@ import {
   Treatment,
   saveHospitalReview,
   getTreatmentAutocomplete,
+  getTreatmentTableName,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HospitalReviewFormProps {
   onBack: () => void;
   onSubmit: () => void;
+  editData?: any; // 수정할 데이터 (선택적)
 }
 
 export default function HospitalReviewForm({
   onBack,
   onSubmit,
+  editData,
 }: HospitalReviewFormProps) {
+  const { t } = useLanguage();
   const [hospitalName, setHospitalName] = useState("");
   const [visitDate, setVisitDate] = useState("");
   const [categoryLarge, setCategoryLarge] = useState("");
@@ -79,8 +84,9 @@ export default function HospitalReviewForm({
         // 카테고리가 선택되었으면 해당 카테고리의 시술 데이터를 로드해서 category_small 추출
         if (categoryLarge) {
           // category_small 검색을 위해 직접 Supabase 쿼리 사용
+          const treatmentTable = getTreatmentTableName();
           let query = supabase
-            .from("treatment_master")
+            .from(treatmentTable)
             .select("category_small")
             .eq("category_large", categoryLarge)
             .not("category_small", "is", null);
@@ -209,7 +215,7 @@ export default function HospitalReviewForm({
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      alert("로그인 후에만 병원 후기를 작성할 수 있습니다.");
+      alert(t("form.loginRequiredReview"));
       return;
     }
 
@@ -220,7 +226,7 @@ export default function HospitalReviewForm({
       hasTranslation === null ||
       content.length < 10
     ) {
-      alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
+      alert(t("form.requiredFields"));
       return;
     }
 
@@ -249,7 +255,7 @@ export default function HospitalReviewForm({
       });
 
       if (!result.success || !result.id) {
-        alert(`병원후기 작성에 실패했습니다: ${result.error}`);
+        alert(`${t("form.saveFailed")}: ${result.error}`);
         return;
       }
 
@@ -276,16 +282,16 @@ export default function HospitalReviewForm({
           }
         } catch (imageError: any) {
           console.error("이미지 업로드 실패:", imageError);
-          alert(`이미지 업로드에 실패했습니다: ${imageError.message}`);
+          alert(`${t("form.imageUploadFailed")}: ${imageError.message}`);
           // 이미지 업로드 실패해도 후기는 저장됨
         }
       }
 
-      alert("병원후기가 성공적으로 작성되었습니다!");
+      alert(t("form.saveSuccess"));
       onSubmit();
     } catch (error: any) {
       console.error("병원후기 저장 오류:", error);
-      alert(`병원후기 작성 중 오류가 발생했습니다: ${error.message}`);
+      alert(`${t("form.errorOccurred")}: ${error.message}`);
     }
   };
 
@@ -294,13 +300,13 @@ export default function HospitalReviewForm({
       {/* 병원명 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          병원명 <span className="text-red-500">*</span>
+          {t("form.hospitalName")} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={hospitalName}
           onChange={(e) => setHospitalName(e.target.value)}
-          placeholder="병원명을 입력하세요"
+          placeholder={t("form.hospitalNamePlaceholder")}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
       </div>
@@ -308,7 +314,7 @@ export default function HospitalReviewForm({
       {/* 시술 카테고리 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          시술 카테고리 <span className="text-red-500">*</span>
+          {t("form.procedureCategory")} <span className="text-red-500">*</span>
         </label>
         <select
           value={categoryLarge}
@@ -321,7 +327,7 @@ export default function HospitalReviewForm({
           }}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         >
-          <option value="">대분류 선택</option>
+          <option value="">{t("form.selectCategory")}</option>
           {categories.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -333,7 +339,7 @@ export default function HospitalReviewForm({
       {/* 시술명(수술명) (자동완성 - 소분류) */}
       <div className="relative">
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          시술명(수술명) (선택사항)
+          {t("form.procedureNameOptional")}
         </label>
         <input
           type="text"
@@ -368,7 +374,9 @@ export default function HospitalReviewForm({
               }
             }, 200);
           }}
-          placeholder="시술명을 입력해 주세요."
+          placeholder={
+            t("form.procedureNamePlaceholder") || "시술명을 입력해 주세요."
+          }
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
         {showProcedureSuggestions &&
@@ -398,20 +406,21 @@ export default function HospitalReviewForm({
       <StarRating
         rating={overallSatisfaction}
         onRatingChange={setOverallSatisfaction}
-        label="전체적인 시술 만족도 (1~5)"
+        label={t("form.overallSatisfactionLabel")}
       />
 
       {/* 병원 만족도 */}
       <StarRating
         rating={hospitalKindness}
         onRatingChange={setHospitalKindness}
-        label="병원 만족도 (1~5)"
+        label={t("form.hospitalSatisfactionLabel")}
       />
 
       {/* 통역 여부 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          통역 여부 <span className="text-red-500">*</span>
+          {t("form.translationAvailable")}{" "}
+          <span className="text-red-500">*</span>
         </label>
         <div className="flex gap-3">
           <button
@@ -423,7 +432,7 @@ export default function HospitalReviewForm({
                 : "border-gray-300 text-gray-700"
             }`}
           >
-            있음
+            {t("form.translationYes")}
           </button>
           <button
             type="button"
@@ -434,7 +443,7 @@ export default function HospitalReviewForm({
                 : "border-gray-300 text-gray-700"
             }`}
           >
-            없음
+            {t("form.translationNo")}
           </button>
         </div>
       </div>
@@ -444,14 +453,14 @@ export default function HospitalReviewForm({
         <StarRating
           rating={translationSatisfaction}
           onRatingChange={setTranslationSatisfaction}
-          label="통역 만족도 (1~5)"
+          label={t("form.translationSatisfactionLabel")}
         />
       )}
 
       {/* 병원 방문일 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          병원 방문일
+          {t("form.visitDateLabel")}
         </label>
         <input
           type="date"
@@ -464,17 +473,18 @@ export default function HospitalReviewForm({
       {/* 글 작성 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          글 작성 <span className="text-red-500">*</span>
+          {t("form.writeReview")} <span className="text-red-500">*</span>
         </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="병원 방문 경험을 자세히 작성해주세요 (10자 이상)"
+          placeholder={t("form.visitDatePlaceholder")}
           rows={8}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main resize-none"
         />
         <p className="text-xs text-gray-500 mt-1">
-          {content.length}자 / 최소 10자 이상 작성해주세요
+          {content.length}
+          {t("form.minCharacters")}
         </p>
       </div>
 
@@ -482,7 +492,7 @@ export default function HospitalReviewForm({
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
           <FiCamera className="text-primary-main" />
-          사진첨부 (최대 4장)
+          {t("form.photoAttachmentMax")}
         </label>
         <div className="grid grid-cols-2 gap-3">
           {images.map((img, index) => (
@@ -530,14 +540,14 @@ export default function HospitalReviewForm({
           onClick={onBack}
           className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
         >
-          취소
+          {t("common.cancel")}
         </button>
         <button
           type="button"
           onClick={handleSubmit}
           className="flex-1 py-3 bg-primary-main hover:bg-primary-light text-white rounded-xl font-semibold transition-colors"
         >
-          작성완료
+          {t("common.writeComplete")}
         </button>
       </div>
     </div>

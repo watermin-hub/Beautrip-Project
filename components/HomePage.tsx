@@ -15,7 +15,6 @@ import OverlayBar from "./OverlayBar";
 import BottomNavigation from "./BottomNavigation";
 import ProcedureRecommendation from "./ProcedureRecommendation";
 import CountryPainPointSection from "./CountryPainPointSection";
-import CommunityWriteModal from "./CommunityWriteModal";
 import LoginModal from "./LoginModal";
 import InformationalContentSection from "./InformationalContentSection";
 import type { TravelScheduleData } from "./TravelScheduleForm";
@@ -49,10 +48,10 @@ export default function HomePage() {
     null
   );
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const procedureRecommendationRef = useRef<HTMLDivElement>(null);
+  const aiAnalysisBannerRef = useRef<HTMLDivElement>(null);
 
   // 로그인 상태 확인
   useEffect(() => {
@@ -82,6 +81,35 @@ export default function HomePage() {
       }, 100);
     }
   }, [searchParams, router]);
+
+  // AI 피부분석 배너 열기 이벤트 리스너
+  useEffect(() => {
+    const handleOpenAIAnalysis = () => {
+      // AI 분석 배너로 스크롤
+      if (aiAnalysisBannerRef.current) {
+        const headerOffset = 96; // 헤더 높이
+        const elementPosition = aiAnalysisBannerRef.current.offsetTop;
+        const offsetPosition = elementPosition - headerOffset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+
+        // 스크롤 후 약간의 딜레이를 두고 배너의 시작 버튼 클릭 이벤트 발생
+        setTimeout(() => {
+          // AIAnalysisBanner 컴포넌트 내부의 시작 버튼을 클릭하는 이벤트 발생
+          const event = new CustomEvent("triggerAIAnalysis");
+          window.dispatchEvent(event);
+        }, 500);
+      }
+    };
+
+    window.addEventListener("openAIAnalysis", handleOpenAIAnalysis);
+    return () => {
+      window.removeEventListener("openAIAnalysis", handleOpenAIAnalysis);
+    };
+  }, []);
 
   const handleScheduleChange = (
     start: string | null,
@@ -121,10 +149,10 @@ export default function HomePage() {
 
   const hasFullSchedule = !!(schedule.start && schedule.end);
 
-  // 1번 배너 클릭 핸들러: 로그인 체크 후 후기 작성 모달 또는 로그인 모달 열기
+  // 1번 배너 클릭 핸들러: 로그인 체크 후 후기 작성 페이지로 이동 또는 로그인 모달 열기
   const handleBanner1Click = () => {
     if (isLoggedIn) {
-      setIsWriteModalOpen(true);
+      router.push("/community/write");
     } else {
       setIsLoginModalOpen(true);
     }
@@ -218,7 +246,9 @@ export default function HomePage() {
         {/* <KBeautyByCountry /> */}
 
         {/* AI 분석 배너 */}
-        <AIAnalysisBanner />
+        <div ref={aiAnalysisBannerRef}>
+          <AIAnalysisBanner />
+        </div>
 
         {/* 인기 급상승 리뷰 */}
         <PopularReviewsSection />
@@ -229,7 +259,7 @@ export default function HomePage() {
         {/* 리뷰 작성 버튼 */}
         <div className="mb-4">
           <button
-            onClick={() => setIsWriteModalOpen(true)}
+            onClick={() => router.push("/community/write")}
             className="w-full bg-primary-main hover:bg-[#2DB8A0] text-white rounded-xl px-4 py-3 flex items-center justify-center gap-2 font-semibold transition-colors shadow-md"
           >
             <span>{t("home.reviewButton")}</span>
@@ -249,12 +279,6 @@ export default function HomePage() {
 
       <OverlayBar />
 
-      {/* 커뮤니티 글쓰기 모달 */}
-      <CommunityWriteModal
-        isOpen={isWriteModalOpen}
-        onClose={() => setIsWriteModalOpen(false)}
-      />
-
       {/* 로그인 모달 */}
       <LoginModal
         isOpen={isLoginModalOpen}
@@ -262,8 +286,8 @@ export default function HomePage() {
         onLoginSuccess={() => {
           setIsLoggedIn(true);
           setIsLoginModalOpen(false);
-          // 로그인 성공 후 후기 작성 모달 열기
-          setIsWriteModalOpen(true);
+          // 로그인 성공 후 후기 작성 페이지로 이동
+          router.push("/community/write");
         }}
       />
 

@@ -19,6 +19,7 @@ import { IoCheckmarkCircle } from "react-icons/io5";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   getRecoveryInfoByCategoryMid,
   findRecoveryGuideByCategorySmall,
@@ -317,8 +318,10 @@ function SimilarProcedureRecommendation({
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
     // 중복 체크
-    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
-    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const procedureName =
+      selectedTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital =
+      selectedTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatment.treatment_id;
 
     if (
@@ -330,7 +333,7 @@ function SimilarProcedureRecommendation({
         hospital
       )
     ) {
-      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      alert(t("alert.duplicateSchedule"));
       return;
     }
 
@@ -384,11 +387,11 @@ function SimilarProcedureRecommendation({
       window.dispatchEvent(new Event("scheduleAdded"));
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
-      alert("일정에 추가되었습니다!");
+      alert(t("alert.scheduleAdded"));
     } catch (error: any) {
       console.error("일정 저장 실패:", error);
       if (error.name === "QuotaExceededError") {
-        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+        alert(t("alert.storageFull"));
       } else {
         alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
       }
@@ -419,7 +422,7 @@ function SimilarProcedureRecommendation({
             const thumbnailUrl = getThumbnailUrl(treatment);
             const price = treatment.selling_price
               ? `${Math.round(treatment.selling_price / 10000)}만원`
-              : "가격 문의";
+              : t("common.priceInquiry");
             const rating = treatment.rating || 0;
             const reviewCount = treatment.review_count || 0;
             const discountRate = treatment.dis_rate
@@ -539,7 +542,9 @@ function SimilarProcedureRecommendation({
             setSelectedTreatment(null);
           }}
           onDateSelect={handleDateSelect}
-          treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          treatmentName={
+            selectedTreatment.treatment_name || t("common.noTreatmentName")
+          }
           selectedStartDate={travelPeriod?.start || null}
           selectedEndDate={travelPeriod?.end || null}
           categoryMid={selectedTreatment.category_mid || null}
@@ -621,7 +626,7 @@ function SavedSchedulesTab({
         /(\d{2})\.(\d{2})\.(\d{2})~(\d{2})\.(\d{2})\.(\d{2})/
       );
       if (!periodMatch) {
-        alert("일정 기간 형식이 올바르지 않습니다.");
+        alert(t("alert.invalidScheduleFormat"));
         return;
       }
 
@@ -679,8 +684,9 @@ function SavedSchedulesTab({
           newSchedules.push({
             id: newId,
             procedureDate: procedureDate,
-            procedureName: treatment.treatment_name || "시술명 없음",
-            hospital: treatment.hospital_name || "병원명 없음",
+            procedureName:
+              treatment.treatment_name || t("common.noTreatmentName"),
+            hospital: treatment.hospital_name || t("common.noHospitalName"),
             category: treatment.category_large || "",
             categoryMid: treatment.category_mid || null,
             categorySmall: treatment.category_small || null,
@@ -695,7 +701,7 @@ function SavedSchedulesTab({
       }
 
       if (newSchedules.length === 0) {
-        alert("시술 정보를 불러올 수 없습니다.");
+        alert(t("alert.loadScheduleError"));
         return;
       }
 
@@ -704,27 +710,27 @@ function SavedSchedulesTab({
       setSelectedScheduleCurrentDate(new Date(startDate));
     } catch (error) {
       console.error("저장된 일정 로드 실패:", error);
-      alert("저장된 일정을 불러오는 중 오류가 발생했습니다.");
+      alert(t("alert.loadSavedScheduleError"));
     }
   };
 
   // 저장된 일정 삭제
   const handleDeleteSavedSchedule = async (scheduleId: string) => {
-    if (!confirm("이 저장된 일정을 삭제하시겠습니까?")) {
+    if (!confirm(t("confirm.deleteSavedSchedule"))) {
       return;
     }
 
     try {
       const result = await deleteSavedSchedule(scheduleId);
       if (result.success) {
-        alert("저장된 일정이 삭제되었습니다.");
+        alert(t("alert.scheduleDeleted"));
         loadSavedSchedules();
       } else {
         alert(result.error || "일정 삭제에 실패했습니다.");
       }
     } catch (error) {
       console.error("일정 삭제 실패:", error);
-      alert("일정 삭제에 실패했습니다.");
+      alert(t("alert.scheduleDeleteFailed"));
     }
   };
 
@@ -1079,7 +1085,7 @@ function SavedSchedulesTab({
                   setSelectedScheduleSelectedDate(null);
                 } catch (error) {
                   console.error("일괄 삭제 실패:", error);
-                  alert("일괄 삭제 중 오류가 발생했습니다.");
+                  alert(t("alert.bulkDeleteError"));
                 }
               }}
               className="text-sm text-gray-600 hover:text-red-600 transition-colors"
@@ -1090,7 +1096,7 @@ function SavedSchedulesTab({
         </div>
         {loading ? (
           <div className="text-center py-8">
-            <p className="text-gray-500 text-sm">로딩 중...</p>
+            <p className="text-gray-500 text-sm">{t("common.loading")}</p>
           </div>
         ) : savedSchedulesList.length === 0 ? (
           <div className="text-center py-12">
@@ -1440,7 +1446,7 @@ function RecoveryCardComponent({
       );
     } catch (error) {
       console.error("❌ 회복 가이드 찾기 실패:", error);
-      alert("회복 가이드를 불러오는 중 오류가 발생했습니다.");
+      alert(t("alert.loadRecoveryGuideError"));
     } finally {
       setIsNavigating(false);
     }
@@ -1448,7 +1454,7 @@ function RecoveryCardComponent({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("이 회복 기간 일정을 삭제하시겠습니까?")) {
+    if (confirm(t("confirm.deleteRecoverySchedule"))) {
       onDelete(rec.id);
     }
   };
@@ -1556,6 +1562,7 @@ function RecoveryCardComponent({
 }
 
 export default function MySchedulePage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"schedule" | "saved">("schedule");
 
@@ -1612,7 +1619,7 @@ export default function MySchedulePage() {
     endDate: string | null
   ) => {
     if (!endDate) {
-      alert("종료일을 선택해주세요.");
+      alert(t("alert.selectEndDate"));
       return;
     }
 
@@ -1628,7 +1635,7 @@ export default function MySchedulePage() {
     // 여행 기간 업데이트 이벤트 발생
     window.dispatchEvent(new Event("travelPeriodUpdated"));
 
-    alert("여행 일정이 저장되었습니다!");
+    alert(t("alert.travelScheduleSaved"));
   };
 
   // 여행 기간 계산
@@ -2070,9 +2077,7 @@ export default function MySchedulePage() {
             <button
               onClick={() => {
                 // 캐시 데이터 삭제 (예시 데이터 포함 완전 삭제)
-                if (
-                  confirm("모든 일정과 여행 기간 데이터를 삭제하시겠습니까?")
-                ) {
+                if (confirm(t("confirm.deleteAllData"))) {
                   localStorage.removeItem("schedules");
                   localStorage.removeItem("travelPeriod");
                   // 완전히 비우기 (예시 데이터도 제거)
@@ -2081,7 +2086,7 @@ export default function MySchedulePage() {
                   // 이벤트 발생 (홈과 동기화)
                   window.dispatchEvent(new Event("scheduleAdded"));
                   window.dispatchEvent(new Event("travelPeriodUpdated"));
-                  alert("데이터가 삭제되었습니다.");
+                  alert(t("confirm.dataDeleted"));
                 }
               }}
               className="text-xs text-gray-500 hover:text-red-500 px-2 py-1"
@@ -2142,12 +2147,12 @@ export default function MySchedulePage() {
             <button
               onClick={async () => {
                 if (!travelPeriod) {
-                  alert("여행 기간을 먼저 설정해주세요.");
+                  alert(t("alert.setTravelPeriodFirst"));
                   return;
                 }
 
                 if (savedSchedules.length === 0) {
-                  alert("저장할 일정이 없습니다.");
+                  alert(t("alert.noScheduleToSave"));
                   return;
                 }
 
@@ -2181,7 +2186,7 @@ export default function MySchedulePage() {
                   );
 
                 if (treatmentIds.length === 0) {
-                  alert("저장할 시술이 없습니다.");
+                  alert(t("alert.noTreatmentToSave"));
                   return;
                 }
 
@@ -2229,7 +2234,7 @@ export default function MySchedulePage() {
                     treatmentDates
                   );
                   if (result.success) {
-                    alert("일정이 저장되었습니다!");
+                    alert(t("alert.scheduleSaved"));
                     // 저장된 일정 목록 재조회를 위한 이벤트 발생
                     window.dispatchEvent(new Event("savedScheduleUpdated"));
                   } else {
@@ -2244,7 +2249,7 @@ export default function MySchedulePage() {
                         "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요."
                       );
                     } else if (errorMessage.includes("로그인")) {
-                      if (confirm("일정을 저장하려면 로그인이 필요합니다.")) {
+                      if (confirm(t("confirm.loginRequiredToSave"))) {
                         router.push("/mypage");
                       }
                     } else {
@@ -2445,7 +2450,7 @@ export default function MySchedulePage() {
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-1.5 bg-primary-main rounded-sm"></div>
-              <span className="text-gray-600">시술</span>
+              <span className="text-gray-600">{t("label.procedure")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-1.5 bg-yellow-400 rounded-sm"></div>
@@ -2467,13 +2472,13 @@ export default function MySchedulePage() {
                     if (proc.treatmentId) {
                       router.push(`/schedule/treatment/${proc.treatmentId}`);
                     } else {
-                      alert("시술 상세 정보를 불러올 수 없습니다.");
+                      alert(t("alert.loadTreatmentDetailError"));
                     }
                   };
 
                   const handleDelete = (e: React.MouseEvent) => {
                     e.stopPropagation();
-                    if (confirm("이 시술 일정을 삭제하시겠습니까?")) {
+                    if (confirm(t("confirm.deleteSchedule"))) {
                       const schedules = JSON.parse(
                         localStorage.getItem("schedules") || "[]"
                       );
@@ -2485,7 +2490,7 @@ export default function MySchedulePage() {
                         JSON.stringify(updatedSchedules)
                       );
                       window.dispatchEvent(new Event("scheduleAdded"));
-                      alert("일정이 삭제되었습니다.");
+                      alert(t("alert.scheduleDeleted"));
                     }
                   };
 

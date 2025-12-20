@@ -23,6 +23,7 @@ import {
   SmallCategoryRanking,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // 홈페이지와 동일한 대분류 카테고리 10개
 const MAIN_CATEGORIES = [
@@ -67,6 +68,7 @@ export default function CategoryRankingPage({
   renderFilterBar = true,
   onMidCategoriesListChange,
 }: CategoryRankingPageProps) {
+  const { t } = useLanguage();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -556,7 +558,7 @@ export default function CategoryRankingPage({
     });
 
     if (countOnDate >= 3) {
-      alert("일정이 꽉 찼습니다! 3개 이하로 정리 후 다시 시도해 주세요.");
+      alert(t("alert.scheduleFull"));
       setIsAddToScheduleModalOpen(false);
       return;
     }
@@ -584,9 +586,9 @@ export default function CategoryRankingPage({
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
     const procedureName =
-      selectedTreatmentForSchedule.treatment_name || "시술명 없음";
+      selectedTreatmentForSchedule.treatment_name || t("common.noTreatmentName");
     const hospital =
-      selectedTreatmentForSchedule.hospital_name || "병원명 없음";
+      selectedTreatmentForSchedule.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatmentForSchedule.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -600,7 +602,7 @@ export default function CategoryRankingPage({
     });
 
     if (isDuplicate) {
-      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      alert(t("alert.duplicateSchedule"));
       setIsAddToScheduleModalOpen(false);
       setSelectedTreatmentForSchedule(null);
       return;
@@ -641,7 +643,7 @@ export default function CategoryRankingPage({
     } catch (error: any) {
       console.error("일정 저장 실패:", error);
       if (error.name === "QuotaExceededError") {
-        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+        alert(t("alert.storageFull"));
       } else {
         alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
       }
@@ -923,7 +925,7 @@ export default function CategoryRankingPage({
                                 ? `${Math.round(
                                     treatment.selling_price / 10000
                                   )}만원`
-                                : "가격 문의";
+                                : t("common.priceInquiry");
 
                               return (
                                 <div
@@ -1354,7 +1356,7 @@ export default function CategoryRankingPage({
           }}
           onDateSelect={handleScheduleDateSelect}
           treatmentName={
-            selectedTreatmentForSchedule.treatment_name || "시술명 없음"
+            selectedTreatmentForSchedule.treatment_name || t("common.noTreatmentName")
           }
           categoryMid={selectedTreatmentForSchedule.category_mid || null}
         />

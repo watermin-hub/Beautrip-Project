@@ -145,7 +145,7 @@ export default function HotConcernsSection() {
     });
 
     if (countOnDate >= 3) {
-      alert("일정이 꽉 찼습니다! 3개 이하로 정리 후 다시 시도해 주세요.");
+      alert(t("alert.scheduleFull"));
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
       return;
@@ -173,8 +173,8 @@ export default function HotConcernsSection() {
     }
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
-    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
-    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const procedureName = selectedTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital = selectedTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatment.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -188,7 +188,7 @@ export default function HotConcernsSection() {
     });
 
     if (isDuplicate) {
-      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      alert(t("alert.duplicateSchedule"));
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
       return;
@@ -227,7 +227,7 @@ export default function HotConcernsSection() {
     } catch (error: any) {
       console.error("일정 저장 실패:", error);
       if (error.name === "QuotaExceededError") {
-        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+        alert(t("alert.storageFull"));
       } else {
         alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
       }
@@ -402,7 +402,7 @@ export default function HotConcernsSection() {
             setSelectedTreatment(null);
           }}
           onDateSelect={handleDateSelect}
-          treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          treatmentName={selectedTreatment.treatment_name || t("common.noTreatmentName")}
           categoryMid={selectedTreatment.category_mid || null}
         />
       )}

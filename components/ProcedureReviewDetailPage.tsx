@@ -23,7 +23,9 @@ import {
   getUserProfile,
 } from "@/lib/api/beautripApi";
 import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
+import { maskNickname } from "@/lib/utils/nicknameMask";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 
@@ -171,7 +173,7 @@ export default function ProcedureReviewDetailPage({
           </div>
           <div className="flex-1">
             <div className="text-base font-bold text-gray-900 mb-1">
-              {(review as any).nickname || "익명"}
+              {maskNickname((review as any).nickname)}
             </div>
             <div className="text-xs text-gray-500 space-y-0.5">
               <div className="font-medium">
@@ -193,7 +195,7 @@ export default function ProcedureReviewDetailPage({
         {/* 시술 정보 */}
         <div className="px-4 py-4 space-y-3 border-b border-gray-100">
           <div>
-            <span className="text-xs text-gray-500">시술명</span>
+            <span className="text-xs text-gray-500">{t("label.procedureName")}</span>
             <p className="text-base font-semibold text-gray-900 mt-1">
               {review.procedure_name}
             </p>
@@ -201,7 +203,7 @@ export default function ProcedureReviewDetailPage({
 
           {review.hospital_name && (
             <div>
-              <span className="text-xs text-gray-500">병원명</span>
+              <span className="text-xs text-gray-500">{t("label.hospitalName")}</span>
               <p className="text-base text-gray-900 mt-1">
                 {review.hospital_name}
               </p>
@@ -250,18 +252,18 @@ export default function ProcedureReviewDetailPage({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <span className="text-xs text-gray-500">성별</span>
+              <span className="text-xs text-gray-500">{t("label.gender")}</span>
               <p className="text-base text-gray-900 mt-1">{review.gender}</p>
             </div>
             <div>
-              <span className="text-xs text-gray-500">연령</span>
+              <span className="text-xs text-gray-500">{t("label.age")}</span>
               <p className="text-base text-gray-900 mt-1">{review.age_group}</p>
             </div>
           </div>
 
           {review.cost && (
             <div>
-              <span className="text-xs text-gray-500">비용</span>
+              <span className="text-xs text-gray-500">{t("label.cost")}</span>
               <p className="text-base text-gray-900 mt-1">
                 {review.cost.toLocaleString()}만원
               </p>

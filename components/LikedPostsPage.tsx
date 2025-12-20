@@ -7,8 +7,10 @@ import {
   getLikedPostsWithDetails,
   LikedPostDetail,
 } from "@/lib/api/beautripApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function LikedPostsPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<LikedPostDetail[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function LikedPostsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4">
-        <div className="text-gray-500">로딩 중...</div>
+        <div className="text-gray-500">{t("common.loading")}</div>
       </div>
     );
   }
@@ -77,7 +79,7 @@ export default function LikedPostsPage() {
       <div className="flex flex-col items-center justify-center py-20 px-4">
         <FiHeart className="text-gray-300 text-6xl mb-4" />
         <p className="text-gray-500 text-lg font-medium mb-2">
-          좋아요한 글이 없습니다
+          {t("common.noData")}
         </p>
         <p className="text-gray-400 text-sm text-center">
           마음에 드는 글에 좋아요를 눌러보세요!

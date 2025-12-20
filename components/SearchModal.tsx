@@ -6,6 +6,7 @@ import { FiSearch, FiX, FiArrowLeft, FiChevronDown } from "react-icons/fi";
 import { IoClose } from "react-icons/io5";
 import { getTreatmentAutocomplete } from "@/lib/api/beautripApi";
 import AutocompleteInput from "./AutocompleteInput";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -222,7 +223,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <AutocompleteInput
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="시술명/수술명을 입력해 주세요."
+              placeholder={t("placeholder.procedureName")}
               suggestions={autocompleteSuggestions}
               onSuggestionSelect={(suggestion) => {
                 setSearchQuery(suggestion);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { FiX, FiImage, FiStar } from 'react-icons/fi'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface ReviewWriteModalProps {
   isOpen: boolean
@@ -121,7 +122,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
               type="text"
               value={procedure}
               onChange={(e) => setProcedure(e.target.value)}
-              placeholder="받으신 시술을 입력해주세요"
+              placeholder={t("placeholder.receivedProcedure")}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-main"
             />
           </div>
@@ -133,7 +134,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
               type="text"
               value={clinic}
               onChange={(e) => setClinic(e.target.value)}
-              placeholder="병원 또는 클리닉 이름을 입력해주세요"
+              placeholder={t("placeholder.hospitalClinicName")}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-main"
             />
           </div>
@@ -166,7 +167,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="시술 경험을 자세히 작성해주세요..."
+              placeholder={t("placeholder.reviewExperience")}
               rows={8}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-main resize-none"
             />

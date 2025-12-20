@@ -15,8 +15,10 @@ import {
   Treatment,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function KBeautyRankingPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [allTreatments, setAllTreatments] = useState<Treatment[]>([]);
   const [rankings, setRankings] = useState<Treatment[]>([]);
@@ -120,8 +122,8 @@ export default function KBeautyRankingPage() {
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
-    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
-    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const procedureName = selectedTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital = selectedTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatment.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -135,7 +137,7 @@ export default function KBeautyRankingPage() {
     });
 
     if (isDuplicate) {
-      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      alert(t("alert.duplicateSchedule"));
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
       return;
@@ -174,7 +176,7 @@ export default function KBeautyRankingPage() {
     } catch (error: any) {
       console.error("일정 저장 실패:", error);
       if (error.name === "QuotaExceededError") {
-        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+        alert(t("alert.storageFull"));
       } else {
         alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
       }
@@ -284,10 +286,10 @@ export default function KBeautyRankingPage() {
                     <div className="flex-1 min-w-0 flex flex-col">
                       <div className="flex-1">
                         <h3 className="text-base font-bold text-gray-900 mb-1.5 line-clamp-2 leading-snug">
-                              {treatment.treatment_name || "시술명 없음"}
+                              {treatment.treatment_name || t("common.noTreatmentName")}
                             </h3>
                         <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                              {treatment.hospital_name || "병원명 없음"}
+                              {treatment.hospital_name || t("common.noHospitalName")}
                             </p>
 
                         {/* Categories */}
@@ -361,7 +363,7 @@ export default function KBeautyRankingPage() {
             setSelectedTreatment(null);
           }}
           onDateSelect={handleDateSelect}
-          treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          treatmentName={selectedTreatment.treatment_name || t("common.noTreatmentName")}
           categoryMid={selectedTreatment.category_mid || null}
         />
       )}

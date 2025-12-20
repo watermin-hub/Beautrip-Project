@@ -6,16 +6,20 @@ import Image from "next/image";
 import { saveConcernPost } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadConcernImages } from "@/lib/api/imageUpload";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ConcernPostFormProps {
   onBack: () => void;
   onSubmit: () => void;
+  editData?: any; // 수정할 데이터 (선택적)
 }
 
 export default function ConcernPostForm({
   onBack,
   onSubmit,
+  editData,
 }: ConcernPostFormProps) {
+  const { t } = useLanguage();
   const [title, setTitle] = useState("");
   const [concernCategory, setConcernCategory] = useState("");
   const [content, setContent] = useState("");
@@ -60,13 +64,13 @@ export default function ConcernPostForm({
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      alert("로그인 후에만 고민글을 작성할 수 있습니다.");
+      alert(t("form.loginRequiredConcern"));
       return;
     }
 
     // 필수 항목 검증
     if (!title || !concernCategory || content.length < 10) {
-      alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
+      alert(t("form.requiredFields"));
       return;
     }
 
@@ -76,12 +80,12 @@ export default function ConcernPostForm({
         title,
         concern_category: concernCategory,
         content,
-        images: undefined, // 먼저 이미지 없이 저장
+        image_paths: undefined, // 먼저 이미지 없이 저장
         user_id: user.id, // Supabase Auth UUID
       });
 
       if (!result.success || !result.id) {
-        alert(`고민글 작성에 실패했습니다: ${result.error}`);
+        alert(`${t("form.saveFailed")}: ${result.error}`);
         return;
       }
 
@@ -94,13 +98,13 @@ export default function ConcernPostForm({
           // 이미지 URL로 업데이트
           const { error: updateError } = await supabase
             .from("concern_posts")
-            .update({ images: imageUrls })
+            .update({ image_paths: imageUrls })
             .eq("id", result.id);
 
           if (updateError) {
             console.error("이미지 URL 업데이트 실패:", updateError);
             // 이미지 업로드는 실패했지만 글은 저장되었으므로 경고만 표시
-            alert("고민글은 저장되었지만 이미지 업로드에 실패했습니다.");
+            alert(t("form.imageUploadFailed"));
           }
         } catch (imageError: any) {
           console.error("이미지 업로드 오류:", imageError);
@@ -108,11 +112,11 @@ export default function ConcernPostForm({
         }
       }
 
-      alert("고민글이 성공적으로 작성되었습니다!");
+      alert(t("form.saveSuccess"));
       onSubmit();
     } catch (error: any) {
       console.error("고민글 저장 오류:", error);
-      alert(`고민글 작성 중 오류가 발생했습니다: ${error.message}`);
+      alert(`${t("form.errorOccurred")}: ${error.message}`);
     }
   };
 
@@ -121,13 +125,13 @@ export default function ConcernPostForm({
       {/* 제목 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          제목 <span className="text-red-500">*</span>
+          {t("form.concernTitle")} <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="고민글 제목을 입력하세요"
+          placeholder={t("form.concernTitlePlaceholder")}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
       </div>
@@ -135,14 +139,14 @@ export default function ConcernPostForm({
       {/* 고민 카테고리 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          고민 카테고리 <span className="text-red-500">*</span>
+          {t("form.concernCategory")} <span className="text-red-500">*</span>
         </label>
         <select
           value={concernCategory}
           onChange={(e) => setConcernCategory(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         >
-          <option value="">고민 카테고리를 선택하세요</option>
+          <option value="">{t("form.selectConcernCategory")}</option>
           {concernCategories.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -154,17 +158,18 @@ export default function ConcernPostForm({
       {/* 고민 글 */}
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          고민 글 <span className="text-red-500">*</span>
+          {t("form.concernContent")} <span className="text-red-500">*</span>
         </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="고민이나 질문을 자세히 작성해주세요 (10자 이상)"
+          placeholder={t("form.concernContentPlaceholder")}
           rows={10}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main resize-none"
         />
         <p className="text-xs text-gray-500 mt-1">
-          {content.length}자 / 최소 10자 이상 작성해주세요
+          {content.length}
+          {t("form.minCharacters")}
         </p>
       </div>
 
@@ -172,7 +177,7 @@ export default function ConcernPostForm({
       <div>
         <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
           <FiCamera className="text-primary-main" />
-          사진첨부 (최대 4장, 선택사항)
+          {t("form.photoAttachmentOptional")}
         </label>
         <div className="grid grid-cols-2 gap-3">
           {images.map((img, index) => (
@@ -221,14 +226,14 @@ export default function ConcernPostForm({
           onClick={onBack}
           className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
         >
-          취소
+          {t("common.cancel")}
         </button>
         <button
           type="button"
           onClick={handleSubmit}
           className="flex-1 py-3 bg-primary-main hover:bg-primary-light text-white rounded-xl font-semibold transition-colors"
         >
-          작성완료
+          {t("common.writeComplete")}
         </button>
       </div>
     </div>

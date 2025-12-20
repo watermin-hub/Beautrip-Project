@@ -23,6 +23,7 @@ import {
   getUserProfile,
 } from "@/lib/api/beautripApi";
 import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
+import { maskNickname } from "@/lib/utils/nicknameMask";
 import { supabase } from "@/lib/supabase";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
@@ -166,7 +167,7 @@ export default function HospitalReviewDetailPage({
           </div>
           <div className="flex-1">
             <div className="text-base font-bold text-gray-900 mb-1">
-              {(review as any).nickname || "익명"}
+              {maskNickname((review as any).nickname)}
             </div>
             <div className="text-xs text-gray-500 space-y-0.5">
               <div className="font-medium">

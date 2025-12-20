@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FiCalendar, FiMapPin, FiTag, FiDollarSign } from "react-icons/fi";
 import { IoChevronDown } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface TravelScheduleFormProps {
   onSearch: (data: TravelScheduleData) => void;
@@ -18,6 +19,7 @@ export interface TravelScheduleData {
 export default function TravelScheduleForm({
   onSearch,
 }: TravelScheduleFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<TravelScheduleData>({
     travelPeriod: { start: "", end: "" },
     travelRegion: "서울",
@@ -57,7 +59,7 @@ export default function TravelScheduleForm({
               <input
                 type="text"
                 value={formData.travelPeriod.start}
-                placeholder="시작일"
+                placeholder={t("placeholder.startDate")}
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent cursor-pointer"
                 onClick={() => handleDateSelect("start")}
                 readOnly
@@ -71,7 +73,7 @@ export default function TravelScheduleForm({
               <input
                 type="text"
                 value={formData.travelPeriod.end}
-                placeholder="종료일"
+                placeholder={t("placeholder.endDate")}
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent cursor-pointer"
                 onClick={() => handleDateSelect("end")}
                 readOnly

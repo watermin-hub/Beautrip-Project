@@ -32,8 +32,8 @@ interface ProcedureListPageProps {
 export default function ProcedureListPage({
   activeSection = "procedure",
 }: ProcedureListPageProps) {
-  const isActive = activeSection === "procedure";
   const { t } = useLanguage();
+  const isActive = activeSection === "procedure";
   const router = useRouter();
   const searchParams = useSearchParams();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
@@ -310,8 +310,10 @@ export default function ProcedureListPage({
     const schedules = JSON.parse(localStorage.getItem("schedules") || "[]");
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
-    const procedureName = selectedTreatment.treatment_name || "시술명 없음";
-    const hospital = selectedTreatment.hospital_name || "병원명 없음";
+    const procedureName =
+      selectedTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital =
+      selectedTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatment.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -325,7 +327,7 @@ export default function ProcedureListPage({
     });
 
     if (isDuplicate) {
-      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      alert(t("alert.duplicateSchedule"));
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
       return;
@@ -365,7 +367,7 @@ export default function ProcedureListPage({
     } catch (error: any) {
       console.error("일정 저장 실패:", error);
       if (error.name === "QuotaExceededError") {
-        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+        alert(t("alert.storageFull"));
       } else {
         alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
       }
@@ -448,7 +450,7 @@ export default function ProcedureListPage({
           <AutocompleteInput
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder="시술명/수술명을 입력해 주세요."
+            placeholder={t("placeholder.procedureName")}
             suggestions={isSearchExecuted ? [] : autocompleteSuggestions}
             onSuggestionSelect={handleSuggestionSelect}
             onEnter={handleSearchEnter}
@@ -484,7 +486,7 @@ export default function ProcedureListPage({
               onChange={(e) => setSortBy(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main"
             >
-              <option value="default">정렬</option>
+              <option value="default">{t("label.sort")}</option>
               <option value="price-low">가격 낮은순</option>
               <option value="price-high">가격 높은순</option>
               <option value="rating">평점 높은순</option>
@@ -498,7 +500,7 @@ export default function ProcedureListPage({
       <div className="px-4 py-4">
         {treatments.length === 0 && !loading ? (
           <div className="text-center py-12">
-            <p className="text-gray-600">검색 결과가 없습니다.</p>
+            <p className="text-gray-600">{t("common.noSearchResults")}</p>
           </div>
         ) : (
           <>
@@ -513,7 +515,7 @@ export default function ProcedureListPage({
                 });
                 const sellingPrice = treatment.selling_price
                   ? `${Math.round(treatment.selling_price / 10000)}만원`
-                  : "가격 문의";
+                  : t("common.priceInquiry");
                 const discountRate = treatment.dis_rate
                   ? `${treatment.dis_rate}%`
                   : "";
@@ -630,7 +632,7 @@ export default function ProcedureListPage({
                   disabled={loadingMore}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loadingMore ? "로딩 중..." : "더보기"}
+                  {loadingMore ? t("common.loading") : t("common.seeMore")}
                 </button>
               </div>
             )}
@@ -647,7 +649,9 @@ export default function ProcedureListPage({
             setSelectedTreatment(null);
           }}
           onDateSelect={handleDateSelect}
-          treatmentName={selectedTreatment.treatment_name || "시술명 없음"}
+          treatmentName={
+            selectedTreatment.treatment_name || t("common.noTreatmentName")
+          }
           categoryMid={selectedTreatment.category_mid || null}
         />
       )}

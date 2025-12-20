@@ -8,19 +8,24 @@ import {
   Treatment,
   saveProcedureReview,
   getTreatmentAutocomplete,
+  getTreatmentTableName,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProcedureReviewFormProps {
   onBack: () => void;
   onSubmit: () => void;
+  editData?: any; // 수정할 데이터 (선택적)
 }
 
 export default function ProcedureReviewForm({
   onBack,
   onSubmit,
+  editData,
 }: ProcedureReviewFormProps) {
+  const { t } = useLanguage();
   const [surgeryDate, setSurgeryDate] = useState("");
   const [category, setCategory] = useState("");
   const [hospitalName, setHospitalName] = useState("");
@@ -81,8 +86,9 @@ export default function ProcedureReviewForm({
         // 카테고리가 선택되었으면 해당 카테고리의 시술 데이터를 로드해서 category_small 추출
         if (category) {
           // category_small 검색을 위해 직접 Supabase 쿼리 사용
+          const treatmentTable = getTreatmentTableName();
           let query = supabase
-            .from("treatment_master")
+            .from(treatmentTable)
             .select("category_small")
             .eq("category_large", category)
             .not("category_small", "is", null);
@@ -378,7 +384,7 @@ export default function ProcedureReviewForm({
               }
             }, 200);
           }}
-          placeholder="시술명을 입력해 주세요."
+          placeholder={t("placeholder.procedureNameOnly")}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
         {showProcedureSuggestions &&
@@ -483,7 +489,7 @@ export default function ProcedureReviewForm({
             type="number"
             value={cost}
             onChange={(e) => setCost(e.target.value)}
-            placeholder="수술 비용"
+            placeholder={t("placeholder.surgeryCost")}
             className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
           />
           <span className="text-gray-700">만원</span>
@@ -499,7 +505,7 @@ export default function ProcedureReviewForm({
           type="text"
           value={hospitalName}
           onChange={(e) => setHospitalName(e.target.value)}
-          placeholder="병원명을 입력하세요"
+          placeholder={t("placeholder.hospitalNameInput")}
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
         />
       </div>

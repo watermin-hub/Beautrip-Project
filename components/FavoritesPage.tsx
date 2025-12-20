@@ -71,12 +71,12 @@ export default function FavoritesPage() {
             .filter((t): t is Treatment => t !== null)
             .map((treatment) => ({
               id: treatment.treatment_id || 0,
-              title: treatment.treatment_name || "시술명 없음",
-              clinic: treatment.hospital_name || "병원명 없음",
+              title: treatment.treatment_name || t("favorites.noTreatmentName"),
+              clinic: treatment.hospital_name || t("favorites.noHospitalName"),
               location: "강남", // 추후 주소 정보 추가
               price: treatment.selling_price
                 ? `${Math.round(treatment.selling_price / 10000)}만원`
-                : "가격 문의",
+                : t("common.priceInquiry"),
               rating: treatment.rating ? treatment.rating.toFixed(1) : "0.0",
               reviewCount: treatment.review_count
                 ? `${treatment.review_count}`
@@ -117,8 +117,9 @@ export default function FavoritesPage() {
 
             return {
               id: uniqueId,
-              title: f.title || f.name || f.clinic || "병원명 없음",
-              clinic: f.clinic || f.name || "병원명 없음",
+              title:
+                f.title || f.name || f.clinic || t("common.noHospitalName"),
+              clinic: f.clinic || f.name || t("common.noHospitalName"),
               address: f.address || "",
               location: f.location || "",
               rating: f.rating ? f.rating.toFixed(1) : "0.0",
@@ -190,7 +191,7 @@ export default function FavoritesPage() {
           localStorage.setItem("favorites", JSON.stringify(updatedLocal));
           window.dispatchEvent(new Event("favoritesUpdated"));
         } else {
-          alert(result.error || "찜하기 삭제에 실패했습니다.");
+          alert(result.error || t("favorites.removeError"));
         }
       } else {
         // 병원 찜은 localStorage에서만 삭제
@@ -213,7 +214,7 @@ export default function FavoritesPage() {
       }
     } catch (error) {
       console.error("찜하기 삭제 실패:", error);
-      alert("찜하기 삭제 중 오류가 발생했습니다.");
+      alert(t("favorites.removeErrorDesc"));
     }
   };
 
@@ -225,7 +226,7 @@ export default function FavoritesPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-4">
-        <div className="text-gray-500">로딩 중...</div>
+        <div className="text-gray-500">{t("common.loading")}</div>
       </div>
     );
   }
@@ -258,7 +259,7 @@ export default function FavoritesPage() {
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            시술 ({procedures.length})
+            {t("mypage.procedure")} ({procedures.length})
           </button>
           <button
             onClick={() => setActiveTab("clinic")}
@@ -268,7 +269,7 @@ export default function FavoritesPage() {
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
-            병원 ({clinics.length})
+            {t("mypage.hospital")} ({clinics.length})
           </button>
         </div>
       </div>

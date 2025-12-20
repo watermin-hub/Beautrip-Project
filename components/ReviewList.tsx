@@ -15,6 +15,7 @@ import {
   isPostLiked,
   getPostLikeCount,
 } from "@/lib/api/beautripApi";
+import { maskNickname } from "@/lib/utils/nicknameMask";
 
 interface ReviewPost {
   id: string | number;
@@ -171,7 +172,7 @@ export default function ReviewList() {
             return {
               id: review.id!, // id가 있음을 보장
               category: review.category || "후기",
-              username: nickname || "익명", // nickname이 없으면 "익명"만 표시
+              username: maskNickname(nickname), // nickname 마스킹
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -201,7 +202,7 @@ export default function ReviewList() {
             return {
               id: review.id!, // id가 있음을 보장
               category: review.category_large || "병원후기",
-              username: nickname || "익명", // nickname이 없으면 "익명"만 표시
+              username: maskNickname(nickname), // nickname 마스킹
               avatar: "👤",
               content: review.content,
               images: review.images,
@@ -230,9 +231,10 @@ export default function ReviewList() {
               return {
                 id: post.id!, // id가 있음을 보장
                 category: post.concern_category || "고민글",
-                username: nickname || "익명", // nickname이 없으면 "익명"만 표시
+                username: maskNickname(nickname), // nickname 마스킹
                 avatar: "👤",
                 content: post.content,
+                images: (post as any).image_paths || undefined, // image_paths를 images로 매핑
                 timestamp: formatTimeAgo(post.created_at),
                 created_at: post.created_at, // 정렬을 위해 원본 날짜 보관
                 edited: false,

@@ -30,6 +30,7 @@ import {
   getFavoriteStatus,
   saveInquiry,
 } from "@/lib/api/beautripApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import AddToScheduleModal from "./AddToScheduleModal";
@@ -41,6 +42,7 @@ interface TreatmentDetailPageProps {
 export default function TreatmentDetailPage({
   treatmentId,
 }: TreatmentDetailPageProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +181,7 @@ export default function TreatmentDetailPage({
         // 찜 개수는 추후 통계 기능 추가 시 업데이트
       } else {
         if (result.error?.includes("로그인이 필요")) {
-          alert("로그인이 필요합니다.");
+          alert(t("alert.loginRequired"));
           // 로그인 모달 표시 또는 로그인 페이지로 이동
         } else {
           alert(result.error || "찜하기 처리에 실패했습니다.");
@@ -187,7 +189,7 @@ export default function TreatmentDetailPage({
       }
     } catch (error) {
       console.error("찜하기 토글 실패:", error);
-      alert("찜하기 처리 중 오류가 발생했습니다.");
+      alert(t("alert.favoriteError"));
     }
   };
 
@@ -206,7 +208,7 @@ export default function TreatmentDetailPage({
     } else {
       // 폴백: URL 복사
       navigator.clipboard.writeText(window.location.href);
-      alert("링크가 클립보드에 복사되었습니다.");
+      alert(t("alert.linkCopied"));
     }
   };
 
@@ -238,7 +240,7 @@ export default function TreatmentDetailPage({
         const cleanedPhone = phoneNumber.replace(/[^\d+\-]/g, "");
         window.location.href = `tel:${cleanedPhone}`;
       } else {
-        alert("등록된 전화번호가 없습니다.");
+        alert(t("alert.noPhoneNumber"));
       }
     } else if (type === "email") {
       // 메일 문의 - dnwhdgus93@gmail.com으로 전송, Supabase에도 저장
@@ -315,7 +317,7 @@ export default function TreatmentDetailPage({
 
     // 최대 3개 제한 체크
     if (countOnDate >= 3) {
-      alert("일정이 꽉 찼습니다! 3개 이하로 정리 후 다시 시도해 주세요.");
+      alert(t("alert.scheduleFull"));
       return;
     }
 
@@ -342,8 +344,8 @@ export default function TreatmentDetailPage({
     }
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
-    const procedureName = currentTreatment.treatment_name || "시술명 없음";
-    const hospital = currentTreatment.hospital_name || "병원명 없음";
+    const procedureName = currentTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital = currentTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = currentTreatment.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -357,7 +359,7 @@ export default function TreatmentDetailPage({
     });
 
     if (isDuplicate) {
-      alert("같은 날짜에 이미 동일한 시술이 추가되어 있습니다.");
+      alert(t("alert.duplicateSchedule"));
       return;
     }
 
@@ -394,7 +396,7 @@ export default function TreatmentDetailPage({
     } catch (error: any) {
       console.error("일정 저장 실패:", error);
       if (error.name === "QuotaExceededError") {
-        alert("저장 공간이 부족합니다. 브라우저 캐시를 정리해주세요.");
+        alert(t("alert.storageFull"));
       } else {
         alert(`일정 저장 중 오류가 발생했습니다: ${error.message}`);
       }
@@ -406,7 +408,7 @@ export default function TreatmentDetailPage({
       <div className="min-h-screen bg-white max-w-md mx-auto w-full">
         <Header />
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">로딩 중...</div>
+          <div className="text-gray-500">{t("common.loading")}</div>
         </div>
         <BottomNavigation />
       </div>
@@ -548,7 +550,7 @@ export default function TreatmentDetailPage({
             )}
             {!price && (
               <span className="text-2xl font-bold text-gray-900">
-                가격 문의
+                {t("common.priceInquiry")}
               </span>
             )}
             {originalPrice && price && (
@@ -723,7 +725,7 @@ export default function TreatmentDetailPage({
               <div className="flex items-start gap-3">
                 <div className="text-gray-400 flex-shrink-0 mt-0.5">📋</div>
                 <div className="flex-1">
-                  <span className="text-sm text-gray-600">카테고리</span>
+                  <span className="text-sm text-gray-600">{t("label.category")}</span>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {currentTreatment.category_large && (
                       <span className="bg-primary-light/20 text-primary-main px-2 py-1 rounded text-xs">
@@ -826,7 +828,7 @@ export default function TreatmentDetailPage({
                 <div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                     <FiMapPin className="text-gray-400" />
-                    <span className="font-medium">위치</span>
+                    <span className="font-medium">{t("label.location")}</span>
                   </div>
                   <p className="text-sm text-gray-500 pl-6">
                     {currentTreatment.hospital_name}
@@ -878,7 +880,7 @@ export default function TreatmentDetailPage({
             <button
               onClick={() => {
                 // 후기 작성 모달 열기 (추후 구현)
-                alert("후기 작성 기능은 준비 중입니다.");
+                alert(t("alert.reviewComingSoon"));
               }}
               className="text-primary-main text-sm font-medium"
             >
@@ -995,7 +997,7 @@ export default function TreatmentDetailPage({
           isOpen={isAddToScheduleModalOpen}
           onClose={() => setIsAddToScheduleModalOpen(false)}
           onDateSelect={handleAddToSchedule}
-          treatmentName={currentTreatment.treatment_name || "시술명 없음"}
+          treatmentName={currentTreatment.treatment_name || t("common.noTreatmentName")}
           categoryMid={currentTreatment.category_mid || null}
         />
       )}

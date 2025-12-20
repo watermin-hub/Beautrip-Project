@@ -25,6 +25,7 @@ import {
   loadMyConcernPosts,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface UserInfo {
   username: string;
@@ -32,6 +33,7 @@ interface UserInfo {
 }
 
 export default function MyPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -138,12 +140,25 @@ export default function MyPage() {
         setShowLogin(true);
         return;
       }
+      
+      console.log("🔍 [MyPage] Supabase 세션 확인 중...");
       const {
         data: { session },
+        error: sessionError,
       } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error("❌ [MyPage] 세션 확인 에러:", sessionError);
+      }
 
       // Supabase 세션이 있으면 로그인 상태로 설정
       if (session?.user) {
+        console.log("✅ [MyPage] 세션 확인됨:", {
+          userId: session.user.id,
+          email: session.user.email,
+          provider: session.user.app_metadata?.provider,
+        });
+        setIsLoggedIn(true);
         setIsLoggedIn(true);
 
         // localStorage에서 사용자 정보 확인
@@ -206,10 +221,11 @@ export default function MyPage() {
         setShowLogin(false);
       } else {
         // 세션이 없고 localStorage에도 없으면 로그아웃 상태
+        console.warn("⚠️ [MyPage] 세션과 localStorage 모두 없음 - 로그아웃 상태");
         setIsLoggedIn(false);
         setUserInfo(null);
         setShowLogin(true);
-        // localStorage도 정리
+        // localStorage도 정리 (이미 없을 수 있지만 확실히 정리)
         localStorage.removeItem("isLoggedIn");
         localStorage.removeItem("userInfo");
         localStorage.removeItem("userId");
@@ -335,7 +351,7 @@ export default function MyPage() {
 
       {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between border-b border-gray-100">
-        <h1 className="text-xl font-bold text-gray-900">마이페이지</h1>
+        <h1 className="text-xl font-bold text-gray-900">{t("mypage.title")}</h1>
       </div>
 
       {/* User Profile Card */}
@@ -357,8 +373,8 @@ export default function MyPage() {
               {userInfo.provider && (
                 <p className="text-xs text-gray-500">
                   {userInfo.provider === "id"
-                    ? "일반 로그인"
-                    : `${userInfo.provider.toUpperCase()} 로그인`}
+                    ? t("mypage.normalLogin")
+                    : `${userInfo.provider.toUpperCase()} ${t("mypage.normalLogin")}`}
                 </p>
               )}
             </div>
@@ -370,7 +386,7 @@ export default function MyPage() {
               <div className="w-6 h-6 bg-primary-main rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">P</span>
               </div>
-              <span className="text-sm text-gray-700">내 포인트</span>
+              <span className="text-sm text-gray-700">{t("mypage.myPoints")}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-primary-main">
@@ -400,6 +416,7 @@ function MainContent({
   router: any;
   onLogout: () => void;
 }) {
+  const { t } = useLanguage();
   const [favoriteCount, setFavoriteCount] = useState({
     procedures: 0,
     hospitals: 0,
@@ -550,42 +567,61 @@ function MainContent({
       {/* AI 리포트 & AI 피부분석 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <MenuItem
-          icon={FiFileText}
-          label="AI 리포트"
-          onClick={() => {
-            alert("AI 리포트 기능은 준비 중입니다.");
-          }}
-        />
-        <MenuItem
           icon={FiActivity}
-          label="AI 피부분석"
+          label={t("mypage.aiSkinAnalysis")}
           onClick={() => {
-            alert("AI 피부분석 기능은 준비 중입니다.");
+            router.push("/");
+            // 페이지 로드 후 AI 피부분석 배너로 스크롤하거나 모달 열기
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("openAIAnalysis"));
+            }, 500);
           }}
           isButton
+        />
+        <MenuItem
+          icon={FiFileText}
+          label={t("mypage.aiReport")}
+          onClick={() => {
+            // 가장 마지막에 본 결과 페이지로 이동
+            const lastAnalysis = localStorage.getItem("lastAIAnalysisResult");
+            if (lastAnalysis) {
+              try {
+                const parsed = JSON.parse(lastAnalysis);
+                if (parsed.imageData) {
+                  // 결과 페이지로 이동 (이미지 데이터 포함)
+                  router.push("/ai-skin-analysis-result");
+                  return;
+                }
+              } catch (e) {
+                console.error("최근 분석 결과 파싱 실패:", e);
+              }
+            }
+            // 결과가 없으면 결과 페이지로 이동 (이미지 없이)
+            router.push("/ai-skin-analysis-result");
+          }}
         />
       </div>
 
       {/* 찜목록 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">찜목록</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{t("mypage.favoritesTitle")}</h3>
         </div>
         <MenuItem
           icon={FiHeart}
-          label="시술"
+          label={t("mypage.procedure")}
           badge={favoriteCount.procedures}
           onClick={() => router.push("/favorites?type=procedure")}
         />
         <MenuItem
           icon={FiHeart}
-          label="병원"
+          label={t("mypage.hospital")}
           badge={favoriteCount.hospitals}
           onClick={() => router.push("/favorites?type=clinic")}
         />
         <MenuItem
           icon={FiHeart}
-          label="좋아요한 글"
+          label={t("mypage.likedPosts")}
           badge={likedPostsCount}
           onClick={async () => {
             try {
@@ -594,11 +630,11 @@ function MainContent({
                 // 좋아요한 글 목록 페이지로 이동
                 router.push("/liked-posts");
               } else {
-                alert("좋아요한 글을 불러올 수 없습니다.");
+                alert(t("mypage.loadLikedPostsError"));
               }
             } catch (error) {
               console.error("좋아요한 글 로드 실패:", error);
-              alert("좋아요한 글을 불러오는 중 오류가 발생했습니다.");
+              alert(t("mypage.loadLikedPostsErrorDesc"));
             }
           }}
         />
@@ -608,16 +644,16 @@ function MainContent({
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <MenuItem
           icon={FiCalendar}
-          label="저장한 일정 보기"
+          label={t("mypage.viewSchedule")}
           onClick={() => {
-            router.push("/schedule?tab=saved");
+            router.push("/schedule?tab=schedule");
           }}
         />
         <MenuItem
           icon={FiCalendar}
-          label="내 일정 보기"
+          label={t("mypage.viewSavedSchedule")}
           onClick={() => {
-            router.push("/schedule?tab=schedule");
+            router.push("/schedule?tab=saved");
           }}
         />
       </div>
@@ -626,33 +662,28 @@ function MainContent({
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <MenuItem
           icon={FiEdit3}
-          label="내가 쓴 후기"
-          badge={reviewCount}
-          onClick={() => {
-            router.push("/community/my-posts");
-          }}
-        />
-        <MenuItem
-          icon={FiEdit3}
-          label="글 작성"
+          label={t("mypage.writePost")}
           onClick={() => {
             router.push("/community/write");
           }}
           isButton
         />
+        <MenuItem
+          icon={FiEdit3}
+          label={t("mypage.myReviews")}
+          badge={reviewCount}
+          onClick={() => {
+            router.push("/community/my-posts");
+          }}
+        />
       </div>
 
       {/* 언어 / 통화 설정 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900">
-            언어 / 통화 설정
-          </h3>
-        </div>
         <MenuItem
           icon={FiGlobe}
-          label="언어"
-          value={
+          label={t("mypage.languageCurrency")}
+          value={`${
             language === "KR"
               ? "한국어"
               : language === "EN"
@@ -660,14 +691,27 @@ function MainContent({
               : language === "JP"
               ? "日本語"
               : "中文"
-          }
-          onClick={handleLanguageChange}
-        />
-        <MenuItem
-          icon={FiDollarSign}
-          label="통화"
-          value={currency}
-          onClick={handleCurrencyChange}
+          } / ${currency}`}
+          onClick={() => {
+            // 언어와 통화를 함께 변경
+            const languages = ["KR", "EN", "JP", "CN"];
+            const currencies = ["KRW", "USD", "JPY", "CNY"];
+            const currentLangIndex = languages.indexOf(language);
+            const currentCurrIndex = currencies.indexOf(currency);
+            
+            // 다음 언어/통화 조합으로 변경
+            const nextLangIndex = (currentLangIndex + 1) % languages.length;
+            const nextCurrIndex = (currentCurrIndex + 1) % currencies.length;
+            
+            const nextLanguage = languages[nextLangIndex];
+            const nextCurrency = currencies[nextCurrIndex];
+            
+            setLanguage(nextLanguage);
+            setCurrency(nextCurrency);
+            localStorage.setItem("language", nextLanguage);
+            localStorage.setItem("currency", nextCurrency);
+            window.dispatchEvent(new Event("languageChanged"));
+          }}
         />
       </div>
 
@@ -675,9 +719,9 @@ function MainContent({
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <MenuItem
           icon={FiLogOut}
-          label="로그아웃"
+          label={t("mypage.logout")}
           onClick={async () => {
-            if (confirm("정말 로그아웃 하시겠습니까?")) {
+            if (confirm(t("mypage.logoutConfirm"))) {
               await onLogout();
             }
           }}

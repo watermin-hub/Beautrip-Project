@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FiArrowLeft, FiEye, FiEyeOff, FiChevronDown } from "react-icons/fi";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import type { LanguageCode } from "@/contexts/LanguageContext";
 
@@ -18,6 +19,7 @@ export default function SignupModal({
   onClose,
   onSignupSuccess,
 }: SignupModalProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -279,7 +281,7 @@ export default function SignupModal({
                   setEmail(e.target.value);
                   setError("");
                 }}
-                placeholder="이메일을 입력하세요"
+                placeholder={t("placeholder.email")}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent"
                 disabled={isLoading}
               />
@@ -297,7 +299,7 @@ export default function SignupModal({
                     setPassword(e.target.value);
                     setError("");
                   }}
-                  placeholder="비밀번호를 입력하세요 (6자 이상)"
+                  placeholder={t("placeholder.passwordMin")}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent pr-12"
                   disabled={isLoading}
                 />
@@ -328,7 +330,7 @@ export default function SignupModal({
                     setConfirmPassword(e.target.value);
                     setError("");
                   }}
-                  placeholder="비밀번호를 다시 입력하세요"
+                  placeholder={t("placeholder.passwordConfirm")}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent pr-12"
                   disabled={isLoading}
                 />

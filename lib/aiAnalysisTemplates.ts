@@ -428,3 +428,4 @@ export function getRandomAnalysisResult(): SkinAnalysisResult {
   const randomIndex = Math.floor(Math.random() * analysisTemplates.length);
   return analysisTemplates[randomIndex];
 }
+

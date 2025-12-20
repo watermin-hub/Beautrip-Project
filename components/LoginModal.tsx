@@ -6,6 +6,7 @@ import { FiArrowLeft, FiGlobe, FiEye, FiEyeOff } from "react-icons/fi";
 import Image from "next/image";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export default function LoginModal({
   onClose,
   onLoginSuccess,
 }: LoginModalProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [showIdLogin, setShowIdLogin] = useState(false);
   const [showOtherMethods, setShowOtherMethods] = useState(false);
@@ -387,24 +389,45 @@ export default function LoginModal({
 
     try {
       if (provider === "google") {
-        // Supabase Google OAuth 로그인
+        // 리다이렉트 URL 설정 (window.location.origin 사용으로 포트 변경에도 안전)
+        const redirectUrl = `${window.location.origin}/auth/callback`;
+        console.log("🔗 [Google OAuth] 리다이렉트 URL:", redirectUrl);
+        console.log("🔗 [Google OAuth] 현재 origin:", window.location.origin);
+
+        // Supabase Google OAuth 로그인 (queryParams 제거 - Supabase가 자동 처리)
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
-            queryParams: {
-              access_type: "offline",
-              prompt: "consent",
-            },
+            redirectTo: redirectUrl,
+            // queryParams 제거: Supabase가 자동으로 처리하며, 잘못된 파라미터가 400 에러를 일으킬 수 있음
           },
         });
 
         if (error) {
+          console.error("❌ [Google OAuth] Supabase 요청 에러:", error);
           throw error;
         }
 
+        // ✅ 성공 확인: 첫 이동 URL이 Supabase URL이어야 함
+        // 정상: https://[PROJECT_REF].supabase.co/auth/v1/authorize?provider=google...
+        // 비정상: accounts.google.com/signin/oauth/consent?... (직접 Google로 보내는 경우)
+        if (data?.url) {
+          console.log("✅ [Google OAuth] 리다이렉트 URL 생성됨:", data.url);
+          const isSupabaseUrl = data.url.includes(
+            ".supabase.co/auth/v1/authorize"
+          );
+          if (isSupabaseUrl) {
+            console.log("✅ [Google OAuth] 정상: Supabase URL로 이동합니다");
+          } else {
+            console.warn(
+              "⚠️ [Google OAuth] 경고: Supabase URL이 아닙니다. 확인 필요:",
+              data.url
+            );
+          }
+        }
+
         // OAuth는 리다이렉트되므로 여기서는 로딩만 표시
-        // 실제 로그인 처리는 onAuthStateChange에서 처리됨
+        // 실제 로그인 처리는 /auth/callback 페이지에서 처리됨
       } else {
         // 다른 소셜 로그인은 추후 구현
         console.log(`${provider} 로그인은 아직 구현되지 않았습니다.`);
@@ -420,7 +443,7 @@ export default function LoginModal({
 
   const handleIdLogin = async () => {
     if (!userId || !password) {
-      alert("아이디와 비밀번호를 입력해주세요.");
+      alert(t("auth.enterEmailPassword"));
       return;
     }
 
@@ -485,7 +508,7 @@ export default function LoginModal({
           // 보안상 비밀번호 검증은 필수이므로 로그인 허용하지 않음
           if (authError.message.includes("Invalid login credentials")) {
             // user_profiles에 사용자가 있어도 비밀번호가 틀렸으면 로그인 거부
-            alert("이메일 또는 비밀번호가 올바르지 않습니다.");
+            alert(t("auth.invalidCredentials"));
             setIsLoading(false);
             return;
           }
@@ -497,19 +520,19 @@ export default function LoginModal({
           setIsLoading(false);
           return;
         } else if (authError.message.includes("Email not confirmed")) {
-          alert("이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.");
+          alert(t("auth.emailNotVerified"));
           setIsLoading(false);
           return;
         }
         // 예상치 못한 에러인 경우에만 콘솔에 표시
         console.error("로그인 오류:", authError);
-        alert("로그인 중 오류가 발생했습니다. 다시 시도해주세요.");
+        alert(t("auth.loginError"));
         setIsLoading(false);
         return;
       }
 
       if (!authData.user) {
-        alert("로그인에 실패했습니다.");
+        alert(t("auth.loginFailed"));
         setIsLoading(false);
         return;
       }
@@ -664,7 +687,7 @@ export default function LoginModal({
                   type="email"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  placeholder="이메일을 입력하세요"
+                  placeholder={t("placeholder.email")}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent"
                   disabled={isLoading}
                 />
@@ -679,7 +702,7 @@ export default function LoginModal({
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="비밀번호를 입력하세요"
+                    placeholder={t("placeholder.password")}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-transparent pr-12"
                     disabled={isLoading}
                     onKeyDown={(e) => {

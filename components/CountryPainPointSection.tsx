@@ -323,7 +323,7 @@ export default function CountryPainPointSection() {
                 const thumbnailUrl = getThumbnailUrl(treatment);
                 const price = treatment.selling_price
                   ? `${Math.round(treatment.selling_price / 10000)}만원`
-                  : "가격 문의";
+                  : t("common.priceInquiry");
                 const rating = treatment.rating || 0;
                 const reviewCount = treatment.review_count || 0;
                 const discountRate = treatment.dis_rate

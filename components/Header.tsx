@@ -16,7 +16,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const router = useRouter();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   // 캘린더 모달이 열려있는지 확인
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
@@ -34,14 +34,20 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
   }, []);
 
   const languages = [
-    { code: "KR" as const, name: "한국어", flag: "🇰🇷" },
-    { code: "EN" as const, name: "English", flag: "🇺🇸" },
-    { code: "JP" as const, name: "日本語", flag: "🇯🇵" },
-    { code: "CN" as const, name: "中文", flag: "🇨🇳" },
+    { code: "KR" as const, nameKey: "header.language.korean", flag: "🇰🇷" },
+    { code: "EN" as const, nameKey: "header.language.english", flag: "🇺🇸" },
+    { code: "JP" as const, nameKey: "header.language.japanese", flag: "🇯🇵" },
+    { code: "CN" as const, nameKey: "header.language.chinese", flag: "🇨🇳" },
   ];
 
   const selectedLanguage =
     languages.find((lang) => lang.code === language) || languages[0];
+  
+  // 언어 이름을 번역 키로 가져오기
+  const getLanguageName = (code: string) => {
+    const lang = languages.find((l) => l.code === code);
+    return lang ? t(lang.nameKey) : t("header.language.korean");
+  };
 
   return (
     <>
@@ -62,7 +68,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
             {!logoError ? (
               <img
                 src="/beautrip-logo.png"
-                alt="BeauTrip"
+                alt={t("header.logoAlt")}
                 className="h-6 w-auto object-contain"
                 onError={() => setLogoError(true)}
               />
@@ -115,7 +121,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
                       >
                         <span>{lang.flag}</span>
                         <span className="text-sm text-gray-700">
-                          {lang.name}
+                          {t(lang.nameKey)}
                         </span>
                         {selectedLanguage.code === lang.code && (
                           <span className="ml-auto text-primary-main">✓</span>

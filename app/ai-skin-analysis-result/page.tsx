@@ -13,13 +13,19 @@ function AISkinAnalysisResultContent() {
   useEffect(() => {
     const loadImage = async () => {
       try {
-        // URL 파라미터에서 이미지 경로 가져오기
+        // 현재 로그인한 사용자 확인
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const currentUserId = session?.user?.id || localStorage.getItem("userId");
+
+        // URL 파라미터에서 이미지 경로 가져오기 (Supabase 업로드된 이미지 우선)
         const filePath = searchParams.get("image");
         console.log("이미지 경로:", filePath);
 
         if (filePath) {
           try {
-            // Supabase Storage에서 공개 URL 가져오기 (getPublicUrl은 error를 반환하지 않음)
+            // Supabase Storage에서 공개 URL 가져오기 (우선 사용)
             const { data } = supabase.storage
               .from("face-images")
               .getPublicUrl(filePath);
@@ -41,24 +47,14 @@ function AISkinAnalysisResultContent() {
               // 이미지가 실제로 로드되는지 확인
               const img = new Image();
               img.onload = () => {
-                console.log("이미지 로드 성공!");
+                console.log("Supabase 이미지 로드 성공!");
                 setImageUrl(data.publicUrl);
                 setLoading(false);
               };
               img.onerror = (error) => {
-                console.error("이미지 로드 실패:", data.publicUrl, error);
-                // fallback으로 localStorage 확인
-                const localImage = localStorage.getItem("capturedFaceImage");
-                if (localImage) {
-                  console.log("localStorage에서 이미지 사용");
-                  setImageUrl(localImage);
-                } else {
-                  console.error(
-                    "이미지를 찾을 수 없습니다. filePath:",
-                    filePath
-                  );
-                }
-                setLoading(false);
+                console.error("Supabase 이미지 로드 실패:", data.publicUrl, error);
+                // fallback으로 localStorage 확인 (본인 사진만)
+                loadLocalImage(currentUserId);
               };
               img.src = data.publicUrl;
               return;
@@ -71,32 +67,46 @@ function AISkinAnalysisResultContent() {
             }
           } catch (urlError) {
             console.error("URL 생성 중 오류:", urlError);
-            // fallback으로 localStorage 확인
-            const localImage = localStorage.getItem("capturedFaceImage");
-            if (localImage) {
-              console.log("localStorage에서 이미지 사용 (URL 생성 실패 후)");
-              setImageUrl(localImage);
-              setLoading(false);
-              return;
-            }
-            throw urlError;
+            // fallback으로 localStorage 확인 (본인 사진만)
+            loadLocalImage(currentUserId);
+            return;
           }
         }
 
-        // localStorage에서 임시 이미지 가져오기 (fallback)
-        const localImage = localStorage.getItem("capturedFaceImage");
-        if (localImage) {
-          console.log("localStorage에서 이미지 사용 (fallback)");
-          setImageUrl(localImage);
+        // URL 파라미터가 없으면 localStorage에서 본인 사진 확인
+        loadLocalImage(currentUserId);
+
+        function loadLocalImage(userId: string | null) {
+          // 먼저 최근 분석 결과 확인 (userId 일치 확인)
+          const lastAnalysis = localStorage.getItem("lastAIAnalysisResult");
+          if (lastAnalysis) {
+            try {
+              const parsed = JSON.parse(lastAnalysis);
+              // 본인의 사진인지 확인
+              if (parsed.imageData && parsed.userId === userId) {
+                console.log("최근 분석 결과에서 본인 이미지 사용");
+                setImageUrl(parsed.imageData);
+                setLoading(false);
+                return;
+              }
+            } catch (e) {
+              console.error("최근 분석 결과 파싱 실패:", e);
+            }
+          }
+
+          // localStorage에서 직접 저장된 이미지 확인 (userId 확인 불가하므로 마지막 fallback)
+          const localImage = localStorage.getItem("capturedFaceImage");
+          if (localImage) {
+            console.log("localStorage에서 이미지 사용 (fallback)");
+            setImageUrl(localImage);
+            setLoading(false);
+            return;
+          }
+
+          setLoading(false);
         }
       } catch (error) {
         console.error("이미지 로드 오류:", error);
-        // 에러 발생 시 localStorage 확인
-        const localImage = localStorage.getItem("capturedFaceImage");
-        if (localImage) {
-          setImageUrl(localImage);
-        }
-      } finally {
         setLoading(false);
       }
     };

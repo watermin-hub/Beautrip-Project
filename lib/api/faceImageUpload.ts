@@ -39,3 +39,4 @@ export async function uploadFaceImageToStorage(
 
   return { filePath };
 }
+

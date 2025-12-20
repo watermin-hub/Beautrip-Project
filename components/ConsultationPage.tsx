@@ -3,22 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import PostList from "./PostList";
-
-// 고민상담소 카테고리 7가지
-const CONCERN_CATEGORIES = [
-  { id: null, label: "전체" },
-  { id: "피부 고민", label: "피부 고민" },
-  { id: "시술 고민", label: "시술 고민" },
-  { id: "병원 선택", label: "병원 선택" },
-  { id: "가격 문의", label: "가격 문의" },
-  { id: "회복 기간", label: "회복 기간" },
-  { id: "부작용", label: "부작용" },
-  { id: "기타", label: "기타" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ConsultationPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // 고민상담소 카테고리 7가지
+  const CONCERN_CATEGORIES = [
+    { id: null, label: "전체" },
+    { id: "피부 고민", label: "피부 고민" },
+    { id: "시술 고민", label: "시술 고민" },
+    { id: "병원 선택", label: "병원 선택" },
+    { id: "가격 문의", label: t("common.priceInquiry") },
+    { id: "회복 기간", label: "회복 기간" },
+    { id: "부작용", label: "부작용" },
+    { id: "기타", label: "기타" },
+  ];
 
   const handleCategoryClick = (categoryId: string | null) => {
     setSelectedCategory(categoryId);

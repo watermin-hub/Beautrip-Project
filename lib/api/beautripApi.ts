@@ -1,6 +1,9 @@
 // Beautrip API 관련 유틸리티 함수
 import { supabase } from "../supabase";
 
+// 언어 코드 타입
+export type LanguageCode = "KR" | "EN" | "JP" | "CN";
+
 // Supabase 테이블 이름
 const TABLE_NAMES = {
   TREATMENT_MASTER: "treatment_master",
@@ -11,6 +14,29 @@ const TABLE_NAMES = {
   KEYWORD_MONTHLY_TRENDS: "keyword_monthly_trends",
   CATEGORY_TOGGLE_MAP: "category_toggle_map",
 };
+
+// 언어별 treatment_master 테이블 이름 반환
+export function getTreatmentTableName(language?: LanguageCode): string {
+  // 클라이언트 사이드에서 언어 가져오기 (localStorage 또는 기본값)
+  let lang: LanguageCode = language || "KR";
+  
+  if (typeof window !== "undefined" && !language) {
+    const saved = localStorage.getItem("language") as LanguageCode;
+    if (saved && (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")) {
+      lang = saved;
+    }
+  }
+
+  // 언어별 테이블 이름 매핑
+  const tableMap: Record<LanguageCode, string> = {
+    KR: "treatment_master",
+    EN: "treatment_master_en",
+    JP: "treatment_master_jp",
+    CN: "treatment_master_cn",
+  };
+
+  return tableMap[lang] || "treatment_master";
+}
 
 // Supabase 클라이언트 안전 접근 헬퍼
 // 환경변수가 없어서 supabase가 초기화되지 않은 경우
@@ -179,9 +205,10 @@ export async function loadTreatments(): Promise<Treatment[]> {
     console.log("🔄 전체 데이터 로드 시작...");
 
     // 페이지네이션으로 모든 데이터 가져오기
+    const treatmentTable = getTreatmentTableName();
     while (hasMore) {
       const { data, error } = await client
-        .from(TABLE_NAMES.TREATMENT_MASTER)
+        .from(treatmentTable)
         .select("*")
         .range(from, from + pageSize - 1);
 
@@ -257,16 +284,30 @@ export async function loadTreatmentsPaginated(
       return { data: [], total: 0, hasMore: false };
     }
 
+    const treatmentTable = getTreatmentTableName();
     let query = client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(treatmentTable)
       .select("*", { count: "exact" });
 
     // 필터 적용 (최소 2글자 이상일 때만 검색)
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
       const term = filters.searchTerm.toLowerCase().trim();
-      query = query.or(
-        `treatment_name.ilike.%${term}%,hospital_name.ilike.%${term}%,treatment_hashtags.ilike.%${term}%`
-      );
+      // 특수문자 이스케이프 (PostgreSQL ILIKE에서 %와 _는 와일드카드이므로 이스케이프 필요)
+      // 하지만 Supabase는 자동으로 처리하므로 여기서는 기본 검증만 수행
+      try {
+        query = query.or(
+          `treatment_name.ilike.%${term}%,hospital_name.ilike.%${term}%,treatment_hashtags.ilike.%${term}%`
+        );
+      } catch (queryError) {
+        console.error("쿼리 생성 오류:", {
+          queryError,
+          searchTerm: term,
+          errorType: typeof queryError,
+          errorMessage: queryError instanceof Error ? queryError.message : String(queryError),
+        });
+        // 쿼리 생성 실패 시 빈 결과 반환
+        return { data: [], total: 0, hasMore: false };
+      }
     } else if (filters?.searchTerm && filters.searchTerm.trim().length === 1) {
       // 1글자일 때는 검색하지 않음 (빈 결과 반환)
       return { data: [], total: 0, hasMore: false };
@@ -341,8 +382,46 @@ export async function loadTreatmentsPaginated(
       }
 
       if (error) {
-        console.error("Supabase 쿼리 오류:", error);
-        throw new Error(`Supabase 오류: ${error.message}`);
+        // 에러 객체의 모든 속성을 확인하기 위해 JSON.stringify 사용
+        const errorString = JSON.stringify(error, null, 2);
+        const errorKeys = Object.keys(error || {});
+        
+        console.error("Supabase 쿼리 오류 (랜덤 정렬):", {
+          error,
+          errorString,
+          errorKeys,
+          errorType: typeof error,
+          errorConstructor: error?.constructor?.name,
+          message: error?.message,
+          details: error?.details,
+          hint: error?.hint,
+          code: error?.code,
+          status: (error as any)?.status,
+          statusText: (error as any)?.statusText,
+          // 추가 디버깅 정보
+          queryInfo: {
+            table: treatmentTable,
+            page,
+            pageSize,
+            filters,
+          },
+        });
+        
+        // 에러 메시지 추출 (다양한 형식 지원)
+        let errorMessage = "알 수 없는 Supabase 오류";
+        if (error?.message) {
+          errorMessage = error.message;
+        } else if (error?.details) {
+          errorMessage = error.details;
+        } else if (error?.hint) {
+          errorMessage = error.hint;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        } else if (errorString && errorString !== "{}") {
+          errorMessage = `Supabase 오류: ${errorString}`;
+        }
+        
+        throw new Error(`Supabase 오류: ${errorMessage}`);
       }
 
       if (!data) {
@@ -387,8 +466,46 @@ export async function loadTreatmentsPaginated(
       }
 
       if (error) {
-        console.error("Supabase 쿼리 오류:", error);
-        throw new Error(`Supabase 오류: ${error.message}`);
+        // 에러 객체의 모든 속성을 확인하기 위해 JSON.stringify 사용
+        const errorString = JSON.stringify(error, null, 2);
+        const errorKeys = Object.keys(error || {});
+        
+        console.error("Supabase 쿼리 오류 (일반 정렬):", {
+          error,
+          errorString,
+          errorKeys,
+          errorType: typeof error,
+          errorConstructor: error?.constructor?.name,
+          message: error?.message,
+          details: error?.details,
+          hint: error?.hint,
+          code: error?.code,
+          status: (error as any)?.status,
+          statusText: (error as any)?.statusText,
+          // 추가 디버깅 정보
+          queryInfo: {
+            table: treatmentTable,
+            page,
+            pageSize,
+            filters,
+          },
+        });
+        
+        // 에러 메시지 추출 (다양한 형식 지원)
+        let errorMessage = "알 수 없는 Supabase 오류";
+        if (error?.message) {
+          errorMessage = error.message;
+        } else if (error?.details) {
+          errorMessage = error.details;
+        } else if (error?.hint) {
+          errorMessage = error.hint;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        } else if (errorString && errorString !== "{}") {
+          errorMessage = `Supabase 오류: ${errorString}`;
+        }
+        
+        throw new Error(`Supabase 오류: ${errorMessage}`);
       }
 
       if (!data) {
@@ -433,8 +550,9 @@ export async function getTreatmentAutocomplete(
     }
 
     const term = searchTerm.toLowerCase();
+    const treatmentTable = getTreatmentTableName();
     const { data, error } = await client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(treatmentTable)
       .select("category_small, hospital_name")
       .or(`category_small.ilike.%${term}%,hospital_name.ilike.%${term}%`)
       .limit(limit * 2);
@@ -851,8 +969,9 @@ export async function loadRelatedTreatments(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
+    const treatmentTable = getTreatmentTableName();
     let query = client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(treatmentTable)
       .select("*")
       .eq("treatment_name", treatmentName);
 
@@ -886,8 +1005,9 @@ export async function loadHospitalTreatments(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
+    const treatmentTable = getTreatmentTableName();
     let query = client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(treatmentTable)
       .select("*")
       .eq("hospital_name", hospitalName);
 
@@ -983,8 +1103,9 @@ export async function loadTreatmentsByKey(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
+    const treatmentTable = getTreatmentTableName();
     const { data, error } = await client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(treatmentTable)
       .select("*")
       .eq("platform", platform)
       .eq("hospital_id_rd", hospitalIdRd);
@@ -1012,8 +1133,9 @@ export async function loadTreatmentsByHospitalIdRd(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
+    const treatmentTable = getTreatmentTableName();
     const { data, error } = await client
-      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .from(treatmentTable)
       .select("*")
       .eq("hospital_id_rd", hospitalIdRd);
 
@@ -2424,7 +2546,7 @@ export interface ConcernPostData {
   title: string;
   concern_category: string;
   content: string;
-  images?: string[]; // 이미지 URL 배열 (비필수)
+  image_paths?: string[]; // 이미지 URL 배열 (비필수)
   user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
@@ -2538,7 +2660,7 @@ export async function saveConcernPost(
       title: data.title,
       concern_category: data.concern_category,
       content: data.content,
-      images: data.images && data.images.length > 0 ? data.images : null,
+      image_paths: data.image_paths && data.image_paths.length > 0 ? data.image_paths : null,
     };
 
     const { data: insertedData, error } = await supabase
@@ -2756,8 +2878,8 @@ export async function loadConcernPosts(
     const processedData = await Promise.all(
       data.map(async (post: any) => {
         // 이미지 URL 처리 (Storage 경로를 getPublicUrl로 변환)
-        if (post.images && Array.isArray(post.images)) {
-          post.images = post.images.map((imgUrl: string) => {
+        if (post.image_paths && Array.isArray(post.image_paths)) {
+          post.image_paths = post.image_paths.map((imgUrl: string) => {
             // 이미 공개 URL이면 그대로 반환
             if (imgUrl.startsWith("http://") || imgUrl.startsWith("https://")) {
               return imgUrl;
@@ -3533,56 +3655,35 @@ export interface PostLike {
 }
 
 // 현재 사용자 ID 가져오기 (헬퍼 함수)
-// Supabase 세션 또는 localStorage의 userId 확인
+// Supabase 세션만 사용 (localStorage fallback 제거하여 계정별 데이터 분리 보장)
 async function getCurrentUserId(): Promise<string | null> {
   try {
     const client = getSupabaseOrNull();
     if (!client) {
-      // Supabase 클라이언트가 없어도 localStorage에서 userId 확인
-      if (typeof window !== "undefined") {
-        const savedUserId = localStorage.getItem("userId");
-        if (savedUserId) {
-          return savedUserId;
-        }
-      }
+      console.warn("Supabase 클라이언트가 초기화되지 않았습니다.");
       return null;
     }
 
-    // 1. 먼저 Supabase 세션 확인
+    // Supabase 세션만 확인 (localStorage fallback 제거)
     const {
       data: { user },
       error,
     } = await client.auth.getUser();
 
-    if (!error && user) {
+    if (error) {
+      console.warn("Supabase 세션 확인 실패:", error.message);
+      return null;
+    }
+
+    if (user) {
+      // 세션이 있으면 userId 반환
       return user.id;
     }
 
-    // 2. Supabase 세션이 없으면 localStorage에서 userId 확인
-    if (typeof window !== "undefined") {
-      const savedUserId = localStorage.getItem("userId");
-      const isLoggedIn = localStorage.getItem("isLoggedIn");
-
-      // localStorage에 로그인 정보가 있으면 userId 반환
-      if (isLoggedIn === "true" && savedUserId) {
-        return savedUserId;
-      }
-    }
-
+    // 세션이 없으면 null 반환 (이전 계정의 데이터를 사용하지 않도록)
     return null;
   } catch (error) {
     console.error("사용자 ID 가져오기 실패:", error);
-
-    // 에러 발생 시에도 localStorage에서 userId 확인
-    if (typeof window !== "undefined") {
-      const savedUserId = localStorage.getItem("userId");
-      const isLoggedIn = localStorage.getItem("isLoggedIn");
-
-      if (isLoggedIn === "true" && savedUserId) {
-        return savedUserId;
-      }
-    }
-
     return null;
   }
 }

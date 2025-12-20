@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { FiX, FiCamera, FiFileText, FiHome, FiUser } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { FiX, FiCamera, FiFileText, FiHome, FiUser, FiEdit2, FiArrowLeft } from "react-icons/fi";
 import ProcedureReviewForm from "./ProcedureReviewForm";
 import HospitalReviewForm from "./HospitalReviewForm";
 import ConcernPostForm from "./ConcernPostForm";
+import {
+  loadMyProcedureReviews,
+  loadMyHospitalReviews,
+  loadMyConcernPosts,
+  ProcedureReviewData,
+  HospitalReviewData,
+  ConcernPostData,
+} from "@/lib/api/beautripApi";
+import { supabase } from "@/lib/supabase";
+import { formatTimeAgo } from "@/lib/utils/timeFormat";
 
 interface CommunityWriteModalProps {
   isOpen: boolean;
@@ -40,6 +50,79 @@ export default function CommunityWriteModal({
   onClose,
 }: CommunityWriteModalProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [showMyPosts, setShowMyPosts] = useState(false);
+  const [myPosts, setMyPosts] = useState<{
+    procedures: ProcedureReviewData[];
+    hospitals: HospitalReviewData[];
+    concerns: ConcernPostData[];
+  }>({ procedures: [], hospitals: [], concerns: [] });
+  const [loadingMyPosts, setLoadingMyPosts] = useState(false);
+  const [editingPost, setEditingPost] = useState<{
+    type: "procedure" | "hospital" | "concern";
+    data: any;
+  } | null>(null);
+
+  // 내 글 로드
+  useEffect(() => {
+    if (showMyPosts && isOpen) {
+      loadMyPosts();
+    }
+  }, [showMyPosts, isOpen]);
+
+  const loadMyPosts = async () => {
+    try {
+      setLoadingMyPosts(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      
+      if (!user) {
+        const savedUserId = localStorage.getItem("userId");
+        if (!savedUserId) {
+          alert("로그인이 필요합니다.");
+          setShowMyPosts(false);
+          return;
+        }
+        
+        const [procedures, hospitals, concerns] = await Promise.all([
+          loadMyProcedureReviews(savedUserId),
+          loadMyHospitalReviews(savedUserId),
+          loadMyConcernPosts(savedUserId),
+        ]);
+        
+        setMyPosts({ procedures, hospitals, concerns });
+        return;
+      }
+
+      const [procedures, hospitals, concerns] = await Promise.all([
+        loadMyProcedureReviews(user.id),
+        loadMyHospitalReviews(user.id),
+        loadMyConcernPosts(user.id),
+      ]);
+
+      setMyPosts({ procedures, hospitals, concerns });
+    } catch (error) {
+      console.error("내 글 로드 실패:", error);
+      alert("내 글을 불러오는데 실패했습니다.");
+    } finally {
+      setLoadingMyPosts(false);
+    }
+  };
+
+  const handleEditPost = (
+    type: "procedure" | "hospital" | "concern",
+    post: any
+  ) => {
+    setEditingPost({ type, data: post });
+    setShowMyPosts(false);
+    setSelectedOption(
+      type === "procedure"
+        ? "procedure-review"
+        : type === "hospital"
+        ? "hospital-review"
+        : "concern-post"
+    );
+  };
 
   if (!isOpen) return null;
 
@@ -48,7 +131,13 @@ export default function CommunityWriteModal({
   };
 
   const handleBack = () => {
-    setSelectedOption(null);
+    if (showMyPosts) {
+      setShowMyPosts(false);
+      setEditingPost(null);
+    } else {
+      setSelectedOption(null);
+      setEditingPost(null);
+    }
   };
 
   const handleSubmit = () => {
@@ -77,7 +166,21 @@ export default function CommunityWriteModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">글 작성하기</h2>
+            {showMyPosts ? (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleBack}
+                  className="p-1 hover:bg-gray-50 rounded-full transition-colors"
+                >
+                  <FiArrowLeft className="text-gray-600 text-xl" />
+                </button>
+                <h2 className="text-xl font-bold text-gray-900">내 글 관리</h2>
+              </div>
+            ) : (
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingPost ? "글 수정하기" : "글 작성하기"}
+              </h2>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-50 rounded-full transition-colors"
@@ -85,14 +188,139 @@ export default function CommunityWriteModal({
               <FiX className="text-gray-600 text-xl" />
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            어떤 이야기를 공유하고 싶으신가요?
-          </p>
+          {!showMyPosts && !editingPost && (
+            <p className="text-sm text-gray-500 mt-1">
+              어떤 이야기를 공유하고 싶으신가요?
+            </p>
+          )}
         </div>
 
         {/* Options or Form */}
         <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
-          {!selectedOption ? (
+          {showMyPosts ? (
+            <div className="space-y-4">
+              {loadingMyPosts ? (
+                <div className="text-center py-8 text-gray-500">
+                  내 글을 불러오는 중...
+                </div>
+              ) : (
+                <>
+                  {/* 시술 후기 */}
+                  {myPosts.procedures.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                        시술 후기 ({myPosts.procedures.length})
+                      </h3>
+                      <div className="space-y-2">
+                        {myPosts.procedures.map((post) => (
+                          <div
+                            key={post.id}
+                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {post.content?.substring(0, 50)}
+                                {post.content && post.content.length > 50
+                                  ? "..."
+                                  : ""}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatTimeAgo(post.created_at)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleEditPost("procedure", post)}
+                              className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                            >
+                              <FiEdit2 className="text-lg" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 병원 후기 */}
+                  {myPosts.hospitals.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                        병원 후기 ({myPosts.hospitals.length})
+                      </h3>
+                      <div className="space-y-2">
+                        {myPosts.hospitals.map((post) => (
+                          <div
+                            key={post.id}
+                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {post.content?.substring(0, 50)}
+                                {post.content && post.content.length > 50
+                                  ? "..."
+                                  : ""}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatTimeAgo(post.created_at)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleEditPost("hospital", post)}
+                              className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                            >
+                              <FiEdit2 className="text-lg" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 고민글 */}
+                  {myPosts.concerns.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                        고민글 ({myPosts.concerns.length})
+                      </h3>
+                      <div className="space-y-2">
+                        {myPosts.concerns.map((post) => (
+                          <div
+                            key={post.id}
+                            className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {(post as any).title || post.content?.substring(0, 50)}
+                                {!post.title && post.content && post.content.length > 50
+                                  ? "..."
+                                  : ""}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatTimeAgo(post.created_at)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleEditPost("concern", post)}
+                              className="ml-3 p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                            >
+                              <FiEdit2 className="text-lg" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {myPosts.procedures.length === 0 &&
+                    myPosts.hospitals.length === 0 &&
+                    myPosts.concerns.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        작성한 글이 없습니다.
+                      </div>
+                    )}
+                </>
+              )}
+            </div>
+          ) : !selectedOption ? (
             <div className="space-y-3">
               {writeOptions.map((option) => {
                 const Icon = option.icon;
@@ -128,9 +356,7 @@ export default function CommunityWriteModal({
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <button
                   onClick={() => {
-                    // TODO: 내 글 관리 페이지로 이동
-                    alert("내 글 관리 기능은 추후 구현 예정입니다.");
-                    onClose();
+                    setShowMyPosts(true);
                   }}
                   className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border-2 border-gray-200 hover:border-primary-main/30 transition-all text-left group"
                 >
@@ -159,16 +385,22 @@ export default function CommunityWriteModal({
                 <ProcedureReviewForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
+                  editData={editingPost?.type === "procedure" ? editingPost.data : undefined}
                 />
               )}
               {selectedOption === "hospital-review" && (
                 <HospitalReviewForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
+                  editData={editingPost?.type === "hospital" ? editingPost.data : undefined}
                 />
               )}
               {selectedOption === "concern-post" && (
-                <ConcernPostForm onBack={handleBack} onSubmit={handleSubmit} />
+                <ConcernPostForm
+                  onBack={handleBack}
+                  onSubmit={handleSubmit}
+                  editData={editingPost?.type === "concern" ? editingPost.data : undefined}
+                />
               )}
             </div>
           )}
