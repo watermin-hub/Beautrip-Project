@@ -5318,7 +5318,7 @@ export async function loadMyComments(
       const {
         data: { user },
       } = await client.auth.getUser();
-      currentUserId = user?.id || null;
+      currentUserId = user?.id || undefined;
     }
 
     if (!currentUserId) {
