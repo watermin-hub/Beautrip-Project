@@ -649,7 +649,6 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "pdp.operatingHours": "운영 시간",
     "pdp.providedProcedures": "제공 시술",
     "pdp.viewAll": "전체 보기",
-    "pdp.count": "개",
     // Currency
     "currency.KRW": "원",
     "currency.USD": "달러",
@@ -1296,7 +1295,6 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "pdp.operatingHours": "Operating Hours",
     "pdp.providedProcedures": "Provided Procedures",
     "pdp.viewAll": "View All",
-    "pdp.count": "",
     // Currency
     "currency.KRW": "KRW",
     "currency.USD": "USD",
@@ -1940,7 +1938,6 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "pdp.operatingHours": "営業時間",
     "pdp.providedProcedures": "提供施術",
     "pdp.viewAll": "すべて見る",
-    "pdp.count": "件",
     // Currency
     "currency.KRW": "ウォン",
     "currency.USD": "ドル",
@@ -2556,7 +2553,6 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "pdp.operatingHours": "营业时间",
     "pdp.providedProcedures": "提供疗程",
     "pdp.viewAll": "查看全部",
-    "pdp.count": "个",
     // Currency
     "currency.KRW": "韩元",
     "currency.USD": "美元",
