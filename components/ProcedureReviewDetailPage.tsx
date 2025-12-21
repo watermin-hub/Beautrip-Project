@@ -274,9 +274,9 @@ export default function ProcedureReviewDetailPage({
             <div>
               <span className="text-xs text-gray-500">{t("label.gender")}</span>
               <p className="text-base text-gray-900 mt-1">
-                {review.gender === "남" || review.gender === "Male"
+                {review.gender === "남"
                   ? t("label.genderMale")
-                  : review.gender === "여" || review.gender === "Female"
+                  : review.gender === "여"
                   ? t("label.genderFemale")
                   : review.gender}
               </p>

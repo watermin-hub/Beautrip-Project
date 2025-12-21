@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -19,10 +19,11 @@ import Image from "next/image";
 import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft, FiGlobe } from "react-icons/fi";
 
 function PostDetailContent() {
+  const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, language } = useLanguage();
-  const postId = searchParams.get("id");
+  const postId = (params?.id as string) || searchParams.get("id");
   const postType = searchParams.get("type") as
     | "procedure"
     | "hospital"

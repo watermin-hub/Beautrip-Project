@@ -954,15 +954,8 @@ export default function PostList({
       // reviewType과 id가 있으면 상세페이지로 이동
       if (post.reviewType && post.id) {
         const postId = String(post.id);
-
-        if (post.reviewType === "procedure") {
-          router.push(`/review/procedure/${postId}`);
-        } else if (post.reviewType === "hospital") {
-          router.push(`/review/hospital/${postId}`);
-        } else if (post.reviewType === "concern") {
-          // 고민글 상세보기는 추후 구현
-          router.push(`/community?tab=consultation`);
-        }
+        // 댓글 기능이 있는 새로운 상세 페이지로 이동
+        router.push(`/community/posts/${postId}?type=${post.reviewType}`);
       } else {
         console.warn("[PostList] 클릭 불가:", {
           reviewType: post.reviewType,

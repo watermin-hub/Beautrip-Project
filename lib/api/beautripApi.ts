@@ -2612,7 +2612,8 @@ export interface HospitalReviewData {
 
 // 고민글 데이터 인터페이스
 export interface ConcernPostData {
-  id?: string; // UUID
+  id?: string; // UUID (primary key)
+  uuid?: string; // UUID (별도 컬럼, 실제 DB에 있는 경우)
   title: string;
   concern_category: string;
   content: string;
@@ -2950,6 +2951,15 @@ export async function loadConcernPosts(
     // 이미지 URL 처리 및 닉네임 추가
     const processedData = await Promise.all(
       data.map(async (post: any) => {
+        // uuid가 있으면 id로 사용 (실제 DB 구조에 맞춤)
+        if (post.uuid && !post.id) {
+          post.id = post.uuid;
+        }
+        // id가 없으면 uuid를 id로 사용
+        if (!post.id && post.uuid) {
+          post.id = post.uuid;
+        }
+        
         // 이미지 URL 처리 (Storage 경로를 getPublicUrl로 변환)
         if (post.image_paths && Array.isArray(post.image_paths)) {
           post.image_paths = post.image_paths.map((imgUrl: string) => {
