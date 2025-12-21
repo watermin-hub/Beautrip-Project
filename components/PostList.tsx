@@ -1201,7 +1201,8 @@ export default function PostList({
           router.push(`/review/hospital/${postId}`);
         } else {
           // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-          const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+          // activeTab은 이미 "latest"로 좁혀져 있으므로 "latest"를 사용
+          const fromTab: "recommended" | "latest" | "popular" | "consultation" = "latest";
           router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
         }
       } else {
