@@ -52,7 +52,7 @@ export default function RecoveryGuidePage() {
       </div>
 
       {/* 본문 */}
-      <main className="px-4 pb-12 pt-[96px] space-y-6">
+      <main className="px-4 pb-12 pt-16 space-y-6">
         {/* 그룹 선택 카드 */}
         <section>
           <h2 className="text-sm font-semibold text-gray-900 mb-2">

@@ -21,12 +21,19 @@ import {
   isPostLiked,
   getPostLikeCount,
   getUserProfile,
+  getCommentCount,
+  incrementViewCount,
+  getViewCount,
 } from "@/lib/api/beautripApi";
 import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
 import { maskNickname } from "@/lib/utils/nicknameMask";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
+import CommentForm from "./CommentForm";
+import CommentList from "./CommentList";
+import LoginModal from "./LoginModal";
 
 interface HospitalReviewDetailPageProps {
   reviewId: string;
@@ -36,15 +43,40 @@ export default function HospitalReviewDetailPage({
   reviewId,
 }: HospitalReviewDetailPageProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [review, setReview] = useState<HospitalReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
   const [userTimezone, setUserTimezone] = useState<string | null>(null);
   const [userLocale, setUserLocale] = useState<string | null>(null);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
+    };
+    checkAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const loadReview = async () => {
@@ -76,6 +108,15 @@ export default function HospitalReviewDetailPage({
           ]);
           setIsLiked(liked);
           setLikeCount(count);
+          
+          // 댓글 수 로드
+          const commentCountResult = await getCommentCount(reviewId, "hospital");
+          setCommentCount(commentCountResult);
+          
+          // 조회수 증가 및 조회
+          await incrementViewCount(reviewId, "hospital");
+          const views = await getViewCount(reviewId, "hospital");
+          setViewCount(views);
         } else {
           console.warn("후기 데이터가 없습니다. reviewId:", reviewId);
         }
@@ -95,6 +136,12 @@ export default function HospitalReviewDetailPage({
   }, [reviewId]);
 
   const handleLike = async () => {
+    // 로그인 체크
+    if (!isLoggedIn) {
+      setShowLoginRequiredPopup(true);
+      return;
+    }
+
     try {
       const result = await togglePostLike(reviewId, "hospital_review");
       if (result.success) {
@@ -103,11 +150,18 @@ export default function HospitalReviewDetailPage({
         setLikeCount(newCount);
       } else {
         if (result.error?.includes("로그인이 필요")) {
-          alert("로그인이 필요합니다.");
+          setShowLoginRequiredPopup(true);
         }
       }
     } catch (error) {
       console.error("좋아요 처리 실패:", error);
+    }
+  };
+
+  const handleCommentAdded = async () => {
+    if (reviewId) {
+      const count = await getCommentCount(reviewId, "hospital");
+      setCommentCount(count);
     }
   };
 
@@ -151,7 +205,7 @@ export default function HospitalReviewDetailPage({
         </div>
 
         {/* 카테고리 태그 */}
-        <div className="px-4 pt-18 pb-2">
+        <div className="px-4 pt-16 pb-2">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-4 py-2 rounded-full text-xs font-semibold border border-primary-main/20">
             {review.category_large}
           </span>
@@ -187,133 +241,135 @@ export default function HospitalReviewDetailPage({
         </div>
 
         {/* 병원 정보 */}
-        <div className="px-4 py-6 space-y-4 border-b border-gray-100">
-          {/* 병원명 & 시술명 */}
-          <div className="space-y-3">
-            <div className="bg-gradient-to-r from-primary-light/5 to-primary-main/5 rounded-xl p-4 border border-primary-main/10">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                병원명
+        <div className="px-4 py-4 border-b border-gray-100">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
+            {/* 병원명 & 시술명 */}
+            <div className="space-y-3">
+              <div>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  병원명
+                </span>
+                <p className="text-lg font-bold text-gray-900 mt-2">
+                  {review.hospital_name}
+                </p>
+              </div>
+
+              {review.procedure_name && (
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    시술명
+                  </span>
+                  <p className="text-base font-semibold text-gray-900 mt-2">
+                    {review.procedure_name}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 만족도 */}
+            <div className="grid grid-cols-2 gap-3">
+              {review.overall_satisfaction && (
+                <div>
+                  <span className="text-xs text-gray-500 block mb-1">
+                    시술 만족도
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <FiStar
+                        key={star}
+                        className={`text-lg ${
+                          star <= review.overall_satisfaction!
+                            ? "text-yellow-400 fill-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-sm text-gray-700 ml-1">
+                      {review.overall_satisfaction}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {review.hospital_kindness && (
+                <div>
+                  <span className="text-xs text-gray-500 block mb-1">
+                    병원 만족도
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <FiStar
+                        key={star}
+                        className={`text-lg ${
+                          star <= review.hospital_kindness!
+                            ? "text-yellow-400 fill-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-sm text-gray-700 ml-1">
+                      {review.hospital_kindness}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 통역 정보 */}
+            <div>
+              <span className="text-xs text-gray-500 block mb-1">
+                통역 여부
               </span>
-              <p className="text-lg font-bold text-gray-900 mt-2">
-                {review.hospital_name}
+              <p
+                className={`text-base ${
+                  review.has_translation ? "text-green-600" : "text-gray-600"
+                }`}
+              >
+                {review.has_translation ? "✓ 있음" : "없음"}
               </p>
             </div>
 
-            {review.procedure_name && (
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  시술명
+            {review.has_translation && review.translation_satisfaction && (
+              <div>
+                <span className="text-xs text-gray-500 block mb-1">
+                  통역 만족도
                 </span>
-                <p className="text-base font-semibold text-gray-900 mt-2">
-                  {review.procedure_name}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* 만족도 */}
-          <div className="grid grid-cols-2 gap-4">
-            {review.overall_satisfaction && (
-              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200/50">
-                <span className="text-xs font-semibold text-gray-600 block mb-2">
-                  시술 만족도
-                </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
                       key={star}
-                      className={`text-xl transition-all ${
-                        star <= review.overall_satisfaction!
-                          ? "text-yellow-500 fill-yellow-500 scale-110"
+                      className={`text-lg ${
+                        star <= review.translation_satisfaction!
+                          ? "text-yellow-400 fill-yellow-400"
                           : "text-gray-300"
                       }`}
                     />
                   ))}
-                  <span className="text-base font-bold text-gray-900 ml-2">
-                    {review.overall_satisfaction}.0
+                  <span className="text-sm text-gray-700 ml-1">
+                    {review.translation_satisfaction}
                   </span>
                 </div>
               </div>
             )}
 
-            {review.hospital_kindness && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200/50">
-                <span className="text-xs font-semibold text-gray-600 block mb-2">
-                  병원 만족도
+            {review.visit_date && (
+              <div>
+                <span className="text-xs text-gray-500 block mb-1">
+                  병원 방문일
                 </span>
-                <div className="flex items-center gap-1.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <FiStar
-                      key={star}
-                      className={`text-xl transition-all ${
-                        star <= review.hospital_kindness!
-                          ? "text-yellow-500 fill-yellow-500 scale-110"
-                          : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                  <span className="text-base font-bold text-gray-900 ml-2">
-                    {review.hospital_kindness}.0
-                  </span>
+                <div className="flex items-center gap-1">
+                  <FiCalendar className="text-gray-400 text-sm" />
+                  <p className="text-base text-gray-900">
+                    {new Date(review.visit_date).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
                 </div>
               </div>
             )}
           </div>
-
-          {/* 통역 정보 */}
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <span className="text-xs font-semibold text-gray-500 block mb-2">
-              통역 여부
-            </span>
-            <p
-              className={`text-base font-semibold ${
-                review.has_translation ? "text-green-600" : "text-gray-600"
-              }`}
-            >
-              {review.has_translation ? "✓ 있음" : "없음"}
-            </p>
-          </div>
-
-          {review.has_translation && review.translation_satisfaction && (
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200/50">
-              <span className="text-xs font-semibold text-gray-600 block mb-2">
-                통역 만족도
-              </span>
-              <div className="flex items-center gap-1.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <FiStar
-                    key={star}
-                    className={`text-xl transition-all ${
-                      star <= review.translation_satisfaction!
-                        ? "text-yellow-500 fill-yellow-500 scale-110"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
-                <span className="text-base font-bold text-gray-900 ml-2">
-                  {review.translation_satisfaction}.0
-                </span>
-              </div>
-            </div>
-          )}
-
-          {review.visit_date && (
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
-              <span className="text-xs font-semibold text-gray-500 block mb-2">
-                병원 방문일
-              </span>
-              <div className="flex items-center gap-2">
-                <FiCalendar className="text-primary-main text-lg" />
-                <p className="text-base font-semibold text-gray-900">
-                  {new Date(review.visit_date).toLocaleDateString("ko-KR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 글 내용 */}
@@ -438,12 +494,12 @@ export default function HospitalReviewDetailPage({
 
           <button className="flex items-center gap-2 text-gray-600">
             <FiMessageCircle className="text-xl" />
-            <span className="text-sm font-medium">0</span>
+            <span className="text-sm font-medium">{commentCount}</span>
           </button>
 
           <button className="flex items-center gap-2 text-gray-600">
             <FiEye className="text-xl" />
-            <span className="text-sm font-medium">0</span>
+            <span className="text-sm font-medium">{viewCount}</span>
           </button>
 
           <button
@@ -469,8 +525,78 @@ export default function HospitalReviewDetailPage({
             <FiShare2 className="text-xl" />
           </button>
         </div>
+
+        {/* 댓글 섹션 */}
+        <div className="px-4 py-6 pb-24 border-t border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            댓글 ({commentCount})
+          </h3>
+          
+          {/* 댓글 작성 폼 */}
+          <div className="mb-6">
+            <CommentForm
+              postId={reviewId}
+              postType="hospital"
+              onSuccess={handleCommentAdded}
+            />
+          </div>
+
+          {/* 댓글 목록 */}
+          <CommentList
+            postId={reviewId}
+            postType="hospital"
+            onCommentAdded={handleCommentAdded}
+            refreshKey={commentCount}
+          />
+        </div>
       </div>
       <BottomNavigation />
+
+      {/* 로그인 필요 팝업 */}
+      {showLoginRequiredPopup && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t("common.loginRequired")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {t("common.loginRequiredMoreInfo")}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLoginRequiredPopup(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLoginRequiredPopup(false);
+                      setShowLoginModal(true);
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.login")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          setIsLoggedIn(true);
+        }}
+      />
     </div>
   );
 }

@@ -108,7 +108,7 @@ export default function AISkinAnalysisResultPage({
 
       <div className="max-w-md mx-auto bg-white">
         {/* 결과 헤더 */}
-        <div className="text-center pt-6 pb-4 px-5">
+        <div className="text-center pt-16 pb-4 px-5">
           <p className="text-xs text-gray-400">
             AI가 분석한 당신의 피부 상태입니다
           </p>

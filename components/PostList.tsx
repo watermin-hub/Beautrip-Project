@@ -27,6 +27,8 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { maskNickname } from "@/lib/utils/nicknameMask";
 import { translateText, type LanguageCode, detectLanguage } from "@/lib/utils/translation";
+import { supabase } from "@/lib/supabase";
+import LoginModal from "./LoginModal";
 
 interface Post {
   id: number | string;
@@ -490,6 +492,10 @@ export default function PostList({
       }
     >
   >({});
+  // 로그인 관련 상태
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // 좋아요 상태 로드 함수
   const loadLikesForPosts = async (posts: Post[]): Promise<Record<string, { isLiked: boolean; likeCount: number }>> => {
@@ -696,9 +702,34 @@ export default function PostList({
     return baseScore * timeMultiplier;
   };
 
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
+    };
+    checkAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // 좋아요 버튼 클릭 핸들러
   const handleLikeClick = async (e: React.MouseEvent, post: Post) => {
     e.stopPropagation();
+
+    // 로그인 체크
+    if (!isLoggedIn) {
+      setShowLoginRequiredPopup(true);
+      return;
+    }
 
     if (!post.reviewType || !post.id) {
       console.warn("좋아요 불가: reviewType 또는 id가 없습니다", post);
@@ -786,8 +817,16 @@ export default function PostList({
     // reviewType과 id가 있으면 상세페이지로 이동
     if (post.reviewType && post.id) {
       const postId = String(post.id);
-      // 댓글 기능이 있는 새로운 상세 페이지로 이동
-      router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+      // 시술 후기와 병원 후기는 전용 상세 페이지로, 고민글은 통합 상세 페이지로
+      if (post.reviewType === "procedure") {
+        router.push(`/review/procedure/${postId}`);
+      } else if (post.reviewType === "hospital") {
+        router.push(`/review/hospital/${postId}`);
+      } else {
+        // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+        const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+        router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
+      }
     } else {
       console.warn("[PostList] 클릭 불가:", {
         reviewType: post.reviewType,
@@ -1155,8 +1194,16 @@ export default function PostList({
       // reviewType과 id가 있으면 상세페이지로 이동
       if (post.reviewType && post.id) {
         const postId = String(post.id);
-        // 댓글 기능이 있는 새로운 상세 페이지로 이동
-        router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+        // 시술 후기와 병원 후기는 전용 상세 페이지로, 고민글은 통합 상세 페이지로
+        if (post.reviewType === "procedure") {
+          router.push(`/review/procedure/${postId}`);
+        } else if (post.reviewType === "hospital") {
+          router.push(`/review/hospital/${postId}`);
+        } else {
+          // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+          const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+          router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
+        }
       } else {
         console.warn("[PostList] 클릭 불가:", {
           reviewType: post.reviewType,
@@ -1439,7 +1486,16 @@ export default function PostList({
                 e.stopPropagation();
                 if (post.reviewType && post.id) {
                   const postId = String(post.id);
-                  router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+                  // 시술 후기와 병원 후기는 전용 상세 페이지로, 고민글은 통합 상세 페이지로
+                  if (post.reviewType === "procedure") {
+                    router.push(`/review/procedure/${postId}`);
+                  } else if (post.reviewType === "hospital") {
+                    router.push(`/review/hospital/${postId}`);
+                  } else {
+                    // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+                    const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                    router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
+                  }
                 }
               }}
               className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
@@ -1548,6 +1604,52 @@ export default function PostList({
             </div>
           </div>
         )}
+        
+        {/* 로그인 필요 팝업 */}
+        {showLoginRequiredPopup && (
+          <>
+            <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
+            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+              <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+                <div className="text-center">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">
+                    {t("common.loginRequired")}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    {t("common.loginRequiredMoreInfo")}
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowLoginRequiredPopup(false)}
+                      className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowLoginRequiredPopup(false);
+                        setShowLoginModal(true);
+                      }}
+                      className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t("common.login")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 로그인 모달 */}
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLoginSuccess={() => {
+            setShowLoginModal(false);
+            setIsLoggedIn(true);
+          }}
+        />
       </div>
     );
   }
@@ -1569,8 +1671,16 @@ export default function PostList({
       // reviewType과 id가 있으면 상세페이지로 이동
       if (post.reviewType && post.id) {
         const postId = String(post.id);
-        // 댓글 기능이 있는 새로운 상세 페이지로 이동
-        router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+        // 시술 후기와 병원 후기는 전용 상세 페이지로, 고민글은 통합 상세 페이지로
+        if (post.reviewType === "procedure") {
+          router.push(`/review/procedure/${postId}`);
+        } else if (post.reviewType === "hospital") {
+          router.push(`/review/hospital/${postId}`);
+        } else {
+          // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+          const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+          router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
+        }
       } else {
         console.warn("[PostList] 클릭 불가:", {
           reviewType: post.reviewType,
@@ -1891,7 +2001,16 @@ export default function PostList({
                 e.stopPropagation();
                 if (post.reviewType && post.id) {
                   const postId = String(post.id);
-                  router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+                  // 시술 후기와 병원 후기는 전용 상세 페이지로, 고민글은 통합 상세 페이지로
+                  if (post.reviewType === "procedure") {
+                    router.push(`/review/procedure/${postId}`);
+                  } else if (post.reviewType === "hospital") {
+                    router.push(`/review/hospital/${postId}`);
+                  } else {
+                    // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+                    const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                    router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
+                  }
                 }
               }}
               className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
@@ -1976,6 +2095,52 @@ export default function PostList({
             </div>
           )}
         </div>
+        
+        {/* 로그인 필요 팝업 */}
+        {showLoginRequiredPopup && (
+          <>
+            <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
+            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+              <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+                <div className="text-center">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">
+                    {t("common.loginRequired")}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    {t("common.loginRequiredMoreInfo")}
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowLoginRequiredPopup(false)}
+                      className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowLoginRequiredPopup(false);
+                        setShowLoginModal(true);
+                      }}
+                      className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                    >
+                      {t("common.login")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 로그인 모달 */}
+        <LoginModal
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLoginSuccess={() => {
+            setShowLoginModal(false);
+            setIsLoggedIn(true);
+          }}
+        />
       </div>
     );
   }
@@ -1990,8 +2155,16 @@ export default function PostList({
             // reviewType과 id가 있으면 상세페이지로 이동
             if (post.reviewType && post.id) {
               const postId = String(post.id);
-              // 모든 게시글 타입을 동일한 상세 페이지로 이동
-              router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+              // 시술 후기와 병원 후기는 전용 상세 페이지로, 고민글은 통합 상세 페이지로
+              if (post.reviewType === "procedure") {
+                router.push(`/review/procedure/${postId}`);
+              } else if (post.reviewType === "hospital") {
+                router.push(`/review/hospital/${postId}`);
+              } else {
+                // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+                const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
+              }
             }
           }}
           className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer ${
@@ -2151,7 +2324,9 @@ export default function PostList({
                   e.stopPropagation();
                   if (post.reviewType && post.id) {
                     const postId = String(post.id);
-                    router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+                    // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
+                    const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                    router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
                   }
                 }}
                 className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
@@ -2178,6 +2353,52 @@ export default function PostList({
           </div>
         </div>
       ))}
+      
+      {/* 로그인 필요 팝업 */}
+      {showLoginRequiredPopup && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t("common.loginRequired")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {t("common.loginRequiredMoreInfo")}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLoginRequiredPopup(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLoginRequiredPopup(false);
+                      setShowLoginModal(true);
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.login")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          setIsLoggedIn(true);
+        }}
+      />
     </div>
   );
 }

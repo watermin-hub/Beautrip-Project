@@ -45,7 +45,7 @@ function CommunityPostsContent() {
       </div>
 
       {/* Content */}
-      <div className="pb-20">
+      <div className="pt-16 pb-20">
         {/* 임시로 ReviewList 사용 (추후 카테고리별 필터링 구현) */}
         <ReviewList />
       </div>

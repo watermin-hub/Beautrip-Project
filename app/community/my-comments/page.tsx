@@ -138,7 +138,7 @@ export default function MyCommentsPage() {
       <Header />
 
       {/* Header */}
-      <div className="px-4 py-4 sticky top-[64px] bg-white z-10 border-b border-gray-100">
+      <div className="px-4 py-4 sticky top-[48px] bg-white z-10 border-b border-gray-100">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -153,7 +153,7 @@ export default function MyCommentsPage() {
       </div>
 
       {/* Comments List */}
-      <div className="px-4 pt-4 pb-24">
+      <div className="px-4 pt-16 pb-24">
         {loading ? (
           <div className="text-center py-8 text-gray-500">로딩 중...</div>
         ) : comments.length === 0 ? (

@@ -500,7 +500,7 @@ export default function TreatmentDetailPage({
         </div>
       </div>
 
-      <div className="pb-40">
+      <div className="pt-16 pb-40">
         {/* 메인 이미지 - 2:1 비율 */}
         <div className="relative w-full aspect-[2/1] bg-gray-100">
           <img

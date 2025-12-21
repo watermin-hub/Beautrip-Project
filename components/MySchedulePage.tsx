@@ -880,24 +880,58 @@ function SavedSchedulesTab({
     );
   };
 
-  // 모든 시술 목록을 시술 날짜 순서로 정렬하여 고정 (저장된 일정 탭용, 한 번만 계산)
-  // 하루에 최대 3개 시술만 표시 (일정 카드 3개 제한)
+  // 모든 시술 목록을 시술 날짜 순서로 정렬 (저장된 일정 탭용, 한 번만 계산)
   const selectedScheduleAllProceduresSorted = useMemo(() => {
-    // 시술 날짜 순서로 정렬
+    // 시술 날짜 순서로 정렬 (slice 제거 - 트랙 배정에서 자연스럽게 3개 제한)
     return selectedScheduleProcedures
       .filter((p) => !p.isRecovery)
       .sort((a, b) => {
         const dateA = new Date(a.procedureDate).getTime();
         const dateB = new Date(b.procedureDate).getTime();
         return dateA - dateB;
-      })
-      .slice(0, 3); // 최대 3개 시술
+      });
   }, [selectedScheduleProcedures]);
 
-  // 특정 날짜의 시술-회복기간 쌍 가져오기 (각 시술과 그 회복기간을 같은 줄에 배치) - 저장된 일정 탭용
-  // 시술 날짜에는 시술 바, 회복기간 날짜에는 회복 바를 같은 줄에 배치
-  // 줄 순서는 시술 날짜 순서로 고정
-  // 중요: 각 시술의 회복기간은 항상 그 시술의 줄에 고정되어야 함 (다른 시술의 줄로 올라가지 않음)
+  // 트랙 배정: 각 시술을 트랙(0,1,2)에 배정
+  const selectedScheduleTrackAssignments = useMemo(() => {
+    const assignments = new Map<number | string, number>(); // procedure.id -> trackIndex
+    const tracks: Array<{
+      endDate: Date | null;
+      procedure: ProcedureSchedule | null;
+    }> = [
+      { endDate: null, procedure: null },
+      { endDate: null, procedure: null },
+      { endDate: null, procedure: null },
+    ];
+
+    for (const proc of selectedScheduleAllProceduresSorted) {
+      const procDate = new Date(proc.procedureDate);
+      const endDate = new Date(procDate);
+      endDate.setDate(endDate.getDate() + proc.recoveryDays);
+
+      // 트랙 0, 1, 2를 확인하여 사용 가능한 트랙 찾기
+      let assignedTrack = -1;
+      for (let trackIndex = 0; trackIndex < 3; trackIndex++) {
+        const track = tracks[trackIndex];
+        if (!track.endDate || track.endDate < procDate) {
+          // 트랙이 비어있거나 마지막 interval의 end < 현재 start
+          assignedTrack = trackIndex;
+          track.endDate = endDate;
+          track.procedure = proc;
+          break;
+        }
+      }
+
+      if (assignedTrack >= 0) {
+        assignments.set(proc.id, assignedTrack);
+      }
+      // assignedTrack이 -1이면 3개 트랙 모두 막혀있음 (4개 이상 겹침)
+    }
+
+    return assignments;
+  }, [selectedScheduleAllProceduresSorted]);
+
+  // 특정 날짜의 트랙별 시술-회복기간 쌍 가져오기 (항상 3개 트랙 반환) - 저장된 일정 탭용
   const getSelectedScheduleProcedureRecoveryPairs = (
     date: Date
   ): Array<{
@@ -905,86 +939,123 @@ function SavedSchedulesTab({
     recovery: ProcedureSchedule | null;
     isProcedureDate: boolean;
     isRecoveryDate: boolean;
-    originalProcedure: ProcedureSchedule; // 원본 시술 정보 (회복기간 날짜에서도 필요)
+    originalProcedure: ProcedureSchedule | null; // 원본 시술 정보 (회복기간 날짜에서도 필요)
   }> => {
     const dateStr = formatDate(date);
     const allItems = selectedScheduleProcedureDates[dateStr] || [];
 
-    // 모든 시술을 기준으로 줄 만들기 (시술 날짜 순서로 고정)
-    // 각 시술마다 고정된 줄을 할당하고, 그 시술의 회복기간은 항상 그 줄에 표시
-    return selectedScheduleAllProceduresSorted
-      .map((proc) => {
-        // 이 날짜에 이 시술이 있는지 확인
-        const procedureOnDate = allItems.find(
+    // 항상 3개 트랙 반환
+    const tracks: Array<{
+      procedure: ProcedureSchedule | null;
+      recovery: ProcedureSchedule | null;
+      isProcedureDate: boolean;
+      isRecoveryDate: boolean;
+      originalProcedure: ProcedureSchedule | null;
+    }> = [
+      {
+        procedure: null,
+        recovery: null,
+        isProcedureDate: false,
+        isRecoveryDate: false,
+        originalProcedure: null,
+      },
+      {
+        procedure: null,
+        recovery: null,
+        isProcedureDate: false,
+        isRecoveryDate: false,
+        originalProcedure: null,
+      },
+      {
+        procedure: null,
+        recovery: null,
+        isProcedureDate: false,
+        isRecoveryDate: false,
+        originalProcedure: null,
+      },
+    ];
+
+    // 각 시술에 대해 해당 날짜에 트랙에 배정된 시술/회복기간 확인
+    for (const proc of selectedScheduleAllProceduresSorted) {
+      const trackIndex = selectedScheduleTrackAssignments.get(proc.id);
+      if (trackIndex === undefined || trackIndex < 0 || trackIndex >= 3)
+        continue;
+
+      const procDate = new Date(proc.procedureDate);
+      const procDateStr = formatDate(procDate);
+      const currentDateStr = formatDate(date);
+
+      // 시술이 실제로 존재하는지 확인
+      const procedureExistsOnDate =
+        selectedScheduleProcedureDates[procDateStr]?.some(
           (p) =>
             !p.isRecovery &&
             p.treatmentId === proc.treatmentId &&
             p.procedureName === proc.procedureName
-        ) as ProcedureSchedule | null;
+        ) || false;
 
-        // 이 시술의 회복기간이 이 날짜에 있는지 확인 (시술 날짜 + recoveryDays 계산)
-        // 먼저 회복기간 날짜 범위를 계산해서 이 날짜가 이 시술의 회복기간인지 확인
-        const procDate = new Date(proc.procedureDate);
-        const procDateStr = formatDate(procDate);
-        const currentDateStr = formatDate(date);
+      // 이 날짜에 이 시술이 있는지 확인
+      const procedureOnDate = allItems.find(
+        (p) =>
+          !p.isRecovery &&
+          p.treatmentId === proc.treatmentId &&
+          p.procedureName === proc.procedureName
+      ) as ProcedureSchedule | null;
 
-        // 회복기간 날짜 범위 계산
-        let isRecoveryDayForThisProcedure = false;
-        if (proc.recoveryDays > 0) {
-          for (let i = 1; i <= proc.recoveryDays; i++) {
-            const recoveryDate = new Date(procDate);
-            recoveryDate.setDate(recoveryDate.getDate() + i);
-            const recoveryDateStr = formatDate(recoveryDate);
-            if (recoveryDateStr === currentDateStr) {
-              isRecoveryDayForThisProcedure = true;
-              break;
-            }
+      // 회복기간 날짜 범위 계산
+      let isRecoveryDayForThisProcedure = false;
+      if (procedureExistsOnDate && proc.recoveryDays > 0) {
+        for (let i = 1; i <= proc.recoveryDays; i++) {
+          const recoveryDate = new Date(procDate);
+          recoveryDate.setDate(recoveryDate.getDate() + i);
+          const recoveryDateStr = formatDate(recoveryDate);
+          if (recoveryDateStr === currentDateStr) {
+            isRecoveryDayForThisProcedure = true;
+            break;
           }
         }
+      }
 
-        // 이 날짜에 이 시술의 회복기간이 있는지 확인 (isRecoveryDayForThisProcedure가 true일 때만 찾음)
-        const recoveryOnDate = isRecoveryDayForThisProcedure
-          ? (allItems.find(
-              (p) =>
-                p.isRecovery &&
-                p.treatmentId === proc.treatmentId &&
-                p.procedureName === proc.procedureName
-            ) as ProcedureSchedule | null)
-          : null;
+      // 회복기간 확인
+      const recoveryOnDate = isRecoveryDayForThisProcedure
+        ? (allItems.find(
+            (p) =>
+              p.isRecovery &&
+              p.treatmentId === proc.treatmentId &&
+              p.procedureName === proc.procedureName
+          ) as ProcedureSchedule | null)
+        : null;
 
-        // 회복기간이 있으면 표시 (isRecoveryDayForThisProcedure가 true일 때만)
-        let finalRecovery: ProcedureSchedule | null = null;
-        if (isRecoveryDayForThisProcedure && !procedureOnDate) {
-          // 이 날짜가 이 시술의 회복기간 날짜 범위에 포함되면 표시
-          if (recoveryOnDate) {
-            // recoveryOnDate가 있으면 사용
-            finalRecovery = recoveryOnDate;
-          } else {
-            // recoveryOnDate가 없으면 원본 시술 정보로 생성
-            finalRecovery = {
-              ...proc,
-              isRecovery: true,
-              procedureDate: proc.procedureDate, // 원본 시술 날짜 유지
-            };
-          }
+      let finalRecovery: ProcedureSchedule | null = null;
+      if (
+        procedureExistsOnDate &&
+        isRecoveryDayForThisProcedure &&
+        !procedureOnDate
+      ) {
+        if (recoveryOnDate) {
+          finalRecovery = recoveryOnDate;
+        } else {
+          finalRecovery = {
+            ...proc,
+            isRecovery: true,
+            procedureDate: proc.procedureDate,
+          };
         }
+      }
 
-        // 시술이 있거나, 이 시술의 회복기간 날짜이면 표시
-        // 다른 시술의 회복기간이 이 줄에 올라오지 않도록 방지
-        // 중요: 회복기간이 끝난 날짜 이후에는 표시하지 않음 (isRecoveryDayForThisProcedure가 false이면 표시 안 함)
-        const shouldShow =
-          !!procedureOnDate ||
-          (isRecoveryDayForThisProcedure && !procedureOnDate);
-
-        return {
+      // 트랙에 배정
+      if (procedureOnDate || finalRecovery) {
+        tracks[trackIndex] = {
           procedure: procedureOnDate,
           recovery: finalRecovery,
           isProcedureDate: !!procedureOnDate,
           isRecoveryDate: !!finalRecovery,
-          originalProcedure: proc, // 원본 시술 정보 저장
+          originalProcedure: proc,
         };
-      })
-      .filter((pair) => pair.isProcedureDate || pair.isRecoveryDate); // 둘 중 하나라도 있으면 표시
+      }
+    }
+
+    return tracks;
   };
 
   // 회복 기간이 여행 일정 밖인지 확인
@@ -1285,9 +1356,9 @@ function SavedSchedulesTab({
                           </span>
                         )}
                       </div>
-                      {/* 시술-회복기간 쌍 표시 (각 시술과 그 회복기간을 같은 줄에 배치, 날짜를 가로질러 이어짐) */}
+                      {/* 시술-회복기간 쌍 표시 (항상 3개 트랙) */}
                       <div className="flex flex-col gap-1.5 w-full mt-0.5">
-                        {procedureRecoveryPairs.map((pair, idx) => {
+                        {procedureRecoveryPairs.map((pair, trackIndex) => {
                           const proc = pair.procedure;
                           const rec = pair.recovery;
 
@@ -1298,7 +1369,6 @@ function SavedSchedulesTab({
                             isMiddle: false,
                           };
                           let procRoundedClass = "rounded-sm";
-                          let procMarginClass = "";
                           if (proc) {
                             procContinuity =
                               getSelectedScheduleProcedureContinuity(
@@ -1312,8 +1382,6 @@ function SavedSchedulesTab({
                               : procContinuity.isEnd
                               ? "rounded-r-sm"
                               : "";
-                            // 이어지게 하기 위해 negative margin 적용 (가로 길이 조정을 위해 제거하고 style로 처리)
-                            procMarginClass = "";
                           }
 
                           // 회복기간 연속성 확인
@@ -1323,7 +1391,6 @@ function SavedSchedulesTab({
                             isMiddle: false,
                           };
                           let recRoundedClass = "rounded-sm";
-                          let recMarginClass = "";
                           if (rec) {
                             recContinuity =
                               getSelectedScheduleProcedureContinuity(date, rec);
@@ -1334,8 +1401,6 @@ function SavedSchedulesTab({
                               : recContinuity.isEnd
                               ? "rounded-r-sm"
                               : "";
-                            // 이어지게 하기 위해 negative margin 적용 (가로 길이 조정을 위해 제거하고 style로 처리)
-                            recMarginClass = "";
                           }
 
                           // 회복기간이 여행 밖인지 확인
@@ -1343,48 +1408,23 @@ function SavedSchedulesTab({
                             ? isRecoveryOutside
                             : false;
 
-                          const procedureName =
-                            proc?.procedureName || rec?.procedureName || "";
+                          // 트랙이 비어있으면 placeholder
+                          if (!proc && !rec) {
+                            return (
+                              <div
+                                key={`track-${trackIndex}`}
+                                className="h-[5px] opacity-0"
+                              />
+                            );
+                          }
 
-                          // 각 줄은 특정 시술-회복기간 쌍을 나타냄
-                          // 시술 날짜에는 시술 바만, 회복기간 날짜에는 회복기간 바만 표시
-                          // 둘 다 있으면 시술 우선 (회복기간은 다음날부터 시작하므로 같은 날짜에 둘 다 있을 수 없음)
-
-                          // 시술이 있으면 시술만, 시술이 없고 회복기간이 있으면 회복기간만 표시
                           return (
                             <div
-                              key={`pair-${
-                                pair.originalProcedure.id || idx
-                              }-${idx}`}
+                              key={`track-${trackIndex}-${
+                                pair.originalProcedure?.id || trackIndex
+                              }`}
                               className="flex gap-0 w-full"
                             >
-                              {/* 시술 바 (시술 날짜에만 표시) */}
-                              {proc && (
-                                <div
-                                  className={`h-[5px] bg-primary-main ${procRoundedClass} relative z-10`}
-                                  style={{
-                                    width:
-                                      procContinuity.isStart &&
-                                      procContinuity.isEnd
-                                        ? "calc(100% - 4px)"
-                                        : procContinuity.isStart
-                                        ? "calc(100% - 2px)"
-                                        : procContinuity.isEnd
-                                        ? "calc(100% + 2px)"
-                                        : "calc(100% + 4px)",
-                                    marginLeft: !procContinuity.isStart
-                                      ? "-2px"
-                                      : procContinuity.isStart &&
-                                        !procContinuity.isEnd
-                                      ? "4px"
-                                      : "0",
-                                    marginRight: !procContinuity.isEnd
-                                      ? "-2px"
-                                      : "0",
-                                  }}
-                                  title={proc.procedureName}
-                                />
-                              )}
                               {/* 회복기간 바 (회복기간 날짜에만 표시, 시술이 없을 때만) */}
                               {!proc && rec && (
                                 <div
@@ -1397,11 +1437,11 @@ function SavedSchedulesTab({
                                     width:
                                       recContinuity.isStart &&
                                       recContinuity.isEnd
-                                        ? "calc(100% - 4px)"
+                                        ? "calc(100% - 8px)"
                                         : recContinuity.isStart
                                         ? "calc(100% + 2px)"
                                         : recContinuity.isEnd
-                                        ? "calc(100% - 2px)"
+                                        ? "calc(100% - 6px)"
                                         : "calc(100% + 4px)",
                                     marginLeft: !recContinuity.isStart
                                       ? "-2px"
@@ -1410,10 +1450,37 @@ function SavedSchedulesTab({
                                       ? "-2px"
                                       : recContinuity.isEnd &&
                                         !recContinuity.isStart
-                                      ? "4px"
+                                      ? "8px"
                                       : "0",
                                   }}
                                   title={`${rec.procedureName} 회복 기간`}
+                                />
+                              )}
+                              {/* 시술 바 (시술 날짜에만 표시) */}
+                              {proc && (
+                                <div
+                                  className={`h-[5px] bg-primary-main ${procRoundedClass} relative z-10`}
+                                  style={{
+                                    width:
+                                      procContinuity.isStart &&
+                                      procContinuity.isEnd
+                                        ? "calc(100% - 8px)"
+                                        : procContinuity.isStart
+                                        ? "calc(100% - 6px)"
+                                        : procContinuity.isEnd
+                                        ? "calc(100% + 2px)"
+                                        : "calc(100% + 4px)",
+                                    marginLeft: !procContinuity.isStart
+                                      ? "-2px"
+                                      : procContinuity.isStart &&
+                                        !procContinuity.isEnd
+                                      ? "8px"
+                                      : "0",
+                                    marginRight: !procContinuity.isEnd
+                                      ? "-2px"
+                                      : "0",
+                                  }}
+                                  title={proc.procedureName}
                                 />
                               )}
                             </div>
@@ -2657,7 +2724,7 @@ export default function MySchedulePage() {
     );
   };
 
-  // 모든 시술 목록을 시술 날짜 순서로 정렬하여 고정 (한 번만 계산)
+  // 모든 시술 목록을 시술 날짜 순서로 정렬 (한 번만 계산)
   const allProceduresSorted = useMemo(() => {
     // 각 시술의 고유 키를 만들어서 중복 제거
     const uniqueProcedures = new Map<string, ProcedureSchedule>();
@@ -2669,20 +2736,54 @@ export default function MySchedulePage() {
         uniqueProcedures.set(key, proc);
       }
     });
-    // 시술 날짜 순서로 정렬
-    return Array.from(uniqueProcedures.values())
-      .sort((a, b) => {
-        const dateA = new Date(a.procedureDate).getTime();
-        const dateB = new Date(b.procedureDate).getTime();
-        return dateA - dateB;
-      })
-      .slice(0, 3); // 최대 3개 시술 (일정 카드 3개 제한)
+    // 시술 날짜 순서로 정렬 (slice 제거 - 트랙 배정에서 자연스럽게 3개 제한)
+    return Array.from(uniqueProcedures.values()).sort((a, b) => {
+      const dateA = new Date(a.procedureDate).getTime();
+      const dateB = new Date(b.procedureDate).getTime();
+      return dateA - dateB;
+    });
   }, [savedSchedules]);
 
-  // 특정 날짜의 시술-회복기간 쌍 가져오기 (각 시술과 그 회복기간을 같은 줄에 배치)
-  // 시술 날짜에는 시술 바, 회복기간 날짜에는 회복 바를 같은 줄에 배치
-  // 줄 순서는 시술 날짜 순서로 고정
-  // 중요: 각 시술의 회복기간은 항상 그 시술의 줄에 고정되어야 함 (다른 시술의 줄로 올라가지 않음)
+  // 트랙 배정: 각 시술을 트랙(0,1,2)에 배정 (여행 일정 탭용)
+  const trackAssignments = useMemo(() => {
+    const assignments = new Map<number | string, number>(); // procedure.id -> trackIndex
+    const tracks: Array<{
+      endDate: Date | null;
+      procedure: ProcedureSchedule | null;
+    }> = [
+      { endDate: null, procedure: null },
+      { endDate: null, procedure: null },
+      { endDate: null, procedure: null },
+    ];
+
+    for (const proc of allProceduresSorted) {
+      const procDate = new Date(proc.procedureDate);
+      const endDate = new Date(procDate);
+      endDate.setDate(endDate.getDate() + proc.recoveryDays);
+
+      // 트랙 0, 1, 2를 확인하여 사용 가능한 트랙 찾기
+      let assignedTrack = -1;
+      for (let trackIndex = 0; trackIndex < 3; trackIndex++) {
+        const track = tracks[trackIndex];
+        if (!track.endDate || track.endDate < procDate) {
+          // 트랙이 비어있거나 마지막 interval의 end < 현재 start
+          assignedTrack = trackIndex;
+          track.endDate = endDate;
+          track.procedure = proc;
+          break;
+        }
+      }
+
+      if (assignedTrack >= 0) {
+        assignments.set(proc.id, assignedTrack);
+      }
+      // assignedTrack이 -1이면 3개 트랙 모두 막혀있음 (4개 이상 겹침)
+    }
+
+    return assignments;
+  }, [allProceduresSorted]);
+
+  // 특정 날짜의 트랙별 시술-회복기간 쌍 가져오기 (항상 3개 트랙 반환) - 여행 일정 탭용
   const getProcedureRecoveryPairs = (
     date: Date
   ): Array<{
@@ -2690,89 +2791,127 @@ export default function MySchedulePage() {
     recovery: ProcedureSchedule | null;
     isProcedureDate: boolean;
     isRecoveryDate: boolean;
-    originalProcedure: ProcedureSchedule; // 원본 시술 정보 (회복기간 날짜에서도 필요)
+    originalProcedure: ProcedureSchedule | null; // 원본 시술 정보 (회복기간 날짜에서도 필요)
   }> => {
     const dateStr = formatDate(date);
     const allItems = procedureDates[dateStr] || [];
 
-    // 모든 시술을 기준으로 줄 만들기 (시술 날짜 순서로 고정)
-    // 각 시술마다 고정된 줄을 할당하고, 그 시술의 회복기간은 항상 그 줄에 표시
-    return allProceduresSorted
-      .map((proc) => {
-        // 이 날짜에 이 시술이 있는지 확인
-        const procedureOnDate = allItems.find(
+    // 항상 3개 트랙 반환
+    const tracks: Array<{
+      procedure: ProcedureSchedule | null;
+      recovery: ProcedureSchedule | null;
+      isProcedureDate: boolean;
+      isRecoveryDate: boolean;
+      originalProcedure: ProcedureSchedule | null;
+    }> = [
+      {
+        procedure: null,
+        recovery: null,
+        isProcedureDate: false,
+        isRecoveryDate: false,
+        originalProcedure: null,
+      },
+      {
+        procedure: null,
+        recovery: null,
+        isProcedureDate: false,
+        isRecoveryDate: false,
+        originalProcedure: null,
+      },
+      {
+        procedure: null,
+        recovery: null,
+        isProcedureDate: false,
+        isRecoveryDate: false,
+        originalProcedure: null,
+      },
+    ];
+
+    // 각 시술에 대해 해당 날짜에 트랙에 배정된 시술/회복기간 확인
+    for (const proc of allProceduresSorted) {
+      const trackIndex = trackAssignments.get(proc.id);
+      if (trackIndex === undefined || trackIndex < 0 || trackIndex >= 3)
+        continue;
+
+      const procDate = new Date(proc.procedureDate);
+      const procDateStr = formatDate(procDate);
+      const currentDateStr = formatDate(date);
+
+      // 시술이 실제로 존재하는지 확인
+      const procedureExistsOnDate =
+        procedureDates[procDateStr]?.some(
           (p) =>
             !p.isRecovery &&
             ((proc.treatmentId && p.treatmentId === proc.treatmentId) ||
               (!proc.treatmentId && p.procedureName === proc.procedureName)) &&
             p.procedureName === proc.procedureName
-        ) as ProcedureSchedule | null;
+        ) || false;
 
-        // 이 시술의 회복기간이 이 날짜에 있는지 확인 (시술 날짜 + recoveryDays 계산)
-        // 먼저 회복기간 날짜 범위를 계산해서 이 날짜가 이 시술의 회복기간인지 확인
-        const procDate = new Date(proc.procedureDate);
-        const procDateStr = formatDate(procDate);
-        const currentDateStr = formatDate(date);
+      // 이 날짜에 이 시술이 있는지 확인
+      const procedureOnDate = allItems.find(
+        (p) =>
+          !p.isRecovery &&
+          ((proc.treatmentId && p.treatmentId === proc.treatmentId) ||
+            (!proc.treatmentId && p.procedureName === proc.procedureName)) &&
+          p.procedureName === proc.procedureName
+      ) as ProcedureSchedule | null;
 
-        // 회복기간 날짜 범위 계산
-        let isRecoveryDayForThisProcedure = false;
-        if (proc.recoveryDays > 0) {
-          for (let i = 1; i <= proc.recoveryDays; i++) {
-            const recoveryDate = new Date(procDate);
-            recoveryDate.setDate(recoveryDate.getDate() + i);
-            const recoveryDateStr = formatDate(recoveryDate);
-            if (recoveryDateStr === currentDateStr) {
-              isRecoveryDayForThisProcedure = true;
-              break;
-            }
+      // 회복기간 날짜 범위 계산
+      let isRecoveryDayForThisProcedure = false;
+      if (procedureExistsOnDate && proc.recoveryDays > 0) {
+        for (let i = 1; i <= proc.recoveryDays; i++) {
+          const recoveryDate = new Date(procDate);
+          recoveryDate.setDate(recoveryDate.getDate() + i);
+          const recoveryDateStr = formatDate(recoveryDate);
+          if (recoveryDateStr === currentDateStr) {
+            isRecoveryDayForThisProcedure = true;
+            break;
           }
         }
+      }
 
-        // 이 날짜에 이 시술의 회복기간이 있는지 확인 (isRecoveryDayForThisProcedure가 true일 때만 찾음)
-        const recoveryOnDate = isRecoveryDayForThisProcedure
-          ? (allItems.find(
-              (p) =>
-                p.isRecovery &&
-                ((proc.treatmentId && p.treatmentId === proc.treatmentId) ||
-                  (!proc.treatmentId &&
-                    p.procedureName === proc.procedureName)) &&
-                p.procedureName === proc.procedureName
-            ) as ProcedureSchedule | null)
-          : null;
+      // 회복기간 확인
+      const recoveryOnDate = isRecoveryDayForThisProcedure
+        ? (allItems.find(
+            (p) =>
+              p.isRecovery &&
+              ((proc.treatmentId && p.treatmentId === proc.treatmentId) ||
+                (!proc.treatmentId &&
+                  p.procedureName === proc.procedureName)) &&
+              p.procedureName === proc.procedureName
+          ) as ProcedureSchedule | null)
+        : null;
 
-        // 회복기간이 있으면 표시 (isRecoveryDayForThisProcedure가 true일 때만)
-        // 회복기간이 끝난 날짜 이후에는 finalRecovery를 null로 유지하여 줄을 비움
-        let finalRecovery: ProcedureSchedule | null = null;
-        if (isRecoveryDayForThisProcedure && !procedureOnDate) {
-          // 이 날짜가 이 시술의 회복기간 날짜 범위에 포함되면 표시
-          if (recoveryOnDate) {
-            // recoveryOnDate가 있으면 사용
-            finalRecovery = recoveryOnDate;
-          } else {
-            // recoveryOnDate가 없으면 원본 시술 정보로 생성
-            finalRecovery = {
-              ...proc,
-              isRecovery: true,
-              procedureDate: proc.procedureDate, // 원본 시술 날짜 유지
-            };
-          }
+      let finalRecovery: ProcedureSchedule | null = null;
+      if (
+        procedureExistsOnDate &&
+        isRecoveryDayForThisProcedure &&
+        !procedureOnDate
+      ) {
+        if (recoveryOnDate) {
+          finalRecovery = recoveryOnDate;
+        } else {
+          finalRecovery = {
+            ...proc,
+            isRecovery: true,
+            procedureDate: proc.procedureDate,
+          };
         }
+      }
 
-        // 시술이 있거나, 이 시술의 회복기간 날짜이면 표시
-        // 회복기간이 끝난 날짜 이후에는 표시하지 않음 (줄을 비움)
-        const shouldShow =
-          !!procedureOnDate ||
-          (isRecoveryDayForThisProcedure && !procedureOnDate);
-
-        return {
+      // 트랙에 배정
+      if (procedureOnDate || finalRecovery) {
+        tracks[trackIndex] = {
           procedure: procedureOnDate,
           recovery: finalRecovery,
           isProcedureDate: !!procedureOnDate,
           isRecoveryDate: !!finalRecovery,
-          originalProcedure: proc, // 원본 시술 정보 저장
+          originalProcedure: proc,
         };
-      })
-      .filter((pair) => pair.isProcedureDate || pair.isRecoveryDate); // 둘 중 하나라도 있으면 표시
+      }
+    }
+
+    return tracks;
   };
 
   // 특정 날짜의 회복 기간 목록 가져오기
@@ -3374,9 +3513,9 @@ export default function MySchedulePage() {
                         )}
                       </div>
 
-                      {/* 시술-회복기간 쌍 표시 (각 시술과 그 회복기간을 같은 줄에 배치, 날짜를 가로질러 이어짐) */}
+                      {/* 시술-회복기간 쌍 표시 (항상 3개 트랙) */}
                       <div className="flex flex-col gap-1.5 w-full mt-0.5">
-                        {procedureRecoveryPairs.map((pair, idx) => {
+                        {procedureRecoveryPairs.map((pair, trackIndex) => {
                           const proc = pair.procedure;
                           const rec = pair.recovery;
 
@@ -3387,7 +3526,6 @@ export default function MySchedulePage() {
                             isMiddle: false,
                           };
                           let procRoundedClass = "rounded-sm";
-                          let procMarginClass = "";
                           if (proc) {
                             procContinuity = getProcedureContinuity(date, proc);
                             procRoundedClass = procContinuity.isStart
@@ -3397,8 +3535,6 @@ export default function MySchedulePage() {
                               : procContinuity.isEnd
                               ? "rounded-r-sm"
                               : "";
-                            // 이어지게 하기 위해 negative margin 적용 (가로 길이 조정을 위해 제거하고 style로 처리)
-                            procMarginClass = "";
                           }
 
                           // 회복기간 연속성 확인
@@ -3408,7 +3544,6 @@ export default function MySchedulePage() {
                             isMiddle: false,
                           };
                           let recRoundedClass = "rounded-sm";
-                          let recMarginClass = "";
                           if (rec) {
                             recContinuity = getProcedureContinuity(date, rec);
                             recRoundedClass = recContinuity.isStart
@@ -3418,8 +3553,6 @@ export default function MySchedulePage() {
                               : recContinuity.isEnd
                               ? "rounded-r-sm"
                               : "";
-                            // 이어지게 하기 위해 negative margin 적용 (가로 길이 조정을 위해 제거하고 style로 처리)
-                            recMarginClass = "";
                           }
 
                           // 회복기간이 여행 밖인지 확인
@@ -3427,48 +3560,23 @@ export default function MySchedulePage() {
                             ? isRecoveryOutsideTravel(date)
                             : false;
 
-                          const procedureName =
-                            proc?.procedureName || rec?.procedureName || "";
+                          // 트랙이 비어있으면 placeholder
+                          if (!proc && !rec) {
+                            return (
+                              <div
+                                key={`track-${trackIndex}`}
+                                className="h-[5px] opacity-0"
+                              />
+                            );
+                          }
 
-                          // 각 줄은 특정 시술-회복기간 쌍을 나타냄
-                          // 시술 날짜에는 시술 바만, 회복기간 날짜에는 회복기간 바만 표시
-                          // 둘 다 있으면 시술 우선 (회복기간은 다음날부터 시작하므로 같은 날짜에 둘 다 있을 수 없음)
-
-                          // 시술이 있으면 시술만, 시술이 없고 회복기간이 있으면 회복기간만 표시
                           return (
                             <div
-                              key={`pair-${
-                                pair.originalProcedure.id || idx
-                              }-${idx}`}
+                              key={`track-${trackIndex}-${
+                                pair.originalProcedure?.id || trackIndex
+                              }`}
                               className="flex gap-0 w-full"
                             >
-                              {/* 시술 바 (시술 날짜에만 표시) */}
-                              {proc && (
-                                <div
-                                  className={`h-[5px] bg-primary-main ${procRoundedClass} relative z-10`}
-                                  style={{
-                                    width:
-                                      procContinuity.isStart &&
-                                      procContinuity.isEnd
-                                        ? "calc(100% - 4px)"
-                                        : procContinuity.isStart
-                                        ? "calc(100% - 2px)"
-                                        : procContinuity.isEnd
-                                        ? "calc(100% + 2px)"
-                                        : "calc(100% + 4px)",
-                                    marginLeft: !procContinuity.isStart
-                                      ? "-2px"
-                                      : procContinuity.isStart &&
-                                        !procContinuity.isEnd
-                                      ? "4px"
-                                      : "0",
-                                    marginRight: !procContinuity.isEnd
-                                      ? "-2px"
-                                      : "0",
-                                  }}
-                                  title={proc.procedureName}
-                                />
-                              )}
                               {/* 회복기간 바 (회복기간 날짜에만 표시, 시술이 없을 때만) */}
                               {!proc && rec && (
                                 <div
@@ -3481,11 +3589,11 @@ export default function MySchedulePage() {
                                     width:
                                       recContinuity.isStart &&
                                       recContinuity.isEnd
-                                        ? "calc(100% - 4px)"
+                                        ? "calc(100% - 8px)"
                                         : recContinuity.isStart
                                         ? "calc(100% + 2px)"
                                         : recContinuity.isEnd
-                                        ? "calc(100% - 2px)"
+                                        ? "calc(100% - 6px)"
                                         : "calc(100% + 4px)",
                                     marginLeft: !recContinuity.isStart
                                       ? "-2px"
@@ -3494,10 +3602,37 @@ export default function MySchedulePage() {
                                       ? "-2px"
                                       : recContinuity.isEnd &&
                                         !recContinuity.isStart
-                                      ? "4px"
+                                      ? "8px"
                                       : "0",
                                   }}
                                   title={`${rec.procedureName} 회복 기간`}
+                                />
+                              )}
+                              {/* 시술 바 (시술 날짜에만 표시) */}
+                              {proc && (
+                                <div
+                                  className={`h-[5px] bg-primary-main ${procRoundedClass} relative z-10`}
+                                  style={{
+                                    width:
+                                      procContinuity.isStart &&
+                                      procContinuity.isEnd
+                                        ? "calc(100% - 8px)"
+                                        : procContinuity.isStart
+                                        ? "calc(100% - 6px)"
+                                        : procContinuity.isEnd
+                                        ? "calc(100% + 2px)"
+                                        : "calc(100% + 4px)",
+                                    marginLeft: !procContinuity.isStart
+                                      ? "-2px"
+                                      : procContinuity.isStart &&
+                                        !procContinuity.isEnd
+                                      ? "8px"
+                                      : "0",
+                                    marginRight: !procContinuity.isEnd
+                                      ? "-2px"
+                                      : "0",
+                                  }}
+                                  title={proc.procedureName}
                                 />
                               )}
                             </div>

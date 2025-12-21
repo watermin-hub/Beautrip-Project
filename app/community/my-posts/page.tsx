@@ -159,7 +159,7 @@ export default function MyPostsPage() {
 
   const handlePostClick = (post: UnifiedPost, e?: React.MouseEvent) => {
     // 수정 버튼 클릭 시에는 상세 페이지로 이동하지 않음
-    if (e && (e.target as HTMLElement).closest('.edit-button')) {
+    if (e && (e.target as HTMLElement).closest(".edit-button")) {
       return;
     }
     if (post.type === "procedure") {
@@ -173,7 +173,7 @@ export default function MyPostsPage() {
 
   const handleEditClick = async (post: UnifiedPost, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // 원본 데이터 가져오기
     try {
       let postData = null;
@@ -232,7 +232,7 @@ export default function MyPostsPage() {
       <Header />
 
       {/* Header */}
-      <div className="px-4 py-4 sticky top-[64px] bg-white z-10">
+      <div className="px-4 py-4 sticky top-[48px] bg-white z-10">
         <div className="flex items-center gap-3 mb-4">
           <button
             onClick={() => router.back()}
@@ -240,15 +240,23 @@ export default function MyPostsPage() {
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h2 className="text-xl font-bold text-gray-900">{t("writePage.managePosts")}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {t("writePage.managePosts")}
+          </h2>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-2">
           {[
             { id: "all" as PostType, label: t("writePage.all") },
-            { id: "procedure" as PostType, label: t("writePage.procedureReview") },
-            { id: "hospital" as PostType, label: t("writePage.hospitalReview") },
+            {
+              id: "procedure" as PostType,
+              label: t("writePage.procedureReview"),
+            },
+            {
+              id: "hospital" as PostType,
+              label: t("writePage.hospitalReview"),
+            },
             { id: "concern" as PostType, label: t("writePage.concernPost") },
           ].map((tab) => (
             <button
@@ -269,7 +277,9 @@ export default function MyPostsPage() {
       {/* Posts List - 헤더 아래에서 시작하도록 여백 추가 */}
       <div className="px-4 pt-16 pb-24">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">{t("common.loading")}</div>
+          <div className="text-center py-8 text-gray-500">
+            {t("common.loading")}
+          </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-12">
             <FiEdit3 className="text-4xl text-gray-300 mx-auto mb-4" />
@@ -423,7 +433,8 @@ export default function MyPostsPage() {
                     id: post.id!,
                     type: "concern" as const,
                     title: post.title,
-                    category: post.concern_category || t("writePage.concernPost"),
+                    category:
+                      post.concern_category || t("writePage.concernPost"),
                     content: post.content,
                     timestamp: formatTimeAgo(post.created_at),
                     created_at: post.created_at || "",
@@ -435,7 +446,8 @@ export default function MyPostsPage() {
                   if (!a.created_at) return 1;
                   if (!b.created_at) return -1;
                   return (
-                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    new Date(b.created_at).getTime() -
+                    new Date(a.created_at).getTime()
                   );
                 });
 

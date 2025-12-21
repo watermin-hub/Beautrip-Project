@@ -160,7 +160,7 @@ export default function CategoryPhotoReviewPage() {
       </div>
 
       {/* 대분류 카테고리 명 */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200">
+      <div className="px-4 pt-16 pb-3 bg-white border-b border-gray-200">
         <h1 className="text-lg font-bold text-gray-900">
           {currentMainCategory.label}
         </h1>

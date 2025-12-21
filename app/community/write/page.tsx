@@ -7,6 +7,7 @@ import {
   FiHome,
   FiUser,
   FiArrowLeft,
+  FiMessageCircle,
 } from "react-icons/fi";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -97,8 +98,8 @@ export default function WritePage() {
           );
         })}
 
-        {/* 내 글 관리 */}
-        <div className="border-t border-gray-200 pt-3 mt-3">
+        {/* 내 글 관리 & 내 댓글 관리 */}
+        <div className="border-t border-gray-200 pt-3 mt-3 space-y-3">
           <button
             onClick={() => router.push("/community/my-posts")}
             className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border-2 border-gray-200 hover:border-primary-main/30 transition-all text-left group"
@@ -113,6 +114,28 @@ export default function WritePage() {
                 </h3>
                 <p className="text-sm text-gray-600">
                   {t("writePage.managePostsDesc")}
+                </p>
+              </div>
+              <div className="text-gray-400 group-hover:text-primary-main transition-colors">
+                →
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => router.push("/community/my-comments")}
+            className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border-2 border-gray-200 hover:border-primary-main/30 transition-all text-left group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="bg-gradient-to-br from-gray-400 to-gray-500 p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                <FiMessageCircle className="text-white text-xl" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-gray-900 mb-1">
+                  {t("writePage.manageComments")}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {t("writePage.manageCommentsDesc")}
                 </p>
               </div>
               <div className="text-gray-400 group-hover:text-primary-main transition-colors">

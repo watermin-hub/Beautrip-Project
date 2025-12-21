@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiBook, FiChevronRight } from "react-icons/fi";
 import {
@@ -22,6 +22,10 @@ interface ContentItem {
 
 export default function InformationalContentSection() {
   const { t, language } = useLanguage();
+  const pathname = usePathname();
+  // 홈 페이지: RankingBanner(41px) + Header(48px) = 89px
+  // 커뮤니티 페이지: Header(48px) + CommunityHeader(56px) = 104px
+  const stickyTop = pathname === "/" || pathname === "/home" ? "89px" : "104px";
 
   // 정보성 컨텐츠 데이터 (언어별 번역 적용)
   const informationalContents: ContentItem[] = [
@@ -128,23 +132,26 @@ export default function InformationalContentSection() {
   const hasMore = selectedCategory === "all" && filteredContents.length > 5;
 
   return (
-    <div className="mb-6 pt-4">
-      {/* 카테고리 필터 - sticky로 커뮤니티 헤더 아래 고정 */}
-      <div className="sticky top-[104px] z-30 bg-white px-4 py-1 -mx-4 mb-1">
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+    <div className="mb-6">
+      {/* 카테고리 필터 - sticky로 헤더 아래 고정 */}
+      <div className={`sticky z-30 bg-white -mx-4 px-4`} style={{ top: stickyTop }}>
+        <div className="py-2 bg-white">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => handleCategoryChange(category)}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === category
-                  ? "bg-primary-main text-white"
+                  ? "bg-primary-main text-white shadow-sm"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
+              style={{ backgroundColor: selectedCategory === category ? undefined : '#f3f4f6' }}
             >
               {category}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

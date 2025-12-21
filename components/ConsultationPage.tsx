@@ -29,10 +29,11 @@ export default function ConsultationPage() {
   };
 
   return (
-    <div className="pt-4">
-      {/* 카테고리 탭 버튼 - sticky로 커뮤니티 헤더 아래 고정 */}
-      <div className="sticky top-[104px] z-30 bg-white px-4 py-1">
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+    <div>
+      {/* 카테고리 탭 버튼 - fixed로 커뮤니티 헤더 아래 완전 고정 */}
+      <div className="fixed top-[104px] left-1/2 transform -translate-x-1/2 w-full max-w-md z-30 bg-white border-t border-gray-100">
+        <div className="px-4 py-1">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {CONCERN_CATEGORIES.map((category) => {
             const isActive = selectedCategory === category.id;
             return (
@@ -49,8 +50,11 @@ export default function ConsultationPage() {
               </button>
             );
           })}
+          </div>
         </div>
       </div>
+      {/* 필터바 높이만큼 공간 확보 */}
+      <div className="h-[45px]"></div>
 
       {/* 고민상담소 게시글 리스트 */}
       <PostList activeTab="consultation" concernCategory={selectedCategory} />

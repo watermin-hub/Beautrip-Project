@@ -727,40 +727,41 @@ function MainContent({
 
       {/* 언어 / 통화 설정 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <FiGlobe className="text-gray-700 text-xl" />
-              <span className="text-base font-medium text-gray-900">
-                {t("mypage.languageCurrency")}
-              </span>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => setIsLanguageCurrencyOpen(!isLanguageCurrencyOpen)}
-                className="p-2 hover:bg-gray-50 rounded-full transition-colors relative z-[100]"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{selectedLanguage.flag}</span>
-                  <span className="text-sm text-gray-700">
-                    {t(selectedLanguage.nameKey)}
-                  </span>
+        <MenuItem
+          icon={FiGlobe}
+          label={t("mypage.languageCurrency")}
+          value={`${t(selectedLanguage.nameKey)} / ${t(`currency.${currency}`)}`}
+          onClick={() => setIsLanguageCurrencyOpen(true)}
+        />
+      </div>
+
+      {/* 언어/통화 선택 모달 */}
+      {isLanguageCurrencyOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-[10000]"
+            onClick={() => setIsLanguageCurrencyOpen(false)}
+          />
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div
+              className="bg-white rounded-xl shadow-xl w-full max-w-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-4 py-3 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <FiGlobe className="text-gray-700 text-lg" />
+                  <h3 className="text-base font-semibold text-gray-900">
+                    {t("mypage.languageCurrency")}
+                  </h3>
                 </div>
-              </button>
-              {isLanguageCurrencyOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-[10000]"
-                    onClick={() => setIsLanguageCurrencyOpen(false)}
-                  />
-                  <div
-                    className="absolute bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[150px] max-w-[200px]"
-                    style={{
-                      top: "calc(100% + 8px)",
-                      right: "0",
-                    }}
-                  >
-                    {languages.map((lang) => (
+              </div>
+              <div className="p-3">
+                <div className="space-y-1">
+                  {languages.map((lang) => {
+                    const isSelected =
+                      selectedLanguage.code === lang.code &&
+                      currency === lang.currency;
+                    return (
                       <button
                         key={lang.code}
                         onClick={() => {
@@ -768,31 +769,46 @@ function MainContent({
                           setCurrency(lang.currency);
                           localStorage.setItem("language", lang.code);
                           localStorage.setItem("currency", lang.currency);
-                          setIsLanguageCurrencyOpen(false);
                           window.dispatchEvent(new Event("languageChanged"));
                         }}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2 ${
-                          selectedLanguage.code === lang.code
-                            ? "bg-primary-main/10"
-                            : ""
+                        className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center gap-2 ${
+                          isSelected
+                            ? "bg-primary-main/10 border border-primary-main"
+                            : "bg-gray-50 border border-transparent hover:bg-gray-100"
                         }`}
                       >
-                        <span>{lang.flag}</span>
-                        <span className="text-sm text-gray-700">
-                          {t(lang.nameKey)}
+                        <span className="text-base">{lang.flag}</span>
+                        <span
+                          className={`text-sm flex-1 ${
+                            isSelected
+                              ? "text-primary-main font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {t(lang.nameKey)} / {t(`currency.${lang.currency}`)}
                         </span>
-                        {selectedLanguage.code === lang.code && (
-                          <span className="ml-auto text-primary-main">✓</span>
+                        {isSelected && (
+                          <span className="text-primary-main text-sm font-bold">
+                            ✓
+                          </span>
                         )}
                       </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="px-4 py-3 border-t border-gray-200">
+                <button
+                  onClick={() => setIsLanguageCurrencyOpen(false)}
+                  className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                >
+                  {t("common.close") || "닫기"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* 로그아웃 */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

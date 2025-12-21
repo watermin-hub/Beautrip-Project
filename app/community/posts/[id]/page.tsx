@@ -37,6 +37,11 @@ function PostDetailContent() {
     | "hospital"
     | "concern"
     | null;
+  const fromTab = searchParams.get("fromTab") as
+    | "popular"
+    | "latest"
+    | "consultation"
+    | null;
 
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -85,7 +90,7 @@ function PostDetailContent() {
           postData = {
             ...foundPost,
             category: foundPost.concern_category || "고민글",
-            images: foundPost.image_paths || foundPost.images || [],
+            images: foundPost.image_paths || [],
           };
         }
       }
@@ -267,7 +272,14 @@ function PostDetailContent() {
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                // fromTab이 있으면 해당 탭으로 이동, 없으면 뒤로가기
+                if (fromTab) {
+                  router.push(`/community?tab=${fromTab}`);
+                } else {
+                  router.back();
+                }
+              }}
               className="p-2 hover:bg-gray-50 rounded-full transition-colors"
             >
               <FiArrowLeft className="text-gray-700 text-xl" />

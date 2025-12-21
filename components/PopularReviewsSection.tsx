@@ -1,11 +1,22 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiArrowUp, FiMessageCircle, FiEye, FiHeart, FiChevronRight } from "react-icons/fi";
+import { FiMessageCircle, FiEye, FiHeart, FiChevronRight, FiArrowUp } from "react-icons/fi";
+import {
+  loadProcedureReviews,
+  loadHospitalReviews,
+  ProcedureReviewData,
+  HospitalReviewData,
+  getPostLikeCount,
+  getCommentCount,
+  getViewCount,
+} from "@/lib/api/beautripApi";
+import { maskNickname } from "@/lib/utils/nicknameMask";
 
 interface ReviewPost {
-  id: number;
+  id: number | string;
   category: string;
   username: string;
   avatar: string;
@@ -16,72 +27,198 @@ interface ReviewPost {
   comments: number;
   views: number;
   likes?: number;
+  reviewType?: "procedure" | "hospital";
+  procedure_name?: string;
+  hospital_name?: string;
 }
 
-// 인기 리뷰 데이터 (조회수/좋아요 기준 상위)
-const popularReviews: ReviewPost[] = [
-  {
-    id: 1,
-    category: "후기",
-    username: "베소통리소",
-    avatar: "🐹",
-    content: "원래 눈 라인이 마음에 들지 않아서 재수술을 고민하게 되었어요 첫 수술로 잡았던 라인이 너무 낮기도 하고 여전히 눈매가 흐릿해...",
-    images: ["eye1", "eye2"],
-    timestamp: "18시간 전",
-    upvotes: 62,
-    comments: 198,
-    views: 5722,
-  },
-  {
-    id: 5,
-    category: "후기",
-    username: "뷰티러버",
-    avatar: "✨",
-    content: "강남역 근처 클리닉에서 리쥬란 힐러 받고 왔어요! 처음 받아보는 거라 조금 걱정됐는데 원장님이 친절하게 설명해주셔서...",
-    images: ["skin1"],
-    timestamp: "2일 전",
-    upvotes: 45,
-    comments: 72,
-    views: 3200,
-    likes: 120,
-  },
-  {
-    id: 2,
-    category: "후기",
-    username: "홀짝댄스",
-    avatar: "🐱",
-    content: "비티에서 윤곽3종이랑 무보형물로 코수술 하고 왔당 ㅎㅎㅎㅎ 코는 이승호원장님, 윤곽...",
-    images: ["face1", "face2"],
-    timestamp: "1일 전",
-    upvotes: 29,
-    comments: 58,
-    views: 2648,
-  },
-  {
-    id: 4,
-    category: "후기",
-    username: "춤추는아미고",
-    avatar: "🦊",
-    content: "와.. 티타늄 맛집은 테이아였네?? ;; 나 요즘 턱선이랑 볼살이 너무 축 처져서 테이아의원에서 티타늄리프팅 받아봤거...",
-    images: ["before", "after"],
-    timestamp: "1일 전",
-    upvotes: 29,
-    comments: 50,
-    views: 2604,
-  },
-];
+const formatTimeAgo = (dateString?: string): string => {
+  if (!dateString) return "시간 정보 없음";
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "방금 전";
+  if (diffMins < 60) return `${diffMins}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  return `${Math.floor(diffDays / 7)}주 전`;
+};
+
+// 인기글 점수 계산 함수 (PostList와 동일)
+const calculatePopularityScore = (
+  viewCount: number,
+  likeCount: number,
+  commentCount: number,
+  createdAt?: string
+): number => {
+  const baseScore = viewCount * 1 + likeCount * 3 + commentCount * 2;
+  let timeMultiplier = 1.0;
+  if (createdAt) {
+    const postDate = new Date(createdAt);
+    const now = new Date();
+    const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
+    if (hoursDiff <= 24) {
+      timeMultiplier = 1.5;
+    } else if (hoursDiff <= 168) {
+      timeMultiplier = 1.3;
+    } else if (hoursDiff <= 720) {
+      timeMultiplier = 1.1;
+    }
+  }
+  return baseScore * timeMultiplier;
+};
 
 export default function PopularReviewsSection() {
   const router = useRouter();
   const { t } = useLanguage();
+  const [popularReviews, setPopularReviews] = useState<ReviewPost[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleReviewClick = () => {
-    router.push("/community?tab=review");
+  useEffect(() => {
+    const loadPopularReviews = async () => {
+      try {
+        setLoading(true);
+
+        // Supabase에서 모든 후기 가져오기
+        const [procedureReviews, hospitalReviews] = await Promise.all([
+          loadProcedureReviews(20),
+          loadHospitalReviews(20),
+        ]);
+
+        // 시술 후기 변환
+        const formattedProcedureReviews: ReviewPost[] = procedureReviews.map(
+          (review: ProcedureReviewData) => ({
+            id: review.id || `procedure-${Math.random()}`,
+            category: review.category || "후기",
+            username: maskNickname((review as any).nickname),
+            avatar: "👤",
+            content: review.content,
+            images: review.images,
+            timestamp: formatTimeAgo(review.created_at),
+            upvotes: 0,
+            comments: 0,
+            views: 0,
+            reviewType: "procedure" as const,
+            procedure_name: review.procedure_name,
+            hospital_name: review.hospital_name,
+            created_at: review.created_at,
+          })
+        );
+
+        // 병원 후기 변환
+        const formattedHospitalReviews: ReviewPost[] = hospitalReviews.map(
+          (review: HospitalReviewData) => ({
+            id: review.id || `hospital-${Math.random()}`,
+            category: review.category_large || "병원후기",
+            username: maskNickname((review as any).nickname),
+            avatar: "👤",
+            content: review.content,
+            images: review.images,
+            timestamp: formatTimeAgo(review.created_at),
+            upvotes: 0,
+            comments: 0,
+            views: 0,
+            reviewType: "hospital" as const,
+            hospital_name: review.hospital_name,
+            procedure_name: review.procedure_name,
+            created_at: review.created_at,
+          })
+        );
+
+        const allReviews = [...formattedProcedureReviews, ...formattedHospitalReviews];
+
+        // 좋아요, 댓글, 조회수 로드
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        const reviewsWithStats = await Promise.all(
+          allReviews.map(async (post) => {
+            const postId = String(post.id);
+            if (!uuidRegex.test(postId)) {
+              return { ...post, likeCount: 0, commentCount: 0, viewCount: 0 };
+            }
+
+            const postType =
+              post.reviewType === "procedure"
+                ? "treatment_review"
+                : "hospital_review";
+
+            try {
+              const [likeCount, commentCount, viewCount] = await Promise.all([
+                getPostLikeCount(postId, postType),
+                getCommentCount(
+                  postId,
+                  post.reviewType === "procedure" ? "procedure" : "hospital"
+                ),
+                getViewCount(
+                  postId,
+                  post.reviewType === "procedure" ? "procedure" : "hospital"
+                ),
+              ]);
+
+              return {
+                ...post,
+                likes: likeCount,
+                comments: commentCount,
+                views: viewCount,
+                upvotes: likeCount,
+                likeCount,
+                commentCount,
+                viewCount,
+              };
+            } catch (error) {
+              console.error(`통계 로드 실패 (${postId}):`, error);
+              return { ...post, likeCount: 0, commentCount: 0, viewCount: 0 };
+            }
+          })
+        );
+
+        // 인기글 점수 계산 및 정렬
+        const sortedReviews = reviewsWithStats
+          .map((post: any) => {
+            const score = calculatePopularityScore(
+              post.viewCount || 0,
+              post.likeCount || 0,
+              post.commentCount || 0,
+              post.created_at
+            );
+            return { ...post, popularityScore: score };
+          })
+          .sort((a: any, b: any) => b.popularityScore - a.popularityScore)
+          .slice(0, 4) // 상위 4개만
+          .map(({ popularityScore, likeCount, commentCount, viewCount, created_at, ...rest }: any) => rest);
+
+        setPopularReviews(sortedReviews);
+      } catch (error) {
+        console.error("❌ 인기글 데이터 로드 실패:", error);
+        setPopularReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPopularReviews();
+  }, []);
+
+  const handleReviewClick = (post: ReviewPost) => {
+    if (post.reviewType && post.id) {
+      const postId = String(post.id);
+      if (post.reviewType === "procedure") {
+        router.push(`/review/procedure/${postId}`);
+      } else if (post.reviewType === "hospital") {
+        router.push(`/review/hospital/${postId}`);
+      }
+    } else {
+      router.push("/community?tab=popular");
+    }
   };
 
   const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push("/community?tab=review");
+    router.push("/community?tab=popular");
   };
 
   return (
@@ -97,22 +234,36 @@ export default function PopularReviewsSection() {
         </button>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
-        {popularReviews.map((review) => (
-          <button
-            key={review.id}
-            onClick={handleReviewClick}
-            className="flex-shrink-0 w-80 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left"
-          >
+      {loading ? (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          {t("common.loading")}
+        </div>
+      ) : popularReviews.length === 0 ? (
+        <div className="text-center py-8 text-gray-500 text-sm">
+          {t("common.noData")}
+        </div>
+      ) : (
+        <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+          {popularReviews.map((review) => (
+            <button
+              key={review.id}
+              onClick={() => handleReviewClick(review)}
+              className="flex-shrink-0 w-80 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left"
+            >
             {/* 이미지 영역 */}
-            <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 relative">
+            <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
               {review.images && review.images.length > 0 ? (
-                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                  이미지
-                </div>
+                <img
+                  src={review.images[0]}
+                  alt={review.content.substring(0, 20)}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
-                  이미지 없음
+                  {t("common.noData")}
                 </div>
               )}
               {/* 카테고리 태그 */}
@@ -144,8 +295,8 @@ export default function PopularReviewsSection() {
               {/* 참여 지표 */}
               <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
                 <div className="flex items-center gap-1 text-gray-600">
-                  <FiArrowUp className="text-primary-main text-sm" />
-                  <span className="text-xs">{review.upvotes}</span>
+                  <FiHeart className="text-primary-main fill-primary-main text-sm" />
+                  <span className="text-xs">{review.likes || 0}</span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-600">
                   <FiMessageCircle className="text-primary-main text-sm" />
@@ -157,17 +308,12 @@ export default function PopularReviewsSection() {
                     {review.views.toLocaleString()}
                   </span>
                 </div>
-                {review.likes && (
-                  <div className="flex items-center gap-1 text-gray-600 ml-auto">
-                    <FiHeart className="text-primary-main fill-primary-main text-sm" />
-                    <span className="text-xs">{review.likes}</span>
-                  </div>
-                )}
               </div>
             </div>
           </button>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

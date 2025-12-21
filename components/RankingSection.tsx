@@ -45,16 +45,30 @@ export default function RankingSection({
     { id: "schedule" as RankingTab, labelKey: "explore.filter.schedule" },
   ];
 
+  const isRankingActive = activeSection === "ranking";
+
   return (
     <div className="bg-white relative">
-      {/* 하위 탭 네비게이션 - sticky로 변경하여 자연스럽게 밀려 올라가도록 */}
-      {/* Header(48) + ExploreHeader(약 56px) = 104px */}
-      <div className="sticky top-[104px] z-40 bg-white px-4 py-2 border-b border-gray-200 shadow-sm">
+      {/* 탭바 - activeSection이 "ranking"일 때만 sticky 적용 */}
+      {/* Header(48px) + ExploreHeader(약 56px) = 104px */}
+      <div
+        className={`${
+          isRankingActive ? "sticky top-[104px]" : "relative"
+        } z-40 bg-white px-4 py-2 border-b border-gray-200 shadow-sm`}
+      >
         <div className="flex gap-2 overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                // 탭 필터 선택 시 상단으로 스크롤
+                const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+                window.scrollTo({
+                  top: headerOffset,
+                  behavior: "smooth",
+                });
+              }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-primary-main text-white"
@@ -67,10 +81,14 @@ export default function RankingSection({
         </div>
       </div>
 
-      {/* 필터바 - 카테고리별 탭일 때만 표시, sticky로 렌더링 */}
+      {/* 필터바 - 카테고리별 탭일 때만 표시, activeSection이 "ranking"일 때만 sticky 적용 */}
       {/* 탭바 높이(약 48px) 아래에 위치: top-[152px] = 104 + 48 */}
       {activeTab === "category" && (
-        <div className="sticky top-[152px] z-[45] bg-white">
+        <div
+          className={`${
+            isRankingActive ? "sticky top-[152px]" : "relative"
+          } z-[45] bg-white`}
+        >
           <CategoryFilterBar
             selectedCategory={selectedCategory}
             selectedMidCategory={selectedMidCategory}
@@ -79,7 +97,15 @@ export default function RankingSection({
               setSelectedCategory(categoryId);
               setSelectedMidCategory(null);
             }}
-            onMidCategoryChange={setSelectedMidCategory}
+            onMidCategoryChange={(midCategory) => {
+              setSelectedMidCategory(midCategory);
+              // 필터 선택 시 상단으로 스크롤
+              const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+              window.scrollTo({
+                top: headerOffset,
+                behavior: "smooth",
+              });
+            }}
           />
         </div>
       )}
@@ -97,8 +123,22 @@ export default function RankingSection({
             onCategoryChange={(categoryId) => {
               setSelectedCategory(categoryId);
               setSelectedMidCategory(null);
+              // 대분류 필터 선택 시 상단으로 스크롤
+              const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+              window.scrollTo({
+                top: headerOffset,
+                behavior: "smooth",
+              });
             }}
-            onMidCategoryChange={setSelectedMidCategory}
+            onMidCategoryChange={(midCategory) => {
+              setSelectedMidCategory(midCategory);
+              // 중분류 필터 선택 시 상단으로 스크롤
+              const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+              window.scrollTo({
+                top: headerOffset,
+                behavior: "smooth",
+              });
+            }}
             renderFilterBar={false}
             onMidCategoriesListChange={setMidCategoriesList}
           />

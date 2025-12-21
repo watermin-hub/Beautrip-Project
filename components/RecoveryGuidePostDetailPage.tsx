@@ -556,7 +556,7 @@ export default function RecoveryGuidePostDetailPage({
       </div>
 
       {/* Content */}
-      <div className="px-4 py-6 pb-20 pt-[96px]">
+      <div className="px-4 py-6 pb-20 pt-16">
         {/* Badge & Meta */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">

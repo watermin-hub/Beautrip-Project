@@ -56,6 +56,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.retry": "다시 시도",
     "common.loginRequired": "로그인이 필요합니다",
     "common.loginRequiredDesc": "로그인 후에만 사용할 수 있습니다",
+    "common.loginRequiredMoreInfo": "로그인하고 예뻐지는 정보들 알아가세요❤️",
+    "common.login": "로그인하기",
     "common.priceInquiry": "가격 문의",
     "common.seeMore": "더보기",
     "common.noSearchResults": "검색 결과가 없습니다",
@@ -358,6 +360,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "mypage.myReviews": "내가 쓴 후기",
     "mypage.myComments": "내 댓글 관리",
     "mypage.languageCurrency": "언어 / 통화",
+    "mypage.language": "언어",
+    "mypage.currency": "통화",
     "mypage.loadLikedPostsError": "좋아요한 글을 불러올 수 없습니다.",
     "mypage.loadLikedPostsErrorDesc":
       "좋아요한 글을 불러오는 중 오류가 발생했습니다.",
@@ -560,6 +564,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.all": "전체",
     "writePage.managePosts": "내 글 관리",
     "writePage.managePostsDesc": "작성하신 글들을 확인하고 관리하세요",
+    "writePage.manageComments": "내 댓글 관리",
+    "writePage.manageCommentsDesc": "작성하신 댓글들을 확인하고 관리하세요",
     "writePage.procedureReviewWrite": "시술 후기 작성",
     "writePage.hospitalReviewWrite": "병원 후기 작성",
     "writePage.concernPostWrite": "고민 상담 작성",
@@ -684,6 +690,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.retry": "Retry",
     "common.loginRequired": "Login Required",
     "common.loginRequiredDesc": "Please log in to continue",
+    "common.loginRequiredMoreInfo": "Log in and discover beauty information❤️",
+    "common.login": "Log In",
     "common.priceInquiry": "Price inquiry",
     "common.seeMore": "See More",
     "common.noSearchResults": "No search results",
@@ -1020,6 +1028,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "mypage.myReviews": "My Reviews",
     "mypage.myComments": "My Comments",
     "mypage.languageCurrency": "Language / Currency",
+    "mypage.language": "Language",
+    "mypage.currency": "Currency",
     "mypage.loadLikedPostsError": "Unable to load liked posts.",
     "mypage.loadLikedPostsErrorDesc":
       "An error occurred while loading liked posts.",
@@ -1204,6 +1214,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.all": "All",
     "writePage.managePosts": "Manage My Posts",
     "writePage.managePostsDesc": "View and manage your posts",
+    "writePage.manageComments": "Manage My Comments",
+    "writePage.manageCommentsDesc": "View and manage your comments",
     "writePage.procedureReviewWrite": "Write Procedure Review",
     "writePage.hospitalReviewWrite": "Write Hospital Review",
     "writePage.concernPostWrite": "Write Consultation Post",
@@ -1325,6 +1337,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.retry": "再試行",
     "common.loginRequired": "ログインが必要です",
     "common.loginRequiredDesc": "ログインして続行してください",
+    "common.loginRequiredMoreInfo": "ログインして、美しくなる情報を学びましょう❤️",
+    "common.login": "ログイン",
     "common.priceInquiry": "価格お問い合わせ",
     "common.seeMore": "もっと見る",
     "common.noSearchResults": "検索結果がありません",
@@ -1636,6 +1650,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "mypage.myReviews": "私が書いたレビュー",
     "mypage.myComments": "私のコメント",
     "mypage.languageCurrency": "言語 / 通貨",
+    "mypage.language": "言語",
+    "mypage.currency": "通貨",
     "mypage.loadLikedPostsError": "いいねした投稿を読み込めませんでした。",
     "mypage.loadLikedPostsErrorDesc":
       "いいねした投稿の読み込み中にエラーが発生しました。",
@@ -1839,6 +1855,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.all": "すべて",
     "writePage.managePosts": "私の投稿管理",
     "writePage.managePostsDesc": "作成した投稿を確認・管理してください",
+    "writePage.manageComments": "私のコメント管理",
+    "writePage.manageCommentsDesc": "作成したコメントを確認・管理してください",
     "writePage.procedureReviewWrite": "施術レビュー作成",
     "writePage.hospitalReviewWrite": "病院レビュー作成",
     "writePage.concernPostWrite": "悩み相談作成",
@@ -1963,6 +1981,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.retry": "重试",
     "common.loginRequired": "需要登录",
     "common.loginRequiredDesc": "请登录后继续",
+    "common.loginRequiredMoreInfo": "登录并了解变美的信息❤️",
+    "common.login": "登录",
     "common.priceInquiry": "价格咨询",
     "common.seeMore": "查看更多",
     "common.noSearchResults": "没有搜索结果",
@@ -2255,6 +2275,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "mypage.myReviews": "我写的评论",
     "mypage.myComments": "我的评论",
     "mypage.languageCurrency": "语言 / 货币",
+    "mypage.language": "语言",
+    "mypage.currency": "货币",
     "mypage.loadLikedPostsError": "无法加载点赞的帖子。",
     "mypage.loadLikedPostsErrorDesc": "加载点赞的帖子时发生错误。",
     "mypage.loadingMyPosts": "正在加载我的文章...",
@@ -2453,6 +2475,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.all": "全部",
     "writePage.managePosts": "我的文章管理",
     "writePage.managePostsDesc": "查看并管理您撰写的文章",
+    "writePage.manageComments": "我的评论管理",
+    "writePage.manageCommentsDesc": "查看并管理您撰写的评论",
     "writePage.procedureReviewWrite": "写疗程评论",
     "writePage.hospitalReviewWrite": "写医院评论",
     "writePage.concernPostWrite": "写咨询文章",
@@ -2575,7 +2599,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const t = (key: string): string => {
-    return translations[language][key] || key;
+    const langTranslations = translations[language];
+    if (!langTranslations) {
+      console.error(`[Translation] Language "${language}" not found in translations`);
+      return key;
+    }
+    const translation = langTranslations[key];
+    if (!translation) {
+      console.warn(`[Translation] Key "${key}" not found for language "${language}"`);
+      return key;
+    }
+    return translation;
   };
 
   return (

@@ -23,7 +23,9 @@ import {
   SmallCategoryRanking,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+import LoginModal from "./LoginModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/lib/supabase";
 
 // 홈페이지와 동일한 대분류 카테고리 10개
 const MAIN_CATEGORIES = [
@@ -99,6 +101,13 @@ export default function CategoryRankingPage({
     useState(false);
   const [selectedTreatmentForSchedule, setSelectedTreatmentForSchedule] =
     useState<Treatment | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  // 스크롤 버튼 클릭 횟수 추적 (카테고리별)
+  const [scrollButtonClickCount, setScrollButtonClickCount] = useState<
+    Record<string, number>
+  >({});
 
   // ✅ RPC 기반 랭킹 데이터
   const [midCategoryRankings, setMidCategoryRankings] = useState<
@@ -111,6 +120,50 @@ export default function CategoryRankingPage({
     []
   ); // 중분류 목록 유지용
   const [error, setError] = useState<string | null>(null);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      // localStorage 먼저 확인
+      const savedIsLoggedIn = localStorage.getItem("isLoggedIn");
+      if (savedIsLoggedIn === "true") {
+        setIsLoggedIn(true);
+        return;
+      }
+
+      // Supabase 세션 확인
+      if (supabase) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+      } else {
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkAuth();
+
+    // 로그인 상태 변경 감지
+    if (supabase) {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        setIsLoggedIn(!!session);
+        if (session) {
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("userId", session.user.id);
+        } else {
+          localStorage.removeItem("isLoggedIn");
+          localStorage.removeItem("userId");
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, []);
 
   // 찜한 항목 로드 (Supabase에서)
   useEffect(() => {
@@ -507,7 +560,12 @@ export default function CategoryRankingPage({
       });
       window.dispatchEvent(new Event("favoritesUpdated"));
     } else {
-      console.error("찜하기 처리 실패:", result.error);
+      // 로그인이 필요한 경우 안내 팝업 표시
+      if (result.error?.includes("로그인이 필요") || result.error?.includes("로그인")) {
+        setIsInfoModalOpen(true);
+      } else {
+        console.error("찜하기 처리 실패:", result.error);
+      }
     }
   };
 
@@ -586,7 +644,8 @@ export default function CategoryRankingPage({
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
     const procedureName =
-      selectedTreatmentForSchedule.treatment_name || t("common.noTreatmentName");
+      selectedTreatmentForSchedule.treatment_name ||
+      t("common.noTreatmentName");
     const hospital =
       selectedTreatmentForSchedule.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatmentForSchedule.treatment_id;
@@ -840,6 +899,7 @@ export default function CategoryRankingPage({
                 .slice(0, visibleCategoriesCount)
                 .map((ranking, index) => {
                   const rank = index + 1;
+                  const isTenthItem = index === 9; // 10위 (0-based index 9)
                   const scrollState = scrollPositions[
                     ranking.category_small_key
                   ] || {
@@ -857,213 +917,241 @@ export default function CategoryRankingPage({
                   };
 
                   const handleScrollRight = () => {
-                    const element =
-                      scrollRefs.current[ranking.category_small_key];
-                    if (element) {
-                      element.scrollBy({ left: 300, behavior: "smooth" });
+                    if (!isLoggedIn) {
+                      const key = ranking.category_small_key;
+                      const currentCount = scrollButtonClickCount[key] || 0;
+                      const newCount = currentCount + 1;
+                      setScrollButtonClickCount((prev) => ({
+                        ...prev,
+                        [key]: newCount,
+                      }));
+                      
+                      if (newCount >= 2) {
+                        setIsInfoModalOpen(true);
+                        // 카운트 리셋
+                        setScrollButtonClickCount((prev) => ({
+                          ...prev,
+                          [key]: 0,
+                        }));
+                      } else {
+                        // 스크롤은 정상적으로 실행
+                        const element =
+                          scrollRefs.current[ranking.category_small_key];
+                        if (element) {
+                          element.scrollBy({ left: 300, behavior: "smooth" });
+                        }
+                      }
+                    } else {
+                      const element =
+                        scrollRefs.current[ranking.category_small_key];
+                      if (element) {
+                        element.scrollBy({ left: 300, behavior: "smooth" });
+                      }
                     }
                   };
 
                   return (
                     <div
                       key={`${ranking.category_small_key}-${ranking.category_rank}-${index}`}
-                      className="space-y-4"
                     >
-                      {/* 소분류 헤더 with 순위 */}
-                      <div className="flex items-start gap-4">
-                        <span className="text-primary-main text-4xl font-bold leading-none">
-                          {rank}
-                        </span>
-                        <div className="flex-1">
-                          <h4 className="text-xl font-bold text-gray-900 mb-2">
-                            {ranking.category_small_key}
-                          </h4>
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1">
-                              <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
-                              <span className="text-sm font-semibold text-gray-900">
-                                {ranking.average_rating > 0
-                                  ? ranking.average_rating.toFixed(1)
-                                  : "-"}
+                      <div className="space-y-4">
+                        {/* 소분류 헤더 with 순위 */}
+                        <div className="flex items-start gap-4">
+                          <span className="text-primary-main text-4xl font-bold leading-none">
+                            {rank}
+                          </span>
+                          <div className="flex-1">
+                            <h4 className="text-xl font-bold text-gray-900 mb-2">
+                              {ranking.category_small_key}
+                            </h4>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                                <span className="text-sm font-semibold text-gray-900">
+                                  {ranking.average_rating > 0
+                                    ? ranking.average_rating.toFixed(1)
+                                    : "-"}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                리뷰 {ranking.total_reviews.toLocaleString()}개
                               </span>
                             </div>
-                            <span className="text-xs text-gray-500">
-                              리뷰 {ranking.total_reviews.toLocaleString()}개
-                            </span>
                           </div>
                         </div>
-                      </div>
 
-                      {/* 카드 스크롤 컨테이너 */}
-                      <div className="relative">
-                        {/* 좌측 스크롤 버튼 */}
-                        {scrollState.canScrollLeft && (
-                          <button
-                            onClick={handleScrollLeft}
-                            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
+                        {/* 카드 스크롤 컨테이너 */}
+                        <div className="relative">
+                          {/* 좌측 스크롤 버튼 */}
+                          {scrollState.canScrollLeft && (
+                            <button
+                              onClick={handleScrollLeft}
+                              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
+                            >
+                              <FiChevronLeft className="text-gray-700 text-lg" />
+                            </button>
+                          )}
+
+                          {/* 카드 스크롤 영역 */}
+                          <div
+                            ref={(el) => {
+                              scrollRefs.current[ranking.category_small_key] =
+                                el;
+                            }}
+                            className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
+                            onScroll={() =>
+                              handleScroll(ranking.category_small_key)
+                            }
                           >
-                            <FiChevronLeft className="text-gray-700 text-lg" />
-                          </button>
-                        )}
+                            {shuffleByThumbnail(ranking.treatments || []).map(
+                              (treatment) => {
+                                const treatmentId = treatment.treatment_id || 0;
+                                const isFavorited = favorites.has(treatmentId);
+                                const thumbnailUrl = getThumbnailUrl(treatment);
+                                const price = treatment.selling_price
+                                  ? `${Math.round(
+                                      treatment.selling_price / 10000
+                                    )}만원`
+                                  : t("common.priceInquiry");
 
-                        {/* 카드 스크롤 영역 */}
-                        <div
-                          ref={(el) => {
-                            scrollRefs.current[ranking.category_small_key] = el;
-                          }}
-                          className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
-                          onScroll={() =>
-                            handleScroll(ranking.category_small_key)
-                          }
-                        >
-                          {shuffleByThumbnail(ranking.treatments || []).map(
-                            (treatment) => {
-                              const treatmentId = treatment.treatment_id || 0;
-                              const isFavorited = favorites.has(treatmentId);
-                              const thumbnailUrl = getThumbnailUrl(treatment);
-                              const price = treatment.selling_price
-                                ? `${Math.round(
-                                    treatment.selling_price / 10000
-                                  )}만원`
-                                : t("common.priceInquiry");
-
-                              return (
-                                <div
-                                  key={treatmentId}
-                                  className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
-                                  onClick={() => {
-                                    router.push(
-                                      `/explore/treatment/${treatmentId}`
-                                    );
-                                  }}
-                                >
-                                  {/* 이미지 - 2:1 비율 */}
-                                  <div className="relative w-full aspect-[2/1] bg-gray-100 overflow-hidden">
-                                    <img
-                                      src={thumbnailUrl}
-                                      alt={
-                                        treatment.treatment_name ||
-                                        "시술 이미지"
-                                      }
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        const target =
-                                          e.target as HTMLImageElement;
-                                        if (
-                                          target.dataset.fallback === "true"
-                                        ) {
-                                          target.style.display = "none";
-                                          return;
+                                return (
+                                  <div
+                                    key={treatmentId}
+                                    className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
+                                    onClick={() => {
+                                      router.push(
+                                        `/explore/treatment/${treatmentId}`
+                                      );
+                                    }}
+                                  >
+                                    {/* 이미지 - 2:1 비율 */}
+                                    <div className="relative w-full aspect-[2/1] bg-gray-100 overflow-hidden">
+                                      <img
+                                        src={thumbnailUrl}
+                                        alt={
+                                          treatment.treatment_name ||
+                                          "시술 이미지"
                                         }
-                                        target.src =
-                                          'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
-                                        target.dataset.fallback = "true";
-                                      }}
-                                    />
-                                    {/* 할인율 배지 */}
-                                    {treatment.dis_rate &&
-                                      treatment.dis_rate > 0 && (
-                                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
-                                          {treatment.dis_rate}%
-                                        </div>
-                                      )}
-                                    {/* 찜 버튼 - 썸네일 우측 상단 */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleFavoriteClick(treatment, e);
-                                      }}
-                                      className="absolute top-3 right-3 bg-white bg-opacity-90 p-2 rounded-full z-10 shadow-sm hover:bg-opacity-100 transition-colors"
-                                    >
-                                      <FiHeart
-                                        className={`text-base ${
-                                          isFavorited
-                                            ? "text-red-500 fill-red-500"
-                                            : "text-gray-700"
-                                        }`}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          const target =
+                                            e.target as HTMLImageElement;
+                                          if (
+                                            target.dataset.fallback === "true"
+                                          ) {
+                                            target.style.display = "none";
+                                            return;
+                                          }
+                                          target.src =
+                                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-size="24"%3E🏥%3C/text%3E%3C/svg%3E';
+                                          target.dataset.fallback = "true";
+                                        }}
                                       />
-                                    </button>
-                                  </div>
-
-                                  {/* 카드 내용 - 균형 좋은 간격 */}
-                                  <div className="p-2.5 flex flex-col min-h-[116px]">
-                                    {/* 상단 콘텐츠 */}
-                                    <div className="space-y-1.5">
-                                      {/* 시술명 */}
-                                      <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
-                                        {treatment.treatment_name}
-                                      </h4>
-
-                                      {/* 평점 */}
-                                      {treatment.rating &&
-                                      treatment.rating > 0 ? (
-                                        <div className="flex items-center gap-1 h-[14px]">
-                                          <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
-                                          <span className="text-xs font-semibold text-gray-700">
-                                            {treatment.rating.toFixed(1)}
-                                          </span>
-                                          <span className="text-xs text-gray-400">
-                                            ({treatment.review_count || 0})
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <div className="h-[14px]" />
-                                      )}
-
-                                      {/* 병원명 */}
-                                      {treatment.hospital_name ? (
-                                        <p className="text-xs text-gray-600 line-clamp-1 h-[16px]">
-                                          {treatment.hospital_name}
-                                        </p>
-                                      ) : (
-                                        <div className="h-[16px]" />
-                                      )}
-                                    </div>
-
-                                    {/* 하단 정보 - 적당한 간격 */}
-                                    <div className="mt-auto pt-2 flex items-center justify-between">
-                                      {/* 가격 */}
-                                      <div className="flex items-center gap-1">
-                                        <span className="text-sm font-bold text-primary-main">
-                                          {price}
-                                        </span>
-                                        {treatment.vat_info && (
-                                          <span className="text-[10px] text-gray-500">
-                                            {treatment.vat_info}
-                                          </span>
+                                      {/* 할인율 배지 */}
+                                      {treatment.dis_rate &&
+                                        treatment.dis_rate > 0 && (
+                                          <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
+                                            {treatment.dis_rate}%
+                                          </div>
                                         )}
-                                      </div>
-
-                                      {/* 일정 추가 버튼 */}
+                                      {/* 찜 버튼 - 썸네일 우측 상단 */}
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleAddToScheduleClick(
-                                            treatment,
-                                            e
-                                          );
+                                          handleFavoriteClick(treatment, e);
                                         }}
-                                        className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0 relative z-10"
+                                        className="absolute top-3 right-3 bg-white bg-opacity-90 p-2 rounded-full z-10 shadow-sm hover:bg-opacity-100 transition-colors"
                                       >
-                                        <FiCalendar className="text-base text-primary-main" />
+                                        <FiHeart
+                                          className={`text-base ${
+                                            isFavorited
+                                              ? "text-red-500 fill-red-500"
+                                              : "text-gray-700"
+                                          }`}
+                                        />
                                       </button>
                                     </div>
+
+                                    {/* 카드 내용 - 균형 좋은 간격 */}
+                                    <div className="p-2.5 flex flex-col min-h-[116px]">
+                                      {/* 상단 콘텐츠 */}
+                                      <div className="space-y-1.5">
+                                        {/* 시술명 */}
+                                        <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
+                                          {treatment.treatment_name}
+                                        </h4>
+
+                                        {/* 평점 */}
+                                        {treatment.rating &&
+                                        treatment.rating > 0 ? (
+                                          <div className="flex items-center gap-1 h-[14px]">
+                                            <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
+                                            <span className="text-xs font-semibold text-gray-700">
+                                              {treatment.rating.toFixed(1)}
+                                            </span>
+                                            <span className="text-xs text-gray-400">
+                                              ({treatment.review_count || 0})
+                                            </span>
+                                          </div>
+                                        ) : (
+                                          <div className="h-[14px]" />
+                                        )}
+
+                                        {/* 병원명 */}
+                                        {treatment.hospital_name ? (
+                                          <p className="text-xs text-gray-600 line-clamp-1 h-[16px]">
+                                            {treatment.hospital_name}
+                                          </p>
+                                        ) : (
+                                          <div className="h-[16px]" />
+                                        )}
+                                      </div>
+
+                                      {/* 하단 정보 - 적당한 간격 */}
+                                      <div className="mt-auto pt-2 flex items-center justify-between">
+                                        {/* 가격 */}
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-sm font-bold text-primary-main">
+                                            {price}
+                                          </span>
+                                          {treatment.vat_info && (
+                                            <span className="text-[10px] text-gray-500">
+                                              {treatment.vat_info}
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        {/* 일정 추가 버튼 */}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddToScheduleClick(
+                                              treatment,
+                                              e
+                                            );
+                                          }}
+                                          className="p-1.5 bg-white hover:bg-gray-50 rounded-full shadow-sm transition-colors flex-shrink-0 relative z-10"
+                                        >
+                                          <FiCalendar className="text-base text-primary-main" />
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            }
+                                );
+                              }
+                            )}
+                          </div>
+
+                          {/* 우측 스크롤 버튼 */}
+                          {scrollState.canScrollRight && (
+                            <button
+                              onClick={handleScrollRight}
+                              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
+                            >
+                              <FiChevronRight className="text-gray-700 text-lg" />
+                            </button>
                           )}
                         </div>
-
-                        {/* 우측 스크롤 버튼 */}
-                        {scrollState.canScrollRight && (
-                          <button
-                            onClick={handleScrollRight}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
-                          >
-                            <FiChevronRight className="text-gray-700 text-lg" />
-                          </button>
-                        )}
                       </div>
                     </div>
                   );
@@ -1073,9 +1161,13 @@ export default function CategoryRankingPage({
               {smallCategoryRankings.length > visibleCategoriesCount && (
                 <div className="text-center pt-4">
                   <button
-                    onClick={() =>
-                      setVisibleCategoriesCount((prev) => prev + 5)
-                    }
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        setIsInfoModalOpen(true);
+                      } else {
+                        setVisibleCategoriesCount((prev) => prev + 5);
+                      }
+                    }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                   >
                     더보기 (
@@ -1121,9 +1213,34 @@ export default function CategoryRankingPage({
                 };
 
                 const handleScrollRight = () => {
-                  const element = scrollRefs.current[ranking.category_mid];
-                  if (element) {
-                    element.scrollBy({ left: 300, behavior: "smooth" });
+                  if (!isLoggedIn) {
+                    const key = ranking.category_mid;
+                    const currentCount = scrollButtonClickCount[key] || 0;
+                    const newCount = currentCount + 1;
+                    setScrollButtonClickCount((prev) => ({
+                      ...prev,
+                      [key]: newCount,
+                    }));
+                    
+                    if (newCount >= 2) {
+                      setIsInfoModalOpen(true);
+                      // 카운트 리셋
+                      setScrollButtonClickCount((prev) => ({
+                        ...prev,
+                        [key]: 0,
+                      }));
+                    } else {
+                      // 스크롤은 정상적으로 실행
+                      const element = scrollRefs.current[ranking.category_mid];
+                      if (element) {
+                        element.scrollBy({ left: 300, behavior: "smooth" });
+                      }
+                    }
+                  } else {
+                    const element = scrollRefs.current[ranking.category_mid];
+                    if (element) {
+                      element.scrollBy({ left: 300, behavior: "smooth" });
+                    }
                   }
                 };
 
@@ -1335,7 +1452,13 @@ export default function CategoryRankingPage({
             {midCategoryRankings.length > visibleCategoriesCount && (
               <div className="text-center pt-4">
                 <button
-                  onClick={() => setVisibleCategoriesCount((prev) => prev + 5)}
+                  onClick={() => {
+                    if (!isLoggedIn) {
+                      setIsInfoModalOpen(true);
+                    } else {
+                      setVisibleCategoriesCount((prev) => prev + 5);
+                    }
+                  }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                 >
                   더보기
@@ -1356,11 +1479,60 @@ export default function CategoryRankingPage({
           }}
           onDateSelect={handleScheduleDateSelect}
           treatmentName={
-            selectedTreatmentForSchedule.treatment_name || t("common.noTreatmentName")
+            selectedTreatmentForSchedule.treatment_name ||
+            t("common.noTreatmentName")
           }
           categoryMid={selectedTreatmentForSchedule.category_mid || null}
         />
       )}
+
+      {/* 안내 팝업 모달 */}
+      {isInfoModalOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setIsInfoModalOpen(false)} />
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t("common.loginRequired")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {t("common.loginRequiredMoreInfo")}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsInfoModalOpen(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsInfoModalOpen(false);
+                      setIsLoginModalOpen(true);
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.login")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsLoginModalOpen(false);
+          setIsLoggedIn(true);
+          // 로그인 성공 후 더보기 기능 자동 실행
+          setVisibleCategoriesCount((prev) => prev + 5);
+        }}
+      />
     </div>
   );
 }

@@ -52,7 +52,7 @@ export default function TravelRecommendationPage() {
       </div>
 
       {/* 메인 컨텐츠 */}
-      <div className="px-4 py-6">
+      <div className="px-4 pt-16 pb-6">
         {/* 상단 메인 카피 */}
         <div
           className="rounded-2xl p-6 mb-8 text-center"

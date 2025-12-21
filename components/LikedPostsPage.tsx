@@ -89,7 +89,7 @@ export default function LikedPostsPage() {
   }
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-4 pt-16 pb-6">
       {/* 좋아요한 글 목록 */}
       <div className="space-y-4">
         {likedPosts.map((post) => (

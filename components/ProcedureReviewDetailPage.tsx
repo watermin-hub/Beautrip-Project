@@ -33,6 +33,7 @@ import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
+import LoginModal from "./LoginModal";
 
 interface ProcedureReviewDetailPageProps {
   reviewId: string;
@@ -54,6 +55,28 @@ export default function ProcedureReviewDetailPage({
   );
   const [userTimezone, setUserTimezone] = useState<string | null>(null);
   const [userLocale, setUserLocale] = useState<string | null>(null);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
+    };
+    checkAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const loadReview = async () => {
@@ -118,6 +141,12 @@ export default function ProcedureReviewDetailPage({
   }, [reviewId]);
 
   const handleLike = async () => {
+    // 로그인 체크
+    if (!isLoggedIn) {
+      setShowLoginRequiredPopup(true);
+      return;
+    }
+
     try {
       const result = await togglePostLike(reviewId, "treatment_review");
       if (result.success) {
@@ -126,7 +155,7 @@ export default function ProcedureReviewDetailPage({
         setLikeCount(newCount);
       } else {
         if (result.error?.includes("로그인이 필요")) {
-          alert("로그인이 필요합니다.");
+          setShowLoginRequiredPopup(true);
         }
       }
     } catch (error) {
@@ -217,121 +246,130 @@ export default function ProcedureReviewDetailPage({
         </div>
 
         {/* 시술 정보 */}
-        <div className="px-4 py-4 space-y-3 border-b border-gray-100">
-          <div>
-            <span className="text-xs text-gray-500">
-              {t("label.procedureName")}
-            </span>
-            <p className="text-base font-semibold text-gray-900 mt-1">
-              {review.procedure_name}
-            </p>
-          </div>
-
-          {review.hospital_name && (
-            <div>
-              <span className="text-xs text-gray-500">
-                {t("label.hospitalName")}
-              </span>
-              <p className="text-base text-gray-900 mt-1">
-                {review.hospital_name}
-              </p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <span className="text-xs text-gray-500">시술 만족도</span>
-              <div className="flex items-center gap-1 mt-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <FiStar
-                    key={star}
-                    className={`text-lg ${
-                      star <= review.procedure_rating
-                        ? "text-yellow-400 fill-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
-                <span className="text-sm text-gray-700 ml-1">
-                  {review.procedure_rating}
+        <div className="px-4 py-4 border-b border-gray-100">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
+            {/* 시술명 & 병원명 */}
+            <div className="space-y-3">
+              <div>
+                <span className="text-xs text-gray-500">
+                  {t("label.procedureName")}
                 </span>
+                <p className="text-base font-semibold text-gray-900 mt-1">
+                  {review.procedure_name}
+                </p>
+              </div>
+
+              {review.hospital_name && (
+                <div>
+                  <span className="text-xs text-gray-500">
+                    {t("label.hospitalName")}
+                  </span>
+                  <p className="text-base text-gray-900 mt-1">
+                    {review.hospital_name}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 만족도 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="text-xs text-gray-500">시술 만족도</span>
+                <div className="flex items-center gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <FiStar
+                      key={star}
+                      className={`text-lg ${
+                        star <= review.procedure_rating
+                          ? "text-yellow-400 fill-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-sm text-gray-700 ml-1">
+                    {review.procedure_rating}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-xs text-gray-500">병원 만족도</span>
+                <div className="flex items-center gap-1 mt-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <FiStar
+                      key={star}
+                      className={`text-lg ${
+                        star <= review.hospital_rating
+                          ? "text-yellow-400 fill-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-sm text-gray-700 ml-1">
+                    {review.hospital_rating}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div>
-              <span className="text-xs text-gray-500">병원 만족도</span>
-              <div className="flex items-center gap-1 mt-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <FiStar
-                    key={star}
-                    className={`text-lg ${
-                      star <= review.hospital_rating
-                        ? "text-yellow-400 fill-yellow-400"
-                        : "text-gray-300"
-                    }`}
-                  />
-                ))}
-                <span className="text-sm text-gray-700 ml-1">
-                  {review.hospital_rating}
-                </span>
+            {/* 성별 & 연령대 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="text-xs text-gray-500">{t("label.gender")}</span>
+                <p className="text-base text-gray-900 mt-1">
+                  {review.gender === "남"
+                    ? t("label.genderMale")
+                    : review.gender === "여"
+                    ? t("label.genderFemale")
+                    : review.gender}
+                </p>
               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <span className="text-xs text-gray-500">{t("label.gender")}</span>
-              <p className="text-base text-gray-900 mt-1">
-                {review.gender === "남"
-                  ? t("label.genderMale")
-                  : review.gender === "여"
-                  ? t("label.genderFemale")
-                  : review.gender}
-              </p>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500">{t("label.age")}</span>
-              <p className="text-base text-gray-900 mt-1">
-                {(() => {
-                  if (!review.age_group) return "";
-                  // "20대", "30대" 등의 형식에서 숫자 부분 추출
-                  const ageMatch = review.age_group.match(/^(\d+)/);
-                  if (ageMatch) {
-                    const ageKey = `label.age${ageMatch[1]}s`;
-                    const translated = t(ageKey);
-                    // 번역 키가 존재하면 사용, 없으면 원본 반환
-                    return translated !== ageKey ? translated : review.age_group;
-                  }
-                  return review.age_group;
-                })()}
-              </p>
-            </div>
-          </div>
-
-          {review.cost && (
-            <div>
-              <span className="text-xs text-gray-500">{t("label.cost")}</span>
-              <p className="text-base text-gray-900 mt-1">
-                {review.cost.toLocaleString()}만원
-              </p>
-            </div>
-          )}
-
-          {review.surgery_date && (
-            <div>
-              <span className="text-xs text-gray-500">{t("label.surgeryDate")}</span>
-              <div className="flex items-center gap-1 mt-1">
-                <FiCalendar className="text-gray-400 text-sm" />
-                <p className="text-base text-gray-900">
-                  {new Date(review.surgery_date).toLocaleDateString("ko-KR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
+              <div>
+                <span className="text-xs text-gray-500">{t("label.age")}</span>
+                <p className="text-base text-gray-900 mt-1">
+                  {(() => {
+                    if (!review.age_group) return "";
+                    // "20대", "30대" 등의 형식에서 숫자 부분 추출
+                    const ageMatch = review.age_group.match(/^(\d+)/);
+                    if (ageMatch) {
+                      const ageKey = `label.age${ageMatch[1]}s`;
+                      const translated = t(ageKey);
+                      // 번역 키가 존재하면 사용, 없으면 원본 반환
+                      return translated !== ageKey ? translated : review.age_group;
+                    }
+                    return review.age_group;
+                  })()}
                 </p>
               </div>
             </div>
-          )}
+
+            {/* 비용 */}
+            {review.cost !== undefined && review.cost !== null && (
+              <div>
+                <span className="text-xs text-gray-500">{t("label.cost")}</span>
+                <p className="text-base text-gray-900 mt-1">
+                  {review.cost.toLocaleString()}만원
+                </p>
+              </div>
+            )}
+
+            {/* 시술 날짜 */}
+            {review.surgery_date && (
+              <div>
+                <span className="text-xs text-gray-500">{t("label.surgeryDate")}</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <FiCalendar className="text-gray-400 text-sm" />
+                  <p className="text-base text-gray-900">
+                    {new Date(review.surgery_date).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 글 내용 */}
@@ -489,7 +527,7 @@ export default function ProcedureReviewDetailPage({
         </div>
 
         {/* 댓글 섹션 */}
-        <div className="px-4 py-6 border-t border-gray-200">
+        <div className="px-4 py-6 pb-24 border-t border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">
             댓글 ({commentCount})
           </h3>
@@ -513,6 +551,52 @@ export default function ProcedureReviewDetailPage({
         </div>
       </div>
       <BottomNavigation />
+
+      {/* 로그인 필요 팝업 */}
+      {showLoginRequiredPopup && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t("common.loginRequired")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {t("common.loginRequiredMoreInfo")}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowLoginRequiredPopup(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowLoginRequiredPopup(false);
+                      setShowLoginModal(true);
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.login")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLoginSuccess={() => {
+          setShowLoginModal(false);
+          setIsLoggedIn(true);
+        }}
+      />
     </div>
   );
 }

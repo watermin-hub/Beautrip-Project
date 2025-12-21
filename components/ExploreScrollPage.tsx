@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiEdit3 } from "react-icons/fi";
+import { FiEdit3, FiChevronUp } from "react-icons/fi";
 import Header from "./Header";
 import ExploreHeader from "./ExploreHeader";
 import RankingSection from "./RankingSection";
@@ -22,6 +22,7 @@ export default function ExploreScrollPage() {
   const isAutoScrolling = useRef(false);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const [showProcedureSection, setShowProcedureSection] = useState(true);
+  const [showTopButton, setShowTopButton] = useState(false);
 
   // 리뷰 작성 여부 확인
   useEffect(() => {
@@ -120,7 +121,7 @@ export default function ExploreScrollPage() {
     }
   }, [searchParams]);
 
-  // 스크롤 위치 감지하여 activeSection 업데이트
+  // 스크롤 위치 감지하여 activeSection 업데이트 및 TOP 버튼 표시
   useEffect(() => {
     const handleScroll = () => {
       if (isAutoScrolling.current) return; // ✅ 자동 스크롤 중엔 덮어쓰기 금지
@@ -141,11 +142,22 @@ export default function ExploreScrollPage() {
       } else {
         setActiveSection("ranking");
       }
+
+      // 스크롤이 300px 이상 내려갔을 때 TOP 버튼 표시
+      setShowTopButton(window.scrollY > 300);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // TOP 버튼 클릭 시 상단으로 스크롤
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">
@@ -215,6 +227,19 @@ export default function ExploreScrollPage() {
       <div className="pb-20">
         <BottomNavigation />
       </div>
+
+      {/* TOP 버튼 - 우측 하단 (모바일 최적화) */}
+      {showTopButton && (
+        <div className="fixed bottom-20 z-40 right-0 left-0 flex justify-end pointer-events-none max-w-md mx-auto px-2">
+          <button
+            onClick={scrollToTop}
+            className="w-7 h-7 bg-gray-800/80 hover:bg-gray-900 text-white rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 pointer-events-auto"
+            aria-label="맨 위로"
+          >
+            <FiChevronUp className="text-xs" />
+          </button>
+        </div>
+      )}
 
     </div>
   );

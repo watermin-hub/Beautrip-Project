@@ -246,7 +246,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="px-4 py-6">
+    <div className="px-4 pt-16 pb-6">
       {/* 탭 선택 - sticky로 설정하여 헤더에 가려지지 않도록 */}
       {/* Header(48px) + 찜 목록 헤더(약 56px: py-3 + 텍스트) = 104px */}
       <div className="sticky top-[104px] z-[25] bg-white pb-4 pt-2 mb-4 -mx-4 px-4 border-b border-gray-100">
