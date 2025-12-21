@@ -433,6 +433,8 @@ export default function ProcedureRecommendation({
     null
   );
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // 중분류 카테고리 표시 개수 (초기 5개)
   const [visibleCategoriesCount, setVisibleCategoriesCount] = useState(5);
