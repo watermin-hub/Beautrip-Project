@@ -5873,7 +5873,7 @@ export async function loadMyComments(
 // 댓글 수 조회
 export async function getCommentCount(
   postId: string,
-  postType: "procedure" | "hospital" | "concern"
+  postType: "procedure" | "hospital" | "concern" | "guide"
 ): Promise<number> {
   try {
     const client = getSupabaseOrNull();
