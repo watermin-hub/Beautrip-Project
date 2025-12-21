@@ -9,7 +9,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-      image.png;
     }, 700); // 0.7초 후 스플래시 종료
 
     return () => clearTimeout(timer);
