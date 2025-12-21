@@ -4,8 +4,17 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { findRecoveryGuideById } from "@/lib/content/recoveryGuidePosts";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiChevronLeft, FiCheck, FiAlertCircle } from "react-icons/fi";
+import { FiChevronLeft, FiCheck, FiAlertCircle, FiHeart, FiMessageCircle, FiEye } from "react-icons/fi";
 import type { RecoveryGuidePost } from "@/lib/content/recoveryGuidePosts";
+import {
+  togglePostLike,
+  isPostLiked,
+  getPostLikeCount,
+  getCommentCount,
+} from "@/lib/api/beautripApi";
+import CommentForm from "./CommentForm";
+import CommentList from "./CommentList";
+import BottomNavigation from "./BottomNavigation";
 
 // 읽기 좋은 마크다운 렌더링 함수
 function renderMarkdown(content: string) {
@@ -411,6 +420,9 @@ export default function RecoveryGuidePostDetailPage({
   const { language } = useLanguage();
   const [post, setPost] = useState<RecoveryGuidePost | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
 
   useEffect(() => {
     // postId가 없으면 실행하지 않음
@@ -435,6 +447,18 @@ export default function RecoveryGuidePostDetailPage({
           loadedPost ? "Found" : "Not found"
         );
         setPost(loadedPost);
+        
+        // 좋아요 상태와 개수 로드
+        if (loadedPost) {
+          const [liked, likes, comments] = await Promise.all([
+            isPostLiked(postId, "guide"),
+            getPostLikeCount(postId, "guide"),
+            getCommentCount(postId, "guide"),
+          ]);
+          setIsLiked(liked);
+          setLikeCount(likes);
+          setCommentCount(comments);
+        }
       } catch (error) {
         console.error(
           "[RecoveryGuidePostDetailPage] Failed to load recovery guide:",
@@ -447,6 +471,32 @@ export default function RecoveryGuidePostDetailPage({
     };
     loadPost();
   }, [postId, language]);
+
+  const handleLikeClick = async () => {
+    if (!postId) return;
+    
+    try {
+      const result = await togglePostLike(postId, "guide");
+      if (result.success) {
+        setIsLiked(result.isLiked);
+        // 좋아요 개수 다시 가져오기
+        const count = await getPostLikeCount(postId, "guide");
+        setLikeCount(count);
+      } else {
+        alert(result.error || "좋아요 처리 중 오류가 발생했습니다.");
+      }
+    } catch (error) {
+      console.error("좋아요 처리 중 오류:", error);
+      alert("좋아요 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleCommentAdded = async () => {
+    if (postId) {
+      const count = await getCommentCount(postId, "guide");
+      setCommentCount(count);
+    }
+  };
 
   if (loading) {
     return (
@@ -555,10 +605,57 @@ export default function RecoveryGuidePostDetailPage({
         </div>
 
         {/* Markdown Content */}
-        <div className="prose prose-gray max-w-none">
+        <div className="prose prose-gray max-w-none mb-6">
           {renderMarkdown(post.content)}
         </div>
+
+        {/* 좋아요, 댓글, 조회수 */}
+        <div className="flex items-center gap-4 pt-4 border-t border-gray-200 mb-6">
+          <button
+            onClick={handleLikeClick}
+            className={`flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95 ${
+              isLiked ? "text-red-500" : "text-gray-600 hover:text-red-500"
+            }`}
+          >
+            <FiHeart className={`text-base ${isLiked ? "fill-red-500" : ""}`} />
+            <span className="text-xs font-medium">{likeCount}</span>
+          </button>
+          <div className="flex items-center gap-1.5 text-gray-600">
+            <FiMessageCircle className="text-base" />
+            <span className="text-xs font-medium">{commentCount}</span>
+          </div>
+          {post.views !== undefined && (
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <FiEye className="text-sm" />
+              <span className="text-xs">{post.views.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+
+        {/* 댓글 섹션 */}
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">댓글 ({commentCount})</h3>
+          
+          {/* 댓글 작성 폼 */}
+          <div className="mb-6">
+            <CommentForm
+              postId={postId}
+              postType="guide"
+              onSuccess={handleCommentAdded}
+            />
+          </div>
+
+          {/* 댓글 목록 */}
+          <CommentList
+            postId={postId}
+            postType="guide"
+            onCommentAdded={handleCommentAdded}
+            refreshKey={commentCount}
+          />
+        </div>
       </div>
+
+      <BottomNavigation />
     </div>
   );
 }

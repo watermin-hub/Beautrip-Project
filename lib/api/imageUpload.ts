@@ -177,6 +177,14 @@ export async function uploadConcernImage(
   try {
     const CONCERN_BUCKET_NAME = "concern-images";
 
+    console.log("=== 고민글 이미지 업로드 시작 ===");
+    console.log("버킷 이름:", CONCERN_BUCKET_NAME);
+    console.log("postId:", postId);
+    console.log("imageIndex:", imageIndex);
+    console.log("파일 이름:", file.name);
+    console.log("파일 크기:", file.size);
+    console.log("파일 타입:", file.type);
+
     // 파일 확장자 추출
     const fileExt = file.name.split(".").pop();
     if (!fileExt) {
@@ -185,6 +193,7 @@ export async function uploadConcernImage(
 
     // 파일명 생성: {postId}/{imageIndex}.{ext}
     const fileName = `${postId}/${imageIndex}.${fileExt}`;
+    console.log("생성된 파일명:", fileName);
 
     // 이미지 업로드
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -195,13 +204,27 @@ export async function uploadConcernImage(
         contentType: file.type, // 파일 타입 명시
       });
 
+    console.log("업로드 결과:", { uploadData, uploadError });
+
     if (uploadError) {
-      console.error("고민글 이미지 업로드 실패:", uploadError);
+      console.error("=== 고민글 이미지 업로드 실패 상세 ===");
+      console.error("에러 객체:", uploadError);
+      console.error("에러 메시지:", uploadError.message);
+      console.error("에러 상태 코드:", (uploadError as any)?.statusCode);
+      console.error("에러 JSON:", JSON.stringify(uploadError, null, 2));
+      
+      // 버킷 존재 여부 확인을 위한 에러 메시지 추가
+      if (uploadError.message?.includes("Bucket not found") || uploadError.message?.includes("not found")) {
+        throw new Error(`Storage 버킷 '${CONCERN_BUCKET_NAME}'을(를) 찾을 수 없습니다. Supabase 대시보드에서 버킷을 생성해주세요.`);
+      }
+      
       throw new Error(`이미지 업로드 실패: ${uploadError.message}`);
     }
 
     if (uploadData?.path) {
       console.log("✅ 고민글 이미지 업로드 성공! 경로:", uploadData.path);
+    } else {
+      console.warn("⚠️ 업로드 데이터에 path가 없습니다:", uploadData);
     }
 
     // 공개 URL 가져오기 (반드시 getPublicUrl 사용 - 백엔드 요구사항)
@@ -209,9 +232,16 @@ export async function uploadConcernImage(
       data: { publicUrl },
     } = supabase.storage.from(CONCERN_BUCKET_NAME).getPublicUrl(fileName);
 
+    console.log("생성된 공개 URL:", publicUrl);
+    console.log("=== 고민글 이미지 업로드 완료 ===");
+
     return publicUrl;
   } catch (error: any) {
-    console.error("고민글 이미지 업로드 오류:", error);
+    console.error("=== 고민글 이미지 업로드 오류 (catch 블록) ===");
+    console.error("에러 타입:", typeof error);
+    console.error("에러 객체:", error);
+    console.error("에러 메시지:", error?.message);
+    console.error("에러 스택:", error?.stack);
     throw error;
   }
 }

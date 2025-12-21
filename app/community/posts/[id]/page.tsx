@@ -11,12 +11,20 @@ import {
   loadHospitalReviews,
   loadConcernPosts,
   getCommentCount,
+  incrementViewCount,
+  getViewCount,
+  deleteProcedureReview,
+  deleteHospitalReview,
+  deleteConcernPost,
 } from "@/lib/api/beautripApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
-import { translateText, type LanguageCode } from "@/lib/utils/translation";
+import { translateText, type LanguageCode, detectLanguage, mapDeepLLangToLanguageCode } from "@/lib/utils/translation";
+import { maskNickname } from "@/lib/utils/nicknameMask";
 import Image from "next/image";
-import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft, FiGlobe } from "react-icons/fi";
+import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft, FiGlobe, FiEdit2, FiTrash2, FiMoreVertical } from "react-icons/fi";
+import { supabase } from "@/lib/supabase";
+import CommunityWriteModal from "@/components/CommunityWriteModal";
 
 function PostDetailContent() {
   const params = useParams();
@@ -33,10 +41,15 @@ function PostDetailContent() {
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [commentCount, setCommentCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
   const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [isTranslated, setIsTranslated] = useState(false);
+  const [isAuthor, setIsAuthor] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   useEffect(() => {
     if (postId && postType) {
@@ -64,16 +77,39 @@ function PostDetailContent() {
       } else if (postType === "hospital") {
         const reviews = await loadHospitalReviews(100);
         postData = reviews.find((r: any) => r.id === postId);
-      } else if (postType === "concern") {
+      } else       if (postType === "concern") {
         const posts = await loadConcernPosts(100);
-        postData = posts.find((p: any) => p.id === postId);
+        const foundPost = posts.find((p: any) => p.id === postId);
+        if (foundPost) {
+          // concern_category를 category로 매핑, image_paths를 images로 매핑
+          postData = {
+            ...foundPost,
+            category: foundPost.concern_category || "고민글",
+            images: foundPost.image_paths || foundPost.images || [],
+          };
+        }
       }
 
       if (postData) {
         setPost(postData);
-        // 댓글 수 조회
-        const count = await getCommentCount(postId, postType);
+        // 댓글 수, 조회수 증가, 조회수를 병렬로 처리
+        const [count, views] = await Promise.all([
+          getCommentCount(postId, postType),
+          (async () => {
+            await incrementViewCount(postId, postType);
+            return await getViewCount(postId, postType);
+          })(),
+        ]);
         setCommentCount(count);
+        setViewCount(views);
+
+        // 작성자 확인
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user && postData.user_id === user.id) {
+          setIsAuthor(true);
+        }
       }
     } catch (error) {
       console.error("게시글 로드 실패:", error);
@@ -96,9 +132,13 @@ function PostDetailContent() {
     try {
       const targetLang = language as LanguageCode;
 
-      // 현재 언어가 한국어가 아니고, 원본 텍스트가 한국어인 경우에만 번역
-      if (targetLang === "KR") {
-        // 한국어로 설정되어 있으면 번역하지 않음
+      // 원본 텍스트의 언어 감지 (간단한 휴리스틱)
+      const contentText = post.content || "";
+      const titleText = postType === "concern" && post.title ? post.title : "";
+      const detectedSourceLang = detectLanguage(contentText || titleText);
+
+      // 원본 언어와 목표 언어가 같으면 번역 불필요
+      if (detectedSourceLang === targetLang) {
         setIsTranslated(false);
         setTranslatedTitle(null);
         setTranslatedContent(null);
@@ -106,23 +146,23 @@ function PostDetailContent() {
         return;
       }
 
-      // 제목과 내용을 번역
-      const translationPromises: Promise<string>[] = [];
+      // 제목과 내용을 번역 (자동 언어 감지 사용)
+      const translationPromises: Promise<{ text: string; detectedSourceLang?: string }>[] = [];
       
       if (postType === "concern" && post.title) {
-        translationPromises.push(translateText(post.title, targetLang, "KR"));
+        translationPromises.push(translateText(post.title, targetLang, null));
       } else {
-        translationPromises.push(Promise.resolve(""));
+        translationPromises.push(Promise.resolve({ text: "" }));
       }
       
-      translationPromises.push(translateText(post.content || "", targetLang, "KR"));
+      translationPromises.push(translateText(contentText, targetLang, null));
 
       const [translatedTitleResult, translatedContentResult] = await Promise.all(translationPromises);
 
       if (postType === "concern" && post.title) {
-        setTranslatedTitle(translatedTitleResult);
+        setTranslatedTitle(translatedTitleResult.text);
       }
-      setTranslatedContent(translatedContentResult);
+      setTranslatedContent(translatedContentResult.text);
       setIsTranslated(true);
     } catch (error) {
       console.error("번역 실패:", error);
@@ -133,6 +173,49 @@ function PostDetailContent() {
 
   const handleShowOriginal = () => {
     setIsTranslated(false);
+  };
+
+  const handleEdit = () => {
+    // 수정 모달을 열기 전에 editData를 설정해야 함
+    // CommunityWriteModal이 이미 editData를 받을 수 있도록 수정 필요
+    setShowEditModal(true);
+    setShowMenu(false);
+  };
+
+  const handleDelete = async () => {
+    if (!postId || !postType) return;
+
+    try {
+      let result;
+      if (postType === "procedure") {
+        result = await deleteProcedureReview(postId);
+      } else if (postType === "hospital") {
+        result = await deleteHospitalReview(postId);
+      } else if (postType === "concern") {
+        result = await deleteConcernPost(postId);
+      } else {
+        return;
+      }
+
+      if (result.success) {
+        alert("게시글이 삭제되었습니다.");
+        router.push("/community");
+      } else {
+        alert(`삭제 실패: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error("삭제 오류:", error);
+      alert(`삭제 중 오류가 발생했습니다: ${error.message}`);
+    } finally {
+      setShowDeleteConfirm(false);
+      setShowMenu(false);
+    }
+  };
+
+  const handleEditComplete = () => {
+    setShowEditModal(false);
+    // 페이지 새로고침하여 수정된 내용 반영
+    loadPostData();
   };
 
   if (loading) {
@@ -160,6 +243,11 @@ function PostDetailContent() {
   }
 
   const getDisplayName = (): string => {
+    // nickname이 있으면 마스킹해서 사용, 없으면 익명
+    const nickname = (post as any).nickname;
+    if (nickname) {
+      return maskNickname(nickname);
+    }
     return post.username || post.author_name || "익명";
   };
 
@@ -186,26 +274,75 @@ function PostDetailContent() {
             </button>
             <h1 className="text-lg font-bold text-gray-900">게시글</h1>
           </div>
-          {/* 번역 버튼 */}
-          {language !== "KR" && (
-            <button
-              onClick={isTranslated ? handleShowOriginal : handleTranslate}
-              disabled={isTranslating}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                isTranslated
-                  ? "bg-primary-main text-white hover:bg-primary-main/90"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <FiGlobe className="text-base" />
-              <span>{isTranslating ? "번역 중..." : isTranslated ? "원문 보기" : "번역하기"}</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* 번역 버튼 */}
+            {post && (() => {
+              const contentText = post.content || "";
+              const titleText = postType === "concern" && post.title ? post.title : "";
+              const detectedSourceLang = detectLanguage(contentText || titleText);
+              const targetLang = language as LanguageCode;
+              const needsTranslation = detectedSourceLang && detectedSourceLang !== targetLang;
+              
+              return needsTranslation ? (
+                <button
+                  onClick={isTranslated ? handleShowOriginal : handleTranslate}
+                  disabled={isTranslating}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    isTranslated
+                      ? "bg-primary-main text-white hover:bg-primary-main/90"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <FiGlobe className="text-base" />
+                  <span>{isTranslating ? "번역 중..." : isTranslated ? "원문 보기" : "번역하기"}</span>
+                </button>
+              ) : null;
+            })()}
+            
+            {/* 수정/삭제 메뉴 (작성자만) */}
+            {isAuthor && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-2 hover:bg-gray-50 rounded-full transition-colors"
+                >
+                  <FiMoreVertical className="text-gray-700 text-xl" />
+                </button>
+                {showMenu && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setShowMenu(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
+                      <button
+                        onClick={handleEdit}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 first:rounded-t-lg"
+                      >
+                        <FiEdit2 className="text-base" />
+                        수정
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDeleteConfirm(true);
+                          setShowMenu(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 last:rounded-b-lg"
+                      >
+                        <FiTrash2 className="text-base" />
+                        삭제
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* 게시글 내용 */}
-      <div className="px-4 py-6 pb-20">
+      {/* 게시글 내용 - sticky 헤더 높이를 고려한 상단 패딩 */}
+      <div className="px-4 pt-16 pb-20">
         {/* 카테고리 태그 */}
         <div className="mb-4">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
@@ -309,7 +446,7 @@ function PostDetailContent() {
           </div>
           <div className="flex items-center gap-1.5 text-gray-400">
             <FiEye className="text-sm" />
-            <span className="text-xs">{post.views?.toLocaleString() || 0}</span>
+            <span className="text-xs">{viewCount.toLocaleString()}</span>
           </div>
         </div>
 
@@ -331,11 +468,51 @@ function PostDetailContent() {
             postId={postId!}
             postType={postType!}
             onCommentAdded={handleCommentAdded}
+            refreshKey={commentCount}
           />
         </div>
       </div>
 
       <BottomNavigation />
+
+      {/* 수정 모달 */}
+      {showEditModal && post && postType && (
+        <CommunityWriteModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            loadPostData(); // 수정 후 새로고침
+          }}
+          editData={{
+            type: postType as "procedure" | "hospital" | "concern",
+            data: post,
+          }}
+        />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">게시글 삭제</h3>
+            <p className="text-gray-600 mb-6">정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -28,11 +28,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 interface CommunityWriteModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editData?: {
+    type: "procedure" | "hospital" | "concern";
+    data: any;
+  } | null;
 }
 
 export default function CommunityWriteModal({
   isOpen,
   onClose,
+  editData: externalEditData,
 }: CommunityWriteModalProps) {
   const { t } = useLanguage();
 
@@ -74,6 +79,20 @@ export default function CommunityWriteModal({
     type: "procedure" | "hospital" | "concern";
     data: any;
   } | null>(null);
+
+  // 외부에서 전달된 editData가 있으면 사용
+  useEffect(() => {
+    if (externalEditData) {
+      setEditingPost(externalEditData);
+      setSelectedOption(
+        externalEditData.type === "procedure"
+          ? "procedure-review"
+          : externalEditData.type === "hospital"
+          ? "hospital-review"
+          : "concern-post"
+      );
+    }
+  }, [externalEditData]);
 
   // 내 글 로드
   useEffect(() => {

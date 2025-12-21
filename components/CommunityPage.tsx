@@ -19,10 +19,14 @@ export default function CommunityPage() {
 
   useEffect(() => {
     const tab = searchParams.get("tab") as CommunityTab | null;
+    // URL에 tab 파라미터가 있고 유효한 값이면 설정, 없으면 기본값 "popular" 유지
     if (tab && ["popular", "latest", "info", "consultation"].includes(tab)) {
       setActiveTab(tab);
       // 탭 변경 시 상단으로 스크롤
       window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (!tab) {
+      // URL에 tab 파라미터가 없으면 기본값 "popular"로 설정
+      setActiveTab("popular");
     }
   }, [searchParams]);
 

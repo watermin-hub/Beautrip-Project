@@ -2642,8 +2642,26 @@ export async function saveProcedureReview(
   data: ProcedureReviewData
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    // user_id가 없으면 현재 로그인한 사용자 ID 가져오기
+    let userId = data.user_id;
+    if (!userId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      }
+    }
+
+    if (!userId) {
+      return {
+        success: false,
+        error: "로그인 후에만 시술 후기를 작성할 수 있습니다.",
+      };
+    }
+
     const reviewData = {
-      user_id: data.user_id || null,
+      user_id: userId, // ✅ 작성자 ID (UUID)
       category: data.category,
       procedure_name: data.procedure_name,
       hospital_name: data.hospital_name || null,
@@ -2683,8 +2701,26 @@ export async function saveHospitalReview(
   data: HospitalReviewData
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    // user_id가 없으면 현재 로그인한 사용자 ID 가져오기
+    let userId = data.user_id;
+    if (!userId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      }
+    }
+
+    if (!userId) {
+      return {
+        success: false,
+        error: "로그인 후에만 병원 후기를 작성할 수 있습니다.",
+      };
+    }
+
     const reviewData = {
-      user_id: data.user_id || null,
+      user_id: userId, // ✅ 작성자 ID (UUID)
       hospital_name: data.hospital_name,
       category_large: data.category_large,
       procedure_name: data.procedure_name || null,
@@ -2726,15 +2762,33 @@ export async function saveConcernPost(
   data: ConcernPostData
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    // user_id가 없으면 현재 로그인한 사용자 ID 가져오기
+    let userId = data.user_id;
+    if (!userId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      }
+    }
+
+    if (!userId) {
+      return {
+        success: false,
+        error: "로그인 후에만 고민글을 작성할 수 있습니다.",
+      };
+    }
+
     const postData = {
-      user_id: data.user_id || null,
+      user_id: userId, // ✅ 작성자 ID (UUID)
       title: data.title,
       concern_category: data.concern_category,
       content: data.content,
       image_paths:
         data.image_paths && data.image_paths.length > 0
           ? data.image_paths
-          : null,
+          : [],
     };
 
     const { data: insertedData, error } = await supabase
@@ -2754,6 +2808,403 @@ export async function saveConcernPost(
     return {
       success: false,
       error: error?.message || "고민글 저장에 실패했습니다.",
+    };
+  }
+}
+
+// 시술후기 수정
+export async function updateProcedureReview(
+  reviewId: string,
+  data: ProcedureReviewData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // 현재 로그인한 사용자 확인
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "로그인 후에만 시술 후기를 수정할 수 있습니다.",
+      };
+    }
+
+    // 작성자 확인
+    const { data: existingReview, error: fetchError } = await supabase
+      .from("procedure_reviews")
+      .select("user_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchError || !existingReview) {
+      return {
+        success: false,
+        error: "후기를 찾을 수 없습니다.",
+      };
+    }
+
+    if (existingReview.user_id !== user.id) {
+      return {
+        success: false,
+        error: "본인이 작성한 후기만 수정할 수 있습니다.",
+      };
+    }
+
+    const updateData: any = {
+      category: data.category,
+      procedure_name: data.procedure_name,
+      hospital_name: data.hospital_name || null,
+      cost: data.cost || null,
+      procedure_rating: data.procedure_rating,
+      hospital_rating: data.hospital_rating,
+      gender: data.gender,
+      age_group: data.age_group,
+      surgery_date: data.surgery_date || null,
+      content: data.content,
+    };
+
+    // 이미지가 제공된 경우에만 업데이트
+    if (data.images !== undefined) {
+      updateData.images = data.images && data.images.length > 0 ? data.images : null;
+    }
+
+    const { error } = await supabase
+      .from("procedure_reviews")
+      .update(updateData)
+      .eq("id", reviewId);
+
+    if (error) {
+      console.error("시술후기 수정 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("시술후기 수정 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "시술후기 수정에 실패했습니다.",
+    };
+  }
+}
+
+// 병원후기 수정
+export async function updateHospitalReview(
+  reviewId: string,
+  data: HospitalReviewData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // 현재 로그인한 사용자 확인
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "로그인 후에만 병원 후기를 수정할 수 있습니다.",
+      };
+    }
+
+    // 작성자 확인
+    const { data: existingReview, error: fetchError } = await supabase
+      .from("hospital_reviews")
+      .select("user_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchError || !existingReview) {
+      return {
+        success: false,
+        error: "후기를 찾을 수 없습니다.",
+      };
+    }
+
+    if (existingReview.user_id !== user.id) {
+      return {
+        success: false,
+        error: "본인이 작성한 후기만 수정할 수 있습니다.",
+      };
+    }
+
+    const updateData: any = {
+      hospital_name: data.hospital_name,
+      category_large: data.category_large,
+      procedure_name: data.procedure_name || null,
+      visit_date: data.visit_date || null,
+      overall_satisfaction: data.overall_satisfaction || null,
+      hospital_kindness: data.hospital_kindness || null,
+      has_translation: data.has_translation ?? false,
+      translation_satisfaction:
+        data.has_translation && data.translation_satisfaction
+          ? data.translation_satisfaction
+          : null,
+      content: data.content,
+    };
+
+    // 이미지가 제공된 경우에만 업데이트
+    if (data.images !== undefined) {
+      updateData.images = data.images && data.images.length > 0 ? data.images : null;
+    }
+
+    const { error } = await supabase
+      .from("hospital_reviews")
+      .update(updateData)
+      .eq("id", reviewId);
+
+    if (error) {
+      console.error("병원후기 수정 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("병원후기 수정 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "병원후기 수정에 실패했습니다.",
+    };
+  }
+}
+
+// 고민글 수정
+export async function updateConcernPost(
+  postId: string,
+  data: ConcernPostData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // 현재 로그인한 사용자 확인
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "로그인 후에만 고민글을 수정할 수 있습니다.",
+      };
+    }
+
+    // 작성자 확인
+    const { data: existingPost, error: fetchError } = await supabase
+      .from("concern_posts")
+      .select("user_id")
+      .eq("id", postId)
+      .single();
+
+    if (fetchError || !existingPost) {
+      return {
+        success: false,
+        error: "고민글을 찾을 수 없습니다.",
+      };
+    }
+
+    if (existingPost.user_id !== user.id) {
+      return {
+        success: false,
+        error: "본인이 작성한 고민글만 수정할 수 있습니다.",
+      };
+    }
+
+    const updateData: any = {
+      title: data.title,
+      concern_category: data.concern_category,
+      content: data.content,
+    };
+
+    // 이미지가 제공된 경우에만 업데이트
+    if (data.image_paths !== undefined) {
+      updateData.image_paths = data.image_paths && data.image_paths.length > 0 ? data.image_paths : [];
+    }
+
+    const { error } = await supabase
+      .from("concern_posts")
+      .update(updateData)
+      .eq("id", postId);
+
+    if (error) {
+      console.error("고민글 수정 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("고민글 수정 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "고민글 수정에 실패했습니다.",
+    };
+  }
+}
+
+// 시술후기 삭제
+export async function deleteProcedureReview(
+  reviewId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "로그인 후에만 시술 후기를 삭제할 수 있습니다.",
+      };
+    }
+
+    // 작성자 확인
+    const { data: existingReview, error: fetchError } = await supabase
+      .from("procedure_reviews")
+      .select("user_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchError || !existingReview) {
+      return {
+        success: false,
+        error: "후기를 찾을 수 없습니다.",
+      };
+    }
+
+    if (existingReview.user_id !== user.id) {
+      return {
+        success: false,
+        error: "본인이 작성한 후기만 삭제할 수 있습니다.",
+      };
+    }
+
+    const { error } = await supabase
+      .from("procedure_reviews")
+      .delete()
+      .eq("id", reviewId);
+
+    if (error) {
+      console.error("시술후기 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("시술후기 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "시술후기 삭제에 실패했습니다.",
+    };
+  }
+}
+
+// 병원후기 삭제
+export async function deleteHospitalReview(
+  reviewId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "로그인 후에만 병원 후기를 삭제할 수 있습니다.",
+      };
+    }
+
+    // 작성자 확인
+    const { data: existingReview, error: fetchError } = await supabase
+      .from("hospital_reviews")
+      .select("user_id")
+      .eq("id", reviewId)
+      .single();
+
+    if (fetchError || !existingReview) {
+      return {
+        success: false,
+        error: "후기를 찾을 수 없습니다.",
+      };
+    }
+
+    if (existingReview.user_id !== user.id) {
+      return {
+        success: false,
+        error: "본인이 작성한 후기만 삭제할 수 있습니다.",
+      };
+    }
+
+    const { error } = await supabase
+      .from("hospital_reviews")
+      .delete()
+      .eq("id", reviewId);
+
+    if (error) {
+      console.error("병원후기 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("병원후기 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "병원후기 삭제에 실패했습니다.",
+    };
+  }
+}
+
+// 고민글 삭제
+export async function deleteConcernPost(
+  postId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return {
+        success: false,
+        error: "로그인 후에만 고민글을 삭제할 수 있습니다.",
+      };
+    }
+
+    // 작성자 확인
+    const { data: existingPost, error: fetchError } = await supabase
+      .from("concern_posts")
+      .select("user_id")
+      .eq("id", postId)
+      .single();
+
+    if (fetchError || !existingPost) {
+      return {
+        success: false,
+        error: "고민글을 찾을 수 없습니다.",
+      };
+    }
+
+    if (existingPost.user_id !== user.id) {
+      return {
+        success: false,
+        error: "본인이 작성한 고민글만 삭제할 수 있습니다.",
+      };
+    }
+
+    const { error } = await supabase
+      .from("concern_posts")
+      .delete()
+      .eq("id", postId);
+
+    if (error) {
+      console.error("고민글 삭제 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("고민글 삭제 중 오류:", error);
+    return {
+      success: false,
+      error: error?.message || "고민글 삭제에 실패했습니다.",
     };
   }
 }
@@ -4068,7 +4519,7 @@ export async function getFavoriteStatus(
 // 커뮤니티 글 좋아요 추가
 export async function addPostLike(
   postId: string,
-  postType: "treatment_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post" | "guide"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -4102,6 +4553,7 @@ export async function addPostLike(
       "treatment_review",
       "hospital_review",
       "concern_post",
+      "guide",
     ];
     if (!validPostTypes.includes(postType)) {
       console.error("잘못된 post_type:", postType);
@@ -4111,15 +4563,17 @@ export async function addPostLike(
       };
     }
 
-    // UUID 형식 검증 (post_id는 UUID여야 함)
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(postId)) {
-      console.error("잘못된 post_id 형식:", postId);
-      return {
-        success: false,
-        error: `잘못된 글 ID 형식입니다: ${postId}`,
-      };
+    // UUID 형식 검증 (post_id는 UUID여야 함, guide는 예외)
+    if (postType !== "guide") {
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(postId)) {
+        console.error("잘못된 post_id 형식:", postId);
+        return {
+          success: false,
+          error: `잘못된 글 ID 형식입니다: ${postId}`,
+        };
+      }
     }
 
     // 좋아요 추가
@@ -4159,7 +4613,7 @@ export async function addPostLike(
 // 커뮤니티 글 좋아요 삭제
 export async function removePostLike(
   postId: string,
-  postType: "treatment_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post" | "guide"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -4200,7 +4654,7 @@ export async function removePostLike(
 // 커뮤니티 글 좋아요 토글
 export async function togglePostLike(
   postId: string,
-  postType: "treatment_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post" | "guide"
 ): Promise<{ success: boolean; isLiked: boolean; error?: string }> {
   try {
     const client = getSupabaseOrNull();
@@ -4291,7 +4745,7 @@ export async function getLikedPosts(): Promise<{
 // 특정 글의 좋아요 여부 확인
 export async function isPostLiked(
   postId: string,
-  postType: "treatment_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post" | "guide"
 ): Promise<boolean> {
   try {
     const client = getSupabaseOrNull();
@@ -4318,7 +4772,7 @@ export async function isPostLiked(
 // 글의 좋아요 개수 조회
 export async function getPostLikeCount(
   postId: string,
-  postType: "treatment_review" | "hospital_review" | "concern_post"
+  postType: "treatment_review" | "hospital_review" | "concern_post" | "guide"
 ): Promise<number> {
   try {
     const client = getSupabaseOrNull();
@@ -5160,7 +5614,7 @@ export async function deleteSavedSchedule(
 export interface CommentData {
   id?: string;
   post_id: string;
-  post_type: "procedure" | "hospital" | "concern";
+  post_type: "procedure" | "hospital" | "concern" | "guide";
   user_id?: string; // ✅ UUID (Supabase Auth의 auth.users.id)
   content: string;
   parent_comment_id?: string | null;
@@ -5234,7 +5688,7 @@ export async function saveComment(
 // 댓글 목록 조회 (게시글별)
 export async function loadComments(
   postId: string,
-  postType: "procedure" | "hospital" | "concern"
+  postType: "procedure" | "hospital" | "concern" | "guide"
 ): Promise<CommentWithUser[]> {
   try {
     const client = getSupabaseOrNull();
@@ -5441,6 +5895,106 @@ export async function getCommentCount(
     return count || 0;
   } catch (error: any) {
     console.error("댓글 수 조회 중 오류:", error);
+    return 0;
+  }
+}
+
+// 조회수 증가
+export async function incrementViewCount(
+  postId: string,
+  postType: "procedure" | "hospital" | "concern" | "guide"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return {
+        success: false,
+        error: "Supabase 클라이언트가 초기화되지 않았습니다.",
+      };
+    }
+
+    // 테이블명 결정
+    let tableName: string;
+    if (postType === "procedure") {
+      tableName = "procedure_reviews";
+    } else if (postType === "hospital") {
+      tableName = "hospital_reviews";
+    } else {
+      tableName = "concern_posts";
+    }
+
+    // 현재 조회수 가져오기
+    const { data: currentData, error: fetchError } = await client
+      .from(tableName)
+      .select("views")
+      .eq("id", postId)
+      .single();
+
+    if (fetchError) {
+      // views 컬럼이 없을 수도 있으므로 무시하고 진행 (오류 메시지 숨김)
+      // console.error("조회수 조회 실패:", fetchError);
+    }
+
+    const currentViews = (currentData?.views as number) || 0;
+
+    // 조회수 증가 (views 컬럼이 없으면 생성)
+    const { error: updateError } = await client
+      .from(tableName)
+      .update({ views: currentViews + 1 })
+      .eq("id", postId);
+
+    if (updateError) {
+      // views 컬럼이 없으면 에러가 발생할 수 있음 (오류 메시지 숨김)
+      // console.error("조회수 증가 실패:", updateError);
+      // 에러가 발생해도 성공으로 처리 (views 컬럼이 없을 수 있음)
+      return { success: true };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    // views 컬럼이 없을 수 있으므로 오류 메시지 숨김
+    // console.error("조회수 증가 중 오류:", error);
+    // 에러가 발생해도 성공으로 처리 (views 컬럼이 없을 수 있음)
+    return { success: true };
+  }
+}
+
+// 조회수 조회
+export async function getViewCount(
+  postId: string,
+  postType: "procedure" | "hospital" | "concern" | "guide"
+): Promise<number> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return 0;
+    }
+
+    // 테이블명 결정
+    let tableName: string;
+    if (postType === "procedure") {
+      tableName = "procedure_reviews";
+    } else if (postType === "hospital") {
+      tableName = "hospital_reviews";
+    } else {
+      tableName = "concern_posts";
+    }
+
+    const { data, error } = await client
+      .from(tableName)
+      .select("views")
+      .eq("id", postId)
+      .single();
+
+    if (error) {
+      // views 컬럼이 없을 수도 있음
+      return 0;
+    }
+
+    return (data?.views as number) || 0;
+  } catch (error: any) {
+    // views 컬럼이 없을 수 있으므로 오류 메시지 숨김
+    // console.error("조회수 조회 중 오류:", error);
     return 0;
   }
 }

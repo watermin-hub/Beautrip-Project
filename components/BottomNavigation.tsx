@@ -24,23 +24,33 @@ export default function BottomNavigation({
   const pathname = usePathname();
   const { t } = useLanguage();
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   useEffect(() => {
-    const handleModalStateChange = (e: Event) => {
+    const handleCalendarModalStateChange = (e: Event) => {
       const customEvent = e as CustomEvent;
       setIsCalendarModalOpen(customEvent.detail?.isOpen || false);
     };
 
-    window.addEventListener("calendarModalOpen", handleModalStateChange);
+    const handleFilterModalStateChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsFilterModalOpen(customEvent.detail?.isOpen || false);
+    };
+
+    window.addEventListener("calendarModalOpen", handleCalendarModalStateChange);
+    window.addEventListener("filterModalOpen", handleFilterModalStateChange);
     return () => {
-      window.removeEventListener("calendarModalOpen", handleModalStateChange);
+      window.removeEventListener("calendarModalOpen", handleCalendarModalStateChange);
+      window.removeEventListener("filterModalOpen", handleFilterModalStateChange);
     };
   }, []);
 
   return (
     <nav
-      className={`fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 ${
-        isCalendarModalOpen || disabled ? "z-[30] pointer-events-none" : "z-50"
+      className={`fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 transition-opacity ${
+        isCalendarModalOpen || isFilterModalOpen || disabled
+          ? "z-[30] opacity-50 pointer-events-none"
+          : "z-50"
       }`}
     >
       <div className="flex justify-around items-center py-2">

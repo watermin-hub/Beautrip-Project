@@ -27,7 +27,7 @@ export default function ConcernPostWritePage() {
       <Header />
 
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-100 sticky top-[64px] bg-white z-10 shadow-sm">
+      <div className="px-6 py-4 border-b border-gray-100 sticky top-[48px] bg-white z-10 shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={handleBack}
@@ -35,12 +35,14 @@ export default function ConcernPostWritePage() {
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h2 className="text-xl font-bold text-gray-900">{t("writePage.concernPostWrite")}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {t("writePage.concernPostWrite")}
+          </h2>
         </div>
       </div>
 
       {/* Form - 양옆 간격과 상단 여백 추가 */}
-      <div className="px-6 pt-[70px] pb-24">
+      <div className="px-6 pt-16 pb-24">
         <Suspense
           fallback={
             <div className="p-4 text-center text-gray-500">로딩 중...</div>

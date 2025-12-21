@@ -48,7 +48,7 @@ export default function WritePage() {
       <Header />
 
       {/* Header */}
-      <div className="px-6 py-4 sticky top-[64px] bg-white z-10">
+      <div className="px-6 py-4 sticky top-[48px] bg-white z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -57,7 +57,9 @@ export default function WritePage() {
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">{t("writePage.title")}</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {t("writePage.title")}
+            </h2>
             <p className="text-sm text-gray-500 mt-1">
               {t("writePage.subtitle")}
             </p>

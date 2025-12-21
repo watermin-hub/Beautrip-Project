@@ -11,6 +11,7 @@ import {
   FiArrowUp,
   FiMessageCircle,
   FiEye,
+  FiEdit2,
 } from "react-icons/fi";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -25,6 +26,7 @@ import {
   HospitalReviewData,
   ConcernPostData,
 } from "@/lib/api/beautripApi";
+import CommunityWriteModal from "@/components/CommunityWriteModal";
 
 type PostType = "all" | "procedure" | "hospital" | "concern";
 
@@ -64,6 +66,8 @@ export default function MyPostsPage() {
   const [posts, setPosts] = useState<UnifiedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPost, setEditingPost] = useState<UnifiedPost | null>(null);
 
   useEffect(() => {
     const loadUserPosts = async () => {
@@ -153,13 +157,47 @@ export default function MyPostsPage() {
     return true;
   });
 
-  const handlePostClick = (post: UnifiedPost) => {
+  const handlePostClick = (post: UnifiedPost, e?: React.MouseEvent) => {
+    // 수정 버튼 클릭 시에는 상세 페이지로 이동하지 않음
+    if (e && (e.target as HTMLElement).closest('.edit-button')) {
+      return;
+    }
     if (post.type === "procedure") {
-      router.push(`/review/procedure/${post.id}`);
+      router.push(`/community/posts/${post.id}?type=procedure`);
     } else if (post.type === "hospital") {
-      router.push(`/review/hospital/${post.id}`);
+      router.push(`/community/posts/${post.id}?type=hospital`);
     } else if (post.type === "concern") {
-      router.push(`/community?tab=consultation`);
+      router.push(`/community/posts/${post.id}?type=concern`);
+    }
+  };
+
+  const handleEditClick = async (post: UnifiedPost, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // 원본 데이터 가져오기
+    try {
+      let postData = null;
+      if (post.type === "procedure") {
+        const reviews = await loadMyProcedureReviews(userId!);
+        postData = reviews.find((r: any) => r.id === post.id);
+      } else if (post.type === "hospital") {
+        const reviews = await loadMyHospitalReviews(userId!);
+        postData = reviews.find((r: any) => r.id === post.id);
+      } else if (post.type === "concern") {
+        const posts = await loadMyConcernPosts(userId!);
+        postData = posts.find((p: any) => p.id === post.id);
+      }
+
+      if (postData) {
+        setEditingPost({
+          ...post,
+          ...postData,
+        });
+        setShowEditModal(true);
+      }
+    } catch (error) {
+      console.error("글 데이터 로드 실패:", error);
+      alert("글을 불러오는 중 오류가 발생했습니다.");
     }
   };
 
@@ -248,8 +286,8 @@ export default function MyPostsPage() {
             {filteredPosts.map((post) => (
               <div
                 key={`${post.type}-${post.id}`}
-                onClick={() => handlePostClick(post)}
-                className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer scroll-mt-[180px]"
+                onClick={(e) => handlePostClick(post, e)}
+                className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer scroll-mt-[180px] relative"
               >
                 {/* Type & Category */}
                 <div className="flex items-center gap-2 mb-3">
@@ -311,11 +349,18 @@ export default function MyPostsPage() {
                   </div>
                 )}
 
-                {/* Timestamp */}
+                {/* Timestamp & Edit Button */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <span className="text-xs text-gray-500">
                     {post.timestamp}
                   </span>
+                  <button
+                    onClick={(e) => handleEditClick(post, e)}
+                    className="edit-button p-2 text-primary-main hover:bg-primary-main/10 rounded-lg transition-colors"
+                    title="수정"
+                  >
+                    <FiEdit2 className="text-lg" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -325,6 +370,94 @@ export default function MyPostsPage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+
+      {/* 수정 모달 */}
+      {showEditModal && editingPost && (
+        <CommunityWriteModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingPost(null);
+            // 글 목록 새로고침
+            const loadUserPosts = async () => {
+              try {
+                setLoading(true);
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession();
+
+                if (!session?.user) {
+                  return;
+                }
+
+                const currentUserId = session.user.id;
+                setUserId(currentUserId);
+
+                const [procedureReviews, hospitalReviews, concernPosts] =
+                  await Promise.all([
+                    loadMyProcedureReviews(currentUserId),
+                    loadMyHospitalReviews(currentUserId),
+                    loadMyConcernPosts(currentUserId),
+                  ]);
+
+                const allPosts: UnifiedPost[] = [
+                  ...procedureReviews.map((review: ProcedureReviewData) => ({
+                    id: review.id!,
+                    type: "procedure" as const,
+                    category: review.category || "후기",
+                    content: review.content,
+                    images: review.images,
+                    timestamp: formatTimeAgo(review.created_at),
+                    created_at: review.created_at || "",
+                  })),
+                  ...hospitalReviews.map((review: HospitalReviewData) => ({
+                    id: review.id!,
+                    type: "hospital" as const,
+                    category: review.category_large || "병원후기",
+                    content: review.content,
+                    images: review.images,
+                    timestamp: formatTimeAgo(review.created_at),
+                    created_at: review.created_at || "",
+                  })),
+                  ...concernPosts.map((post: ConcernPostData) => ({
+                    id: post.id!,
+                    type: "concern" as const,
+                    title: post.title,
+                    category: post.concern_category || t("writePage.concernPost"),
+                    content: post.content,
+                    timestamp: formatTimeAgo(post.created_at),
+                    created_at: post.created_at || "",
+                  })),
+                ];
+
+                allPosts.sort((a, b) => {
+                  if (!a.created_at && !b.created_at) return 0;
+                  if (!a.created_at) return 1;
+                  if (!b.created_at) return -1;
+                  return (
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                  );
+                });
+
+                setPosts(allPosts);
+              } catch (error) {
+                console.error("내 글 로드 실패:", error);
+              } finally {
+                setLoading(false);
+              }
+            };
+            loadUserPosts();
+          }}
+          editData={
+            editingPost
+              ? {
+                  type: editingPost.type,
+                  data: editingPost,
+                }
+              : null
+          }
+        />
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   loadTreatmentsPaginated,
   Treatment,
   saveHospitalReview,
+  updateHospitalReview,
   getTreatmentAutocomplete,
   getTreatmentTableName,
   getCategoryLargeList,
@@ -55,6 +56,26 @@ export default function HospitalReviewForm({
     };
     loadCategories();
   }, [language]);
+
+  // editData가 있으면 폼 필드 채우기
+  useEffect(() => {
+    if (editData) {
+      setHospitalName(editData.hospital_name || "");
+      setVisitDate(editData.visit_date || "");
+      setCategoryLarge(editData.category_large || "");
+      setProcedureSearchTerm(editData.procedure_name || "");
+      setSelectedProcedure(editData.procedure_name || "");
+      setOverallSatisfaction(editData.overall_satisfaction || 0);
+      setHospitalKindness(editData.hospital_kindness || 0);
+      setHasTranslation(editData.has_translation ?? null);
+      setTranslationSatisfaction(editData.translation_satisfaction || 0);
+      setContent(editData.content || "");
+      // 기존 이미지가 있으면 표시 (URL 배열)
+      if (editData.images && Array.isArray(editData.images)) {
+        setImages(editData.images);
+      }
+    }
+  }, [editData]);
 
   // GTM 이벤트: review_start (후기 작성 화면 진입 완료 시점)
   useEffect(() => {
@@ -129,6 +150,8 @@ export default function HospitalReviewForm({
           // 검색 결과가 있으면 자동완성 표시
           if (suggestions.length > 0) {
             setShowProcedureSuggestions(true);
+          } else {
+            setShowProcedureSuggestions(false);
           }
         } else {
           // 카테고리가 선택되지 않았으면 기존 함수 사용
@@ -141,6 +164,8 @@ export default function HospitalReviewForm({
           // 검색 결과가 있으면 자동완성 표시
           if (result.treatmentNames.length > 0) {
             setShowProcedureSuggestions(true);
+          } else {
+            setShowProcedureSuggestions(false);
           }
         }
       } catch (error) {
@@ -243,63 +268,118 @@ export default function HospitalReviewForm({
       const finalProcedureName =
         selectedProcedure || procedureSearchTerm.trim() || undefined;
 
-      // 먼저 후기 저장 (이미지 없이)
-      const result = await saveHospitalReview({
-        hospital_name: hospitalName,
-        category_large: categoryLarge,
-        procedure_name: finalProcedureName,
-        visit_date: visitDate || undefined,
-        overall_satisfaction:
-          overallSatisfaction > 0 ? overallSatisfaction : undefined,
-        hospital_kindness: hospitalKindness > 0 ? hospitalKindness : undefined,
-        has_translation: hasTranslation ?? false,
-        translation_satisfaction:
-          hasTranslation && translationSatisfaction > 0
-            ? translationSatisfaction
-            : undefined,
-        content,
-        images: undefined, // 먼저 이미지 없이 저장
-        user_id: user.id, // Supabase Auth UUID
-      });
+      // 수정 모드인지 확인
+      const isEditMode = editData && editData.id;
 
-      if (!result.success || !result.id) {
-        alert(`${t("form.saveFailed")}: ${result.error}`);
-        return;
-      }
+      if (isEditMode) {
+        // 수정 모드
+        let imageUrls: string[] | undefined = undefined;
 
-      // 이미지가 있으면 업로드
-      let imageUrls: string[] | undefined = undefined;
-      if (imageFiles.length > 0 && result.id) {
-        try {
-          console.log("=== 이미지 업로드 시작 ===");
-          console.log("imageFiles 개수:", imageFiles.length);
-          console.log("reviewId:", result.id);
-          imageUrls = await uploadReviewImages(imageFiles, result.id);
-          console.log("=== 이미지 업로드 완료 ===");
-          console.log("업로드된 이미지 URL들:", imageUrls);
-
-          // 업로드된 이미지 URL로 후기 업데이트
-          const { error: updateError } = await supabase
-            .from("hospital_reviews")
-            .update({ images: imageUrls })
-            .eq("id", result.id);
-
-          if (updateError) {
-            console.error("이미지 URL 업데이트 실패:", updateError);
-            // 이미지는 업로드되었지만 URL 업데이트 실패 - 경고만 표시
+        // 새로 업로드한 이미지가 있으면 업로드
+        if (imageFiles.length > 0) {
+          try {
+            imageUrls = await uploadReviewImages(imageFiles, editData.id);
+          } catch (imageError: any) {
+            console.error("이미지 업로드 실패:", imageError);
+            alert(`${t("form.imageUploadFailed")}: ${imageError.message}`);
+            return;
           }
-        } catch (imageError: any) {
-          console.error("이미지 업로드 실패:", imageError);
-          alert(`${t("form.imageUploadFailed")}: ${imageError.message}`);
-          // 이미지 업로드 실패해도 후기는 저장됨
+        } else {
+          // 새 이미지가 없으면 기존 이미지 유지
+          imageUrls = editData.images || undefined;
         }
-      }
 
-      // GTM 이벤트: review_submit (후기 저장 API 성공 응답 이후)
-      trackReviewSubmit("hospital");
-      
-      alert(t("form.saveSuccess"));
-      onSubmit();
+        // 기존 이미지와 새 이미지 합치기
+        const existingImageUrls = editData.images?.filter((img: string) => 
+          img && (img.startsWith("http") || img.startsWith("/"))
+        ) || [];
+        const finalImageUrls = imageUrls || existingImageUrls;
+
+        const result = await updateHospitalReview(editData.id, {
+          hospital_name: hospitalName,
+          category_large: categoryLarge,
+          procedure_name: finalProcedureName,
+          visit_date: visitDate || undefined,
+          overall_satisfaction:
+            overallSatisfaction > 0 ? overallSatisfaction : undefined,
+          hospital_kindness: hospitalKindness > 0 ? hospitalKindness : undefined,
+          has_translation: hasTranslation ?? false,
+          translation_satisfaction:
+            hasTranslation && translationSatisfaction > 0
+              ? translationSatisfaction
+              : undefined,
+          content,
+          images: finalImageUrls,
+          user_id: user.id,
+        });
+
+        if (!result.success) {
+          alert(`${t("form.saveFailed")}: ${result.error}`);
+          return;
+        }
+
+        alert(t("form.saveSuccess"));
+        onSubmit();
+      } else {
+        // 작성 모드
+        // 먼저 후기 저장 (이미지 없이)
+        const result = await saveHospitalReview({
+          hospital_name: hospitalName,
+          category_large: categoryLarge,
+          procedure_name: finalProcedureName,
+          visit_date: visitDate || undefined,
+          overall_satisfaction:
+            overallSatisfaction > 0 ? overallSatisfaction : undefined,
+          hospital_kindness: hospitalKindness > 0 ? hospitalKindness : undefined,
+          has_translation: hasTranslation ?? false,
+          translation_satisfaction:
+            hasTranslation && translationSatisfaction > 0
+              ? translationSatisfaction
+              : undefined,
+          content,
+          images: undefined, // 먼저 이미지 없이 저장
+          user_id: user.id, // Supabase Auth UUID
+        });
+
+        if (!result.success || !result.id) {
+          alert(`${t("form.saveFailed")}: ${result.error}`);
+          return;
+        }
+
+        // 이미지가 있으면 업로드
+        let imageUrls: string[] | undefined = undefined;
+        if (imageFiles.length > 0 && result.id) {
+          try {
+            console.log("=== 이미지 업로드 시작 ===");
+            console.log("imageFiles 개수:", imageFiles.length);
+            console.log("reviewId:", result.id);
+            imageUrls = await uploadReviewImages(imageFiles, result.id);
+            console.log("=== 이미지 업로드 완료 ===");
+            console.log("업로드된 이미지 URL들:", imageUrls);
+
+            // 업로드된 이미지 URL로 후기 업데이트
+            const { error: updateError } = await supabase
+              .from("hospital_reviews")
+              .update({ images: imageUrls })
+              .eq("id", result.id);
+
+            if (updateError) {
+              console.error("이미지 URL 업데이트 실패:", updateError);
+              // 이미지는 업로드되었지만 URL 업데이트 실패 - 경고만 표시
+            }
+          } catch (imageError: any) {
+            console.error("이미지 업로드 실패:", imageError);
+            alert(`${t("form.imageUploadFailed")}: ${imageError.message}`);
+            // 이미지 업로드 실패해도 후기는 저장됨
+          }
+        }
+
+        // GTM 이벤트: review_submit (후기 저장 API 성공 응답 이후)
+        trackReviewSubmit("hospital");
+        
+        alert(t("form.saveSuccess"));
+        onSubmit();
+      }
     } catch (error: any) {
       console.error("병원후기 저장 오류:", error);
       alert(`${t("form.errorOccurred")}: ${error.message}`);
@@ -358,14 +438,14 @@ export default function HospitalReviewForm({
           onChange={(e) => {
             const value = e.target.value;
             setProcedureSearchTerm(value);
-            // 완성형 글자가 있을 때만 자동완성 표시
-            if (hasCompleteCharacter(value)) {
-              setShowProcedureSuggestions(true);
-            } else {
+            // 완성형 글자가 없으면 자동완성 숨기기
+            if (!hasCompleteCharacter(value)) {
               setShowProcedureSuggestions(false);
+              setProcedureSuggestions([]);
             }
-            // 직접 입력 허용: 입력한 값이 자동완성 목록에 없어도 selectedProcedure에 저장
-            setSelectedProcedure(value);
+            // onChange에서는 selectedProcedure를 업데이트하지 않음
+            // 자동완성 선택 시에만 selectedProcedure 업데이트
+            // showProcedureSuggestions는 loadAutocomplete에서 검색 결과가 있을 때만 true로 설정
           }}
           onFocus={() => {
             if (
@@ -379,8 +459,9 @@ export default function HospitalReviewForm({
             // 약간의 지연을 두어 클릭 이벤트가 먼저 발생하도록
             setTimeout(() => {
               setShowProcedureSuggestions(false);
-              // blur 시 현재 입력값을 selectedProcedure에 저장 (직접 입력 허용)
-              if (procedureSearchTerm) {
+              // blur 시 selectedProcedure가 없으면 현재 입력값을 저장 (직접 입력 허용)
+              // 하지만 자동완성에서 선택한 경우에는 이미 selectedProcedure가 설정되어 있으므로 덮어쓰지 않음
+              if (procedureSearchTerm && !selectedProcedure) {
                 setSelectedProcedure(procedureSearchTerm);
               }
             }, 200);
@@ -395,11 +476,21 @@ export default function HospitalReviewForm({
           hasCompleteCharacter(procedureSearchTerm) &&
           procedureSuggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-              {procedureSuggestions.map((suggestion, index) => (
+              {procedureSuggestions.map((suggestion) => (
                 <button
-                  key={index}
+                  key={suggestion}
                   type="button"
-                  onClick={() => {
+                  onMouseDown={(e) => {
+                    // onMouseDown을 사용하여 onBlur보다 먼저 실행되도록
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedProcedure(suggestion);
+                    setProcedureSearchTerm(suggestion);
+                    setShowProcedureSuggestions(false);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     setSelectedProcedure(suggestion);
                     setProcedureSearchTerm(suggestion);
                     setShowProcedureSuggestions(false);
@@ -488,6 +579,7 @@ export default function HospitalReviewForm({
             style={{
               color: visitDate ? "inherit" : "transparent",
             }}
+            placeholder=""
           />
           {!visitDate && (
             <div className="absolute inset-0 flex items-center px-4 pointer-events-none text-gray-500">

@@ -14,14 +14,16 @@ import CommentForm from "./CommentForm";
 
 interface CommentListProps {
   postId: string;
-  postType: "procedure" | "hospital" | "concern";
+  postType: "procedure" | "hospital" | "concern" | "guide";
   onCommentAdded?: () => void;
+  refreshKey?: number; // 댓글 추가 시 변경되어 리렌더링 트리거
 }
 
 export default function CommentList({
   postId,
   postType,
   onCommentAdded,
+  refreshKey,
 }: CommentListProps) {
   const { t } = useLanguage();
   const [comments, setComments] = useState<CommentWithUser[]>([]);
@@ -30,7 +32,7 @@ export default function CommentList({
 
   useEffect(() => {
     loadCommentsData();
-  }, [postId, postType]);
+  }, [postId, postType, refreshKey]);
 
   const loadCommentsData = async () => {
     setLoading(true);

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiArrowLeft, FiX, FiCamera } from "react-icons/fi";
 import Image from "next/image";
-import { saveConcernPost } from "@/lib/api/beautripApi";
+import { saveConcernPost, updateConcernPost } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadConcernImages } from "@/lib/api/imageUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -25,6 +25,21 @@ export default function ConcernPostForm({
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+
+  // editData가 있으면 폼 필드 채우기
+  useEffect(() => {
+    if (editData) {
+      setTitle(editData.title || "");
+      setConcernCategory(editData.concern_category || "");
+      setContent(editData.content || "");
+      // 기존 이미지가 있으면 표시 (URL 배열)
+      if (editData.image_paths && Array.isArray(editData.image_paths)) {
+        setImages(editData.image_paths);
+      } else if (editData.images && Array.isArray(editData.images)) {
+        setImages(editData.images);
+      }
+    }
+  }, [editData]);
 
   // 커뮤니티 - 고민상담소 카테고리 (번역 지원)
   const concernCategories = [
@@ -75,45 +90,96 @@ export default function ConcernPostForm({
     }
 
     try {
-      // 먼저 고민글 저장 (이미지 없이)
-      const result = await saveConcernPost({
-        title,
-        concern_category: concernCategory,
-        content,
-        image_paths: undefined, // 먼저 이미지 없이 저장
-        user_id: user.id, // Supabase Auth UUID
-      });
+      // 수정 모드인지 확인
+      const isEditMode = editData && editData.id;
 
-      if (!result.success || !result.id) {
-        alert(`${t("form.saveFailed")}: ${result.error}`);
-        return;
-      }
+      if (isEditMode) {
+        // 수정 모드
+        let imageUrls: string[] | undefined = undefined;
 
-      // 이미지가 있으면 업로드 (concern-images 버킷 사용)
-      let imageUrls: string[] | undefined = undefined;
-      if (imageFiles.length > 0 && result.id) {
-        try {
-          imageUrls = await uploadConcernImages(imageFiles, result.id);
-
-          // 이미지 URL로 업데이트
-          const { error: updateError } = await supabase
-            .from("concern_posts")
-            .update({ image_paths: imageUrls })
-            .eq("id", result.id);
-
-          if (updateError) {
-            console.error("이미지 URL 업데이트 실패:", updateError);
-            // 이미지 업로드는 실패했지만 글은 저장되었으므로 경고만 표시
-            alert(t("form.imageUploadFailed"));
+        // 새로 업로드한 이미지가 있으면 업로드
+        if (imageFiles.length > 0) {
+          try {
+            imageUrls = await uploadConcernImages(imageFiles, editData.id);
+          } catch (imageError: any) {
+            console.error("이미지 업로드 실패:", imageError);
+            alert(`이미지 업로드에 실패했습니다: ${imageError.message}`);
+            return;
           }
-        } catch (imageError: any) {
-          console.error("이미지 업로드 오류:", imageError);
-          alert("고민글은 저장되었지만 이미지 업로드에 실패했습니다.");
+        } else {
+          // 새 이미지가 없으면 기존 이미지 유지
+          imageUrls = editData.image_paths || editData.images || undefined;
         }
-      }
 
-      alert(t("form.saveSuccess"));
-      onSubmit();
+        // 기존 이미지와 새 이미지 합치기
+        const existingImageUrls = (editData.image_paths || editData.images || []).filter((img: string) => 
+          img && (img.startsWith("http") || img.startsWith("/"))
+        );
+        const finalImageUrls = imageUrls || existingImageUrls;
+
+        const result = await updateConcernPost(editData.id, {
+          title,
+          concern_category: concernCategory,
+          content,
+          image_paths: finalImageUrls,
+          user_id: user.id,
+        });
+
+        if (!result.success) {
+          alert(`${t("form.saveFailed")}: ${result.error}`);
+          return;
+        }
+
+        alert(t("form.saveSuccess"));
+        onSubmit();
+      } else {
+        // 작성 모드
+        // 먼저 고민글 저장 (이미지 없이 빈 배열로 저장)
+        const result = await saveConcernPost({
+          title,
+          concern_category: concernCategory,
+          content,
+          image_paths: [], // 이미지 없이 저장할 때는 빈 배열
+          user_id: user.id, // Supabase Auth UUID
+        });
+
+        if (!result.success || !result.id) {
+          alert(`${t("form.saveFailed")}: ${result.error}`);
+          return;
+        }
+
+        // 이미지가 있으면 업로드 (concern-images 버킷 사용)
+        let imageUrls: string[] | undefined = undefined;
+        if (imageFiles.length > 0 && result.id) {
+          try {
+            imageUrls = await uploadConcernImages(imageFiles, result.id);
+
+            // 이미지 URL로 업데이트
+            const { error: updateError } = await supabase
+              .from("concern_posts")
+              .update({ image_paths: imageUrls })
+              .eq("id", result.id);
+
+            if (updateError) {
+              console.error("이미지 URL 업데이트 실패:", updateError);
+              // 이미지 업로드는 실패했지만 글은 저장되었으므로 경고만 표시
+              alert(t("form.imageUploadFailed"));
+            }
+          } catch (imageError: any) {
+            console.error("이미지 업로드 오류:", imageError);
+            const errorMessage = imageError?.message || imageError?.toString() || "알 수 없는 오류";
+            console.error("에러 상세:", {
+              message: imageError?.message,
+              error: imageError,
+              stack: imageError?.stack,
+            });
+            alert(`고민글은 저장되었지만 이미지 업로드에 실패했습니다.\n오류: ${errorMessage}\n\nSupabase Storage의 concern-images 버킷이 존재하고 권한이 설정되어 있는지 확인해주세요.`);
+          }
+        }
+
+        alert(t("form.saveSuccess"));
+        onSubmit();
+      }
     } catch (error: any) {
       console.error("고민글 저장 오류:", error);
       alert(`${t("form.errorOccurred")}: ${error.message}`);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { FiX, FiFilter } from "react-icons/fi";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -87,18 +87,36 @@ export default function ProcedureFilterModal({
     filter.recovery !== null ||
     filter.budget !== null;
 
+  // 필터 모달이 열릴 때 헤더와 네비게이션 바 비활성화
+  useEffect(() => {
+    if (isOpen) {
+      window.dispatchEvent(
+        new CustomEvent("filterModalOpen", { detail: { isOpen: true } })
+      );
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("filterModalOpen", { detail: { isOpen: false } })
+      );
+    }
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("filterModalOpen", { detail: { isOpen: false } })
+      );
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 bg-black/50 z-[70]"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-w-md mx-auto shadow-2xl animate-slide-up pb-20">
+      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[71] max-w-md mx-auto shadow-2xl animate-slide-up pb-20">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">

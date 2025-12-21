@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CommentFormProps {
   postId: string;
-  postType: "procedure" | "hospital" | "concern";
+  postType: "procedure" | "hospital" | "concern" | "guide";
   parentCommentId?: string | null;
   initialContent?: string;
   commentId?: string; // 수정 모드
@@ -64,7 +64,7 @@ export default function CommentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-start">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -73,26 +73,26 @@ export default function CommentForm({
           rows={3}
           disabled={isSubmitting}
         />
-      </div>
-      <div className="flex items-center justify-end gap-2">
-        {onCancel && (
+        <div className="flex flex-col gap-2">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
+              disabled={isSubmitting}
+            >
+              취소
+            </button>
+          )}
           <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            disabled={isSubmitting}
+            type="submit"
+            disabled={isSubmitting || !content.trim()}
+            className="px-4 py-2 bg-primary-main text-white rounded-lg text-sm font-medium hover:bg-[#2DB8A0] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
           >
-            취소
+            <FiSend className="text-sm" />
+            {commentId ? "수정" : "등록"}
           </button>
-        )}
-        <button
-          type="submit"
-          disabled={isSubmitting || !content.trim()}
-          className="px-4 py-2 bg-primary-main text-white rounded-lg text-sm font-medium hover:bg-[#2DB8A0] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          <FiSend className="text-sm" />
-          {commentId ? "수정" : "등록"}
-        </button>
+        </div>
       </div>
     </form>
   );

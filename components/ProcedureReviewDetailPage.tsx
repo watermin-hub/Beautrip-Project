@@ -22,6 +22,8 @@ import {
   getPostLikeCount,
   getUserProfile,
   getCommentCount,
+  incrementViewCount,
+  getViewCount,
 } from "@/lib/api/beautripApi";
 import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
 import { maskNickname } from "@/lib/utils/nicknameMask";
@@ -46,6 +48,7 @@ export default function ProcedureReviewDetailPage({
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
@@ -91,6 +94,11 @@ export default function ProcedureReviewDetailPage({
           // 댓글 수 로드
           const commentCountResult = await getCommentCount(reviewId, "procedure");
           setCommentCount(commentCountResult);
+          
+          // 조회수 증가 및 조회
+          await incrementViewCount(reviewId, "procedure");
+          const views = await getViewCount(reviewId, "procedure");
+          setViewCount(views);
         } else {
           console.warn("후기 데이터가 없습니다. reviewId:", reviewId);
         }
@@ -453,7 +461,7 @@ export default function ProcedureReviewDetailPage({
 
           <button className="flex items-center gap-2 text-gray-600">
             <FiEye className="text-xl" />
-            <span className="text-sm font-medium">0</span>
+            <span className="text-sm font-medium">{viewCount}</span>
           </button>
 
           <button
@@ -500,6 +508,7 @@ export default function ProcedureReviewDetailPage({
             postId={reviewId}
             postType="procedure"
             onCommentAdded={handleCommentAdded}
+            refreshKey={commentCount}
           />
         </div>
       </div>

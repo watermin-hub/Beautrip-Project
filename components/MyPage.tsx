@@ -726,57 +726,71 @@ function MainContent({
       </div>
 
       {/* 언어 / 통화 설정 */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden relative">
-        <div className="relative">
-          <MenuItem
-            icon={FiGlobe}
-            label={t("mypage.languageCurrency")}
-            value={`${t(selectedLanguage.nameKey)} / ${t(
-              `currency.${selectedLanguage.currency}`
-            )}`}
-            onClick={() => setIsLanguageCurrencyOpen(!isLanguageCurrencyOpen)}
-          />
-          {isLanguageCurrencyOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-[10000]"
-                onClick={() => setIsLanguageCurrencyOpen(false)}
-              />
-              <div className="absolute bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[200px] max-w-[250px] top-full mt-2 left-0">
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => {
-                      setLanguage(lang.code);
-                      setCurrency(lang.currency);
-                      localStorage.setItem("language", lang.code);
-                      localStorage.setItem("currency", lang.currency);
-                      setIsLanguageCurrencyOpen(false);
-                      window.dispatchEvent(new Event("languageChanged"));
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <FiGlobe className="text-gray-700 text-xl" />
+              <span className="text-base font-medium text-gray-900">
+                {t("mypage.languageCurrency")}
+              </span>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setIsLanguageCurrencyOpen(!isLanguageCurrencyOpen)}
+                className="p-2 hover:bg-gray-50 rounded-full transition-colors relative z-[100]"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{selectedLanguage.flag}</span>
+                  <span className="text-sm text-gray-700">
+                    {t(selectedLanguage.nameKey)}
+                  </span>
+                </div>
+              </button>
+              {isLanguageCurrencyOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[10000]"
+                    onClick={() => setIsLanguageCurrencyOpen(false)}
+                  />
+                  <div
+                    className="absolute bg-white border border-gray-200 rounded-lg shadow-lg z-[10001] min-w-[150px] max-w-[200px]"
+                    style={{
+                      top: "calc(100% + 8px)",
+                      right: "0",
                     }}
-                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center gap-3 ${
-                      selectedLanguage.code === lang.code
-                        ? "bg-primary-main/10"
-                        : ""
-                    }`}
                   >
-                    <span className="text-xl">{lang.flag}</span>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-gray-900">
-                        {t(lang.nameKey)}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {t(`currency.${lang.currency}`)}
-                      </div>
-                    </div>
-                    {selectedLanguage.code === lang.code && (
-                      <span className="text-primary-main text-lg">✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setLanguage(lang.code);
+                          setCurrency(lang.currency);
+                          localStorage.setItem("language", lang.code);
+                          localStorage.setItem("currency", lang.currency);
+                          setIsLanguageCurrencyOpen(false);
+                          window.dispatchEvent(new Event("languageChanged"));
+                        }}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2 ${
+                          selectedLanguage.code === lang.code
+                            ? "bg-primary-main/10"
+                            : ""
+                        }`}
+                      >
+                        <span>{lang.flag}</span>
+                        <span className="text-sm text-gray-700">
+                          {t(lang.nameKey)}
+                        </span>
+                        {selectedLanguage.code === lang.code && (
+                          <span className="ml-auto text-primary-main">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

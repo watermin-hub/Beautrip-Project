@@ -20,16 +20,34 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
 
   // 캘린더 모달이 열려있는지 확인
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  // 필터 모달이 열려있는지 확인
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   useEffect(() => {
-    const handleModalStateChange = (e: Event) => {
+    const handleCalendarModalStateChange = (e: Event) => {
       const customEvent = e as CustomEvent;
       setIsCalendarModalOpen(customEvent.detail?.isOpen || false);
     };
 
-    window.addEventListener("calendarModalOpen", handleModalStateChange);
+    const handleFilterModalStateChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsFilterModalOpen(customEvent.detail?.isOpen || false);
+    };
+
+    window.addEventListener(
+      "calendarModalOpen",
+      handleCalendarModalStateChange
+    );
+    window.addEventListener("filterModalOpen", handleFilterModalStateChange);
     return () => {
-      window.removeEventListener("calendarModalOpen", handleModalStateChange);
+      window.removeEventListener(
+        "calendarModalOpen",
+        handleCalendarModalStateChange
+      );
+      window.removeEventListener(
+        "filterModalOpen",
+        handleFilterModalStateChange
+      );
     };
   }, []);
 
@@ -42,7 +60,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
 
   const selectedLanguage =
     languages.find((lang) => lang.code === language) || languages[0];
-  
+
   // 언어 이름을 번역 키로 가져오기
   const getLanguageName = (code: string) => {
     const lang = languages.find((l) => l.code === code);
@@ -54,7 +72,11 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
       <header
         className={`fixed left-1/2 transform -translate-x-1/2 w-full max-w-md ${
           hasRankingBanner ? "top-[41px]" : "top-0"
-        } ${isCalendarModalOpen ? "z-[30]" : "z-[60]"} bg-white px-4 py-3`}
+        } ${
+          isCalendarModalOpen || isFilterModalOpen
+            ? "z-[30] opacity-50 pointer-events-none"
+            : "z-[60]"
+        } bg-white px-4 py-3 transition-opacity`}
       >
         <div className="flex items-center justify-between">
           {/* Logo */}

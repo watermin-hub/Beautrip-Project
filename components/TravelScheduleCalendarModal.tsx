@@ -320,12 +320,12 @@ export default function TravelScheduleCalendarModal({
                           ? "text-gray-300 bg-gray-50"
                           : isPast
                           ? "text-gray-300 bg-gray-50 cursor-not-allowed"
-                          : isTodayDate
-                          ? "text-primary-main font-bold"
                           : isStart || isEnd
                           ? "bg-primary-main text-white font-semibold"
                           : inRange
                           ? "bg-primary-main/20 text-primary-main font-semibold"
+                          : isTodayDate
+                          ? "text-primary-main font-bold"
                           : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >

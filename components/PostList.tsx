@@ -21,10 +21,12 @@ import {
   togglePostLike,
   isPostLiked,
   getPostLikeCount,
+  getCommentCount,
+  getViewCount,
 } from "@/lib/api/beautripApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { maskNickname } from "@/lib/utils/nicknameMask";
-import { translateText, type LanguageCode } from "@/lib/utils/translation";
+import { translateText, type LanguageCode, detectLanguage } from "@/lib/utils/translation";
 
 interface Post {
   id: number | string;
@@ -132,59 +134,81 @@ const recommendedPosts: Post[] = [
   },
 ];
 
-const latestPosts: Post[] = [
+// 최신글 더미 데이터 (시술후기)
+// ⚠️ 주의: 이 더미데이터는 Supabase에 저장되지 않고 프론트엔드에서만 표시되는 임시 데이터입니다.
+// 실제 데이터가 충분해지면 제거할 수 있습니다.
+const latestProcedurePosts: Post[] = [
   {
-    id: 1,
-    category: "자유수다",
-    username: "신규회원123",
-    avatar: "🦋",
-    content:
-      "안녕하세요! 처음 가입했는데 정보가 많아서 좋네요. 앞으로 잘 부탁드려요~",
-    timestamp: "방금 전",
-    upvotes: 5,
-    comments: 2,
-    views: 123,
-  },
-  {
-    id: 2,
-    category: "질문답변",
-    username: "궁금한이",
-    avatar: "🤔",
-    content:
-      "리쥬란 힐러 시술 받은 지 일주일인데 아직 효과가 안 보여요. 정상인가요?",
-    timestamp: "5분 전",
-    upvotes: 3,
-    comments: 8,
-    views: 234,
-  },
-  {
-    id: 3,
-    category: "정보공유",
-    username: "정보나눔",
-    avatar: "📚",
-    content:
-      "강남역 신규 오픈한 클리닉 정보 공유해요! 오픈 기념 이벤트 진행 중이라고 하네요",
-    timestamp: "10분 전",
-    upvotes: 12,
-    comments: 15,
-    views: 456,
-  },
-  {
-    id: 4,
-    category: "자유수다",
+    id: "latest-procedure-1",
+    category: "눈성형",
     username: "시술러버",
     avatar: "💖",
     content:
-      "오늘 보톡스 맞고 왔는데 얼굴이 좀 붓네요ㅠㅠ 정상인 거 맞죠? 첫 시술이라 걱정돼요",
-    images: ["swollen1"],
+      "쌍수 재수술 받고 왔어요! 이번엔 정말 만족스럽습니다. 붓기도 예상보다 빨리 빠지고 자연스러워요.",
+    images: ["procedure1"],
     timestamp: "15분 전",
     upvotes: 7,
     comments: 12,
     views: 345,
+    reviewType: "procedure" as const,
+    procedure_name: "쌍수 재수술",
+    hospital_name: "강남 클리닉",
   },
   {
-    id: 5,
-    category: "정보공유",
+    id: "latest-procedure-2",
+    category: "보톡스",
+    username: "뷰티매니아",
+    avatar: "💎",
+    content:
+      "이마 보톡스 맞고 왔는데 효과가 정말 좋아요! 주름이 많이 개선되었어요.",
+    timestamp: "45분 전",
+    upvotes: 14,
+    comments: 7,
+    views: 389,
+    reviewType: "procedure" as const,
+    procedure_name: "이마 보톡스",
+    hospital_name: "서울 병원",
+  },
+  {
+    id: "latest-procedure-3",
+    category: "리프팅",
+    username: "리프팅전문가",
+    avatar: "✨",
+    content:
+      "인모드 리프팅 시술 받았어요! 시술 전 주의사항 정리해서 올려봅니다. 시술 받기 전에 꼭 확인하시면 좋을 것 같아요!",
+    images: ["info1", "info2"],
+    timestamp: "1시간 전",
+    edited: true,
+    upvotes: 25,
+    comments: 31,
+    views: 892,
+    reviewType: "procedure" as const,
+    procedure_name: "인모드 리프팅",
+    hospital_name: "강남 뷰티센터",
+  },
+];
+
+// 최신글 더미 데이터 (병원후기)
+// ⚠️ 주의: 이 더미데이터는 Supabase에 저장되지 않고 프론트엔드에서만 표시되는 임시 데이터입니다.
+// 실제 데이터가 충분해지면 제거할 수 있습니다.
+const latestHospitalPosts: Post[] = [
+  {
+    id: "latest-hospital-1",
+    category: "병원후기",
+    username: "신규회원123",
+    avatar: "🦋",
+    content:
+      "강남역 신규 오픈한 클리닉 다녀왔어요! 오픈 기념 이벤트 진행 중이고 직원분들도 친절하세요.",
+    timestamp: "10분 전",
+    upvotes: 12,
+    comments: 15,
+    views: 456,
+    reviewType: "hospital" as const,
+    hospital_name: "강남역 클리닉",
+  },
+  {
+    id: "latest-hospital-2",
+    category: "병원후기",
     username: "가격비교왕",
     avatar: "💰",
     content:
@@ -193,46 +217,13 @@ const latestPosts: Post[] = [
     upvotes: 18,
     comments: 24,
     views: 567,
-  },
-  {
-    id: 6,
-    category: "질문답변",
-    username: "초보자",
-    avatar: "🌿",
-    content:
-      "눈 재수술 생각 중인데 어떤 의원 추천받을 수 있을까요? 첫 수술 실패한 경험이 있어서 더 신중하게 선택하고 싶어요",
-    timestamp: "30분 전",
-    upvotes: 9,
-    comments: 18,
-    views: 412,
-  },
-  {
-    id: 7,
-    category: "자유수다",
-    username: "뷰티매니아",
-    avatar: "💎",
-    content:
-      "오늘 클리닉 다녀왔는데 직원분들 친절하시고 분위기도 좋았어요! 만족스러운 시술이었습니다",
-    timestamp: "45분 전",
-    upvotes: 14,
-    comments: 7,
-    views: 389,
-  },
-  {
-    id: 8,
-    category: "정보공유",
-    username: "리프팅전문가",
-    avatar: "✨",
-    content:
-      "인모드 리프팅 시술 전 주의사항 정리해서 올려봅니다. 시술 받기 전에 꼭 확인하시면 좋을 것 같아요!",
-    images: ["info1", "info2"],
-    timestamp: "1시간 전",
-    edited: true,
-    upvotes: 25,
-    comments: 31,
-    views: 892,
+    reviewType: "hospital" as const,
+    hospital_name: "서울 뷰티센터",
   },
 ];
+
+// 최신글 전체 (시술 후기 + 병원 후기)
+const latestPosts: Post[] = [...latestProcedurePosts, ...latestHospitalPosts];
 
 // 고민상담소 더미 데이터 (카테고리별 5~10개 정도)
 const concernDummyPosts: Post[] = [
@@ -476,10 +467,17 @@ export default function PostList({
   const [popularSection, setPopularSection] = useState<
     "procedure" | "hospital"
   >("procedure");
+  const [latestSection, setLatestSection] = useState<
+    "procedure" | "hospital"
+  >("procedure");
   // 좋아요 상태 관리: { postId: { isLiked: boolean, likeCount: number } }
   const [likesState, setLikesState] = useState<
     Record<string, { isLiked: boolean; likeCount: number }>
   >({});
+  // 댓글 수 관리: { postId: number }
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
+  // 조회수 관리: { postId: number }
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   // 번역 상태 관리: { postId: { title: string | null, content: string | null, isTranslating: boolean } }
   const [translationState, setTranslationState] = useState<
     Record<
@@ -494,7 +492,7 @@ export default function PostList({
   >({});
 
   // 좋아요 상태 로드 함수
-  const loadLikesForPosts = async (posts: Post[]) => {
+  const loadLikesForPosts = async (posts: Post[]): Promise<Record<string, { isLiked: boolean; likeCount: number }>> => {
     const newLikesState: Record<
       string,
       { isLiked: boolean; likeCount: number }
@@ -504,13 +502,15 @@ export default function PostList({
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    for (const post of posts) {
-      if (post.reviewType && post.id) {
+    // 모든 게시글의 좋아요 데이터를 병렬로 로드
+    const likePromises = posts
+      .filter((post) => post.reviewType && post.id)
+      .map(async (post) => {
         const postId = String(post.id);
 
         // UUID 형식이 아니면 스킵 (더미 데이터)
         if (!uuidRegex.test(postId)) {
-          continue;
+          return { postId, result: null };
         }
 
         const postType =
@@ -526,21 +526,174 @@ export default function PostList({
             getPostLikeCount(postId, postType),
           ]);
 
-          newLikesState[postId] = {
-            isLiked: liked,
-            likeCount: count,
+          return {
+            postId,
+            result: {
+              isLiked: liked,
+              likeCount: count,
+            },
           };
         } catch (error) {
           console.error(`좋아요 상태 로드 실패 (${postId}):`, error);
-          newLikesState[postId] = {
-            isLiked: false,
-            likeCount: 0,
+          return {
+            postId,
+            result: {
+              isLiked: false,
+              likeCount: 0,
+            },
           };
         }
+      });
+
+    // 모든 Promise를 병렬로 실행
+    const results = await Promise.all(likePromises);
+    
+    // 결과를 객체로 변환
+    results.forEach(({ postId, result }) => {
+      if (result) {
+        newLikesState[postId] = result;
+      }
+    });
+
+    setLikesState((prev) => ({ ...prev, ...newLikesState }));
+    return newLikesState;
+  };
+
+  // 댓글 수 로드 함수
+  const loadCommentsForPosts = async (posts: Post[]): Promise<Record<string, number>> => {
+    const newCommentCounts: Record<string, number> = {};
+
+    // UUID 형식 검증
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // 모든 게시글의 댓글 수를 병렬로 로드
+    const commentPromises = posts
+      .filter((post) => post.reviewType && post.id)
+      .map(async (post) => {
+        const postId = String(post.id);
+
+        // UUID 형식이 아니면 스킵 (더미 데이터)
+        if (!uuidRegex.test(postId)) {
+          return { postId, count: null };
+        }
+
+        // reviewType을 comment API에 맞게 변환
+        const commentPostType =
+          post.reviewType === "procedure"
+            ? "procedure"
+            : post.reviewType === "hospital"
+            ? "hospital"
+            : "concern";
+
+        try {
+          const count = await getCommentCount(postId, commentPostType);
+          return { postId, count };
+        } catch (error) {
+          console.error(`댓글 수 로드 실패 (${postId}):`, error);
+          return { postId, count: 0 };
+        }
+      });
+
+    // 모든 Promise를 병렬로 실행
+    const results = await Promise.all(commentPromises);
+    
+    // 결과를 객체로 변환
+    results.forEach(({ postId, count }) => {
+      if (count !== null) {
+        newCommentCounts[postId] = count;
+      }
+    });
+
+    setCommentCounts((prev) => ({ ...prev, ...newCommentCounts }));
+    return newCommentCounts;
+  };
+
+  // 조회수 로드 함수
+  const loadViewsForPosts = async (posts: Post[]): Promise<Record<string, number>> => {
+    const newViewCounts: Record<string, number> = {};
+
+    // UUID 형식 검증
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // 모든 게시글의 조회수를 병렬로 로드
+    const viewPromises = posts
+      .filter((post) => post.reviewType && post.id)
+      .map(async (post) => {
+        const postId = String(post.id);
+
+        // UUID 형식이 아니면 스킵 (더미 데이터)
+        if (!uuidRegex.test(postId)) {
+          return { postId, count: null };
+        }
+
+        // reviewType을 view API에 맞게 변환
+        const viewPostType =
+          post.reviewType === "procedure"
+            ? "procedure"
+            : post.reviewType === "hospital"
+            ? "hospital"
+            : "concern";
+
+        try {
+          const count = await getViewCount(postId, viewPostType);
+          return { postId, count };
+        } catch (error) {
+          console.error(`조회수 로드 실패 (${postId}):`, error);
+          return { postId, count: 0 };
+        }
+      });
+
+    // 모든 Promise를 병렬로 실행
+    const results = await Promise.all(viewPromises);
+    
+    // 결과를 객체로 변환
+    results.forEach(({ postId, count }) => {
+      if (count !== null) {
+        newViewCounts[postId] = count;
+      }
+    });
+
+    setViewCounts((prev) => ({ ...prev, ...newViewCounts }));
+    return newViewCounts;
+  };
+
+  // 인기글 점수 계산 함수
+  const calculatePopularityScore = (
+    post: Post,
+    viewCount: number,
+    likeCount: number,
+    commentCount: number,
+    createdAt?: string
+  ): number => {
+    const postId = String(post.id);
+    
+    // 기본 점수 계산 (가중치 적용)
+    // 조회수: 가중치 1, 좋아요: 가중치 3, 댓글: 가중치 2
+    const baseScore = 
+      viewCount * 1 + 
+      likeCount * 3 + 
+      commentCount * 2;
+
+    // 시간 가중치: 최근 글일수록 가산점
+    // 24시간 이내: +50%, 7일 이내: +30%, 30일 이내: +10%
+    let timeMultiplier = 1.0;
+    if (createdAt) {
+      const postDate = new Date(createdAt);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursDiff <= 24) {
+        timeMultiplier = 1.5; // 24시간 이내: 50% 가산점
+      } else if (hoursDiff <= 168) { // 7일
+        timeMultiplier = 1.3; // 7일 이내: 30% 가산점
+      } else if (hoursDiff <= 720) { // 30일
+        timeMultiplier = 1.1; // 30일 이내: 10% 가산점
       }
     }
 
-    setLikesState((prev) => ({ ...prev, ...newLikesState }));
+    return baseScore * timeMultiplier;
   };
 
   // 좋아요 버튼 클릭 핸들러
@@ -742,8 +895,12 @@ export default function PostList({
 
           setSupabaseReviews(allReviews);
 
-          // 좋아요 상태 로드
-          await loadLikesForPosts(allReviews);
+          // 좋아요 상태, 댓글 수, 조회수 로드
+          await Promise.all([
+            loadLikesForPosts(allReviews),
+            loadCommentsForPosts(allReviews),
+            loadViewsForPosts(allReviews),
+          ]);
         } catch (error) {
           console.error("❌ 최신글 데이터 로드 실패:", error);
         } finally {
@@ -795,6 +952,7 @@ export default function PostList({
               hospital_name: review.hospital_name,
               procedure_rating: review.procedure_rating,
               hospital_rating: review.hospital_rating,
+              created_at: review.created_at, // 인기글 점수 계산용
             })
           );
 
@@ -817,6 +975,7 @@ export default function PostList({
               procedure_name: review.procedure_name,
               overall_satisfaction: review.overall_satisfaction,
               hospital_rating: review.hospital_kindness,
+              created_at: review.created_at, // 인기글 점수 계산용
             })
           );
 
@@ -825,10 +984,43 @@ export default function PostList({
             ...formattedProcedureReviews,
             ...formattedHospitalReviews,
           ];
-          setSupabaseReviews(allPopularReviews);
 
-          // 좋아요 상태 로드
-          await loadLikesForPosts(allPopularReviews);
+          // 좋아요 상태, 댓글 수, 조회수 로드 (결과를 직접 받아서 사용)
+          const [loadedLikesState, loadedCommentCounts, loadedViewCounts] = await Promise.all([
+            loadLikesForPosts(allPopularReviews),
+            loadCommentsForPosts(allPopularReviews),
+            loadViewsForPosts(allPopularReviews),
+          ]);
+
+          // 인기글 점수 계산 및 정렬
+          const sortedPopularReviews = allPopularReviews
+            .map((post) => {
+              const postId = String(post.id);
+              const viewCount = loadedViewCounts[postId] ?? 0;
+              const likeCount = loadedLikesState[postId]?.likeCount ?? 0;
+              const commentCount = loadedCommentCounts[postId] ?? 0;
+              const createdAt = (post as any).created_at;
+
+              const score = calculatePopularityScore(
+                post,
+                viewCount,
+                likeCount,
+                commentCount,
+                createdAt
+              );
+
+              return {
+                ...post,
+                popularityScore: score,
+              };
+            })
+            .sort((a, b) => {
+              // 점수가 높은 순으로 정렬
+              return (b as any).popularityScore - (a as any).popularityScore;
+            })
+            .map(({ popularityScore, ...rest }) => rest); // popularityScore 제거
+
+          setSupabaseReviews(sortedPopularReviews);
         } catch (error) {
           console.error("❌ 인기글 데이터 로드 실패:", error);
         } finally {
@@ -894,8 +1086,12 @@ export default function PostList({
 
           setSupabaseReviews(filteredConcernPosts);
 
-          // 좋아요 상태 로드
-          await loadLikesForPosts(filteredConcernPosts);
+          // 좋아요 상태, 댓글 수, 조회수 로드
+          await Promise.all([
+            loadLikesForPosts(filteredConcernPosts),
+            loadCommentsForPosts(filteredConcernPosts),
+            loadViewsForPosts(filteredConcernPosts),
+          ]);
         } finally {
           setLoading(false);
         }
@@ -912,6 +1108,11 @@ export default function PostList({
   if (activeTab === "recommended") {
     posts = recommendedPosts;
   } else if (activeTab === "latest") {
+    // 최신글: 시술 후기와 병원 후기를 섹션으로 나누기
+    procedurePosts = supabaseReviews.filter(
+      (p) => p.reviewType === "procedure"
+    );
+    hospitalPosts = supabaseReviews.filter((p) => p.reviewType === "hospital");
     // 최신글: Supabase 데이터 + 기존 하드코딩된 데이터 (섞여서 표시)
     posts = [...supabaseReviews, ...latestPosts];
   } else if (activeTab === "popular") {
@@ -933,6 +1134,420 @@ export default function PostList({
         {activeTab === "consultation"
           ? "고민글을 불러오는 중..."
           : "최신글을 불러오는 중..."}
+      </div>
+    );
+  }
+
+  // 최신글: 시술 후기/병원 후기 섹션으로 나누기 (탭 전환 방식)
+  if (activeTab === "latest") {
+    const switchSection = (section: "procedure" | "hospital") => {
+      setLatestSection(section);
+    };
+
+    // 공통 포스트 렌더링 함수
+    const handlePostClick = (post: Post) => {
+      console.log("[PostList] 카드 클릭:", {
+        postId: post.id,
+        reviewType: post.reviewType,
+        idType: typeof post.id,
+      });
+
+      // reviewType과 id가 있으면 상세페이지로 이동
+      if (post.reviewType && post.id) {
+        const postId = String(post.id);
+        // 댓글 기능이 있는 새로운 상세 페이지로 이동
+        router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+      } else {
+        console.warn("[PostList] 클릭 불가:", {
+          reviewType: post.reviewType,
+          id: post.id,
+          post: post,
+        });
+      }
+    };
+
+    // 번역 핸들러
+    const handleTranslate = async (e: React.MouseEvent, post: Post) => {
+      e.stopPropagation();
+      
+      if (!post.id) return;
+      const postId = String(post.id);
+      const targetLang = language as LanguageCode;
+
+      // 원본 텍스트의 언어 감지
+      const contentText = post.content || "";
+      const titleText = post.reviewType === "concern" && post.title ? post.title : "";
+      const detectedSourceLang = detectLanguage(contentText || titleText);
+
+      // 원본 언어와 목표 언어가 같으면 번역 불필요
+      if (detectedSourceLang === targetLang) {
+        return;
+      }
+
+      // 이미 번역 중이면 스킵
+      if (translationState[postId]?.isTranslating) {
+        return;
+      }
+
+      // 번역 상태 업데이트
+      setTranslationState((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslating: true,
+        },
+      }));
+
+      try {
+        const translationPromises: Promise<{ text: string; detectedSourceLang?: string }>[] = [];
+        
+        if (post.reviewType === "concern" && post.title) {
+          translationPromises.push(translateText(post.title, targetLang, null));
+        } else {
+          translationPromises.push(Promise.resolve({ text: "" }));
+        }
+        
+        translationPromises.push(translateText(contentText, targetLang, null));
+
+        const [translatedTitleResult, translatedContentResult] = await Promise.all(translationPromises);
+
+        setTranslationState((prev) => ({
+          ...prev,
+          [postId]: {
+            title: post.reviewType === "concern" && post.title ? translatedTitleResult.text : null,
+            content: translatedContentResult.text,
+            isTranslating: false,
+            isTranslated: true,
+          },
+        }));
+      } catch (error) {
+        console.error("번역 실패:", error);
+        setTranslationState((prev) => ({
+          ...prev,
+          [postId]: {
+            ...prev[postId],
+            isTranslating: false,
+          },
+        }));
+      }
+    };
+
+    const handleShowOriginal = (e: React.MouseEvent, post: Post) => {
+      e.stopPropagation();
+      if (!post.id) return;
+      const postId = String(post.id);
+      setTranslationState((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslated: false,
+        },
+      }));
+    };
+
+    const renderPost = (post: Post) => {
+      const postId = String(post.id);
+      const translation = translationState[postId];
+      const isTranslated = translation?.isTranslated || false;
+      const isTranslating = translation?.isTranslating || false;
+      const displayTitle = isTranslated && translation?.title ? translation.title : post.title;
+      const displayContent = isTranslated && translation?.content ? translation.content : post.content;
+      
+      // 원본 텍스트의 언어 감지
+      const contentText = post.content || "";
+      const titleText = post.reviewType === "concern" && post.title ? post.title : "";
+      const detectedSourceLang = detectLanguage(contentText || titleText);
+      const targetLang = language as LanguageCode;
+      const needsTranslation = detectedSourceLang && detectedSourceLang !== targetLang;
+
+      return (
+      <div
+        key={post.id}
+        onClick={() => handlePostClick(post)}
+        className={`bg-white border border-gray-200 rounded-2xl hover:shadow-lg hover:border-primary-main/20 transition-all duration-300 cursor-pointer overflow-hidden group ${
+          post.reviewType === "concern" ? "p-5" : "p-5"
+        }`}
+      >
+        {/* 카테고리 */}
+        <div className="mb-3">
+          <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
+            {post.category}
+          </span>
+        </div>
+
+        {/* 작성자 정보 */}
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-light to-primary-main flex items-center justify-center text-white font-semibold text-sm">
+              {post.avatar || "👤"}
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900 text-sm truncate">
+                {post.username || "익명"}
+              </span>
+              <span className="text-xs text-gray-500">{post.timestamp}</span>
+              {post.edited && (
+                <span className="text-xs text-gray-400">(수정됨)</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 제목 (고민글만) */}
+        {post.reviewType === "concern" && displayTitle && (
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 leading-relaxed">
+              <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
+                {displayTitle}
+              </span>
+            </h3>
+            {/* 번역 버튼 */}
+            {needsTranslation && (
+              <button
+                onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
+                disabled={isTranslating}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  isTranslated
+                    ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <FiGlobe className="text-xs" />
+                <span>{isTranslating ? "번역 중..." : isTranslated ? "원문" : "번역"}</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 시술 후기: 시술명과 별점 표시 */}
+        {post.reviewType === "procedure" && post.procedure_name && (
+          <div className="mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {post.procedure_name}
+            </h3>
+            {post.procedure_rating && (
+              <div className="flex items-center gap-1">
+                <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                <span className="text-sm font-semibold text-gray-700">
+                  {post.procedure_rating.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 병원 후기: 병원명과 별점 표시 */}
+        {post.reviewType === "hospital" && post.hospital_name && (
+          <div className="mb-3">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {post.hospital_name}
+            </h3>
+            {(post.overall_satisfaction || post.hospital_rating) && (
+              <div className="flex items-center gap-3">
+                {post.overall_satisfaction && (
+                  <div className="flex items-center gap-1">
+                    <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      시술 {post.overall_satisfaction.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+                {post.hospital_rating && (
+                  <div className="flex items-center gap-1">
+                    <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
+                    <span className="text-sm font-semibold text-gray-700">
+                      병원 {post.hospital_rating.toFixed(1)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 내용 */}
+        <p className="text-gray-700 text-sm mb-4 line-clamp-3">
+          {displayContent}
+        </p>
+
+        {/* 이미지 */}
+        {post.images && post.images.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {post.images.slice(0, 4).map((img, idx) => (
+              <div
+                key={idx}
+                className="relative aspect-square rounded-xl overflow-hidden bg-gray-100"
+              >
+                {typeof img === "string" &&
+                (img.startsWith("http") ||
+                  img.startsWith("blob:") ||
+                  img.startsWith("/")) ? (
+                  <Image
+                    src={img}
+                    alt={`게시글 이미지 ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                    이미지
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          <div className="flex items-center gap-5">
+            {post.reviewType &&
+              post.id &&
+              (() => {
+                const postId = String(post.id);
+                const uuidRegex =
+                  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                // UUID 형식인 경우에만 좋아요 버튼 표시 (실제 Supabase 데이터만)
+                if (!uuidRegex.test(postId)) return null;
+                return (
+                  <button
+                    onClick={(e) => handleLikeClick(e, post)}
+                    className={`flex items-center gap-1.5 transition-all hover:scale-110 active:scale-95 ${
+                      likesState[postId]?.isLiked
+                        ? "text-red-500"
+                        : "text-gray-600 hover:text-red-500"
+                    }`}
+                  >
+                    <FiHeart
+                      className={`text-lg ${
+                        likesState[postId]?.isLiked ? "fill-red-500" : ""
+                      }`}
+                    />
+                    <span className="text-xs font-semibold">
+                      {likesState[postId]?.likeCount || 0}
+                    </span>
+                  </button>
+                );
+              })()}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (post.reviewType && post.id) {
+                  const postId = String(post.id);
+                  router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+                }
+              }}
+              className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
+            >
+              <FiMessageCircle className="text-lg" />
+              <span className="text-xs font-semibold">
+                {post.reviewType && post.id
+                  ? commentCounts[String(post.id)] ?? 0
+                  : post.comments}
+              </span>
+            </button>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-all hover:scale-110 active:scale-95"
+            >
+              <FiEye className="text-base" />
+              <span className="text-xs font-medium">
+                {post.reviewType && post.id
+                  ? viewCounts[String(post.id)] ?? 0
+                  : post.views}
+              </span>
+            </button>
+          </div>
+          {needsTranslation && (
+            <div className="flex items-center gap-2">
+              {isTranslated ? (
+                <button
+                  onClick={(e) => handleShowOriginal(e, post)}
+                  className="text-xs text-primary-main hover:underline"
+                >
+                  원문 보기
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => handleTranslate(e, post)}
+                  disabled={isTranslating}
+                  className="flex items-center gap-1 text-xs text-primary-main hover:underline disabled:opacity-50"
+                >
+                  {isTranslating ? "번역 중..." : <><FiGlobe className="text-xs" /> 번역</>}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      );
+    };
+
+    return (
+      <div className="px-4 pt-4 pb-4">
+        {/* 섹션 전환 버튼 */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => switchSection("procedure")}
+            className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              latestSection === "procedure"
+                ? "bg-primary-main text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            시술 후기
+          </button>
+          <button
+            onClick={() => switchSection("hospital")}
+            className={`flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+              latestSection === "hospital"
+                ? "bg-primary-main text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            병원 후기
+          </button>
+        </div>
+
+        {/* 섹션별 게시글 표시 */}
+        {latestSection === "procedure" ? (
+          <div>
+            <div className="space-y-4">
+              {/* 실제 데이터 + 더미 데이터 합치기 */}
+              {procedurePosts.length > 0 || latestProcedurePosts.length > 0 ? (
+                <>
+                  {procedurePosts.map(renderPost)}
+                  {latestProcedurePosts.map(renderPost)}
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  시술 후기가 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="space-y-4">
+              {/* 실제 데이터 + 더미 데이터 합치기 */}
+              {hospitalPosts.length > 0 || latestHospitalPosts.length > 0 ? (
+                <>
+                  {hospitalPosts.map(renderPost)}
+                  {latestHospitalPosts.map(renderPost)}
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  병원 후기가 없습니다.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -973,8 +1588,13 @@ export default function PostList({
       const postId = String(post.id);
       const targetLang = language as LanguageCode;
 
-      // 한국어로 설정되어 있으면 번역하지 않음
-      if (targetLang === "KR") {
+      // 원본 텍스트의 언어 감지
+      const contentText = post.content || "";
+      const titleText = post.reviewType === "concern" && post.title ? post.title : "";
+      const detectedSourceLang = detectLanguage(contentText || titleText);
+
+      // 원본 언어와 목표 언어가 같으면 번역 불필요
+      if (detectedSourceLang === targetLang) {
         return;
       }
 
@@ -993,23 +1613,23 @@ export default function PostList({
       }));
 
       try {
-        const translationPromises: Promise<string>[] = [];
+        const translationPromises: Promise<{ text: string; detectedSourceLang?: string }>[] = [];
         
         if (post.reviewType === "concern" && post.title) {
-          translationPromises.push(translateText(post.title, targetLang, "KR"));
+          translationPromises.push(translateText(post.title, targetLang, null));
         } else {
-          translationPromises.push(Promise.resolve(""));
+          translationPromises.push(Promise.resolve({ text: "" }));
         }
         
-        translationPromises.push(translateText(post.content || "", targetLang, "KR"));
+        translationPromises.push(translateText(contentText, targetLang, null));
 
         const [translatedTitleResult, translatedContentResult] = await Promise.all(translationPromises);
 
         setTranslationState((prev) => ({
           ...prev,
           [postId]: {
-            title: post.reviewType === "concern" && post.title ? translatedTitleResult : null,
-            content: translatedContentResult,
+            title: post.reviewType === "concern" && post.title ? translatedTitleResult.text : null,
+            content: translatedContentResult.text,
             isTranslating: false,
             isTranslated: true,
           },
@@ -1046,6 +1666,13 @@ export default function PostList({
       const isTranslating = translation?.isTranslating || false;
       const displayTitle = isTranslated && translation?.title ? translation.title : post.title;
       const displayContent = isTranslated && translation?.content ? translation.content : post.content;
+      
+      // 원본 텍스트의 언어 감지
+      const contentText = post.content || "";
+      const titleText = post.reviewType === "concern" && post.title ? post.title : "";
+      const detectedSourceLang = detectLanguage(contentText || titleText);
+      const targetLang = language as LanguageCode;
+      const needsTranslation = detectedSourceLang && detectedSourceLang !== targetLang;
 
       return (
       <div
@@ -1096,7 +1723,7 @@ export default function PostList({
               </span>
             </h3>
             {/* 번역 버튼 */}
-            {language !== "KR" && (
+            {needsTranslation && (
               <button
                 onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
                 disabled={isTranslating}
@@ -1167,7 +1794,7 @@ export default function PostList({
             {displayContent}
           </p>
           {/* 번역 버튼 (고민글이 아닌 경우) */}
-          {post.reviewType !== "concern" && language !== "KR" && (
+          {post.reviewType !== "concern" && needsTranslation && (
             <button
               onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
               disabled={isTranslating}
@@ -1260,18 +1887,32 @@ export default function PostList({
                 );
               })()}
             <button
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (post.reviewType && post.id) {
+                  const postId = String(post.id);
+                  router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+                }
+              }}
               className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-all hover:scale-110 active:scale-95"
             >
               <FiMessageCircle className="text-lg" />
-              <span className="text-xs font-semibold">{post.comments}</span>
+              <span className="text-xs font-semibold">
+                {post.reviewType && post.id
+                  ? commentCounts[String(post.id)] ?? 0
+                  : post.comments}
+              </span>
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-all hover:scale-110 active:scale-95"
             >
               <FiEye className="text-base" />
-              <span className="text-xs font-medium">{post.views}</span>
+              <span className="text-xs font-medium">
+                {post.reviewType && post.id
+                  ? viewCounts[String(post.id)] ?? 0
+                  : post.views}
+              </span>
             </button>
           </div>
         </div>
@@ -1349,13 +1990,8 @@ export default function PostList({
             // reviewType과 id가 있으면 상세페이지로 이동
             if (post.reviewType && post.id) {
               const postId = String(post.id);
-              if (post.reviewType === "procedure") {
-                router.push(`/review/procedure/${postId}`);
-              } else if (post.reviewType === "hospital") {
-                router.push(`/review/hospital/${postId}`);
-              } else if (post.reviewType === "concern") {
-                router.push(`/community?tab=consultation`);
-              }
+              // 모든 게시글 타입을 동일한 상세 페이지로 이동
+              router.push(`/community/posts/${postId}?type=${post.reviewType}`);
             }
           }}
           className={`bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow cursor-pointer ${
@@ -1511,18 +2147,32 @@ export default function PostList({
                 </button>
               )}
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (post.reviewType && post.id) {
+                    const postId = String(post.id);
+                    router.push(`/community/posts/${postId}?type=${post.reviewType}`);
+                  }
+                }}
                 className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
               >
                 <FiMessageCircle className="text-lg" />
-                <span className="text-xs font-medium">{post.comments}</span>
+                <span className="text-xs font-medium">
+                  {post.reviewType && post.id
+                    ? commentCounts[String(post.id)] ?? 0
+                    : post.comments}
+                </span>
               </button>
               <button
                 onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1.5 text-gray-600 hover:text-primary-main transition-colors"
               >
                 <FiEye className="text-lg" />
-                <span className="text-xs font-medium">{post.views}</span>
+                <span className="text-xs font-medium">
+                  {post.reviewType && post.id
+                    ? viewCounts[String(post.id)] ?? 0
+                    : post.views}
+                </span>
               </button>
             </div>
           </div>
