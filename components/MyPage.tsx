@@ -13,6 +13,7 @@ import {
   FiActivity,
   FiLogOut,
   FiCalendar,
+  FiMessageCircle,
 } from "react-icons/fi";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
@@ -713,6 +714,13 @@ function MainContent({
           badge={reviewCount}
           onClick={() => {
             router.push("/community/my-posts");
+          }}
+        />
+        <MenuItem
+          icon={FiMessageCircle}
+          label={t("mypage.myComments") || "내 댓글 관리"}
+          onClick={() => {
+            router.push("/community/my-comments");
           }}
         />
       </div>

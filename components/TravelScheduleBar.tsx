@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { FiCalendar, FiChevronDown, FiX } from "react-icons/fi";
 import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
 import { formatDateWithDay } from "@/lib/utils/dateFormat";
+import { trackTripDateSet } from "@/lib/gtm";
 
 interface TravelScheduleBarProps {
   onScheduleChange?: (
@@ -133,6 +134,9 @@ export default function TravelScheduleBar({
       localStorage.setItem("travelPeriod", JSON.stringify(travelPeriod));
       // 여행 기간 업데이트 이벤트 발생
       window.dispatchEvent(new Event("travelPeriodUpdated"));
+      
+      // GTM 이벤트: trip_date_set (날짜 확정 성공 후)
+      trackTripDateSet(startDate, endDate);
     }
 
     if (onScheduleChange) {

@@ -7,9 +7,16 @@
 /**
  * 상대시간 포맷팅 (피드/리스트용)
  * 예: "3시간 전", "어제", "2일 전"
+ * @param dateString 날짜 문자열
+ * @param t 번역 함수 (선택사항, 제공되면 번역된 텍스트 사용)
  */
-export function formatTimeAgo(dateString?: string): string {
-  if (!dateString) return "방금 전";
+export function formatTimeAgo(
+  dateString?: string,
+  t?: (key: string) => string
+): string {
+  if (!dateString) {
+    return t ? t("time.justNow") : "방금 전";
+  }
 
   const date = new Date(dateString);
   const now = new Date();
@@ -18,12 +25,31 @@ export function formatTimeAgo(dateString?: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "방금 전";
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffMins < 1) {
+    return t ? t("time.justNow") : "방금 전";
+  }
+  if (diffMins < 60) {
+    if (t) {
+      return t("time.minutesAgo").replace("{n}", diffMins.toString());
+    }
+    return `${diffMins}분 전`;
+  }
+  if (diffHours < 24) {
+    if (t) {
+      return t("time.hoursAgo").replace("{n}", diffHours.toString());
+    }
+    return `${diffHours}시간 전`;
+  }
+  if (diffDays < 7) {
+    if (t) {
+      return t("time.daysAgo").replace("{n}", diffDays.toString());
+    }
+    return `${diffDays}일 전`;
+  }
 
-  return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+  // 7일 이상은 절대 날짜로 표시
+  const locale = typeof navigator !== "undefined" ? navigator.language : "ko-KR";
+  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 /**

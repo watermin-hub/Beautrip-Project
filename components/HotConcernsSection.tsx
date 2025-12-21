@@ -221,6 +221,13 @@ export default function HotConcernsSection() {
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
+      
+      // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
+      // entry_source: "home" (홈에서 진입)
+      import("@/lib/gtm").then(({ trackAddToSchedule }) => {
+        trackAddToSchedule("home");
+      });
+      
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);

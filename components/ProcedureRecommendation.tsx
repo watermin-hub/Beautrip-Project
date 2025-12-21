@@ -709,6 +709,13 @@ export default function ProcedureRecommendation({
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
+      
+      // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
+      // entry_source: "schedule" (일정 페이지에서 진입)
+      import("@/lib/gtm").then(({ trackAddToSchedule }) => {
+        trackAddToSchedule("schedule");
+      });
+      
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);

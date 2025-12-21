@@ -6,6 +6,7 @@ import {
   FiEye,
   FiHeart,
   FiStar,
+  FiGlobe,
 } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ import {
 } from "@/lib/api/beautripApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { maskNickname } from "@/lib/utils/nicknameMask";
+import { translateText, type LanguageCode } from "@/lib/utils/translation";
 
 interface Post {
   id: number | string;
@@ -467,7 +469,7 @@ export default function PostList({
   activeTab: "recommended" | "latest" | "popular" | "consultation";
   concernCategory?: string | null;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [supabaseReviews, setSupabaseReviews] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -477,6 +479,18 @@ export default function PostList({
   // 좋아요 상태 관리: { postId: { isLiked: boolean, likeCount: number } }
   const [likesState, setLikesState] = useState<
     Record<string, { isLiked: boolean; likeCount: number }>
+  >({});
+  // 번역 상태 관리: { postId: { title: string | null, content: string | null, isTranslating: boolean } }
+  const [translationState, setTranslationState] = useState<
+    Record<
+      string,
+      {
+        title: string | null;
+        content: string | null;
+        isTranslating: boolean;
+        isTranslated: boolean;
+      }
+    >
   >({});
 
   // 좋아요 상태 로드 함수
@@ -826,6 +840,11 @@ export default function PostList({
     }
   }, [activeTab]);
 
+  // 언어 변경 시 번역 상태 초기화
+  useEffect(() => {
+    setTranslationState({});
+  }, [language]);
+
   // 고민상담소: Supabase 실제 데이터 + 더미 데이터 함께 사용
   // - Supabase에서 고민글을 불러오고
   // - 아직 데이터가 적거나 없으면 concernDummyPosts를 뒤에 붙여서 보여줌
@@ -953,7 +972,89 @@ export default function PostList({
       }
     };
 
-    const renderPost = (post: Post) => (
+    // 번역 핸들러
+    const handleTranslate = async (e: React.MouseEvent, post: Post) => {
+      e.stopPropagation();
+      
+      if (!post.id) return;
+      const postId = String(post.id);
+      const targetLang = language as LanguageCode;
+
+      // 한국어로 설정되어 있으면 번역하지 않음
+      if (targetLang === "KR") {
+        return;
+      }
+
+      // 이미 번역 중이면 스킵
+      if (translationState[postId]?.isTranslating) {
+        return;
+      }
+
+      // 번역 상태 업데이트
+      setTranslationState((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslating: true,
+        },
+      }));
+
+      try {
+        const translationPromises: Promise<string>[] = [];
+        
+        if (post.reviewType === "concern" && post.title) {
+          translationPromises.push(translateText(post.title, targetLang, "KR"));
+        } else {
+          translationPromises.push(Promise.resolve(""));
+        }
+        
+        translationPromises.push(translateText(post.content || "", targetLang, "KR"));
+
+        const [translatedTitleResult, translatedContentResult] = await Promise.all(translationPromises);
+
+        setTranslationState((prev) => ({
+          ...prev,
+          [postId]: {
+            title: post.reviewType === "concern" && post.title ? translatedTitleResult : null,
+            content: translatedContentResult,
+            isTranslating: false,
+            isTranslated: true,
+          },
+        }));
+      } catch (error) {
+        console.error("번역 실패:", error);
+        setTranslationState((prev) => ({
+          ...prev,
+          [postId]: {
+            ...prev[postId],
+            isTranslating: false,
+          },
+        }));
+      }
+    };
+
+    const handleShowOriginal = (e: React.MouseEvent, post: Post) => {
+      e.stopPropagation();
+      if (!post.id) return;
+      const postId = String(post.id);
+      setTranslationState((prev) => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          isTranslated: false,
+        },
+      }));
+    };
+
+    const renderPost = (post: Post) => {
+      const postId = String(post.id);
+      const translation = translationState[postId];
+      const isTranslated = translation?.isTranslated || false;
+      const isTranslating = translation?.isTranslating || false;
+      const displayTitle = isTranslated && translation?.title ? translation.title : post.title;
+      const displayContent = isTranslated && translation?.content ? translation.content : post.content;
+
+      return (
       <div
         key={post.id}
         onClick={() => handlePostClick(post)}
@@ -994,12 +1095,29 @@ export default function PostList({
         </div>
 
         {/* Title - 고민상담소 글에만 표시 */}
-        {post.reviewType === "concern" && post.title && (
-          <h3 className="text-lg font-bold text-gray-900 mb-4 leading-relaxed">
-            <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
-              {post.title}
-            </span>
-          </h3>
+        {post.reviewType === "concern" && displayTitle && (
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-2 leading-relaxed">
+              <span className="bg-yellow-200/60 px-2 py-1 rounded-sm">
+                {displayTitle}
+              </span>
+            </h3>
+            {/* 번역 버튼 */}
+            {language !== "KR" && (
+              <button
+                onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
+                disabled={isTranslating}
+                className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                  isTranslated
+                    ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <FiGlobe className="text-xs" />
+                <span>{isTranslating ? "번역 중..." : isTranslated ? "원문" : "번역"}</span>
+              </button>
+            )}
+          </div>
         )}
 
         {/* 시술 후기: 시술명과 별점 표시 */}
@@ -1049,13 +1167,28 @@ export default function PostList({
         )}
 
         {/* Post Content */}
-        <p
-          className={`text-gray-800 text-sm leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all ${
-            post.reviewType === "concern" ? "mb-4" : "mb-4"
-          }`}
-        >
-          {post.content}
-        </p>
+        <div className={post.reviewType === "concern" ? "mb-4" : "mb-4"}>
+          <p
+            className={`text-gray-800 text-sm leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all`}
+          >
+            {displayContent}
+          </p>
+          {/* 번역 버튼 (고민글이 아닌 경우) */}
+          {post.reviewType !== "concern" && language !== "KR" && (
+            <button
+              onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
+              disabled={isTranslating}
+              className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                isTranslated
+                  ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <FiGlobe className="text-xs" />
+              <span>{isTranslating ? "번역 중..." : isTranslated ? "원문" : "번역"}</span>
+            </button>
+          )}
+        </div>
 
         {/* Images */}
         {post.images && post.images.length > 0 && (
@@ -1150,7 +1283,8 @@ export default function PostList({
           </div>
         </div>
       </div>
-    );
+      );
+    };
 
     return (
       <div className="pb-4">

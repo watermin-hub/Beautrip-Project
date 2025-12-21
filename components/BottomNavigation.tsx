@@ -46,7 +46,10 @@ export default function BottomNavigation({
       <div className="flex justify-around items-center py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.path;
+          // 커뮤니티는 /community로 시작하는 모든 경로에서 활성화
+          const isActive = item.path === "/community" 
+            ? pathname.startsWith("/community")
+            : pathname === item.path;
 
           return (
             <Link

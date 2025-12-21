@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackReviewStart, trackReviewSubmit } from "@/lib/gtm";
 
 interface ProcedureReviewFormProps {
   onBack: () => void;
@@ -64,6 +65,16 @@ export default function ProcedureReviewForm({
     };
     loadCategories();
   }, [language]);
+
+  // GTM 이벤트: review_start (후기 작성 화면 진입 완료 시점)
+  useEffect(() => {
+    // entry_source는 대부분 "mypage" 또는 "community"에서 진입
+    // URL 경로를 확인하여 정확한 진입 경로 판단
+    const entrySource = window.location.pathname.includes("/mypage") 
+      ? "mypage" 
+      : "community";
+    trackReviewStart(entrySource);
+  }, []);
 
   // 한국어 완성형 글자 체크 (자음만 입력 방지)
   const hasCompleteCharacter = (text: string): boolean => {
@@ -282,6 +293,9 @@ export default function ProcedureReviewForm({
         }
       }
 
+      // GTM 이벤트: review_submit (후기 저장 API 성공 응답 이후)
+      trackReviewSubmit("treatment");
+      
       alert("시술후기가 성공적으로 작성되었습니다!");
       onSubmit();
     } catch (error: any) {

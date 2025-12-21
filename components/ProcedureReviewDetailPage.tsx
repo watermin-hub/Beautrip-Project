@@ -21,6 +21,7 @@ import {
   isPostLiked,
   getPostLikeCount,
   getUserProfile,
+  getCommentCount,
 } from "@/lib/api/beautripApi";
 import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
 import { maskNickname } from "@/lib/utils/nicknameMask";
@@ -28,6 +29,8 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
+import CommentForm from "./CommentForm";
+import CommentList from "./CommentList";
 
 interface ProcedureReviewDetailPageProps {
   reviewId: string;
@@ -42,6 +45,7 @@ export default function ProcedureReviewDetailPage({
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
   );
@@ -83,6 +87,10 @@ export default function ProcedureReviewDetailPage({
           ]);
           setIsLiked(liked);
           setLikeCount(count);
+          
+          // 댓글 수 로드
+          const commentCountResult = await getCommentCount(reviewId, "procedure");
+          setCommentCount(commentCountResult);
         } else {
           console.warn("후기 데이터가 없습니다. reviewId:", reviewId);
         }
@@ -115,6 +123,13 @@ export default function ProcedureReviewDetailPage({
       }
     } catch (error) {
       console.error("좋아요 처리 실패:", error);
+    }
+  };
+
+  const handleCommentAdded = async () => {
+    if (reviewId) {
+      const count = await getCommentCount(reviewId, "procedure");
+      setCommentCount(count);
     }
   };
 
@@ -258,11 +273,30 @@ export default function ProcedureReviewDetailPage({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <span className="text-xs text-gray-500">{t("label.gender")}</span>
-              <p className="text-base text-gray-900 mt-1">{review.gender}</p>
+              <p className="text-base text-gray-900 mt-1">
+                {review.gender === "남" || review.gender === "Male"
+                  ? t("label.genderMale")
+                  : review.gender === "여" || review.gender === "Female"
+                  ? t("label.genderFemale")
+                  : review.gender}
+              </p>
             </div>
             <div>
               <span className="text-xs text-gray-500">{t("label.age")}</span>
-              <p className="text-base text-gray-900 mt-1">{review.age_group}</p>
+              <p className="text-base text-gray-900 mt-1">
+                {(() => {
+                  if (!review.age_group) return "";
+                  // "20대", "30대" 등의 형식에서 숫자 부분 추출
+                  const ageMatch = review.age_group.match(/^(\d+)/);
+                  if (ageMatch) {
+                    const ageKey = `label.age${ageMatch[1]}s`;
+                    const translated = t(ageKey);
+                    // 번역 키가 존재하면 사용, 없으면 원본 반환
+                    return translated !== ageKey ? translated : review.age_group;
+                  }
+                  return review.age_group;
+                })()}
+              </p>
             </div>
           </div>
 
@@ -277,7 +311,7 @@ export default function ProcedureReviewDetailPage({
 
           {review.surgery_date && (
             <div>
-              <span className="text-xs text-gray-500">시술 날짜</span>
+              <span className="text-xs text-gray-500">{t("label.surgeryDate")}</span>
               <div className="flex items-center gap-1 mt-1">
                 <FiCalendar className="text-gray-400 text-sm" />
                 <p className="text-base text-gray-900">
@@ -414,7 +448,7 @@ export default function ProcedureReviewDetailPage({
 
           <button className="flex items-center gap-2 text-gray-600">
             <FiMessageCircle className="text-xl" />
-            <span className="text-sm font-medium">0</span>
+            <span className="text-sm font-medium">{commentCount}</span>
           </button>
 
           <button className="flex items-center gap-2 text-gray-600">
@@ -427,14 +461,14 @@ export default function ProcedureReviewDetailPage({
               try {
                 if (navigator.share) {
                   await navigator.share({
-                    title: `${review.procedure_name} 시술 후기`,
+                    title: t("review.shareTitle").replace("{procedureName}", review.procedure_name),
                     text: review.content.slice(0, 100),
                     url: window.location.href,
                   });
                 } else {
                   // 공유 API가 없으면 URL 복사
                   await navigator.clipboard.writeText(window.location.href);
-                  alert("링크가 복사되었습니다!");
+                  alert(t("alert.linkCopiedShort"));
                 }
               } catch (error) {
                 console.error("공유 실패:", error);
@@ -444,6 +478,29 @@ export default function ProcedureReviewDetailPage({
           >
             <FiShare2 className="text-xl" />
           </button>
+        </div>
+
+        {/* 댓글 섹션 */}
+        <div className="px-4 py-6 border-t border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            댓글 ({commentCount})
+          </h3>
+          
+          {/* 댓글 작성 폼 */}
+          <div className="mb-6">
+            <CommentForm
+              postId={reviewId}
+              postType="procedure"
+              onSuccess={handleCommentAdded}
+            />
+          </div>
+
+          {/* 댓글 목록 */}
+          <CommentList
+            postId={reviewId}
+            postType="procedure"
+            onCommentAdded={handleCommentAdded}
+          />
         </div>
       </div>
       <BottomNavigation />

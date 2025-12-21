@@ -217,6 +217,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.age50s": "50대",
     "label.genderFemale": "여성",
     "label.genderMale": "남성",
+    "label.procedureSatisfaction": "시술 만족도",
+    "label.hospitalSatisfaction": "병원 만족도",
+    "label.surgeryDate": "시술 날짜",
     "label.cost": "비용",
     "label.before": "전",
     "label.after": "후",
@@ -248,6 +251,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "date.nights": "박",
     "date.days": "일",
     "date.selectEndDate": "종료일 선택",
+    
+    // Time ago formatting
+    "time.justNow": "방금 전",
+    "time.minutesAgo": "{n}분 전",
+    "time.hoursAgo": "{n}시간 전",
+    "time.daysAgo": "{n}일 전",
 
     // Favorites
     "favorites.title": "찜 목록",
@@ -315,6 +324,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.tab.consultation": "고민상담소",
     "community.tab.procedureReview": "시술 후기",
     "community.tab.hospitalReview": "병원 후기",
+    
+    // Review detail page
+    "review.treatmentReview": "시술 후기",
+    "review.loading": "후기를 불러오는 중...",
+    "review.notFound": "후기를 찾을 수 없습니다.",
+    "review.shareTitle": "{procedureName} 시술 후기",
 
     // MyPage
     "mypage.title": "마이페이지",
@@ -793,6 +808,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.age50s": "50s",
     "label.genderFemale": "Female",
     "label.genderMale": "Male",
+    "label.procedureSatisfaction": "Procedure Satisfaction",
+    "label.hospitalSatisfaction": "Hospital Satisfaction",
+    "label.surgeryDate": "Surgery Date",
     "label.cost": "Cost",
     "label.before": "Before",
     "label.after": "After",
@@ -825,6 +843,14 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "date.days": "days",
     "date.selectEndDate": "Select end date",
     "date.year": "",
+    
+    // Time ago formatting
+    "time.justNow": "Just now",
+    "time.minutesAgo": "{n} min ago",
+    "time.hoursAgo": "{n} hour ago",
+    "time.hoursAgoPlural": "{n} hours ago",
+    "time.daysAgo": "{n} day ago",
+    "time.daysAgoPlural": "{n} days ago",
     // Schedule page
     "schedule.setTravelPeriod": "Please set your travel period",
     "schedule.reset": "Reset",
@@ -924,6 +950,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.tab.consultation": "Consultation Board",
     "community.tab.procedureReview": "Procedure Review",
     "community.tab.hospitalReview": "Hospital Review",
+    
+    // Review detail page
+    "review.treatmentReview": "Treatment Review",
+    "review.loading": "Loading review...",
+    "review.notFound": "Review not found.",
+    "review.shareTitle": "{procedureName} Treatment Review",
 
     // MyPage
     "mypage.title": "My Page",
@@ -1391,6 +1423,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.age50s": "50代",
     "label.genderFemale": "女性",
     "label.genderMale": "男性",
+    "label.procedureSatisfaction": "施術満足度",
+    "label.hospitalSatisfaction": "病院満足度",
+    "label.surgeryDate": "施術日",
     "label.cost": "費用",
     "label.before": "前",
     "label.after": "後",
@@ -1423,6 +1458,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "date.days": "日",
     "date.selectEndDate": "終了日を選択",
     "date.year": "年",
+    
+    // Time ago formatting
+    "time.justNow": "たった今",
+    "time.minutesAgo": "{n}分前",
+    "time.hoursAgo": "{n}時間前",
+    "time.daysAgo": "{n}日前",
 
     // Favorites
     "favorites.title": "お気に入り",
@@ -1491,6 +1532,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.tab.consultation": "悩み相談所",
     "community.tab.procedureReview": "施術レビュー",
     "community.tab.hospitalReview": "病院レビュー",
+    
+    // Review detail page
+    "review.treatmentReview": "施術レビュー",
+    "review.loading": "レビューを読み込み中...",
+    "review.notFound": "レビューが見つかりません。",
+    "review.shareTitle": "{procedureName} 施術レビュー",
 
     // MyPage
     "mypage.title": "マイページ",
@@ -1965,6 +2012,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.age50s": "50多岁",
     "label.genderFemale": "女性",
     "label.genderMale": "男性",
+    "label.procedureSatisfaction": "疗程满意度",
+    "label.hospitalSatisfaction": "医院满意度",
+    "label.surgeryDate": "疗程日期",
     "label.cost": "费用",
     "label.before": "前",
     "label.after": "后",
@@ -1997,6 +2047,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "date.days": "天",
     "date.selectEndDate": "选择结束日期",
     "date.year": "年",
+    
+    // Time ago formatting
+    "time.justNow": "刚刚",
+    "time.minutesAgo": "{n}分钟前",
+    "time.hoursAgo": "{n}小时前",
+    "time.daysAgo": "{n}天前",
 
     // Favorites
     "favorites.title": "收藏",
@@ -2062,6 +2118,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "community.tab.consultation": "咨询专区",
     "community.tab.procedureReview": "疗程评论",
     "community.tab.hospitalReview": "医院评论",
+    
+    // Review detail page
+    "review.treatmentReview": "疗程评论",
+    "review.loading": "正在加载评论...",
+    "review.notFound": "找不到评论。",
+    "review.shareTitle": "{procedureName} 疗程评论",
 
     // MyPage
     "mypage.title": "我的",

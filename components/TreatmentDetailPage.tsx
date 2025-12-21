@@ -392,6 +392,13 @@ export default function TreatmentDetailPage({
       localStorage.setItem("schedules", schedulesJson);
       // 일정 추가 이벤트 발생
       window.dispatchEvent(new Event("scheduleAdded"));
+      
+      // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
+      // entry_source: "pdp" (Product Detail Page)
+      import("@/lib/gtm").then(({ trackAddToSchedule }) => {
+        trackAddToSchedule("pdp");
+      });
+      
       alert(`${date}에 일정이 추가되었습니다!`);
     } catch (error: any) {
       console.error("일정 저장 실패:", error);

@@ -170,6 +170,13 @@ export default function KBeautyRankingPage() {
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
+      
+      // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
+      // entry_source: "ranking" (랭킹 페이지에서 진입)
+      import("@/lib/gtm").then(({ trackAddToSchedule }) => {
+        trackAddToSchedule("ranking");
+      });
+      
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);

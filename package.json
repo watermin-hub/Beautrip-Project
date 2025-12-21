@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "insert-dummy": "node scripts/insertDummyData.js",
+    "generate-sql": "node scripts/generateSQL.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",
