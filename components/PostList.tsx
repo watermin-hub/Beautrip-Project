@@ -824,7 +824,8 @@ export default function PostList({
         router.push(`/review/hospital/${postId}`);
       } else {
         // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-        const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+        // activeTab은 최상위 레벨이므로 전체 타입을 사용
+        const fromTab: "recommended" | "latest" | "popular" | "consultation" = activeTab;
         router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
       }
     } else {
@@ -1494,7 +1495,8 @@ export default function PostList({
                     router.push(`/review/hospital/${postId}`);
                   } else {
                     // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-                    const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                    // activeTab은 이미 "latest"로 좁혀져 있으므로 "latest"를 사용
+                    const fromTab: "recommended" | "latest" | "popular" | "consultation" = "latest";
                     router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
                   }
                 }
@@ -1679,7 +1681,8 @@ export default function PostList({
           router.push(`/review/hospital/${postId}`);
         } else {
           // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-          const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+          // activeTab은 이미 "popular"로 좁혀져 있으므로 "popular"를 사용
+          const fromTab: "recommended" | "latest" | "popular" | "consultation" = "popular";
           router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
         }
       } else {
@@ -2009,7 +2012,8 @@ export default function PostList({
                     router.push(`/review/hospital/${postId}`);
                   } else {
                     // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-                    const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                    // activeTab은 이미 "latest"로 좁혀져 있으므로 "latest"를 사용
+                    const fromTab: "recommended" | "latest" | "popular" | "consultation" = "latest";
                     router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
                   }
                 }
@@ -2163,7 +2167,8 @@ export default function PostList({
                 router.push(`/review/hospital/${postId}`);
               } else {
                 // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-                const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                // activeTab은 "recommended" 또는 "latest"일 수 있으므로 activeTab을 그대로 사용
+                const fromTab: "recommended" | "latest" | "popular" | "consultation" = activeTab;
                 router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
               }
             }
@@ -2326,7 +2331,8 @@ export default function PostList({
                   if (post.reviewType && post.id) {
                     const postId = String(post.id);
                     // 고민글은 통합 상세 페이지로, 현재 탭 정보를 쿼리 파라미터로 전달
-                    const fromTab = activeTab === "consultation" ? "consultation" : activeTab;
+                    // activeTab은 이미 "consultation"으로 좁혀져 있으므로 "consultation"을 사용
+                    const fromTab: "recommended" | "latest" | "popular" | "consultation" = "consultation";
                     router.push(`/community/posts/${postId}?type=${post.reviewType}&fromTab=${fromTab}`);
                   }
                 }}
