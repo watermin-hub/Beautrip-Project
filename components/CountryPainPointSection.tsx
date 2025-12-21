@@ -10,9 +10,11 @@ import {
   calculateRecommendationScore,
   getPopularKeywordsByCountry,
   getCategoryMidByKeyword,
+  toggleProcedureFavorite,
   type Treatment,
   type PopularKeyword,
 } from "@/lib/api/beautripApi";
+import LoginModal from "./LoginModal";
 
 // 고민 키워드와 시술 매핑 (fallback용)
 const CONCERN_KEYWORDS: Record<string, string[]> = {
@@ -36,6 +38,8 @@ export default function CountryPainPointSection() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [popularKeywords, setPopularKeywords] = useState<PopularKeyword[]>([]);
   const [keywordsLoading, setKeywordsLoading] = useState(true);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   // 번역된 키워드 -> 한국어 키워드 매핑
   const [keywordMap, setKeywordMap] = useState<Map<string, string>>(new Map());
 
@@ -194,30 +198,32 @@ export default function CountryPainPointSection() {
     }
   };
 
-  const handleFavoriteClick = (treatment: Treatment, e: React.MouseEvent) => {
+  const handleFavoriteClick = async (treatment: Treatment, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!treatment.treatment_id) return;
 
-    setFavorites((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(treatment.treatment_id!)) {
-        newSet.delete(treatment.treatment_id!);
+    const result = await toggleProcedureFavorite(treatment.treatment_id);
+
+    if (result.success) {
+      // Supabase 업데이트 성공 시 로컬 상태 업데이트
+      setFavorites((prev) => {
+        const newSet = new Set(prev);
+        if (result.isFavorite) {
+          newSet.add(treatment.treatment_id!);
+        } else {
+          newSet.delete(treatment.treatment_id!);
+        }
+        return newSet;
+      });
+      window.dispatchEvent(new Event("favoritesUpdated"));
+    } else {
+      // 로그인이 필요한 경우 안내 팝업 표시
+      if (result.error?.includes("로그인이 필요") || result.error?.includes("로그인")) {
+        setIsInfoModalOpen(true);
       } else {
-        newSet.add(treatment.treatment_id!);
+        console.error("찜하기 처리 실패:", result.error);
       }
-
-      // 로컬 스토리지에 저장
-      const savedFavorites = JSON.parse(
-        localStorage.getItem("favorites") || "[]"
-      );
-      const updatedFavorites = Array.from(newSet).map((id) => ({
-        id,
-        type: "procedure",
-      }));
-      localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
-
-      return newSet;
-    });
+    }
   };
 
   return (
@@ -438,6 +444,51 @@ export default function CountryPainPointSection() {
           )}
         </div>
       )}
+
+      {/* 안내 팝업 모달 */}
+      {isInfoModalOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setIsInfoModalOpen(false)} />
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t("common.loginRequired")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {t("common.loginRequiredMoreInfo")}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsInfoModalOpen(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsInfoModalOpen(false);
+                      setIsLoginModalOpen(true);
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.login")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsLoginModalOpen(false);
+        }}
+      />
     </div>
   );
 }

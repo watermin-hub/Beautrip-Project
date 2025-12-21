@@ -16,6 +16,7 @@ import {
   type Treatment,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+import LoginModal from "./LoginModal";
 
 export default function HotConcernsSection() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function HotConcernsSection() {
     null
   );
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -99,7 +102,12 @@ export default function HotConcernsSection() {
       });
       window.dispatchEvent(new Event("favoritesUpdated"));
     } else {
-      console.error("찜하기 처리 실패:", result.error);
+      // 로그인이 필요한 경우 안내 팝업 표시
+      if (result.error?.includes("로그인이 필요") || result.error?.includes("로그인")) {
+        setIsInfoModalOpen(true);
+      } else {
+        console.error("찜하기 처리 실패:", result.error);
+      }
     }
   };
 
@@ -413,6 +421,51 @@ export default function HotConcernsSection() {
           categoryMid={selectedTreatment.category_mid || null}
         />
       )}
+
+      {/* 안내 팝업 모달 */}
+      {isInfoModalOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setIsInfoModalOpen(false)} />
+          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {t("common.loginRequired")}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  {t("common.loginRequiredMoreInfo")}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsInfoModalOpen(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsInfoModalOpen(false);
+                      setIsLoginModalOpen(true);
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.login")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 로그인 모달 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={() => {
+          setIsLoginModalOpen(false);
+        }}
+      />
     </div>
   );
 }
