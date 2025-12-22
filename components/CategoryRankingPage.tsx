@@ -26,24 +26,30 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
-// 탐색 탭에서는 번역을 사용하지 않음 (DeepL API rate limit 방지)
-// import { translateText, type LanguageCode, detectLanguage } from "@/lib/utils/translation";
-import { formatPrice, getCurrencyFromStorage, getCurrencyFromLanguage } from "@/lib/utils/currency";
 
-// 대분류 카테고리 ID와 번역 키 매핑
-export const getMainCategories = (t: (key: string) => string) => [
-  { id: null, name: t("category.all"), nameKey: "category.all" },
-  { id: "눈성형", name: t("category.eyes"), nameKey: "category.eyes" },
-  { id: "리프팅", name: t("category.lifting"), nameKey: "category.lifting" },
-  { id: "보톡스", name: t("category.botox"), nameKey: "category.botox" },
-  { id: "안면윤곽/양악", name: t("category.facial"), nameKey: "category.facial" },
-  { id: "제모", name: t("category.hairRemoval"), nameKey: "category.hairRemoval" },
-  { id: "지방성형", name: t("category.liposuction"), nameKey: "category.liposuction" },
-  { id: "코성형", name: t("category.nose"), nameKey: "category.nose" },
-  { id: "피부", name: t("category.skin"), nameKey: "category.skin" },
-  { id: "필러", name: t("category.filler"), nameKey: "category.filler" },
-  { id: "가슴성형", name: t("category.breast"), nameKey: "category.breast" },
+// 홈페이지와 동일한 대분류 카테고리 10개
+const MAIN_CATEGORIES = [
+  { id: null, name: "전체" },
+  { id: "눈성형", name: "눈성형" },
+  { id: "리프팅", name: "리프팅" },
+  { id: "보톡스", name: "보톡스" },
+  { id: "안면윤곽/양악", name: "안면윤곽/양악" },
+  { id: "제모", name: "제모" },
+  { id: "지방성형", name: "지방성형" },
+  { id: "코성형", name: "코성형" },
+  { id: "피부", name: "피부" },
+  { id: "필러", name: "필러" },
+  { id: "가슴성형", name: "가슴성형" },
 ];
+
+// 다른 파일에서 import할 수 있도록 export (t 파라미터는 호환성을 위해 유지)
+export const getMainCategories = (t?: (key: string) => string) => {
+  return MAIN_CATEGORIES.map((cat) => ({
+    id: cat.id,
+    name: cat.name,
+    nameKey: cat.id || "category.all", // 호환성을 위해 nameKey 추가
+  }));
+};
 
 interface CategoryRankingPageProps {
   isVisible?: boolean;
@@ -75,25 +81,6 @@ export default function CategoryRankingPage({
 }: CategoryRankingPageProps) {
   const { t, language } = useLanguage();
   const router = useRouter();
-  
-  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
-  const currency = useMemo(() => {
-    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
-  }, [language]);
-  
-  // 언어 변경 시 대분류 카테고리 번역 업데이트
-  const MAIN_CATEGORIES = useMemo(() => getMainCategories(t), [t, language]);
-  
-  // 탐색 탭에서는 시술명 번역을 사용하지 않음 (DeepL API rate limit 방지)
-  // 번역이 필요한 경우는 커뮤니티 탭에서만 사용
-  
-  // 시술명 번역 헬퍼 함수
-  // 탐색 탭에서는 번역을 사용하지 않음 (DeepL API rate limit 방지)
-  const getTreatmentName = (treatment: Treatment) => {
-    if (!treatment.treatment_name) return "";
-    // 탐색 탭에서는 원본 텍스트만 반환 (번역 비활성화)
-    return treatment.treatment_name;
-  };
 
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 여부
@@ -126,6 +113,10 @@ export default function CategoryRankingPage({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  // 스크롤 버튼 클릭 횟수 추적 (카테고리별)
+  const [scrollButtonClickCount, setScrollButtonClickCount] = useState<
+    Record<string, number>
+  >({});
 
   // ✅ RPC 기반 랭킹 데이터
   const [midCategoryRankings, setMidCategoryRankings] = useState<
@@ -349,9 +340,9 @@ export default function CategoryRankingPage({
     }
   }, [midCategories, externalMidCategoriesList, onMidCategoriesListChange]);
 
-  // ✅ RPC 기반 랭킹 데이터 로드
+  // ✅ 초기 데이터 로드 (한국어로 먼저 로드)
   useEffect(() => {
-    const loadRankings = async () => {
+    const loadInitialRankings = async () => {
       try {
         // 초기 로드일 때만 로딩 화면 표시
         if (isInitialLoad) {
@@ -360,8 +351,14 @@ export default function CategoryRankingPage({
         setError(null);
 
         if (selectedMidCategory !== null) {
-          // 소분류 랭킹 로드
-          const result = await getSmallCategoryRankings(selectedMidCategory, 20, 2, 20, language);
+          // 소분류 랭킹 로드 (한국어로 먼저)
+          const result = await getSmallCategoryRankings(
+            selectedMidCategory,
+            20,
+            2,
+            20,
+            "KR" // ✅ 한국어로 먼저 로드
+          );
           if (result.success && result.data) {
             // RPC가 flat row로 반환하므로 category_small_key로 그룹화
             const rows = result.data as any[];
@@ -415,8 +412,22 @@ export default function CategoryRankingPage({
             setSmallCategoryRankings([]);
           }
         } else {
-          // 중분류 랭킹 로드
-          const result = await getMidCategoryRankings(selectedCategory, 20, 2, 20, language);
+          // 중분류 랭킹 로드 (한국어로 먼저)
+          console.log("🔍 [CategoryRankingPage] 중분류 랭킹 로드 시작:", {
+            selectedCategory,
+          });
+          const result = await getMidCategoryRankings(
+            selectedCategory,
+            20,
+            2,
+            20,
+            "KR" // ✅ 한국어로 먼저 로드
+          );
+          console.log("📊 [CategoryRankingPage] 중분류 랭킹 결과:", {
+            success: result.success,
+            dataLength: result.data?.length || 0,
+            error: result.error,
+          });
           if (result.success && result.data) {
             // RPC가 flat row로 반환하므로 category_mid로 그룹화
             const rows = result.data as any[];
@@ -427,6 +438,7 @@ export default function CategoryRankingPage({
               if (!key) continue;
 
               if (!grouped.has(key)) {
+                // ✅ 백엔드 v2 RPC에서 집계 필드를 제공하므로 그대로 사용
                 grouped.set(key, {
                   category_mid: r.category_mid,
                   category_rank: r.category_rank,
@@ -439,29 +451,36 @@ export default function CategoryRankingPage({
               }
 
               // 시술 카드 객체로 push
+              // ✅ 백엔드 v2 RPC 반환 컬럼:
+              //    - 시술 단위: category_mid_key, category_mid, treatment_id, treatment_name,
+              //      hospital_id, hospital_name, rating, review_count, main_img_url
+              //    - 집계 필드: category_rank, category_score, average_rating, total_reviews, treatment_count
+              // ✅ getMidCategoryRankings에서 이미 main_img_url → main_image_url로 매핑됨
               grouped.get(key).treatments.push({
                 treatment_id: r.treatment_id,
                 treatment_name: r.treatment_name,
                 hospital_id: r.hospital_id,
                 hospital_name: r.hospital_name,
-                category_large: r.category_large,
+                category_large: r.category_large || selectedCategory || null, // RPC에서 반환되지 않을 수 있으므로 fallback
                 category_mid: r.category_mid,
-                category_small: r.category_small,
+                category_small: r.category_small || null, // RPC에서 반환되지 않을 수 있음
                 rating: r.rating,
                 review_count: r.review_count,
-                selling_price: r.selling_price,
-                dis_rate: r.dis_rate,
-                vat_info: r.vat_info,
-                main_image_url: r.main_img_url || r.main_image_url,
-                card_score: r.card_score,
-                treatment_rank: r.treatment_rank,
+                selling_price: r.selling_price || null, // RPC에서 반환되지 않을 수 있음
+                dis_rate: r.dis_rate || null, // RPC에서 반환되지 않을 수 있음
+                vat_info: r.vat_info || null, // RPC에서 반환되지 않을 수 있음
+                main_image_url: r.main_image_url, // 이미 getMidCategoryRankings에서 매핑됨
+                card_score: r.card_score || null, // RPC에서 반환되지 않을 수 있음
+                treatment_rank: r.treatment_rank || null, // RPC에서 반환되지 않을 수 있음
               });
             }
 
-            // category_rank 순으로 정렬
+            // ✅ 백엔드 v2 RPC에서 이미 집계 필드를 제공하므로 계산 불필요
+            // 동일한 category_mid_key를 가진 row들은 집계 값이 모두 동일함 (백엔드 검증 완료)
+            // category_rank 기준으로 정렬 (백엔드에서 이미 정렬된 순서)
             const midGrouped = Array.from(grouped.values()).sort(
               (a, b) =>
-                (a.category_rank ?? 999999) - (b.category_rank ?? 999999)
+                (a.category_rank || 999999) - (b.category_rank || 999999)
             );
 
             setMidCategoryRankings(midGrouped);
@@ -508,8 +527,57 @@ export default function CategoryRankingPage({
       }
     };
 
-    loadRankings();
-  }, [selectedCategory, selectedMidCategory, language]);
+    // 언어 변경이 아닐 때만 실행 (카테고리 변경 시)
+    if (
+      language === "KR" ||
+      (midCategoryRankings.length === 0 && smallCategoryRankings.length === 0)
+    ) {
+      loadInitialRankings();
+    }
+  }, [selectedCategory, selectedMidCategory]); // ✅ language 제거 (카테고리 변경 시에만 실행)
+
+  // ✅ 언어 변경 시 번역만 적용 (전체 재로드 없이)
+  useEffect(() => {
+    const translateRankings = async () => {
+      // 데이터가 없거나 한국어면 스킵
+      if (
+        (midCategoryRankings.length === 0 &&
+          smallCategoryRankings.length === 0) ||
+        language === "KR"
+      ) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const { translateMidCategoryRankings, translateSmallCategoryRankings } =
+          await import("@/lib/utils/translateRankings");
+
+        if (selectedMidCategory !== null) {
+          // 소분류 랭킹 번역
+          const translated = await translateSmallCategoryRankings(
+            smallCategoryRankings,
+            language
+          );
+          setSmallCategoryRankings(translated);
+        } else {
+          // 중분류 랭킹 번역
+          const translated = await translateMidCategoryRankings(
+            midCategoryRankings,
+            language
+          );
+          setMidCategoryRankings(translated);
+        }
+      } catch (error) {
+        console.error("랭킹 번역 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    translateRankings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]); // ✅ language 변경 시에만 실행
 
   // 스크롤 관련 상태
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -579,7 +647,10 @@ export default function CategoryRankingPage({
       window.dispatchEvent(new Event("favoritesUpdated"));
     } else {
       // 로그인이 필요한 경우 안내 팝업 표시
-      if (result.error?.includes("로그인이 필요") || result.error?.includes("로그인")) {
+      if (
+        result.error?.includes("로그인이 필요") ||
+        result.error?.includes("로그인")
+      ) {
         setIsInfoModalOpen(true);
       } else {
         console.error("찜하기 처리 실패:", result.error);
@@ -789,8 +860,7 @@ export default function CategoryRankingPage({
 
   // 중분류별 설명 텍스트 매핑 (시술 설명 스타일)
   const getCategoryDescription = (categoryMid: string): string => {
-    // 번역 키를 사용하는 주요 중분류 설명
-    const translatedDescriptions: Record<string, string> = {
+    const descriptions: Record<string, string> = {
       주름보톡스:
         "주름이 많은 부위에 주사하여 톡! 하고 주름을 펴주고 주름 예방 효과도 기대할 수 있어요.",
       근육보톡스:
@@ -843,43 +913,43 @@ export default function CategoryRankingPage({
         "자신의 지방을 얼굴에 이식하여 볼륨을 채우고 주름을 개선하여 더욱 젊고 탄력 있는 피부를 만들어주는 시술이에요.",
     };
 
-    // 매핑된 설명이 있으면 사용 (하드코딩된 설명은 그대로 사용)
-    if (translatedDescriptions[categoryMid]) {
-      return translatedDescriptions[categoryMid];
+    // 매핑된 설명이 있으면 사용
+    if (descriptions[categoryMid]) {
+      return descriptions[categoryMid];
     }
 
     // 매핑되지 않은 중분류는 동적으로 구체적인 설명 생성
     // 기본 템플릿 대신 중분류명을 분석하여 구체적인 설명 생성
     const mid = categoryMid.toLowerCase();
 
-    // 패턴 매칭으로 구체적인 설명 생성 (번역 키 사용)
+    // 패턴 매칭으로 구체적인 설명 생성
     if (mid.includes("보톡스") || mid.includes("보톡")) {
-      return t("explore.categoryDescription.botox");
+      return "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.";
     }
     if (mid.includes("필러")) {
-      return t("explore.categoryDescription.filler");
+      return "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.";
     }
     if (mid.includes("리프팅")) {
-      return t("explore.categoryDescription.lifting");
+      return "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.";
     }
     if (mid.includes("제모")) {
-      return t("explore.categoryDescription.hairRemoval");
+      return "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.";
     }
     if (mid.includes("성형") || mid.includes("수술")) {
-      return t("explore.categoryDescription.surgery");
+      return "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.";
     }
     if (mid.includes("교정")) {
-      return t("explore.categoryDescription.correction");
+      return "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.";
     }
     if (mid.includes("주사")) {
-      return t("explore.categoryDescription.injection");
+      return "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.";
     }
     if (mid.includes("레이저")) {
-      return t("explore.categoryDescription.laser");
+      return "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.";
     }
 
-    // 패턴 매칭 실패 시 기본 템플릿 사용 (번역 키 사용)
-    return t("explore.categoryDescription.default", { categoryMid });
+    // 패턴 매칭 실패 시에도 기본 템플릿 대신 더 구체적인 설명
+    return `${categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.`;
   };
 
   return (
@@ -937,8 +1007,29 @@ export default function CategoryRankingPage({
 
                   const handleScrollRight = () => {
                     if (!isLoggedIn) {
-                      // 로그인 안 된 경우 즉시 팝업 표시
-                      setIsInfoModalOpen(true);
+                      const key = ranking.category_small_key;
+                      const currentCount = scrollButtonClickCount[key] || 0;
+                      const newCount = currentCount + 1;
+                      setScrollButtonClickCount((prev) => ({
+                        ...prev,
+                        [key]: newCount,
+                      }));
+
+                      if (newCount >= 2) {
+                        setIsInfoModalOpen(true);
+                        // 카운트 리셋
+                        setScrollButtonClickCount((prev) => ({
+                          ...prev,
+                          [key]: 0,
+                        }));
+                      } else {
+                        // 스크롤은 정상적으로 실행
+                        const element =
+                          scrollRefs.current[ranking.category_small_key];
+                        if (element) {
+                          element.scrollBy({ left: 300, behavior: "smooth" });
+                        }
+                      }
                     } else {
                       const element =
                         scrollRefs.current[ranking.category_small_key];
@@ -966,13 +1057,16 @@ export default function CategoryRankingPage({
                               <div className="flex items-center gap-1">
                                 <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
                                 <span className="text-sm font-semibold text-gray-900">
-                                  {ranking.average_rating > 0
+                                  {ranking.average_rating &&
+                                  ranking.average_rating > 0
                                     ? ranking.average_rating.toFixed(1)
                                     : "-"}
                                 </span>
                               </div>
                               <span className="text-xs text-gray-500">
-                                리뷰 {ranking.total_reviews.toLocaleString()}개
+                                리뷰{" "}
+                                {(ranking.total_reviews || 0).toLocaleString()}
+                                개
                               </span>
                             </div>
                           </div>
@@ -1006,11 +1100,11 @@ export default function CategoryRankingPage({
                                 const treatmentId = treatment.treatment_id || 0;
                                 const isFavorited = favorites.has(treatmentId);
                                 const thumbnailUrl = getThumbnailUrl(treatment);
-                                const price = formatPrice(
-                                  treatment.selling_price,
-                                  currency,
-                                  t
-                                );
+                                const price = treatment.selling_price
+                                  ? `${Math.round(
+                                      treatment.selling_price / 10000
+                                    )}만원`
+                                  : t("common.priceInquiry");
 
                                 return (
                                   <div
@@ -1076,7 +1170,7 @@ export default function CategoryRankingPage({
                                       <div className="space-y-1.5">
                                         {/* 시술명 */}
                                         <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
-                                          {getTreatmentName(treatment)}
+                                          {treatment.treatment_name}
                                         </h4>
 
                                         {/* 평점 */}
@@ -1168,9 +1262,9 @@ export default function CategoryRankingPage({
                     }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                   >
-                    {t("common.seeMoreWithCount", {
-                      count: smallCategoryRankings.length - visibleCategoriesCount,
-                    })}
+                    더보기 (
+                    {smallCategoryRankings.length - visibleCategoriesCount}개
+                    더)
                   </button>
                 </div>
               )}
@@ -1212,8 +1306,28 @@ export default function CategoryRankingPage({
 
                 const handleScrollRight = () => {
                   if (!isLoggedIn) {
-                    // 로그인 안 된 경우 즉시 팝업 표시
-                    setIsInfoModalOpen(true);
+                    const key = ranking.category_mid;
+                    const currentCount = scrollButtonClickCount[key] || 0;
+                    const newCount = currentCount + 1;
+                    setScrollButtonClickCount((prev) => ({
+                      ...prev,
+                      [key]: newCount,
+                    }));
+
+                    if (newCount >= 2) {
+                      setIsInfoModalOpen(true);
+                      // 카운트 리셋
+                      setScrollButtonClickCount((prev) => ({
+                        ...prev,
+                        [key]: 0,
+                      }));
+                    } else {
+                      // 스크롤은 정상적으로 실행
+                      const element = scrollRefs.current[ranking.category_mid];
+                      if (element) {
+                        element.scrollBy({ left: 300, behavior: "smooth" });
+                      }
+                    }
                   } else {
                     const element = scrollRefs.current[ranking.category_mid];
                     if (element) {
@@ -1243,13 +1357,15 @@ export default function CategoryRankingPage({
                           <div className="flex items-center gap-1">
                             <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
                             <span className="text-sm font-semibold text-gray-900">
-                              {ranking.average_rating > 0
+                              {ranking.average_rating &&
+                              ranking.average_rating > 0
                                 ? ranking.average_rating.toFixed(1)
                                 : "-"}
                             </span>
                           </div>
                           <span className="text-xs text-gray-500">
-                            리뷰 {ranking.total_reviews.toLocaleString()}개
+                            리뷰 {(ranking.total_reviews || 0).toLocaleString()}
+                            개
                           </span>
                         </div>
                       </div>
@@ -1280,11 +1396,11 @@ export default function CategoryRankingPage({
                             const treatmentId = treatment.treatment_id || 0;
                             const isFavorited = favorites.has(treatmentId);
                             const thumbnailUrl = getThumbnailUrl(treatment);
-                            const price = formatPrice(
-                              treatment.selling_price,
-                              currency,
-                              t
-                            );
+                            const price = treatment.selling_price
+                              ? `${Math.round(
+                                  treatment.selling_price / 10000
+                                )}만원`
+                              : "가격 문의";
 
                             return (
                               <div
@@ -1351,7 +1467,7 @@ export default function CategoryRankingPage({
                                   <div className="space-y-1.5">
                                     {/* 시술명 */}
                                     <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
-                                      {getTreatmentName(treatment)}
+                                      {treatment.treatment_name}
                                     </h4>
 
                                     {/* 평점 */}
@@ -1439,7 +1555,7 @@ export default function CategoryRankingPage({
                   }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                 >
-                  {t("common.seeMore")}
+                  더보기
                 </button>
               </div>
             )}
@@ -1467,7 +1583,10 @@ export default function CategoryRankingPage({
       {/* 안내 팝업 모달 */}
       {isInfoModalOpen && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setIsInfoModalOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/60 z-[100]"
+            onClick={() => setIsInfoModalOpen(false)}
+          />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
               <div className="text-center">
@@ -1522,14 +1641,14 @@ export function CategoryFilterBar({
   midCategoriesList,
   onCategoryChange,
   onMidCategoryChange,
-  mainCategories,
+  mainCategories = MAIN_CATEGORIES,
 }: {
   selectedCategory: string | null;
   selectedMidCategory: string | null;
   midCategoriesList: string[];
   onCategoryChange: (categoryId: string | null) => void;
   onMidCategoryChange: (midCategory: string | null) => void;
-  mainCategories: Array<{ id: string | null; name: string; nameKey: string }>;
+  mainCategories?: Array<{ id: string | null; name: string; nameKey?: string }>;
 }) {
   return (
     <div className="bg-white">
@@ -1553,25 +1672,27 @@ export function CategoryFilterBar({
 
         {/* 카테고리 버튼들 - 텍스트만 5개씩 2줄 그리드 */}
         <div className="grid grid-cols-5 gap-x-4 gap-y-3">
-          {mainCategories.filter((cat) => cat.id !== null).map((category) => {
-            const isSelected = selectedCategory === category.id;
-            return (
-              <button
-                key={category.id || "all"}
-                onClick={() => {
-                  onCategoryChange(category.id);
-                  onMidCategoryChange(null);
-                }}
-                className={`text-sm font-medium transition-colors whitespace-nowrap ${
-                  isSelected
-                    ? "text-primary-main font-bold"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {category.name}
-              </button>
-            );
-          })}
+          {mainCategories
+            .filter((cat) => cat.id !== null)
+            .map((category) => {
+              const isSelected = selectedCategory === category.id;
+              return (
+                <button
+                  key={category.id || "all"}
+                  onClick={() => {
+                    onCategoryChange(category.id);
+                    onMidCategoryChange(null);
+                  }}
+                  className={`text-sm font-medium transition-colors whitespace-nowrap ${
+                    isSelected
+                      ? "text-primary-main font-bold"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {category.name}
+                </button>
+              );
+            })}
         </div>
       </div>
       {/* 중분류 해시태그 필터 */}

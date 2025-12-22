@@ -201,7 +201,7 @@ export default function ProcedureListPage({
       loadData(1, true);
       setShouldExecuteSearch(false); // 검색 실행 후 플래그 리셋
     }
-  }, [shouldExecuteSearch, searchTerm, categoryLarge, categoryMid]);
+  }, [shouldExecuteSearch, searchTerm, categoryLarge, categoryMid, language]);
 
   // 카테고리 변경 시에는 자동으로 검색 실행
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiTrendingUp, FiHeart, FiStar, FiCalendar } from "react-icons/fi";
@@ -14,6 +14,11 @@ import {
   getFavoriteStatus,
   type Treatment,
 } from "@/lib/api/beautripApi";
+import {
+  formatPrice,
+  getCurrencyFromStorage,
+  getCurrencyFromLanguage,
+} from "@/lib/utils/currency";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 
@@ -30,12 +35,18 @@ export default function HotConcernsSection() {
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
+
+  // ✅ 한국어로 초기 로드 (한 번만)
   useEffect(() => {
-    async function fetchData() {
+    async function fetchInitialData() {
       try {
         setLoading(true);
-        // RPC로 인기 시술 조회 (서버에서 점수 산정/정렬/랜덤 셔플까지 처리)
-        const hotTreatments = await getHomeHotTreatments(language, {
+        // 한국어로 초기 데이터 로드
+        const hotTreatments = await getHomeHotTreatments("KR", {
           limit: 10,
         });
         setTreatments(hotTreatments);
@@ -46,8 +57,35 @@ export default function HotConcernsSection() {
       }
     }
 
-    fetchData();
-  }, [language]);
+    // 초기 로드는 한 번만
+    if (treatments.length === 0) {
+      fetchInitialData();
+    }
+  }, []); // 빈 배열: 초기 로드만
+
+  // ✅ 언어 변경 시 번역만 적용 (전체 재로드 없이)
+  useEffect(() => {
+    async function translateData() {
+      if (treatments.length === 0 || language === "KR") {
+        return; // 데이터가 없거나 한국어면 스킵
+      }
+
+      try {
+        setLoading(true);
+        // 같은 treatment_id로 lang만 바꿔서 번역 데이터 가져오기
+        const { translateTreatments } = await import("@/lib/utils/translateTreatments");
+        const translated = await translateTreatments(treatments, language);
+        setTreatments(translated);
+      } catch (error) {
+        console.error("시술 번역 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    translateData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]); // language 변경 시에만 실행 (treatments는 의도적으로 제외)
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -89,7 +127,10 @@ export default function HotConcernsSection() {
       window.dispatchEvent(new Event("favoritesUpdated"));
     } else {
       // 로그인이 필요한 경우 안내 팝업 표시
-      if (result.error?.includes("로그인이 필요") || result.error?.includes("로그인")) {
+      if (
+        result.error?.includes("로그인이 필요") ||
+        result.error?.includes("로그인")
+      ) {
         setIsInfoModalOpen(true);
       } else {
         console.error("찜하기 처리 실패:", result.error);
@@ -167,8 +208,10 @@ export default function HotConcernsSection() {
     }
 
     // 중복 체크: 같은 날짜에 동일한 시술이 있는지 확인
-    const procedureName = selectedTreatment.treatment_name || t("common.noTreatmentName");
-    const hospital = selectedTreatment.hospital_name || t("common.noHospitalName");
+    const procedureName =
+      selectedTreatment.treatment_name || t("common.noTreatmentName");
+    const hospital =
+      selectedTreatment.hospital_name || t("common.noHospitalName");
     const treatmentId = selectedTreatment.treatment_id;
 
     const isDuplicate = schedules.some((s: any) => {
@@ -215,13 +258,13 @@ export default function HotConcernsSection() {
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
-      
+
       // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
       // entry_source: "home" (홈에서 진입)
       import("@/lib/gtm").then(({ trackAddToSchedule }) => {
         trackAddToSchedule("home");
       });
-      
+
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
@@ -271,9 +314,13 @@ export default function HotConcernsSection() {
         {treatments.map((treatment) => {
           const isFavorite = favorites.has(treatment.treatment_id || 0);
           const thumbnailUrl = getThumbnailUrl(treatment);
-          const price = treatment.selling_price
-            ? `${Math.round(treatment.selling_price / 10000)}만원`
-            : "가격 문의";
+          // 가격 표시: KRW는 원래 형식(43만원), 다른 통화는 환율 변환
+          const price =
+            treatment.selling_price && treatment.selling_price > 0
+              ? currency === "KRW"
+                ? `${Math.round(treatment.selling_price / 10000)}만원`
+                : formatPrice(treatment.selling_price, currency, t)
+              : t("common.priceInquiry");
           const rating = treatment.rating || 0;
           const reviewCount = treatment.review_count || 0;
           const discountRate = treatment.dis_rate
@@ -403,7 +450,9 @@ export default function HotConcernsSection() {
             setSelectedTreatment(null);
           }}
           onDateSelect={handleDateSelect}
-          treatmentName={selectedTreatment.treatment_name || t("common.noTreatmentName")}
+          treatmentName={
+            selectedTreatment.treatment_name || t("common.noTreatmentName")
+          }
           categoryMid={selectedTreatment.category_mid || null}
         />
       )}
@@ -411,7 +460,10 @@ export default function HotConcernsSection() {
       {/* 안내 팝업 모달 */}
       {isInfoModalOpen && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setIsInfoModalOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/60 z-[100]"
+            onClick={() => setIsInfoModalOpen(false)}
+          />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
               <div className="text-center">

@@ -483,7 +483,8 @@ export default function ProcedureRecommendation({
           const rec = recommendations.find(
             (r) => (r.category_mid_key || r.categoryMid) === categoryMidKey
           );
-          const displayName = rec?.category_mid || rec?.categoryMid || categoryMidKey;
+          const displayName =
+            rec?.category_mid || rec?.categoryMid || categoryMidKey;
           duplicates.push(
             `${displayName} (대분류: ${Array.from(categoryLarges).join(", ")})`
           );
@@ -503,8 +504,9 @@ export default function ProcedureRecommendation({
     Record<string, number>
   >({});
 
+  // ✅ 초기 데이터 로드 (일정/카테고리 변경 시)
   useEffect(() => {
-    async function fetchData() {
+    async function fetchInitialData() {
       try {
         // scheduleData가 변경되었는지 확인 (초기 로드 또는 일정 변경)
         const isScheduleDataChanged =
@@ -530,7 +532,7 @@ export default function ProcedureRecommendation({
           setLoading(true);
         }
 
-        // 일정 기반 추천 데이터 조회 (RPC 사용)
+        // 일정 기반 추천 데이터 조회 (한국어로 먼저 로드)
         if (scheduleData.travelPeriod.start && scheduleData.travelPeriod.end) {
           // selectedCategoryId를 현재 언어의 카테고리 이름으로 변환
           // ⚠️ 중요: 현재 언어 데이터의 category_large 값과 동일해야 필터가 정상 동작
@@ -549,16 +551,31 @@ export default function ProcedureRecommendation({
             categoryToUse = scheduleData.procedureCategory;
           }
 
-          // RPC로 일정 기반 추천 조회 (서버에서 카테고리 랭킹 + 정렬까지 처리)
+          // ✅ 한국어로 먼저 로드 (RPC 호출)
+          console.log("🔍 [일정 기반 추천] 초기 로드 (한국어):", {
+            start: scheduleData.travelPeriod.start,
+            end: scheduleData.travelPeriod.end,
+            category: categoryToUse,
+          });
+
           const scheduleRecs = await getHomeScheduleRecommendations(
             scheduleData.travelPeriod.start,
             scheduleData.travelPeriod.end,
             categoryToUse,
-            language,
+            "KR", // ✅ 한국어로 먼저 로드
             {
               limitCategories: 5,
               limitPerCategory: 10,
             }
+          );
+
+          console.log(
+            `✅ [일정 기반 추천] 결과: ${
+              scheduleRecs.length
+            }개 중분류, 총 ${scheduleRecs.reduce(
+              (sum, rec) => sum + rec.treatments.length,
+              0
+            )}개 시술`
           );
           setRecommendations(scheduleRecs);
         } else {
@@ -589,8 +606,48 @@ export default function ProcedureRecommendation({
       }
     }
 
-    fetchData();
-  }, [scheduleData, selectedCategoryId]);
+    // 언어 변경이 아닐 때만 실행 (일정/카테고리 변경 시)
+    if (language === "KR" || recommendations.length === 0) {
+      fetchInitialData();
+    }
+  }, [scheduleData, selectedCategoryId, mainCategories]); // ✅ language 제거
+
+  // ✅ 언어 변경 시 번역만 적용 (전체 재로드 없이)
+  useEffect(() => {
+    async function translateData() {
+      if (recommendations.length === 0 || language === "KR") {
+        return; // 데이터가 없거나 한국어면 스킵
+      }
+
+      try {
+        setLoading(true);
+        // 같은 treatment_id로 lang만 바꿔서 번역 데이터 가져오기
+        const { translateTreatments } = await import("@/lib/utils/translateTreatments");
+        
+        // 각 중분류별로 시술 번역
+        const translated = await Promise.all(
+          recommendations.map(async (rec) => {
+            const translatedTreatments = await translateTreatments(
+              rec.treatments,
+              language
+            );
+            return {
+              ...rec,
+              treatments: translatedTreatments,
+            };
+          })
+        );
+        
+        setRecommendations(translated);
+      } catch (error) {
+        console.error("시술 번역 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    translateData();
+  }, [language]); // ✅ language 변경 시에만 실행
 
   // 찜 상태 로드 (recommendations가 변경될 때마다)
   useEffect(() => {
@@ -1083,8 +1140,7 @@ export default function ProcedureRecommendation({
         };
 
         // 현재 표시된 카드 수
-        const currentVisibleCount =
-          visibleTreatmentsCount[categoryMidKey] || 3;
+        const currentVisibleCount = visibleTreatmentsCount[categoryMidKey] || 3;
         const hasMoreTreatments = rec.treatments.length > currentVisibleCount;
         // 우측 버튼 표시 조건: 스크롤 가능하거나 더보기 가능할 때
         const shouldShowRightButton =
@@ -1359,7 +1415,6 @@ export default function ProcedureRecommendation({
           })}
         </button>
       )}
-
 
       {/* Filter Modal */}
       <ProcedureFilterModal

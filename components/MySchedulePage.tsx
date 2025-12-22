@@ -2069,6 +2069,158 @@ function SavedSchedulesTab({
   );
 }
 
+// 시술 카드 컴포넌트 (번역된 시술 정보 표시)
+function ProcedureCardComponent({
+  proc,
+  editingDates,
+  newDates,
+  onEditDate,
+  onDateChange,
+  onDateSave,
+  onDateCancel,
+  onDelete,
+  onCardClick,
+}: {
+  proc: ProcedureSchedule;
+  editingDates: { [key: number]: boolean };
+  newDates: { [key: number]: string };
+  onEditDate: (id: number) => void;
+  onDateChange: (id: number, date: string) => void;
+  onDateSave: (id: number) => void;
+  onDateCancel: (id: number) => void;
+  onDelete: (id: number) => void;
+  onCardClick: () => void;
+}) {
+  const { t, language } = useLanguage();
+  const [translatedTreatment, setTranslatedTreatment] = useState<{
+    procedureName: string;
+    hospital: string;
+    category: string;
+  } | null>(null);
+
+  // 번역된 시술 정보 로드
+  useEffect(() => {
+    if (proc.treatmentId && language) {
+      loadTreatmentById(proc.treatmentId, language)
+        .then((treatment) => {
+          if (treatment) {
+            setTranslatedTreatment({
+              procedureName: treatment.treatment_name || proc.procedureName,
+              hospital: treatment.hospital_name || proc.hospital,
+              category: treatment.category_mid || treatment.category_large || proc.category,
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("번역된 시술 정보 로드 실패:", error);
+        });
+    }
+  }, [proc.treatmentId, language]);
+
+  return (
+    <div
+      onClick={onCardClick}
+      className="bg-primary-light/10 border border-primary-main rounded-xl p-4 shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-primary-main/80 relative"
+    >
+      {/* 삭제 버튼 */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(proc.id);
+        }}
+        className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm hover:bg-primary-light/20 transition-colors z-10"
+        title="삭제"
+      >
+        <FiX className="text-primary-main text-sm" />
+      </button>
+
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <h4 className="text-base font-semibold text-gray-900 mb-1.5 pr-10">
+            {translatedTreatment?.procedureName || proc.procedureName}
+          </h4>
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 flex-wrap">
+            <div className="flex items-center gap-1">
+              <FiMapPin className="text-primary-main" />
+              <span>{translatedTreatment?.hospital || proc.hospital}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <FiTag className="text-primary-main" />
+              <span>{translatedTreatment?.category || proc.category}</span>
+            </div>
+          </div>
+          {/* 시술 날짜 표시 및 수정 */}
+          <div className="flex items-center gap-2 text-sm text-gray-700 mb-2">
+            <div className="flex items-center gap-1">
+              <FiCalendar className="text-primary-main" />
+              {editingDates[proc.id] ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={newDates[proc.id] || proc.procedureDate}
+                    onChange={(e) => onDateChange(proc.id, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2 py-1 border border-primary-main rounded text-sm"
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDateSave(proc.id);
+                    }}
+                    className="px-2 py-1 bg-primary-main text-white rounded text-xs hover:bg-primary-main/90"
+                  >
+                    저장
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDateCancel(proc.id);
+                    }}
+                    className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                  >
+                    취소
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>{formatDateWithDay(proc.procedureDate)}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditDate(proc.id);
+                    }}
+                    className="p-1 hover:bg-primary-light/20 rounded transition-colors"
+                    title="날짜 수정"
+                  >
+                    <FiEdit2 className="text-primary-main text-xs" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          {proc.recoveryDays > 0 && (
+            <div className="flex items-center gap-2 text-sm text-primary-main font-medium mb-2 flex-wrap">
+              <div className="flex items-center gap-1">
+                <FiClock className="text-primary-main" />
+                <span>
+                  {t("schedule.recoveryPeriod")}: {proc.recoveryDays}
+                  {t("date.day")}
+                </span>
+              </div>
+            </div>
+          )}
+          {/* 시술 당일 카드에서는 회복 가이드는 노출하지 않음 (회복일 카드에서만 안내) */}
+        </div>
+        {proc.procedureTime && (
+          <div className="text-sm font-semibold text-primary-main">
+            {proc.procedureTime}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // 회복 카드 컴포넌트 (categoryMid로 recoveryText 동적 로드)
 function RecoveryCardComponent({
   rec,
@@ -2086,6 +2238,12 @@ function RecoveryCardComponent({
   );
   const [loadingRecoveryText, setLoadingRecoveryText] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  // 번역된 시술 정보
+  const [translatedTreatment, setTranslatedTreatment] = useState<{
+    procedureName: string;
+    hospital: string;
+    category: string;
+  } | null>(null);
 
   // 회복일차 범위별 텍스트 선택
   const getGuideForDay = (day?: number) => {
@@ -2135,6 +2293,25 @@ function RecoveryCardComponent({
     }
     return null;
   };
+
+  // 번역된 시술 정보 로드
+  useEffect(() => {
+    if (rec.treatmentId && language) {
+      loadTreatmentById(rec.treatmentId, language)
+        .then((treatment) => {
+          if (treatment) {
+            setTranslatedTreatment({
+              procedureName: treatment.treatment_name || rec.procedureName,
+              hospital: treatment.hospital_name || rec.hospital,
+              category: treatment.category_mid || treatment.category_large || rec.category,
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("번역된 시술 정보 로드 실패:", error);
+        });
+    }
+  }, [rec.treatmentId, language]);
 
   // recoveryText가 없고 categoryMid가 있으면 동적으로 가져오기
   useEffect(() => {
@@ -2222,7 +2399,8 @@ function RecoveryCardComponent({
             "@/lib/api/beautripApi"
           );
           const recoveryGuideId = await findRecoveryGuideByCategorySmall(
-            categorySmall
+            categorySmall,
+            language
           );
           if (recoveryGuideId) {
             router.push(`/community/recovery-guide/${recoveryGuideId}`);
@@ -2231,11 +2409,12 @@ function RecoveryCardComponent({
         }
 
         // categoryMid로 직접 회복 가이드 찾기 시도 (fallback)
-        const { getRecoveryGuideIdByCategory } = await import(
+        const { findRecoveryGuideByCategoryMid } = await import(
           "@/lib/api/beautripApi"
         );
-        const recoveryGuideIdByCategory = await getRecoveryGuideIdByCategory(
-          rec.categoryMid
+        const recoveryGuideIdByCategory = await findRecoveryGuideByCategoryMid(
+          rec.categoryMid,
+          language
         );
         if (recoveryGuideIdByCategory) {
           router.push(`/community/recovery-guide/${recoveryGuideIdByCategory}`);
@@ -2292,20 +2471,20 @@ function RecoveryCardComponent({
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
           <h4 className="text-base font-semibold text-gray-900 mb-1.5 pr-10">
-            {rec.procedureName}
+            {translatedTreatment?.procedureName || rec.procedureName}
           </h4>
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 flex-wrap">
             <div className="flex items-center gap-1">
               <FiMapPin
                 className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
               />
-              <span>{rec.hospital}</span>
+              <span>{translatedTreatment?.hospital || rec.hospital}</span>
             </div>
             <div className="flex items-center gap-1">
               <FiTag
                 className={isOutsideTravel ? "text-red-600" : "text-yellow-600"}
               />
-              <span>{rec.category}</span>
+              <span>{translatedTreatment?.category || rec.category}</span>
             </div>
           </div>
           {/* 회복 일수 정보 표시 */}
@@ -3733,14 +3912,13 @@ export default function MySchedulePage() {
                     }
                   };
 
-                  const handleDelete = (e: React.MouseEvent) => {
-                    e.stopPropagation();
+                  const handleDelete = (id: number) => {
                     if (confirm(t("confirm.deleteSchedule"))) {
                       const schedules = JSON.parse(
                         localStorage.getItem("schedules") || "[]"
                       );
                       const updatedSchedules = schedules.filter(
-                        (s: any) => s.id !== proc.id
+                        (s: any) => s.id !== id
                       );
                       localStorage.setItem(
                         "schedules",
@@ -3751,30 +3929,23 @@ export default function MySchedulePage() {
                     }
                   };
 
-                  const handleEditDate = (e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    setEditingDates({ ...editingDates, [proc.id]: true });
-                    setNewDates({ ...newDates, [proc.id]: proc.procedureDate });
+                  const handleEditDate = (id: number) => {
+                    setEditingDates({ ...editingDates, [id]: true });
+                    setNewDates({ ...newDates, [id]: proc.procedureDate });
                   };
 
-                  const handleDateChange = (
-                    e: React.ChangeEvent<HTMLInputElement>
-                  ) => {
-                    e.stopPropagation();
-                    setNewDates({ ...newDates, [proc.id]: e.target.value });
+                  const handleDateChange = (id: number, date: string) => {
+                    setNewDates({ ...newDates, [id]: date });
                   };
 
-                  const handleDateSave = (e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    const updatedDate = newDates[proc.id] || proc.procedureDate;
+                  const handleDateSave = (id: number) => {
+                    const updatedDate = newDates[id] || proc.procedureDate;
                     if (updatedDate !== proc.procedureDate) {
                       const schedules = JSON.parse(
                         localStorage.getItem("schedules") || "[]"
                       );
                       const updatedSchedules = schedules.map((s: any) =>
-                        s.id === proc.id
-                          ? { ...s, procedureDate: updatedDate }
-                          : s
+                        s.id === id ? { ...s, procedureDate: updatedDate } : s
                       );
                       localStorage.setItem(
                         "schedules",
@@ -3785,110 +3956,27 @@ export default function MySchedulePage() {
                         t("alert.scheduleUpdated") || "일정이 수정되었습니다."
                       );
                     }
-                    setEditingDates({ ...editingDates, [proc.id]: false });
+                    setEditingDates({ ...editingDates, [id]: false });
                   };
 
-                  const handleDateCancel = (e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    setEditingDates({ ...editingDates, [proc.id]: false });
-                    setNewDates({ ...newDates, [proc.id]: proc.procedureDate });
+                  const handleDateCancel = (id: number) => {
+                    setEditingDates({ ...editingDates, [id]: false });
+                    setNewDates({ ...newDates, [id]: proc.procedureDate });
                   };
 
                   return (
-                    <div
+                    <ProcedureCardComponent
                       key={proc.id}
-                      onClick={handleCardClick}
-                      className="bg-primary-light/10 border border-primary-main rounded-xl p-4 shadow-sm cursor-pointer transition-all hover:shadow-md hover:border-primary-main/80 relative"
-                    >
-                      {/* 삭제 버튼 */}
-                      <button
-                        onClick={handleDelete}
-                        className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm hover:bg-primary-light/20 transition-colors z-10"
-                        title="삭제"
-                      >
-                        <FiX className="text-primary-main text-sm" />
-                      </button>
-
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="text-base font-semibold text-gray-900 mb-1.5 pr-10">
-                            {proc.procedureName}
-                          </h4>
-                          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2 flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <FiMapPin className="text-primary-main" />
-                              <span>{proc.hospital}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <FiTag className="text-primary-main" />
-                              <span>{proc.category}</span>
-                            </div>
-                          </div>
-                          {/* 시술 날짜 표시 및 수정 */}
-                          <div className="flex items-center gap-2 text-sm text-gray-700 mb-2">
-                            <div className="flex items-center gap-1">
-                              <FiCalendar className="text-primary-main" />
-                              {editingDates[proc.id] ? (
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="date"
-                                    value={
-                                      newDates[proc.id] || proc.procedureDate
-                                    }
-                                    onChange={handleDateChange}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="px-2 py-1 border border-primary-main rounded text-sm"
-                                  />
-                                  <button
-                                    onClick={handleDateSave}
-                                    className="px-2 py-1 bg-primary-main text-white rounded text-xs hover:bg-primary-main/90"
-                                  >
-                                    저장
-                                  </button>
-                                  <button
-                                    onClick={handleDateCancel}
-                                    className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-                                  >
-                                    취소
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <span>
-                                    {formatDateWithDay(proc.procedureDate)}
-                                  </span>
-                                  <button
-                                    onClick={handleEditDate}
-                                    className="p-1 hover:bg-primary-light/20 rounded transition-colors"
-                                    title="날짜 수정"
-                                  >
-                                    <FiEdit2 className="text-primary-main text-xs" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          {proc.recoveryDays > 0 && (
-                            <div className="flex items-center gap-2 text-sm text-primary-main font-medium mb-2 flex-wrap">
-                              <div className="flex items-center gap-1">
-                                <FiClock className="text-primary-main" />
-                                <span>
-                                  {t("schedule.recoveryPeriod")}:{" "}
-                                  {proc.recoveryDays}
-                                  {t("date.day")}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                          {/* 시술 당일 카드에서는 회복 가이드는 노출하지 않음 (회복일 카드에서만 안내) */}
-                        </div>
-                        {proc.procedureTime && (
-                          <div className="text-sm font-semibold text-primary-main">
-                            {proc.procedureTime}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                      proc={proc}
+                      editingDates={editingDates}
+                      newDates={newDates}
+                      onEditDate={handleEditDate}
+                      onDateChange={handleDateChange}
+                      onDateSave={handleDateSave}
+                      onDateCancel={handleDateCancel}
+                      onDelete={handleDelete}
+                      onCardClick={handleCardClick}
+                    />
                   );
                 })}
 
