@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { getRecoveryInfoByCategoryMid } from "@/lib/api/beautripApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AddToScheduleModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function AddToScheduleModal({
   selectedEndDate,
   categoryMid,
 }: AddToScheduleModalProps) {
+  const { t } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -277,7 +279,7 @@ export default function AddToScheduleModal({
         >
           {/* 헤더 */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900">일정에 추가</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t("schedule.addToSchedule")}</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-50 rounded-full transition-colors"
@@ -412,7 +414,7 @@ export default function AddToScheduleModal({
               onClick={onClose}
               className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
             >
-              취소
+              {t("common.cancel")}
             </button>
             <button
               onClick={handleConfirm}
@@ -423,7 +425,7 @@ export default function AddToScheduleModal({
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
-              추가하기
+              {t("schedule.add")}
             </button>
           </div>
         </div>

@@ -73,6 +73,11 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         const errorText = await response.text();
+        // 429 에러 (Too Many Requests)는 조용히 처리하고 원본 텍스트 반환
+        if (response.status === 429) {
+          console.warn("DeepL API rate limit 도달, 원본 텍스트 반환");
+          return NextResponse.json({ texts });
+        }
         console.error("DeepL API 오류:", response.status, errorText);
         return NextResponse.json(
           { error: `번역 실패: ${response.status}` },
@@ -133,6 +138,18 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      // 429 에러 (Too Many Requests)는 조용히 처리하고 원본 텍스트 반환
+      if (response.status === 429) {
+        console.warn("DeepL API rate limit 도달, 원본 텍스트 반환");
+        // 단일 텍스트 모드인 경우
+        if (text) {
+          return NextResponse.json({ text, detectedSourceLang: null });
+        }
+        // 여러 텍스트 모드인 경우
+        if (texts && Array.isArray(texts)) {
+          return NextResponse.json({ texts });
+        }
+      }
       console.error("DeepL API 오류:", response.status, errorText);
       return NextResponse.json(
         { error: `번역 실패: ${response.status}` },

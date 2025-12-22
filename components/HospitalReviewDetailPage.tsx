@@ -200,7 +200,7 @@ export default function HospitalReviewDetailPage({
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">병원 후기</h1>
+          <h1 className="text-lg font-bold text-gray-900">{t("review.hospitalReview")}</h1>
         </div>
 
         {/* 카테고리 태그 */}
@@ -246,7 +246,7 @@ export default function HospitalReviewDetailPage({
             <div className="space-y-3">
               <div>
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  병원명
+                  {t("label.hospitalName")}
                 </span>
                 <p className="text-lg font-bold text-gray-900 mt-2">
                   {review.hospital_name}
@@ -256,7 +256,7 @@ export default function HospitalReviewDetailPage({
               {review.procedure_name && (
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    시술명
+                    {t("label.procedureName")}
                   </span>
                   <p className="text-base font-semibold text-gray-900 mt-2">
                     {review.procedure_name}
@@ -270,7 +270,7 @@ export default function HospitalReviewDetailPage({
               {review.overall_satisfaction && (
                 <div>
                   <span className="text-xs text-gray-500 block mb-1">
-                    시술 만족도
+                    {t("label.procedureSatisfaction")}
                   </span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -293,7 +293,7 @@ export default function HospitalReviewDetailPage({
               {review.hospital_kindness && (
                 <div>
                   <span className="text-xs text-gray-500 block mb-1">
-                    병원 만족도
+                    {t("label.hospitalSatisfaction")}
                   </span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -317,7 +317,7 @@ export default function HospitalReviewDetailPage({
             {/* 통역 정보 */}
             <div>
               <span className="text-xs text-gray-500 block mb-1">
-                통역 여부
+                {t("label.translationAvailable")}
               </span>
               <p
                 className={`text-base ${
@@ -331,7 +331,7 @@ export default function HospitalReviewDetailPage({
             {review.has_translation && review.translation_satisfaction && (
               <div>
                 <span className="text-xs text-gray-500 block mb-1">
-                  통역 만족도
+                  {t("label.translationSatisfaction")}
                 </span>
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -354,7 +354,7 @@ export default function HospitalReviewDetailPage({
             {review.visit_date && (
               <div>
                 <span className="text-xs text-gray-500 block mb-1">
-                  병원 방문일
+                  {t("label.visitDate")}
                 </span>
                 <div className="flex items-center gap-1">
                   <FiCalendar className="text-gray-400 text-sm" />
@@ -373,11 +373,9 @@ export default function HospitalReviewDetailPage({
 
         {/* 글 내용 */}
         <div className="px-4 py-6 border-b border-gray-100">
-          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
-            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
-              {review.content}
-            </p>
-          </div>
+          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
+            {review.content}
+          </p>
         </div>
 
         {/* 이미지 */}
@@ -528,7 +526,7 @@ export default function HospitalReviewDetailPage({
         {/* 댓글 섹션 */}
         <div className="px-4 py-6 pb-24 border-t border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">
-            댓글 ({commentCount})
+            {t("comment.title")} ({commentCount})
           </h3>
           
           {/* 댓글 작성 폼 */}

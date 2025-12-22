@@ -16,6 +16,9 @@ import {
   deleteProcedureReview,
   deleteHospitalReview,
   deleteConcernPost,
+  togglePostLike,
+  isPostLiked,
+  getPostLikeCount,
 } from "@/lib/api/beautripApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
@@ -25,6 +28,7 @@ import Image from "next/image";
 import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft, FiGlobe, FiEdit2, FiTrash2, FiMoreVertical } from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 import CommunityWriteModal from "@/components/CommunityWriteModal";
+import LoginRequiredPopup from "@/components/LoginRequiredPopup";
 
 function PostDetailContent() {
   const params = useParams();
@@ -47,6 +51,9 @@ function PostDetailContent() {
   const [loading, setLoading] = useState(true);
   const [commentCount, setCommentCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -55,6 +62,26 @@ function PostDetailContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
+    };
+    checkAuth();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (postId && postType) {
@@ -68,6 +95,35 @@ function PostDetailContent() {
     setTranslatedTitle(null);
     setTranslatedContent(null);
   }, [language]);
+
+  // PostList에서 좋아요 변경 시 동기화
+  useEffect(() => {
+    if (!postId || !postType) return;
+
+    const handleLikeUpdate = (event: CustomEvent) => {
+      const { postId: updatedPostId, postType: updatedPostType, isLiked: updatedIsLiked, likeCount: updatedLikeCount } = event.detail;
+      
+      // postType에 따라 post_type 매핑
+      const postTypeMap: Record<string, string> = {
+        procedure: "treatment_review",
+        hospital: "hospital_review",
+        concern: "concern_post",
+      };
+      const mappedPostType = postTypeMap[postType] || postType;
+      const mappedUpdatedPostType = updatedPostType || mappedPostType;
+      
+      // 현재 게시글과 일치하는 경우에만 업데이트
+      if (updatedPostId === postId && mappedUpdatedPostType === mappedPostType) {
+        setIsLiked(updatedIsLiked);
+        setLikeCount(updatedLikeCount);
+      }
+    };
+
+    window.addEventListener("postLikeUpdated", handleLikeUpdate as EventListener);
+    return () => {
+      window.removeEventListener("postLikeUpdated", handleLikeUpdate as EventListener);
+    };
+  }, [postId, postType]);
 
   const loadPostData = async () => {
     if (!postId || !postType) return;
@@ -97,14 +153,27 @@ function PostDetailContent() {
 
       if (postData) {
         setPost(postData);
-        // 댓글 수, 조회수 증가, 조회수를 병렬로 처리
-        const [count, views] = await Promise.all([
+        
+        // postType에 따라 post_type 매핑
+        const postTypeMap: Record<string, string> = {
+          procedure: "treatment_review",
+          hospital: "hospital_review",
+          concern: "concern_post",
+        };
+        const mappedPostType = postTypeMap[postType] || postType;
+
+        // 좋아요 상태, 댓글 수, 조회수 증가, 조회수를 병렬로 처리
+        const [liked, likeCnt, count, views] = await Promise.all([
+          isPostLiked(postId, mappedPostType),
+          getPostLikeCount(postId, mappedPostType),
           getCommentCount(postId, postType),
           (async () => {
             await incrementViewCount(postId, postType);
             return await getViewCount(postId, postType);
           })(),
         ]);
+        setIsLiked(liked);
+        setLikeCount(likeCnt);
         setCommentCount(count);
         setViewCount(views);
 
@@ -127,6 +196,49 @@ function PostDetailContent() {
     if (postId && postType) {
       const count = await getCommentCount(postId, postType);
       setCommentCount(count);
+    }
+  };
+
+  const handleLike = async () => {
+    // 로그인 체크
+    if (!isLoggedIn) {
+      setShowLoginRequiredPopup(true);
+      return;
+    }
+
+    if (!postId || !postType) return;
+
+    try {
+      // postType에 따라 post_type 매핑
+      const postTypeMap: Record<string, string> = {
+        procedure: "treatment_review",
+        hospital: "hospital_review",
+        concern: "concern_post",
+      };
+      const mappedPostType = postTypeMap[postType] || postType;
+
+      const result = await togglePostLike(postId, mappedPostType);
+      if (result.success) {
+        setIsLiked(result.isLiked);
+        const newCount = await getPostLikeCount(postId, mappedPostType);
+        setLikeCount(newCount);
+        
+        // PostList에 좋아요 변경 알림 (커스텀 이벤트)
+        window.dispatchEvent(new CustomEvent("postLikeUpdated", {
+          detail: {
+            postId,
+            postType: mappedPostType,
+            isLiked: result.isLiked,
+            likeCount: newCount,
+          },
+        }));
+      } else {
+        if (result.error?.includes("로그인이 필요")) {
+          setShowLoginRequiredPopup(true);
+        }
+      }
+    } catch (error) {
+      console.error("좋아요 처리 실패:", error);
     }
   };
 
@@ -203,7 +315,7 @@ function PostDetailContent() {
       }
 
       if (result.success) {
-        alert("게시글이 삭제되었습니다.");
+        alert(t("post.deleted"));
         router.push("/community");
       } else {
         alert(`삭제 실패: ${result.error}`);
@@ -240,7 +352,7 @@ function PostDetailContent() {
       <div className="min-h-screen bg-white max-w-md mx-auto w-full">
         <Header />
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center text-gray-500">게시글을 찾을 수 없습니다.</div>
+          <div className="text-center text-gray-500">{t("post.notFound")}</div>
         </div>
         <BottomNavigation />
       </div>
@@ -261,6 +373,30 @@ function PostDetailContent() {
     if (post.avatar) return post.avatar;
     const name = getDisplayName();
     return name.charAt(0).toUpperCase();
+  };
+
+  // 카테고리 번역 키 매핑
+  const getCategoryTranslationKey = (category: string): string => {
+    const categoryMap: Record<string, string> = {
+      "피부 고민": "concernCategory.skinConcern",
+      "시술 고민": "concernCategory.procedureConcern",
+      "병원 선택": "concernCategory.hospitalSelection",
+      "가격 문의": "concernCategory.priceInquiry",
+      "회복 기간": "concernCategory.recoveryPeriod",
+      "부작용": "concernCategory.sideEffect",
+      "기타": "concernCategory.other",
+    };
+    return categoryMap[category] || category;
+  };
+
+  const getCategoryDisplayName = (): string => {
+    if (!post.category) return "";
+    const translationKey = getCategoryTranslationKey(post.category);
+    // 번역 키인 경우 번역값 반환, 아닌 경우 원본 반환
+    if (translationKey.startsWith("concernCategory.")) {
+      return t(translationKey);
+    }
+    return post.category;
   };
 
   return (
@@ -284,7 +420,7 @@ function PostDetailContent() {
             >
               <FiArrowLeft className="text-gray-700 text-xl" />
             </button>
-            <h1 className="text-lg font-bold text-gray-900">게시글</h1>
+            <h1 className="text-lg font-bold text-gray-900">{t("post.title")}</h1>
           </div>
           <div className="flex items-center gap-2">
             {/* 번역 버튼 */}
@@ -306,7 +442,7 @@ function PostDetailContent() {
                   } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <FiGlobe className="text-base" />
-                  <span>{isTranslating ? "번역 중..." : isTranslated ? "원문 보기" : "번역하기"}</span>
+                  <span>{isTranslating ? t("post.translating") : isTranslated ? t("post.showOriginal") : t("post.translate")}</span>
                 </button>
               ) : null;
             })()}
@@ -332,7 +468,7 @@ function PostDetailContent() {
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 first:rounded-t-lg"
                       >
                         <FiEdit2 className="text-base" />
-                        수정
+                        {t("post.edit")}
                       </button>
                       <button
                         onClick={() => {
@@ -342,7 +478,7 @@ function PostDetailContent() {
                         className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 last:rounded-b-lg"
                       >
                         <FiTrash2 className="text-base" />
-                        삭제
+                        {t("post.delete")}
                       </button>
                     </div>
                   </>
@@ -358,7 +494,7 @@ function PostDetailContent() {
         {/* 카테고리 태그 */}
         <div className="mb-4">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
-            {post.category}
+            {getCategoryDisplayName()}
           </span>
         </div>
 
@@ -383,7 +519,7 @@ function PostDetailContent() {
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs text-gray-500">
-                {post.timestamp || (post.created_at ? formatTimeAgo(post.created_at) : "")}
+                {post.timestamp || (post.created_at ? formatTimeAgo(post.created_at, t) : "")}
               </span>
               {post.edited && (
                 <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -411,7 +547,7 @@ function PostDetailContent() {
               onClick={handleShowOriginal}
               className="mt-2 text-xs text-primary-main hover:text-primary-main/80 underline"
             >
-              원문 보기
+              {t("post.showOriginal")}
             </button>
           )}
         </div>
@@ -446,11 +582,37 @@ function PostDetailContent() {
           </div>
         )}
 
+        {/* 번역 버튼 - 본문 하단 (이미지 아래) */}
+        {(() => {
+          const contentText = post.content || "";
+          const titleText = postType === "concern" && post.title ? post.title : "";
+          const detectedSourceLang = detectLanguage(contentText || titleText);
+          const targetLang = language as LanguageCode;
+          const needsTranslation = detectedSourceLang && detectedSourceLang !== targetLang;
+          
+          return needsTranslation ? (
+            <div className="mb-6">
+              <button
+                onClick={isTranslated ? handleShowOriginal : handleTranslate}
+                disabled={isTranslating}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  isTranslated
+                    ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <FiGlobe className="text-sm" />
+                <span>{isTranslating ? t("post.translating") : isTranslated ? t("post.showOriginal") : t("post.translate")}</span>
+              </button>
+            </div>
+          ) : null;
+        })()}
+
         {/* 참여 지표 */}
         <div className="flex items-center gap-4 pt-4 border-t border-gray-200 mb-6">
           <div className="flex items-center gap-1.5 text-gray-600">
             <FiHeart className="text-base" />
-            <span className="text-xs font-medium">{post.likes || post.upvotes || 0}</span>
+            <span className="text-xs font-medium">{likeCount}</span>
           </div>
           <div className="flex items-center gap-1.5 text-gray-600">
             <FiMessageCircle className="text-base" />
@@ -464,7 +626,9 @@ function PostDetailContent() {
 
         {/* 댓글 섹션 */}
         <div className="border-t border-gray-200 pt-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">댓글 ({commentCount})</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            {t("comment.title")} ({commentCount})
+          </h3>
           
           {/* 댓글 작성 폼 */}
           <div className="mb-6">
@@ -487,6 +651,16 @@ function PostDetailContent() {
 
       <BottomNavigation />
 
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
+        onLoginSuccess={() => {
+          setShowLoginRequiredPopup(false);
+          setIsLoggedIn(true);
+        }}
+      />
+
       {/* 수정 모달 */}
       {showEditModal && post && postType && (
         <CommunityWriteModal
@@ -506,8 +680,8 @@ function PostDetailContent() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">게시글 삭제</h3>
-            <p className="text-gray-600 mb-6">정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{t("post.deleteConfirm")}</h3>
+            <p className="text-gray-600 mb-6">{t("post.deleteConfirmMessage")}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}

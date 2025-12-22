@@ -205,7 +205,7 @@ export default function ProcedureReviewDetailPage({
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">시술 후기</h1>
+          <h1 className="text-lg font-bold text-gray-900">{t("review.treatmentReview")}</h1>
         </div>
 
         {/* 카테고리 태그 */}
@@ -273,7 +273,7 @@ export default function ProcedureReviewDetailPage({
             {/* 만족도 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="text-xs text-gray-500">시술 만족도</span>
+                <span className="text-xs text-gray-500">{t("label.procedureSatisfaction")}</span>
                 <div className="flex items-center gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
@@ -292,7 +292,7 @@ export default function ProcedureReviewDetailPage({
               </div>
 
               <div>
-                <span className="text-xs text-gray-500">병원 만족도</span>
+                <span className="text-xs text-gray-500">{t("label.hospitalSatisfaction")}</span>
                 <div className="flex items-center gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
@@ -373,11 +373,9 @@ export default function ProcedureReviewDetailPage({
 
         {/* 글 내용 */}
         <div className="px-4 py-6 border-b border-gray-100">
-          <div className="bg-gray-50 rounded-2xl p-5 border border-gray-200">
-            <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
-              {review.content}
-            </p>
-          </div>
+          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
+            {review.content}
+          </p>
         </div>
 
         {/* 이미지 */}
@@ -528,7 +526,7 @@ export default function ProcedureReviewDetailPage({
         {/* 댓글 섹션 */}
         <div className="px-4 py-6 pb-24 border-t border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">
-            댓글 ({commentCount})
+            {t("comment.title")} ({commentCount})
           </h3>
           
           {/* 댓글 작성 폼 */}

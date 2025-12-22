@@ -4,6 +4,11 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatDateWithDay, formatTravelPeriod } from "@/lib/utils/dateFormat";
+import {
+  formatPrice,
+  getCurrencyFromStorage,
+  getCurrencyFromLanguage,
+} from "@/lib/utils/currency";
 import { TravelScheduleData } from "./TravelScheduleForm";
 import {
   FiStar,
@@ -409,8 +414,12 @@ export default function ProcedureRecommendation({
   onCategoryChange,
   mainCategories = [],
 }: ProcedureRecommendationProps) {
-  const router = useRouter();
   const { t, language } = useLanguage();
+  const router = useRouter();
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState<ProcedureFilter>({
     duration: null,
@@ -530,6 +539,7 @@ export default function ProcedureRecommendation({
         // 필요한 만큼만 로드 (200개 - 일정 기반 추천에 충분)
         const result = await loadTreatmentsPaginated(1, 200, {
           categoryLarge: categoryForLoad,
+          language: language,
         });
         const treatments = result.data;
 
@@ -712,13 +722,13 @@ export default function ProcedureRecommendation({
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
-      
+
       // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
       // entry_source: "schedule" (일정 페이지에서 진입)
       import("@/lib/gtm").then(({ trackAddToSchedule }) => {
         trackAddToSchedule("schedule");
       });
-      
+
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);
@@ -957,25 +967,29 @@ export default function ProcedureRecommendation({
 
           {/* 카테고리 버튼들 - 5개씩 2줄 그리드 (아이콘 위, 텍스트 아래 / 5:3 정도의 낮은 카드 비율) */}
           <div className="grid grid-cols-5 gap-2">
-            {mainCategories.map((category) => {
-              const isActive = selectedCategoryId === category.id;
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className={`flex flex-col items-center justify-center gap-1 py-1.5 px-1 rounded-xl text-[11px] font-medium transition-colors aspect-[5/3] ${
-                    isActive
-                      ? "bg-primary-main/10 text-primary-main font-bold border border-primary-main shadow-[0_0_0_1px_rgba(45,184,160,0.3)]"
-                      : "bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-100"
-                  }`}
-                >
-                  <span className="text-lg leading-none">{category.icon}</span>
-                  <span className="leading-tight whitespace-nowrap">
-                    {category.name}
-                  </span>
-                </button>
-              );
-            })}
+            {mainCategories
+              .filter((category) => category.id !== null) // "전체" 항목 제외
+              .map((category) => {
+                const isActive = selectedCategoryId === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={`flex flex-col items-center justify-center gap-1 py-1.5 px-1 rounded-xl text-[11px] font-medium transition-colors aspect-[5/3] ${
+                      isActive
+                        ? "bg-primary-main/10 text-primary-main font-bold border border-primary-main shadow-[0_0_0_1px_rgba(45,184,160,0.3)]"
+                        : "bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-100"
+                    }`}
+                  >
+                    <span className="text-lg leading-none">
+                      {category.icon}
+                    </span>
+                    <span className="leading-tight whitespace-nowrap">
+                      {category.name}
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </div>
       )}
@@ -992,7 +1006,7 @@ export default function ProcedureRecommendation({
                     "half-day": "procedure.filterDuration.halfDay",
                     "1-day": "procedure.filterDuration.1Day",
                     "2-3-days": "procedure.filterDuration.2-3Days",
-                    "surgery": "procedure.filterDuration.surgery",
+                    surgery: "procedure.filterDuration.surgery",
                   };
                   return t(keyMap[filter.duration] || filter.duration);
                 })()}
@@ -1110,20 +1124,32 @@ export default function ProcedureRecommendation({
                   rec.averageProcedureTimeMax > 0
                     ? rec.averageProcedureTimeMin ===
                       rec.averageProcedureTimeMax
-                      ? `${rec.averageProcedureTimeMax}${t("procedure.procedureTime")}`
-                      : `${rec.averageProcedureTimeMin}~${rec.averageProcedureTimeMax}${t("procedure.procedureTime")}`
+                      ? `${rec.averageProcedureTimeMax}${t(
+                          "procedure.procedureTime"
+                        )}`
+                      : `${rec.averageProcedureTimeMin}~${
+                          rec.averageProcedureTimeMax
+                        }${t("procedure.procedureTime")}`
                     : rec.averageProcedureTime > 0
-                    ? `${rec.averageProcedureTime}${t("procedure.procedureTime")}`
+                    ? `${rec.averageProcedureTime}${t(
+                        "procedure.procedureTime"
+                      )}`
                     : t("pdp.noInfo")}{" "}
                   · {t("procedure.recoveryPeriod")}{" "}
                   {rec.averageRecoveryPeriodMin > 0 ||
                   rec.averageRecoveryPeriodMax > 0
                     ? rec.averageRecoveryPeriodMin ===
                       rec.averageRecoveryPeriodMax
-                      ? `${rec.averageRecoveryPeriodMax}${t("procedure.recoveryDays")}`
-                      : `${rec.averageRecoveryPeriodMin}~${rec.averageRecoveryPeriodMax}${t("procedure.recoveryDays")}`
+                      ? `${rec.averageRecoveryPeriodMax}${t(
+                          "procedure.recoveryDays"
+                        )}`
+                      : `${rec.averageRecoveryPeriodMin}~${
+                          rec.averageRecoveryPeriodMax
+                        }${t("procedure.recoveryDays")}`
                     : rec.averageRecoveryPeriod > 0
-                    ? `${rec.averageRecoveryPeriod}${t("procedure.recoveryDays")}`
+                    ? `${rec.averageRecoveryPeriod}${t(
+                        "procedure.recoveryDays"
+                      )}`
                     : t("pdp.noInfo")}
                 </p>
               </div>
@@ -1158,9 +1184,11 @@ export default function ProcedureRecommendation({
                     const procedureTime = parseProcedureTime(
                       treatment.surgery_time
                     );
-                    const price = treatment.selling_price
-                      ? `${Math.round(treatment.selling_price / 10000)}만원`
-                      : t("common.priceInquiry");
+                    const price = formatPrice(
+                      treatment.selling_price,
+                      currency,
+                      t
+                    );
                     const isFavorited = treatment.treatment_id
                       ? favorites.has(treatment.treatment_id)
                       : false;
@@ -1187,7 +1215,10 @@ export default function ProcedureRecommendation({
                         window.dispatchEvent(new Event("favoritesUpdated"));
                       } else {
                         // 로그인이 필요한 경우 안내 팝업 표시
-                        if (result.error?.includes("로그인이 필요") || result.error?.includes("로그인")) {
+                        if (
+                          result.error?.includes("로그인이 필요") ||
+                          result.error?.includes("로그인")
+                        ) {
                           setIsInfoModalOpen(true);
                         } else {
                           console.error("찜하기 처리 실패:", result.error);
@@ -1343,8 +1374,9 @@ export default function ProcedureRecommendation({
           onClick={() => setVisibleCategoriesCount((prev) => prev + 10)}
           className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
         >
-          더보기 ({recommendations.length - visibleCategoriesCount}개 카테고리
-          더)
+          {t("common.seeMoreWithCount", {
+            count: recommendations.length - visibleCategoriesCount,
+          })}
         </button>
       )}
 
@@ -1388,7 +1420,10 @@ export default function ProcedureRecommendation({
       {/* 안내 팝업 모달 */}
       {isInfoModalOpen && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setIsInfoModalOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/60 z-[100]"
+            onClick={() => setIsInfoModalOpen(false)}
+          />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
               <div className="text-center">

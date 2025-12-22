@@ -283,7 +283,9 @@ export default function InformationalContentSection() {
             onClick={() => setShowAll(true)}
             className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
           >
-            더보기 ({filteredContents.length - 5}개 더)
+            {t("common.seeMoreWithCount", {
+              count: filteredContents.length - 5,
+            })}
           </button>
         </div>
       )}

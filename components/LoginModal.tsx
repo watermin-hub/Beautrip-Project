@@ -29,7 +29,7 @@ export default function LoginModal({
   onClose,
   onLoginSuccess,
 }: LoginModalProps) {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const router = useRouter();
   const [showIdLogin, setShowIdLogin] = useState(false);
   const [showOtherMethods, setShowOtherMethods] = useState(false);
@@ -40,13 +40,12 @@ export default function LoginModal({
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
 
   const languages = [
-    { code: "KR", name: "한국어", flag: "🇰🇷" },
-    { code: "EN", name: "English", flag: "🇺🇸" },
-    { code: "JP", name: "日本語", flag: "🇯🇵" },
-    { code: "CN", name: "中文", flag: "🇨🇳" },
+    { code: "KR" as const, name: t("header.language.korean"), flag: "🇰🇷" },
+    { code: "EN" as const, name: t("header.language.english"), flag: "🇺🇸" },
+    { code: "JP" as const, name: t("header.language.japanese"), flag: "🇯🇵" },
+    { code: "CN" as const, name: t("header.language.chinese"), flag: "🇨🇳" },
   ];
 
-  const [selectedLanguage, setSelectedLanguage] = useState(languages[0]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Supabase Auth 상태 감지 (OAuth 콜백 처리)
@@ -290,7 +289,7 @@ export default function LoginModal({
     // },
     {
       id: "google",
-      name: "구글로 시작하기",
+      name: t("auth.loginWithGoogle"),
       icon: "🔍",
       iconUrl:
         "https://noticon-static.tammolo.com/dgggcrkxq/image/upload/v1566791548/noticon/zxi0bnl5h66bszdpjaet.jpg",
@@ -516,7 +515,7 @@ export default function LoginModal({
 
         // user_profiles에 사용자가 없는 경우에만 에러 표시
         if (authError.message.includes("Invalid login credentials")) {
-          alert("이메일 또는 비밀번호가 올바르지 않습니다.");
+          alert(t("auth.invalidCredentials"));
           setIsLoading(false);
           return;
         } else if (authError.message.includes("Email not confirmed")) {
@@ -586,7 +585,7 @@ export default function LoginModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white max-w-md mx-auto left-1/2 transform -translate-x-1/2 w-full md:max-w-md flex flex-col">
+    <div className="fixed inset-0 z-[110] bg-white max-w-md mx-auto left-1/2 transform -translate-x-1/2 w-full md:max-w-md flex flex-col">
       {/* Header with back button */}
       <div className="flex-shrink-0 bg-white border-b border-gray-100 px-4 py-3 z-10 flex items-center">
         <button
@@ -596,7 +595,7 @@ export default function LoginModal({
           <FiArrowLeft className="text-gray-700 text-xl" />
         </button>
         <h2 className="flex-1 text-center text-lg font-semibold text-gray-900">
-          로그인
+          {t("auth.loginTitle")}
         </h2>
         <div className="w-10" /> {/* Spacer for centering */}
       </div>
@@ -658,7 +657,7 @@ export default function LoginModal({
                   disabled={isLoading}
                   className="w-full bg-white border-2 border-gray-200 hover:bg-gray-50 text-gray-900 py-4 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  아이디로 로그인
+                  {t("auth.loginWithId")}
                 </button>
               </div>
 
@@ -670,7 +669,7 @@ export default function LoginModal({
                   }}
                   className="text-gray-600 text-sm hover:text-primary-main transition-colors"
                 >
-                  회원가입
+                  {t("auth.signup")}
                 </button>
               </div>
             </>
@@ -681,7 +680,7 @@ export default function LoginModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  이메일
+                  {t("auth.email")}
                 </label>
                 <input
                   type="email"
@@ -695,7 +694,7 @@ export default function LoginModal({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  비밀번호
+                  {t("auth.password")}
                 </label>
                 <div className="relative">
                   <input
@@ -737,7 +736,7 @@ export default function LoginModal({
                   htmlFor="autoLogin"
                   className="ml-2 text-sm text-gray-700"
                 >
-                  자동로그인
+                  {t("auth.autoLogin")}
                 </label>
               </div>
 
@@ -746,14 +745,14 @@ export default function LoginModal({
                 disabled={isLoading}
                 className="w-full bg-primary-main hover:bg-primary-light text-white py-4 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? "로그인 중..." : "로그인"}
+                {isLoading ? t("auth.loggingIn") : t("auth.login")}
               </button>
 
               <button
                 onClick={() => setShowIdLogin(false)}
                 className="w-full text-gray-600 text-sm hover:text-primary-main transition-colors py-2"
               >
-                다른 로그인 방법
+                {t("auth.otherLoginMethods")}
               </button>
 
               {/* 회원가입 */}
@@ -764,7 +763,7 @@ export default function LoginModal({
                   }}
                   className="text-gray-600 text-sm hover:text-primary-main transition-colors"
                 >
-                  회원가입
+                  {t("auth.signup")}
                 </button>
               </div>
             </div>
@@ -829,7 +828,7 @@ export default function LoginModal({
                 }}
                 className="w-full bg-white border border-gray-300 rounded-xl text-gray-700 py-3 hover:bg-gray-50 transition-colors text-sm"
               >
-                아이디로 로그인
+                {t("auth.loginWithId")}
               </button>
             </div>
           </div>
@@ -856,18 +855,16 @@ export default function LoginModal({
                   <button
                     key={lang.code}
                     onClick={() => {
-                      setSelectedLanguage(lang);
+                      setLanguage(lang.code);
                       setIsLanguageOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors flex items-center gap-2 ${
-                      selectedLanguage.code === lang.code
-                        ? "bg-primary-main/10"
-                        : ""
+                      language === lang.code ? "bg-primary-main/10" : ""
                     }`}
                   >
                     <span>{lang.flag}</span>
                     <span className="text-sm text-gray-700">{lang.name}</span>
-                    {selectedLanguage.code === lang.code && (
+                    {language === lang.code && (
                       <span className="ml-auto text-primary-main">✓</span>
                     )}
                   </button>

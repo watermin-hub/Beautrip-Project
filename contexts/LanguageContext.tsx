@@ -13,7 +13,7 @@ export type LanguageCode = "KR" | "EN" | "JP" | "CN";
 interface LanguageContextType {
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(
@@ -60,6 +60,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.login": "로그인하기",
     "common.priceInquiry": "가격 문의",
     "common.seeMore": "더보기",
+    "common.seeMoreWithCount": "더보기 ({count}개 더)",
     "common.noSearchResults": "검색 결과가 없습니다",
     "common.noTreatmentName": "시술명 없음",
     "common.notFound": "찾을 수 없습니다",
@@ -92,6 +93,15 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "form.hospitalSatisfactionLabel": "병원 만족도 (1~5)",
     "form.reviewContent": "후기 내용",
     "form.reviewContentPlaceholder": "후기 내용을 작성해주세요 (10자 이상)",
+    "form.loginRequiredProcedure": "로그인 후에만 시술 후기를 작성할 수 있습니다.",
+    "form.selectGenderAge": "성별과 연령대를 선택해주세요.",
+    "form.selectSatisfaction": "시술 만족도와 병원 만족도를 모두 선택해주세요.",
+    "form.procedureReviewUpdateSuccess": "시술후기가 성공적으로 수정되었습니다!",
+    "form.procedureReviewWriteSuccess": "시술후기가 성공적으로 작성되었습니다!",
+    "form.imageUploadError": "이미지 업로드에 실패했습니다: {message}",
+    "form.procedureReviewUpdateFailed": "시술후기 수정에 실패했습니다: {error}",
+    "form.procedureReviewWriteFailed": "시술후기 작성에 실패했습니다: {error}",
+    "form.procedureReviewWriteError": "시술후기 작성 중 오류가 발생했습니다: {message}",
     "form.concernCategory": "고민 카테고리",
     "form.selectConcernCategory": "고민 카테고리를 선택하세요",
 
@@ -173,6 +183,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "confirm.loginRequiredToSave": "일정을 저장하려면 로그인이 필요합니다.",
     "confirm.dataDeleted": "데이터가 삭제되었습니다.",
     // Login/Signup messages
+    "auth.login": "로그인",
+    "auth.loginTitle": "로그인",
+    "auth.loginWithGoogle": "구글로 시작하기",
+    "auth.loginWithId": "아이디로 로그인",
+    "auth.signup": "회원가입",
+    "auth.email": "이메일",
+    "auth.password": "비밀번호",
+    "auth.autoLogin": "자동로그인",
+    "auth.loggingIn": "로그인 중...",
+    "auth.otherLoginMethods": "다른 로그인 방법",
     "auth.enterEmailPassword": "아이디와 비밀번호를 입력해주세요.",
     "auth.invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다.",
     "auth.emailNotVerified":
@@ -180,6 +200,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "auth.loginError": "로그인 중 오류가 발생했습니다. 다시 시도해주세요.",
     "auth.loginFailed": "로그인에 실패했습니다.",
     "auth.signupSuccess": "회원가입 및 로그인이 완료되었습니다!",
+    "auth.signupEmailVerification": "회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요.",
     // Placeholders
     "placeholder.procedureName": "시술명/수술명을 입력해 주세요.",
     "placeholder.hospitalName": "병원명을 입력해 주세요.",
@@ -223,6 +244,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.genderMale": "남성",
     "label.procedureSatisfaction": "시술 만족도",
     "label.hospitalSatisfaction": "병원 만족도",
+    "label.translationAvailable": "통역 여부",
+    "label.translationSatisfaction": "통역 만족도",
+    "label.visitDate": "병원 방문일",
     "label.surgeryDate": "시술 날짜",
     "label.cost": "비용",
     "label.before": "전",
@@ -302,10 +326,13 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "시술",
     "schedule.travelPeriodLabel": "여행 기간:",
     "schedule.noSavedSchedules": "저장된 일정이 없습니다.",
+    "schedule.saveScheduleDescription": "일정을 저장하면 여기서 확인할 수 있습니다.",
     "schedule.deleteAllConfirm":
       "저장된 일정 {count}개를 모두 삭제하시겠습니까?",
     "schedule.deleteAll": "모두 지우기",
     "schedule.savedDate": "저장일",
+    "schedule.addToSchedule": "일정에 추가",
+    "schedule.add": "추가하기",
 
     // Explore
     "explore.title": "탐색",
@@ -313,6 +340,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking": "랭킹",
     "explore.theme": "테마",
     "explore.quote": "견적받기",
+    "explore.reviewCTA.title": "리뷰를 작성하면",
+    "explore.reviewCTA.description": "더 많은 시술 정보를 볼 수 있어요!",
+    "explore.reviewCTA.hospitalDescription": "더 많은 병원 정보를 볼 수 있어요!",
+    "explore.reviewCTA.button": "리뷰 작성하기",
+    // 중분류 설명 템플릿
+    "explore.categoryDescription.default": "{categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.",
+    "explore.categoryDescription.botox": "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.",
+    "explore.categoryDescription.filler": "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.",
+    "explore.categoryDescription.lifting": "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.",
+    "explore.categoryDescription.hairRemoval": "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.",
+    "explore.categoryDescription.surgery": "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.",
+    "explore.categoryDescription.correction": "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.",
+    "explore.categoryDescription.injection": "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.",
+    "explore.categoryDescription.laser": "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.",
 
     // Community
     "community.title": "커뮤니티",
@@ -332,9 +373,19 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Review detail page
     "review.treatmentReview": "시술 후기",
+    "review.hospitalReview": "병원 후기",
     "review.loading": "후기를 불러오는 중...",
     "review.notFound": "후기를 찾을 수 없습니다.",
+    "concernPosts.loading": "고민글을 불러오는 중...",
     "review.shareTitle": "{procedureName} 시술 후기",
+    "review.writeTitle": "리뷰 작성",
+    "review.writeButton": "리뷰 작성하기",
+    "review.procedureType": "시술 종류",
+    "review.hospitalClinic": "병원/클리닉",
+    "review.content": "리뷰 내용",
+    "review.photoAttachment": "사진 첨부 (최대 5장)",
+    "review.contentRequired": "리뷰 내용을 입력해주세요.",
+    "review.writeSuccess": "리뷰가 작성되었습니다!",
 
     // MyPage
     "mypage.title": "마이페이지",
@@ -440,6 +491,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "category.skin": "피부",
     "category.filler": "필러",
     "category.breast": "가슴성형",
+    "category.all": "전체",
     "home.recoveryGuideTitle": "회복 가이드",
     "home.recoveryGuideEmpty": "회복 가이드 글이 준비 중입니다.",
     "calendar.title": "여행 일정 선택",
@@ -448,6 +500,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "calendar.notSelected": "선택 안 함",
     "calendar.selectCategory": "카테고리 선택",
     "calendar.selectEndDate": "종료일을 선택해주세요",
+    "comment.title": "댓글",
     "comment.placeholder": "댓글을 입력하세요...",
     "comment.empty": "아직 댓글이 없습니다.",
     "comment.submit": "등록",
@@ -456,6 +509,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.deleteConfirm": "댓글을 삭제하시겠습니까?",
     "comment.myComments": "내 댓글",
     "comment.noComments": "작성한 댓글이 없습니다.",
+    "comment.contentRequired": "댓글 내용을 입력해주세요.",
+    "comment.writeError": "댓글 작성 중 오류가 발생했습니다.",
+    "comment.writeFailed": "댓글 작성에 실패했습니다.",
     "procedure.filter": "필터",
     "procedure.filterDuration": "소요시간",
     "procedure.filterDuration.sameDay": "당일",
@@ -532,6 +588,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
       "서로를 존중하고 배려하는 마음으로 소통해요. 여러분의 경험이 누군가에게 큰 도움이 됩니다",
     "community.section.recommended": "추천 게시글",
     "community.section.popular": "최근 인기 게시글",
+    "post.title": "게시글",
+    "post.translate": "번역하기",
+    "post.translating": "번역 중...",
+    "post.showOriginal": "원문 보기",
+    "post.edit": "수정",
+    "post.delete": "삭제",
+    "post.deleteConfirm": "게시글 삭제",
+    "post.deleteConfirmMessage": "정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "post.deleted": "게시글이 삭제되었습니다.",
+    "post.notFound": "게시글을 찾을 수 없습니다.",
     "community.section.recovery": "수술 회복 수다",
     "community.section.questions": "수술 질문하기",
     "community.section.skinConcerns": "피부 질환별 고민글",
@@ -570,6 +636,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.hospitalReviewWrite": "병원 후기 작성",
     "writePage.concernPostWrite": "고민 상담 작성",
     "writePage.noPosts": "작성한 글이 없습니다",
+    "writePage.writePost": "글 작성하기",
     "writePage.whatStory": "어떤 이야기를 공유하시겠어요?",
     "community.top20.title": "외국인 여행객을 위한 한국 인기 시술 정보 TOP 20!",
     "community.top20.description":
@@ -693,6 +760,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.login": "Log In",
     "common.priceInquiry": "Price inquiry",
     "common.seeMore": "See More",
+    "common.seeMoreWithCount": "See More ({count} more)",
     "common.noSearchResults": "No search results",
     "common.noTreatmentName": "No treatment name",
     "common.notFound": "Not found",
@@ -726,6 +794,15 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "form.reviewContent": "Review Content",
     "form.reviewContentPlaceholder":
       "Write your review (at least 10 characters)",
+    "form.loginRequiredProcedure": "Please log in to write a procedure review.",
+    "form.selectGenderAge": "Please select gender and age group.",
+    "form.selectSatisfaction": "Please select both procedure and hospital satisfaction.",
+    "form.procedureReviewUpdateSuccess": "Procedure review has been successfully updated!",
+    "form.procedureReviewWriteSuccess": "Procedure review has been successfully written!",
+    "form.imageUploadError": "Failed to upload image: {message}",
+    "form.procedureReviewUpdateFailed": "Failed to update procedure review: {error}",
+    "form.procedureReviewWriteFailed": "Failed to write procedure review: {error}",
+    "form.procedureReviewWriteError": "An error occurred while writing procedure review: {message}",
     "form.concernCategory": "Concern Category",
     "form.selectConcernCategory": "Select concern category",
 
@@ -804,12 +881,23 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "confirm.loginRequiredToSave": "Login required to save schedule.",
     "confirm.dataDeleted": "Data deleted.",
     // Login/Signup messages
+    "auth.login": "Login",
+    "auth.loginTitle": "Login",
+    "auth.loginWithGoogle": "Continue with Google",
+    "auth.loginWithId": "Login with ID",
+    "auth.signup": "Sign Up",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.autoLogin": "Auto Login",
+    "auth.loggingIn": "Logging in...",
+    "auth.otherLoginMethods": "Other Login Methods",
     "auth.enterEmailPassword": "Please enter email and password.",
     "auth.invalidCredentials": "Email or password is incorrect.",
     "auth.emailNotVerified": "Email not verified. Please check your email.",
     "auth.loginError": "An error occurred during login. Please try again.",
     "auth.loginFailed": "Login failed.",
     "auth.signupSuccess": "Sign up and login completed!",
+    "auth.signupEmailVerification": "Sign up completed! Please check your email to activate your account.",
     // Placeholders
     "placeholder.procedureName": "Enter procedure/surgery name",
     "placeholder.hospitalName": "Enter hospital name",
@@ -855,6 +943,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.genderMale": "Male",
     "label.procedureSatisfaction": "Procedure Satisfaction",
     "label.hospitalSatisfaction": "Hospital Satisfaction",
+    "label.translationAvailable": "Translation Available",
+    "label.translationSatisfaction": "Translation Satisfaction",
+    "label.visitDate": "Visit Date",
     "label.surgeryDate": "Surgery Date",
     "label.cost": "Cost",
     "label.before": "Before",
@@ -913,9 +1004,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "Procedure",
     "schedule.travelPeriodLabel": "Travel Period:",
     "schedule.noSavedSchedules": "No saved schedules.",
+    "schedule.saveScheduleDescription": "If you save a schedule, you can check it here.",
     "schedule.deleteAllConfirm": "Delete all {count} saved schedules?",
     "schedule.deleteAll": "Clear All",
     "schedule.savedDate": "Saved Date",
+    "schedule.addToSchedule": "Add to Schedule",
+    "schedule.add": "Add",
     // Explore tabs
     "explore.tab.ranking": "Ranking",
     "explore.tab.allProcedures": "All Procedures",
@@ -940,7 +1034,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "category.skin": "Skin",
     "category.filler": "Filler",
     "category.breast": "Breast Augmentation",
+    "category.all": "All",
     "home.recoveryGuideTitle": "Recovery Guide",
+    "comment.title": "Comments",
     "comment.placeholder": "Enter a comment...",
     "comment.empty": "No comments yet.",
     "comment.submit": "Submit",
@@ -949,6 +1045,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.deleteConfirm": "Are you sure you want to delete this comment?",
     "comment.myComments": "My Comments",
     "comment.noComments": "You haven't written any comments yet.",
+    "comment.contentRequired": "Please enter comment content.",
+    "comment.writeError": "An error occurred while writing comment.",
+    "comment.writeFailed": "Failed to write comment.",
     "home.recoveryGuideEmpty": "Recovery guide articles are being prepared.",
 
     // Favorites
@@ -980,6 +1079,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking": "Ranking",
     "explore.theme": "Theme",
     "explore.quote": "Get Quote",
+    "explore.reviewCTA.title": "Write a review",
+    "explore.reviewCTA.description": "to see more procedure information!",
+    "explore.reviewCTA.hospitalDescription": "to see more hospital information!",
+    "explore.reviewCTA.button": "Write Review",
+    // 중분류 설명 템플릿
+    "explore.categoryDescription.default": "A procedure to improve skin and appearance through {categoryMid}.",
+    "explore.categoryDescription.botox": "Relaxes muscles to prevent and improve wrinkles. Can be injected into areas prone to wrinkles such as the forehead, around the eyes, and between the eyebrows to maintain natural expressions.",
+    "explore.categoryDescription.filler": "Adds volume and improves contours to create natural beauty.",
+    "explore.categoryDescription.lifting": "Improves skin elasticity and lifts sagging skin to make you look younger.",
+    "explore.categoryDescription.hairRemoval": "A procedure that removes unwanted hair to create clean and smooth skin.",
+    "explore.categoryDescription.surgery": "A procedure that improves appearance and creates a more beautiful look.",
+    "explore.categoryDescription.correction": "A procedure that improves facial contours or shape to create a more balanced appearance.",
+    "explore.categoryDescription.injection": "A procedure performed in injection form, effective for skin improvement and appearance enhancement.",
+    "explore.categoryDescription.laser": "A procedure that uses laser to improve skin and enhance appearance.",
 
     // Community
     "community.title": "Community",
@@ -999,9 +1112,19 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Review detail page
     "review.treatmentReview": "Treatment Review",
+    "review.hospitalReview": "Hospital Review",
     "review.loading": "Loading review...",
+    "concernPosts.loading": "Loading concern posts...",
     "review.notFound": "Review not found.",
     "review.shareTitle": "{procedureName} Treatment Review",
+    "review.writeTitle": "Write Review",
+    "review.writeButton": "Write Review",
+    "review.procedureType": "Procedure Type",
+    "review.hospitalClinic": "Hospital/Clinic",
+    "review.content": "Review Content",
+    "review.photoAttachment": "Photo Attachment (Max 5)",
+    "review.contentRequired": "Please enter review content.",
+    "review.writeSuccess": "Review has been written!",
 
     // MyPage
     "mypage.title": "My Page",
@@ -1177,6 +1300,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
       "Let's communicate with respect and consideration for each other. Your experience is a great help to others",
     "community.section.recommended": "Recommended Posts",
     "community.section.popular": "Recently Popular Posts",
+    "post.title": "Post",
+    "post.translate": "Translate",
+    "post.translating": "Translating...",
+    "post.showOriginal": "Show Original",
+    "post.edit": "Edit",
+    "post.delete": "Delete",
+    "post.deleteConfirm": "Delete Post",
+    "post.deleteConfirmMessage": "Are you sure you want to delete this post? This action cannot be undone.",
+    "post.deleted": "Post deleted successfully.",
+    "post.notFound": "Post not found.",
     "community.section.recovery": "Surgery Recovery Stories",
     "community.section.questions": "Ask About Surgery",
     "community.section.skinConcerns": "Skin Concern Posts by Condition",
@@ -1219,6 +1352,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.hospitalReviewWrite": "Write Hospital Review",
     "writePage.concernPostWrite": "Write Consultation Post",
     "writePage.noPosts": "No posts yet",
+    "writePage.writePost": "Write Post",
     "writePage.whatStory": "What story would you like to share?",
     "community.top20.title":
       "TOP 20 Popular Korean Procedures for Foreign Travelers!",
@@ -1339,6 +1473,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.login": "ログイン",
     "common.priceInquiry": "価格お問い合わせ",
     "common.seeMore": "もっと見る",
+    "common.seeMoreWithCount": "もっと見る（あと{count}件）",
     "common.noSearchResults": "検索結果がありません",
     "common.noTreatmentName": "施術名なし",
     "common.notFound": "見つかりません",
@@ -1374,6 +1509,15 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "form.reviewContent": "レビュー内容",
     "form.reviewContentPlaceholder":
       "レビュー内容を書いてください（10文字以上）",
+    "form.loginRequiredProcedure": "ログイン後にのみ施術レビューを書くことができます。",
+    "form.selectGenderAge": "性別と年齢層を選択してください。",
+    "form.selectSatisfaction": "施術満足度と病院満足度の両方を選択してください。",
+    "form.procedureReviewUpdateSuccess": "施術レビューが正常に更新されました！",
+    "form.procedureReviewWriteSuccess": "施術レビューが正常に作成されました！",
+    "form.imageUploadError": "画像のアップロードに失敗しました: {message}",
+    "form.procedureReviewUpdateFailed": "施術レビューの更新に失敗しました: {error}",
+    "form.procedureReviewWriteFailed": "施術レビューの作成に失敗しました: {error}",
+    "form.procedureReviewWriteError": "施術レビューの作成中にエラーが発生しました: {message}",
     "form.concernCategory": "悩みカテゴリ",
     "form.selectConcernCategory": "悩みカテゴリを選択してください",
 
@@ -1457,6 +1601,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
       "スケジュールを保存するにはログインが必要です。",
     "confirm.dataDeleted": "データが削除されました。",
     // Login/Signup messages
+    "auth.login": "ログイン",
+    "auth.loginTitle": "ログイン",
+    "auth.loginWithGoogle": "Googleで始める",
+    "auth.loginWithId": "IDでログイン",
+    "auth.signup": "会員登録",
+    "auth.email": "メールアドレス",
+    "auth.password": "パスワード",
+    "auth.autoLogin": "自動ログイン",
+    "auth.loggingIn": "ログイン中...",
+    "auth.otherLoginMethods": "他のログイン方法",
     "auth.enterEmailPassword": "メールアドレスとパスワードを入力してください。",
     "auth.invalidCredentials":
       "メールアドレスまたはパスワードが正しくありません。",
@@ -1465,6 +1619,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "auth.loginError": "ログイン中にエラーが発生しました。再度お試しください。",
     "auth.loginFailed": "ログインに失敗しました。",
     "auth.signupSuccess": "会員登録およびログインが完了しました！",
+    "auth.signupEmailVerification": "会員登録が完了しました！メールを確認してアカウントを有効化してください。",
     // Placeholders
     "placeholder.procedureName": "施術名/手術名を入力してください。",
     "placeholder.hospitalName": "病院名を入力してください。",
@@ -1509,6 +1664,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.genderMale": "男性",
     "label.procedureSatisfaction": "施術満足度",
     "label.hospitalSatisfaction": "病院満足度",
+    "label.translationAvailable": "通訳の有無",
+    "label.translationSatisfaction": "通訳満足度",
+    "label.visitDate": "病院訪問日",
     "label.surgeryDate": "施術日",
     "label.cost": "費用",
     "label.before": "前",
@@ -1590,10 +1748,13 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "施術",
     "schedule.travelPeriodLabel": "旅行期間：",
     "schedule.noSavedSchedules": "保存されたスケジュールがありません。",
+    "schedule.saveScheduleDescription": "スケジュールを保存すると、ここで確認できます。",
     "schedule.deleteAllConfirm":
       "保存されたスケジュール{count}件をすべて削除しますか？",
     "schedule.deleteAll": "すべて削除",
     "schedule.savedDate": "保存日",
+    "schedule.addToSchedule": "スケジュールに追加",
+    "schedule.add": "追加",
 
     // Explore
     "explore.title": "探す",
@@ -1601,6 +1762,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking": "ランキング",
     "explore.theme": "テーマ",
     "explore.quote": "見積もり",
+    "explore.reviewCTA.title": "レビューを書くと",
+    "explore.reviewCTA.description": "より多くの施術情報を見ることができます！",
+    "explore.reviewCTA.hospitalDescription": "より多くの病院情報を見ることができます！",
+    "explore.reviewCTA.button": "レビューを書く",
+    // 中分類説明テンプレート
+    "explore.categoryDescription.default": "{categoryMid}を通じて肌と外見を改善できる施術です。",
+    "explore.categoryDescription.botox": "筋肉を弛緩させてしわを予防・改善する効果があります。額、目元、眉間などしわができやすい部位に注射して自然な表情を保つことができます。",
+    "explore.categoryDescription.filler": "ボリュームを補い、輪郭を改善して自然な美しさを演出します。",
+    "explore.categoryDescription.lifting": "肌の弾力を改善し、たるんだ肌をリフティングしてより若々しく見せます。",
+    "explore.categoryDescription.hairRemoval": "不要な毛を除去して清潔で滑らかな肌を作る施術です。",
+    "explore.categoryDescription.surgery": "外見を改善し、より美しい姿を作る施術です。",
+    "explore.categoryDescription.correction": "顔の輪郭や形を改善してよりバランスの取れた外見を作る施術です。",
+    "explore.categoryDescription.injection": "注射形式で行われる施術で、肌改善と外見向上に効果的です。",
+    "explore.categoryDescription.laser": "レーザーを利用して肌を改善し、外見を向上させる施術です。",
 
     // Community
     "community.title": "コミュニティ",
@@ -1620,9 +1795,19 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Review detail page
     "review.treatmentReview": "施術レビュー",
+    "review.hospitalReview": "病院レビュー",
     "review.loading": "レビューを読み込み中...",
     "review.notFound": "レビューが見つかりません。",
+    "concernPosts.loading": "悩み投稿を読み込み中...",
     "review.shareTitle": "{procedureName} 施術レビュー",
+    "review.writeTitle": "レビュー作成",
+    "review.writeButton": "レビューを書く",
+    "review.procedureType": "施術種類",
+    "review.hospitalClinic": "病院/クリニック",
+    "review.content": "レビュー内容",
+    "review.photoAttachment": "写真添付（最大5枚）",
+    "review.contentRequired": "レビュー内容を入力してください。",
+    "review.writeSuccess": "レビューが作成されました！",
 
     // MyPage
     "mypage.title": "マイページ",
@@ -1727,6 +1912,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "category.skin": "皮膚",
     "category.filler": "フィラー",
     "category.breast": "豊胸",
+    "category.all": "すべて",
+    "comment.title": "コメント",
     "comment.placeholder": "コメントを入力してください...",
     "comment.empty": "まだコメントがありません。",
     "comment.submit": "投稿",
@@ -1735,6 +1922,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.deleteConfirm": "このコメントを削除してもよろしいですか？",
     "comment.myComments": "私のコメント",
     "comment.noComments": "まだコメントを書いていません。",
+    "comment.contentRequired": "コメント内容を入力してください。",
+    "comment.writeError": "コメント作成中にエラーが発生しました。",
+    "comment.writeFailed": "コメントの作成に失敗しました。",
     "home.recoveryGuideTitle": "回復ガイド",
     "home.recoveryGuideEmpty": "回復ガイドの記事を準備中です。",
     "calendar.title": "旅行日程を選択",
@@ -1819,6 +2009,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
       "お互いを尊重し、思いやりの心でコミュニケーションしましょう。あなたの経験が誰かの大きな助けになります",
     "community.section.recommended": "おすすめの投稿",
     "community.section.popular": "最近人気の投稿",
+    "post.title": "投稿",
+    "post.translate": "翻訳",
+    "post.translating": "翻訳中...",
+    "post.showOriginal": "原文を表示",
+    "post.edit": "編集",
+    "post.delete": "削除",
+    "post.deleteConfirm": "投稿を削除",
+    "post.deleteConfirmMessage": "この投稿を削除してもよろしいですか？この操作は元に戻せません。",
+    "post.deleted": "投稿が削除されました。",
+    "post.notFound": "投稿が見つかりません。",
     "community.section.recovery": "手術回復の話",
     "community.section.questions": "手術について質問",
     "community.section.skinConcerns": "皮膚疾患別の悩みの投稿",
@@ -1859,6 +2059,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.hospitalReviewWrite": "病院レビュー作成",
     "writePage.concernPostWrite": "悩み相談作成",
     "writePage.noPosts": "投稿がありません",
+    "writePage.writePost": "投稿作成",
     "writePage.whatStory": "どのようなお話を共有しますか？",
     "community.top20.title": "外国人旅行者のための韓国人気施術情報 TOP 20！",
     "community.top20.description":
@@ -1982,6 +2183,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.login": "登录",
     "common.priceInquiry": "价格咨询",
     "common.seeMore": "查看更多",
+    "common.seeMoreWithCount": "查看更多（还有{count}个）",
     "common.noSearchResults": "没有搜索结果",
     "common.noTreatmentName": "无疗程名称",
     "common.noHospitalName": "无医院名称",
@@ -2013,6 +2215,15 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "form.hospitalSatisfactionLabel": "医院满意度（1〜5）",
     "form.reviewContent": "评论内容",
     "form.reviewContentPlaceholder": "请撰写评论（至少10个字符）",
+    "form.loginRequiredProcedure": "请登录后撰写疗程评论。",
+    "form.selectGenderAge": "请选择性别和年龄段。",
+    "form.selectSatisfaction": "请选择疗程满意度和医院满意度。",
+    "form.procedureReviewUpdateSuccess": "疗程评论已成功更新！",
+    "form.procedureReviewWriteSuccess": "疗程评论已成功发布！",
+    "form.imageUploadError": "图片上传失败: {message}",
+    "form.procedureReviewUpdateFailed": "疗程评论更新失败: {error}",
+    "form.procedureReviewWriteFailed": "疗程评论发布失败: {error}",
+    "form.procedureReviewWriteError": "撰写疗程评论时发生错误: {message}",
     "form.concernCategory": "咨询类别",
     "form.selectConcernCategory": "请选择咨询类别",
 
@@ -2087,12 +2298,23 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "confirm.loginRequiredToSave": "保存日程需要登录。",
     "confirm.dataDeleted": "数据已删除。",
     // Login/Signup messages
+    "auth.login": "登录",
+    "auth.loginTitle": "登录",
+    "auth.loginWithGoogle": "使用Google继续",
+    "auth.loginWithId": "使用ID登录",
+    "auth.signup": "注册",
+    "auth.email": "邮箱",
+    "auth.password": "密码",
+    "auth.autoLogin": "自动登录",
+    "auth.loggingIn": "登录中...",
+    "auth.otherLoginMethods": "其他登录方式",
     "auth.enterEmailPassword": "请输入邮箱和密码。",
     "auth.invalidCredentials": "邮箱或密码不正确。",
     "auth.emailNotVerified": "邮箱未验证。请检查您的邮箱。",
     "auth.loginError": "登录时发生错误。请重试。",
     "auth.loginFailed": "登录失败。",
     "auth.signupSuccess": "注册和登录已完成！",
+    "auth.signupEmailVerification": "注册已完成！请检查您的邮箱以激活账户。",
     // Placeholders
     "placeholder.procedureName": "请输入疗程/手术名称",
     "placeholder.hospitalName": "请输入医院名称",
@@ -2136,6 +2358,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "label.genderMale": "男性",
     "label.procedureSatisfaction": "疗程满意度",
     "label.hospitalSatisfaction": "医院满意度",
+    "label.translationAvailable": "翻译可用",
+    "label.translationSatisfaction": "翻译满意度",
+    "label.visitDate": "医院访问日期",
     "label.surgeryDate": "疗程日期",
     "label.cost": "费用",
     "label.before": "前",
@@ -2215,9 +2440,12 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "疗程",
     "schedule.travelPeriodLabel": "旅行期间：",
     "schedule.noSavedSchedules": "没有已保存的日程。",
+    "schedule.saveScheduleDescription": "如果您保存日程，可以在这里查看。",
     "schedule.deleteAllConfirm": "删除所有{count}个已保存的日程？",
     "schedule.deleteAll": "全部清除",
     "schedule.savedDate": "保存日期",
+    "schedule.addToSchedule": "添加到日程",
+    "schedule.add": "添加",
 
     // Explore
     "explore.title": "探索",
@@ -2225,6 +2453,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.ranking": "排名",
     "explore.theme": "主题",
     "explore.quote": "获取报价",
+    "explore.reviewCTA.title": "撰写评论",
+    "explore.reviewCTA.description": "可以看到更多疗程信息！",
+    "explore.reviewCTA.hospitalDescription": "可以看到更多医院信息！",
+    "explore.reviewCTA.button": "写评论",
+    // 中分类说明模板
+    "explore.categoryDescription.default": "通过{categoryMid}可以改善皮肤和外貌的疗程。",
+    "explore.categoryDescription.botox": "放松肌肉以预防和改善皱纹。可以注射到容易产生皱纹的部位，如额头、眼周、眉间等，以保持自然表情。",
+    "explore.categoryDescription.filler": "填充体积并改善轮廓，营造自然美感。",
+    "explore.categoryDescription.lifting": "改善皮肤弹性，提升松弛皮肤，让您看起来更年轻。",
+    "explore.categoryDescription.hairRemoval": "去除不必要的毛发，打造干净光滑的皮肤。",
+    "explore.categoryDescription.surgery": "改善外貌，打造更美丽的容貌。",
+    "explore.categoryDescription.correction": "改善面部轮廓或形状，打造更平衡的外貌。",
+    "explore.categoryDescription.injection": "以注射形式进行的疗程，对皮肤改善和外观提升有效。",
+    "explore.categoryDescription.laser": "利用激光改善皮肤并提升外观的疗程。",
 
     // Community
     "community.title": "社区",
@@ -2244,9 +2486,19 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 
     // Review detail page
     "review.treatmentReview": "疗程评论",
+    "review.hospitalReview": "医院评论",
     "review.loading": "正在加载评论...",
     "review.notFound": "找不到评论。",
+    "concernPosts.loading": "正在加载咨询帖子...",
     "review.shareTitle": "{procedureName} 疗程评论",
+    "review.writeTitle": "写评论",
+    "review.writeButton": "写评论",
+    "review.procedureType": "疗程类型",
+    "review.hospitalClinic": "医院/诊所",
+    "review.content": "评论内容",
+    "review.photoAttachment": "照片附件（最多5张）",
+    "review.contentRequired": "请输入评论内容。",
+    "review.writeSuccess": "评论已发布！",
 
     // MyPage
     "mypage.title": "我的",
@@ -2350,6 +2602,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "category.skin": "皮肤",
     "category.filler": "玻尿酸",
     "category.breast": "隆胸",
+    "category.all": "全部",
+    "comment.title": "评论",
     "comment.placeholder": "请输入评论...",
     "comment.empty": "还没有评论。",
     "comment.submit": "提交",
@@ -2358,6 +2612,9 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.deleteConfirm": "确定要删除这条评论吗？",
     "comment.myComments": "我的评论",
     "comment.noComments": "您还没有写过评论。",
+    "comment.contentRequired": "请输入评论内容。",
+    "comment.writeError": "撰写评论时发生错误。",
+    "comment.writeFailed": "评论发布失败。",
     "home.recoveryGuideTitle": "恢复指南",
     "home.recoveryGuideEmpty": "恢复指南文章正在准备中。",
     "calendar.title": "选择旅行日程",
@@ -2441,6 +2698,16 @@ const translations: Record<LanguageCode, Record<string, string>> = {
       "让我们以相互尊重和关怀的心沟通。您的经验对他人有很大帮助",
     "community.section.recommended": "推荐帖子",
     "community.section.popular": "最近热门帖子",
+    "post.title": "帖子",
+    "post.translate": "翻译",
+    "post.translating": "翻译中...",
+    "post.showOriginal": "显示原文",
+    "post.edit": "编辑",
+    "post.delete": "删除",
+    "post.deleteConfirm": "删除帖子",
+    "post.deleteConfirmMessage": "确定要删除此帖子吗？此操作无法撤销。",
+    "post.deleted": "帖子已删除。",
+    "post.notFound": "找不到帖子。",
     "community.section.recovery": "手术恢复故事",
     "community.section.questions": "手术咨询",
     "community.section.skinConcerns": "按皮肤问题的困扰帖子",
@@ -2478,6 +2745,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "writePage.hospitalReviewWrite": "写医院评论",
     "writePage.concernPostWrite": "写咨询文章",
     "writePage.noPosts": "还没有文章",
+    "writePage.writePost": "写帖子",
     "writePage.whatStory": "您想分享什么故事？",
     "community.top20.title": "外国游客的韩国热门疗程信息 TOP 20！",
     "community.top20.description": "查看韩国最受欢迎的疗程 TOP 20。",
@@ -2594,7 +2862,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLanguageState(lang);
   };
 
-  const t = (key: string): string => {
+  const t = (key: string, params?: Record<string, string | number>): string => {
     const langTranslations = translations[language];
     if (!langTranslations) {
       console.error(`[Translation] Language "${language}" not found in translations`);
@@ -2605,6 +2873,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       console.warn(`[Translation] Key "${key}" not found for language "${language}"`);
       return key;
     }
+    
+    // 파라미터가 있으면 치환
+    if (params) {
+      let result = translation;
+      for (const [paramKey, paramValue] of Object.entries(params)) {
+        result = result.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue));
+      }
+      return result;
+    }
+    
     return translation;
   };
 

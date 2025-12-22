@@ -17,7 +17,7 @@ import {
 import {
   loadHospitalByIdRd,
   loadTreatmentsByHospitalIdRd,
-  HospitalPdp,
+  HospitalI18nRow,
   Treatment,
 } from "@/lib/api/beautripApi";
 
@@ -32,10 +32,10 @@ interface HospitalDetailPageProps {
 export default function HospitalDetailPage({
   hospitalIdRd,
 }: HospitalDetailPageProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
 
-  const [hospital, setHospital] = useState<HospitalPdp | null>(null);
+  const [hospital, setHospital] = useState<HospitalI18nRow | null>(null);
   const [hospitalTreatments, setHospitalTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,8 +50,8 @@ export default function HospitalDetailPage({
       try {
         setLoading(true);
 
-        // hospital_id_rd로 병원 조회
-        const foundHospital = await loadHospitalByIdRd(hospitalIdRd);
+        // hospital_id_rd로 병원 조회 (언어 필터 적용)
+        const foundHospital = await loadHospitalByIdRd(hospitalIdRd, language);
 
         if (!foundHospital) {
           console.error("병원 데이터를 찾을 수 없습니다.", {
@@ -151,16 +151,17 @@ export default function HospitalDetailPage({
       // 화면 표시용 데이터(선택)
       hospitalIdRd,
 
-      title: hospital?.hospital_name || t("common.noHospitalName"),
-      clinic: hospital?.hospital_name || "",
-      location: hospital?.hospital_address || "",
+      // 번역 필드 또는 KR 원본 사용
+      title: hospital?.hospital_name_i18n || hospital?.hospital_name_kr || t("common.noHospitalName"),
+      clinic: hospital?.hospital_name_i18n || hospital?.hospital_name_kr || "",
+      location: hospital?.hospital_address_i18n || hospital?.hospital_address_kr || "",
       rating:
         hospital?.hospital_rating != null
           ? Number(hospital.hospital_rating).toFixed(1)
           : "0",
       reviewCount:
         hospital?.review_count != null ? String(hospital.review_count) : "0",
-      address: hospital?.hospital_address || "",
+      address: hospital?.hospital_address_i18n || hospital?.hospital_address_kr || "",
       phone: hospital?.hospital_phone_safe || "",
       languageSupport: hospital?.hospital_language_support || "",
     };
@@ -188,11 +189,11 @@ export default function HospitalDetailPage({
   const handleShare = async () => {
     if (navigator.share) {
       try {
+        const hospitalName = hospital?.hospital_name_i18n || hospital?.hospital_name_kr || "병원";
+        const hospitalAddress = hospital?.hospital_address_i18n || hospital?.hospital_address_kr || "";
         await navigator.share({
-          title: hospital?.hospital_name || "병원 정보",
-          text: `${hospital?.hospital_name || "병원"} - ${
-            hospital?.hospital_address || ""
-          }`,
+          title: hospitalName || "병원 정보",
+          text: `${hospitalName || "병원"} - ${hospitalAddress}`,
           url: window.location.href,
         });
       } catch (error) {
@@ -260,7 +261,7 @@ export default function HospitalDetailPage({
           {hospital.hospital_img_url ? (
             <img
               src={hospital.hospital_img_url}
-              alt={hospital.hospital_name || "병원 이미지"}
+              alt={hospital.hospital_name_i18n || hospital.hospital_name_kr || "병원 이미지"}
               className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -285,7 +286,7 @@ export default function HospitalDetailPage({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {hospital.hospital_name || t("common.noHospitalName")}
+                {hospital.hospital_name_i18n || hospital.hospital_name_kr || t("common.noHospitalName")}
               </h2>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
@@ -319,14 +320,14 @@ export default function HospitalDetailPage({
             {t("pdp.hospitalInfo")}
           </h3>
           <div className="space-y-3">
-            {hospital.hospital_address && (
+            {(hospital.hospital_address_i18n || hospital.hospital_address_kr) && (
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                   <FiMapPin className="text-gray-400" />
                   <span className="font-medium">{t("label.address")}</span>
                 </div>
                 <p className="text-sm text-gray-500 pl-6">
-                  {hospital.hospital_address}
+                  {hospital.hospital_address_i18n || hospital.hospital_address_kr}
                 </p>
               </div>
             )}
@@ -397,14 +398,14 @@ export default function HospitalDetailPage({
             )}
 
             {/* 소개 */}
-            {hospital.hospital_intro && (
+            {(hospital.hospital_intro_i18n || hospital.hospital_intro_kr) && (
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                   <FiMessageCircle className="text-gray-400" />
                   <span className="font-medium">{t("pdp.hospitalIntro")}</span>
                 </div>
                 <p className="text-sm text-gray-500 pl-6 whitespace-pre-line">
-                  {hospital.hospital_intro}
+                  {hospital.hospital_intro_i18n || hospital.hospital_intro_kr}
                 </p>
               </div>
             )}

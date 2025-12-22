@@ -140,7 +140,9 @@ export default function CountryPainPointSection() {
           `키워드 "${originalKeyword}"에 해당하는 category_mid를 찾을 수 없습니다.`
         );
         // fallback: 기존 로직 사용
-        const result = await loadTreatmentsPaginated(1, 100);
+        const result = await loadTreatmentsPaginated(1, 100, {
+          language: language,
+        });
         const allTreatments = result.data;
         const keywords = CONCERN_KEYWORDS[originalKeyword] || [originalKeyword];
 
@@ -178,6 +180,7 @@ export default function CountryPainPointSection() {
       // 3. category_mid로 시술 필터링
       const result = await loadTreatmentsPaginated(1, 200, {
         categoryMid: categoryMid,
+        language: language,
       });
       const filteredTreatments = result.data;
 

@@ -7,16 +7,23 @@ export type LanguageCode = "KR" | "EN" | "JP" | "CN";
 // Supabase 테이블 이름
 const TABLE_NAMES = {
   TREATMENT_MASTER: "treatment_master",
-  TREATMENT_PDP_VIEW: "v_treatment_pdp", // 시술 PDP용 뷰 테이블
+  TREATMENT_I18N_VIEW: "v_treatment_i18n", // 다국어 시술 통합 뷰
+  TREATMENT_PDP_VIEW: "v_treatment_pdp", // 시술 PDP용 뷰 테이블 (레거시, v_treatment_i18n으로 대체 예정)
   HOSPITAL_PDP_VIEW: "v_hospital_pdp", // 병원 PDP용 뷰 테이블
+  HOSPITAL_I18N_VIEW: "v_hospital_i18n", // 병원 다국어 통합 뷰 (hospital_master + hospital_translation)
   CATEGORY_TREATTIME_RECOVERY: "category_treattime_recovery",
   HOSPITAL_MASTER: "hospital_master",
   KEYWORD_MONTHLY_TRENDS: "keyword_monthly_trends",
   CATEGORY_TOGGLE_MAP: "category_toggle_map",
 };
 
-// 언어별 treatment_master 테이블 이름 반환
-export function getTreatmentTableName(language?: LanguageCode): string {
+// DB 언어 코드 타입 (v_treatment_i18n의 lang 컬럼 값)
+export type DbLanguageCode = "en" | "ja" | "zh-CN";
+
+// 프론트엔드 언어 코드를 DB 언어 코드로 변환
+export function convertLanguageCodeToDbFormat(
+  language?: LanguageCode
+): DbLanguageCode | null {
   // 클라이언트 사이드에서 언어 가져오기 (localStorage 또는 기본값)
   let lang: LanguageCode = language || "KR";
 
@@ -30,15 +37,72 @@ export function getTreatmentTableName(language?: LanguageCode): string {
     }
   }
 
-  // 언어별 테이블 이름 매핑
-  const tableMap: Record<LanguageCode, string> = {
-    KR: "treatment_master",
-    EN: "treatment_master_en",
-    JP: "treatment_master_jp",
-    CN: "treatment_master_cn",
+  // 언어 코드 매핑: 프론트엔드 → DB
+  const langMap: Record<LanguageCode, DbLanguageCode | null> = {
+    KR: null, // 한국어는 기본값 (lang 필터 없이 처리하거나 "ko" 사용 가능)
+    EN: "en",
+    JP: "ja",
+    CN: "zh-CN",
   };
 
-  return tableMap[lang] || "treatment_master";
+  return langMap[lang] || null;
+}
+
+// 현재 언어를 DB 형식으로 가져오기 (lang 필터용)
+export function getCurrentLanguageForDb(
+  language?: LanguageCode
+): DbLanguageCode | null {
+  return convertLanguageCodeToDbFormat(language);
+}
+
+// 병원 i18n 뷰용 언어 코드 변환 (v_hospital_i18n의 lang 필드)
+// 백엔드 가이드: KR/en/jp/cn 형태 사용
+export function getHospitalLanguageCode(language?: LanguageCode): string {
+  // 클라이언트 사이드에서 언어 가져오기
+  let lang: LanguageCode = language || "KR";
+
+  if (typeof window !== "undefined" && !language) {
+    const saved = localStorage.getItem("language") as LanguageCode;
+    if (
+      saved &&
+      (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")
+    ) {
+      lang = saved;
+    }
+  }
+
+  // 병원 i18n 뷰의 lang 필드 매핑
+  const langMap: Record<LanguageCode, string> = {
+    KR: "KR",
+    EN: "en",
+    JP: "jp",
+    CN: "cn",
+  };
+
+  return langMap[lang] || "KR";
+}
+
+// 언어에 따라 적절한 테이블 이름 반환
+// 한국어: treatment_master, 다른 언어: v_treatment_i18n
+export function getTreatmentTableName(language?: LanguageCode): string {
+  // 언어 코드 가져오기
+  let lang: LanguageCode = language || "KR";
+
+  if (typeof window !== "undefined" && !language) {
+    const saved = localStorage.getItem("language") as LanguageCode;
+    if (
+      saved &&
+      (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")
+    ) {
+      lang = saved;
+    }
+  }
+
+  // 한국어일 때는 treatment_master, 다른 언어일 때는 v_treatment_i18n
+  if (lang === "KR") {
+    return TABLE_NAMES.TREATMENT_MASTER;
+  }
+  return TABLE_NAMES.TREATMENT_I18N_VIEW;
 }
 
 // Supabase 클라이언트 안전 접근 헬퍼
@@ -141,6 +205,40 @@ export interface HospitalPdp {
   [key: string]: any;
 }
 
+// 병원 i18n 뷰 데이터 인터페이스 (v_hospital_i18n)
+// 백엔드 가이드: hospital_master + hospital_translation을 합친 뷰
+// lang 필드로 언어 구분 (KR/en/jp/cn 등)
+export interface HospitalI18nRow {
+  platform: string;
+  hospital_id_rd: number;
+  lang: string; // 언어 코드 (KR, en, jp, cn 등)
+
+  // 번역된 필드 (i18n) - 없으면 KR 원본으로 fallback
+  hospital_name_i18n?: string | null;
+  hospital_address_i18n?: string | null;
+  hospital_intro_i18n?: string | null;
+  // ... 기타 번역 필드들
+
+  // KR 원본 필드 (fallback용)
+  hospital_name_kr?: string | null;
+  hospital_address_kr?: string | null;
+  hospital_intro_kr?: string | null;
+
+  // 공통 필드 (언어와 무관)
+  hospital_url?: string | null;
+  hospital_rating?: number | null;
+  review_count?: number | null;
+  hospital_img_url?: string | null;
+  hospital_departments?: string | string[] | null;
+  hospital_doctors?: string | string[] | null;
+  opening_hours?: string | null;
+  hospital_phone_safe?: string | null;
+  hospital_language_support?: string | null;
+  hospital_info_raw?: string | null;
+
+  [key: string]: any; // 추가 필드 허용
+}
+
 // 키워드 월별 트렌드 인터페이스
 export interface KeywordMonthlyTrend {
   id?: number;
@@ -185,12 +283,22 @@ export async function getCategoryLargeList(
     if (!client) return DEFAULT_CATEGORIES;
 
     const treatmentTable = getTreatmentTableName(language);
-    console.log(`[getCategoryLargeList] 언어: ${language}, 테이블: ${treatmentTable}`);
-    
-    const { data, error } = await client
+    const dbLang = getCurrentLanguageForDb(language);
+    console.log(
+      `[getCategoryLargeList] 언어: ${language}, DB lang: ${dbLang}, 테이블: ${treatmentTable}`
+    );
+
+    let query = client
       .from(treatmentTable)
       .select("category_large")
       .not("category_large", "is", null);
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("카테고리 목록 로드 실패:", error);
@@ -199,22 +307,30 @@ export async function getCategoryLargeList(
     }
 
     if (!data || !Array.isArray(data)) {
-      console.warn(`[getCategoryLargeList] 데이터가 없거나 배열이 아닙니다.`, data);
+      console.warn(
+        `[getCategoryLargeList] 데이터가 없거나 배열이 아닙니다.`,
+        data
+      );
       return DEFAULT_CATEGORIES;
     }
 
     console.log(`[getCategoryLargeList] 원본 데이터 개수: ${data.length}`);
-    
+
     // 중복 제거 및 정렬
     const uniqueCategories = Array.from(
       new Set(data.map((item) => item.category_large).filter(Boolean))
     ).sort();
 
-    console.log(`[getCategoryLargeList] 중복 제거 후 카테고리 개수: ${uniqueCategories.length}`, uniqueCategories);
+    console.log(
+      `[getCategoryLargeList] 중복 제거 후 카테고리 개수: ${uniqueCategories.length}`,
+      uniqueCategories
+    );
 
     // 카테고리가 5개 미만이면 기본 카테고리 사용 (데이터 부족으로 판단)
     if (uniqueCategories.length < 5) {
-      console.warn(`[getCategoryLargeList] 카테고리가 ${uniqueCategories.length}개만 있어 기본 카테고리 사용`);
+      console.warn(
+        `[getCategoryLargeList] 카테고리가 ${uniqueCategories.length}개만 있어 기본 카테고리 사용`
+      );
       return DEFAULT_CATEGORIES;
     }
 
@@ -261,7 +377,9 @@ function cleanData<T>(data: any[]): T[] {
 }
 
 // 시술 마스터 데이터 로드 (Supabase에서 가져오기 - 모든 데이터)
-export async function loadTreatments(): Promise<Treatment[]> {
+export async function loadTreatments(
+  language?: LanguageCode
+): Promise<Treatment[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
@@ -274,12 +392,18 @@ export async function loadTreatments(): Promise<Treatment[]> {
     console.log("🔄 전체 데이터 로드 시작...");
 
     // 페이지네이션으로 모든 데이터 가져오기
-    const treatmentTable = getTreatmentTableName();
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
+
     while (hasMore) {
-      const { data, error } = await client
-        .from(treatmentTable)
-        .select("*")
-        .range(from, from + pageSize - 1);
+      let query = client.from(treatmentTable).select("*");
+
+      // lang 필터 추가 (한국어가 아닌 경우만)
+      if (dbLang) {
+        query = query.eq("lang", dbLang);
+      }
+
+      const { data, error } = await query.range(from, from + pageSize - 1);
 
       if (error) {
         throw new Error(`Supabase 오류: ${error.message}`);
@@ -345,6 +469,7 @@ export async function loadTreatmentsPaginated(
     categorySmall?: string; // 소분류 필터 추가
     skipPlatformSort?: boolean; // 랭킹 페이지용: 플랫폼 정렬 건너뛰기
     randomOrder?: boolean; // 랜덤 정렬 옵션
+    language?: LanguageCode; // 언어 필터
   }
 ): Promise<{ data: Treatment[]; total: number; hasMore: boolean }> {
   try {
@@ -353,8 +478,14 @@ export async function loadTreatmentsPaginated(
       return { data: [], total: 0, hasMore: false };
     }
 
-    const treatmentTable = getTreatmentTableName();
+    const treatmentTable = getTreatmentTableName(filters?.language);
+    const dbLang = getCurrentLanguageForDb(filters?.language);
     let query = client.from(treatmentTable).select("*", { count: "exact" });
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
 
     // 필터 적용 (최소 2글자 이상일 때만 검색)
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
@@ -607,7 +738,8 @@ export async function loadTreatmentsPaginated(
 // 검색 자동완성을 위한 시술명/병원명 목록 가져오기 (category_small 기준)
 export async function getTreatmentAutocomplete(
   searchTerm: string,
-  limit: number = 10
+  limit: number = 10,
+  language?: LanguageCode
 ): Promise<{ treatmentNames: string[]; hospitalNames: string[] }> {
   try {
     if (!searchTerm || searchTerm.length < 1) {
@@ -620,12 +752,20 @@ export async function getTreatmentAutocomplete(
     }
 
     const term = searchTerm.toLowerCase();
-    const treatmentTable = getTreatmentTableName();
-    const { data, error } = await client
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
+
+    let query = client
       .from(treatmentTable)
       .select("category_small, hospital_name")
-      .or(`category_small.ilike.%${term}%,hospital_name.ilike.%${term}%`)
-      .limit(limit * 2);
+      .or(`category_small.ilike.%${term}%,hospital_name.ilike.%${term}%`);
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
+
+    const { data, error } = await query.limit(limit * 2);
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -813,12 +953,16 @@ export async function getRecoveryInfoByCategoryMid(
     // 부분 일치 제거: 모든 category_mid 값이 정확히 일치해야 함
 
     if (!matched) {
+      // 매칭 실패는 조용히 처리 (영어/일본어 카테고리명은 recovery 데이터에 없을 수 있음)
       if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
-        console.error(
-          `❌ [매칭 실패] category_mid: "${categoryMidTrimmed}" (정규화: "${normalize(
-            categoryMidTrimmed
-          )}")`
-        );
+        // 디버그 모드에서만 로그 출력 (콘솔 스팸 방지)
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `⚠️ [매칭 실패] category_mid: "${categoryMidTrimmed}" (정규화: "${normalize(
+              categoryMidTrimmed
+            )}") - recovery 데이터에 해당 카테고리가 없을 수 있습니다.`
+          );
+        }
       }
 
       // "V라인"이 포함된 모든 항목 찾기
@@ -975,7 +1119,7 @@ export async function getRecoveryInfoByCategoryMid(
   }
 }
 
-// 병원 마스터 데이터 로드
+// 병원 마스터 데이터 로드 (레거시 - v_hospital_i18n 사용 권장)
 export async function loadHospitalMaster(): Promise<HospitalMaster[]> {
   try {
     const client = getSupabaseOrNull();
@@ -1000,20 +1144,112 @@ export async function loadHospitalMaster(): Promise<HospitalMaster[]> {
   }
 }
 
+// 병원 데이터 조회 (v_hospital_i18n 뷰 사용) - 백엔드 가이드 준수
+// ✅ 반드시 lang 필터 적용 (중복 방지)
+// ✅ 번역이 없으면 KR 원본으로 fallback
+export async function getHospitals(
+  lang: LanguageCode,
+  filters?: {
+    searchTerm?: string;
+    category?: string;
+    platform?: string;
+    hospitalIdRd?: number;
+    limit?: number;
+    offset?: number;
+    orderBy?: string;
+    ascending?: boolean;
+  }
+): Promise<HospitalI18nRow[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return [];
+
+    // lang 필터 필수 적용 (백엔드 가이드)
+    const dbLang = getHospitalLanguageCode(lang);
+
+    let query = client
+      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
+      .select("*")
+      .eq("lang", dbLang); // ✅ 필수: lang 필터
+
+    // 필터 적용
+    if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
+      const term = filters.searchTerm.toLowerCase().trim();
+      // 번역 필드 또는 KR 원본 필드로 검색
+      query = query.or(
+        `hospital_name_i18n.ilike.%${term}%,hospital_name_kr.ilike.%${term}%`
+      );
+    }
+
+    if (filters?.platform) {
+      query = query.eq("platform", filters.platform);
+    }
+
+    if (filters?.hospitalIdRd) {
+      query = query.eq("hospital_id_rd", filters.hospitalIdRd);
+    }
+
+    // 정렬
+    if (filters?.orderBy) {
+      query = query.order(filters.orderBy, {
+        ascending: filters.ascending ?? false,
+      });
+    } else {
+      // 기본 정렬: rating 내림차순
+      query = query.order("hospital_rating", { ascending: false });
+    }
+
+    // 페이지네이션
+    if (filters?.limit) {
+      query = query.limit(filters.limit);
+      if (filters?.offset) {
+        query = query.range(filters.offset, filters.offset + filters.limit - 1);
+      }
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+
+    // fallback 로직 적용 (번역이 없으면 KR 원본 사용)
+    const processedData = applyHospitalFallback(data);
+
+    return cleanData<HospitalI18nRow>(processedData);
+  } catch (error) {
+    console.error("병원 데이터 로드 실패:", error);
+    throw error;
+  }
+}
+
 // ID로 단일 시술 데이터 로드 (PDP 페이지용)
-// v_treatment_pdp 뷰 테이블 사용 (JOIN된 모든 데이터 포함)
+// 한국어: treatment_master, 다른 언어: v_treatment_i18n 사용
 export async function loadTreatmentById(
-  treatmentId: number
+  treatmentId: number,
+  language?: LanguageCode
 ): Promise<Treatment | null> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return null;
 
-    const { data, error } = await client
-      .from(TABLE_NAMES.TREATMENT_PDP_VIEW)
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
+    let query = client
+      .from(treatmentTable)
       .select("*")
-      .eq("treatment_id", treatmentId)
-      .single();
+      .eq("treatment_id", treatmentId);
+
+    // lang 필터 추가 (한국어가 아닌 경우만, v_treatment_i18n에만 lang 컬럼이 있음)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -1033,17 +1269,24 @@ export async function loadTreatmentById(
 // 같은 시술명의 다른 옵션들 로드 (PDP 페이지용)
 export async function loadRelatedTreatments(
   treatmentName: string,
-  excludeId?: number
+  excludeId?: number,
+  language?: LanguageCode
 ): Promise<Treatment[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const treatmentTable = getTreatmentTableName();
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
     let query = client
       .from(treatmentTable)
       .select("*")
       .eq("treatment_name", treatmentName);
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
 
     if (excludeId) {
       query = query.neq("treatment_id", excludeId);
@@ -1069,17 +1312,24 @@ export async function loadRelatedTreatments(
 // 같은 병원의 다른 시술들 로드 (PDP 페이지용) - hospital_name 기반 (레거시)
 export async function loadHospitalTreatments(
   hospitalName: string,
-  excludeId?: number
+  excludeId?: number,
+  language?: LanguageCode
 ): Promise<Treatment[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const treatmentTable = getTreatmentTableName();
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
     let query = client
       .from(treatmentTable)
       .select("*")
       .eq("hospital_name", hospitalName);
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
 
     if (excludeId) {
       query = query.neq("treatment_id", excludeId);
@@ -1102,20 +1352,27 @@ export async function loadHospitalTreatments(
   }
 }
 
-// 병원 단건 조회 (v_hospital_pdp 뷰 사용) - (platform, hospital_id_rd) 기준
+// 병원 단건 조회 (v_hospital_i18n 뷰 사용) - (platform, hospital_id_rd) 기준
+// 백엔드 가이드: (platform, hospital_id_rd) 조합으로 병원 식별
 export async function loadHospitalByKey(
   platform: string,
-  hospitalIdRd: number
-): Promise<HospitalPdp | null> {
+  hospitalIdRd: number,
+  language?: LanguageCode
+): Promise<HospitalI18nRow | null> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return null;
 
+    // 언어 필터 필수 적용 (백엔드 가이드)
+    const lang = language || "KR";
+    const dbLang = getHospitalLanguageCode(lang);
+
     const { data, error } = await client
-      .from(TABLE_NAMES.HOSPITAL_PDP_VIEW)
+      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
       .select("*")
       .eq("platform", platform)
       .eq("hospital_id_rd", hospitalIdRd)
+      .eq("lang", dbLang) // ✅ 필수: lang 필터
       .maybeSingle();
 
     if (error) {
@@ -1126,26 +1383,34 @@ export async function loadHospitalByKey(
       return null;
     }
 
-    return cleanData<HospitalPdp>([data])[0];
+    // fallback 로직 적용
+    const processedData = applyHospitalFallback([data]);
+    return cleanData<HospitalI18nRow>(processedData)[0];
   } catch (error) {
     console.error("병원 데이터 로드 실패:", error);
     return null;
   }
 }
 
-// 병원 단건 조회 (hospital_id_rd만으로) - platform 자동 감지
+// 병원 단건 조회 (hospital_id_rd만으로) - platform 자동 감지 (v_hospital_i18n 뷰 사용)
 export async function loadHospitalByIdRd(
-  hospitalIdRd: number
-): Promise<HospitalPdp | null> {
+  hospitalIdRd: number,
+  language?: LanguageCode
+): Promise<HospitalI18nRow | null> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return null;
 
+    // 언어 필터 필수 적용 (백엔드 가이드)
+    const lang = language || "KR";
+    const dbLang = getHospitalLanguageCode(lang);
+
     // hospital_id_rd로 조회 (여러 platform 결과 중 첫 번째 사용)
     const { data, error } = await client
-      .from(TABLE_NAMES.HOSPITAL_PDP_VIEW)
+      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
       .select("*")
       .eq("hospital_id_rd", hospitalIdRd)
+      .eq("lang", dbLang) // ✅ 필수: lang 필터
       .limit(1)
       .maybeSingle();
 
@@ -1157,7 +1422,9 @@ export async function loadHospitalByIdRd(
       return null;
     }
 
-    return cleanData<HospitalPdp>([data])[0];
+    // fallback 로직 적용
+    const processedData = applyHospitalFallback([data]);
+    return cleanData<HospitalI18nRow>(processedData)[0];
   } catch (error) {
     console.error("병원 데이터 로드 실패:", error);
     return null;
@@ -1167,18 +1434,27 @@ export async function loadHospitalByIdRd(
 // 병원 시술 목록 조회 (treatment_master) - (platform, hospital_id_rd) 기준 (레거시)
 export async function loadTreatmentsByKey(
   platform: string,
-  hospitalIdRd: number
+  hospitalIdRd: number,
+  language?: LanguageCode
 ): Promise<Treatment[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const treatmentTable = getTreatmentTableName();
-    const { data, error } = await client
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
+    let query = client
       .from(treatmentTable)
       .select("*")
       .eq("platform", platform)
       .eq("hospital_id_rd", hospitalIdRd);
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -1197,17 +1473,26 @@ export async function loadTreatmentsByKey(
 
 // 병원 시술 목록 조회 (treatment_master) - hospital_id_rd만으로 조회
 export async function loadTreatmentsByHospitalIdRd(
-  hospitalIdRd: number
+  hospitalIdRd: number,
+  language?: LanguageCode
 ): Promise<Treatment[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const treatmentTable = getTreatmentTableName();
-    const { data, error } = await client
+    const treatmentTable = getTreatmentTableName(language);
+    const dbLang = getCurrentLanguageForDb(language);
+    let query = client
       .from(treatmentTable)
       .select("*")
       .eq("hospital_id_rd", hospitalIdRd);
+
+    // lang 필터 추가 (한국어가 아닌 경우만)
+    if (dbLang) {
+      query = query.eq("lang", dbLang);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -1224,7 +1509,7 @@ export async function loadTreatmentsByHospitalIdRd(
   }
 }
 
-// 병원 데이터 페이지네이션 로드
+// 병원 데이터 페이지네이션 로드 (v_hospital_i18n 뷰 사용)
 export async function loadHospitalsPaginated(
   page: number = 1,
   pageSize: number = 50,
@@ -1232,22 +1517,31 @@ export async function loadHospitalsPaginated(
     searchTerm?: string;
     category?: string;
     randomOrder?: boolean; // 랜덤 정렬 옵션
+    language?: LanguageCode; // 언어 필터 (필수)
   }
-): Promise<{ data: HospitalMaster[]; total: number; hasMore: boolean }> {
+): Promise<{ data: HospitalI18nRow[]; total: number; hasMore: boolean }> {
   try {
     const client = getSupabaseOrNull();
     if (!client) {
       return { data: [], total: 0, hasMore: false };
     }
 
+    // 언어 필터 필수 적용 (백엔드 가이드)
+    const lang = filters?.language || "KR";
+    const dbLang = getHospitalLanguageCode(lang);
+
     let query = client
-      .from(TABLE_NAMES.HOSPITAL_MASTER)
-      .select("*", { count: "exact" });
+      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
+      .select("*", { count: "exact" })
+      .eq("lang", dbLang); // ✅ 필수: lang 필터
 
     // 필터 적용 (최소 2글자 이상일 때만 검색)
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
       const term = filters.searchTerm.toLowerCase().trim();
-      query = query.ilike("hospital_name", `%${term}%`);
+      // 번역 필드 또는 KR 원본 필드로 검색
+      query = query.or(
+        `hospital_name_i18n.ilike.%${term}%,hospital_name_kr.ilike.%${term}%`
+      );
     } else if (filters?.searchTerm && filters.searchTerm.trim().length === 1) {
       // 1글자일 때는 검색하지 않음 (빈 결과 반환)
       return { data: [], total: 0, hasMore: false };
@@ -1273,7 +1567,10 @@ export async function loadHospitalsPaginated(
         return { data: [], total: 0, hasMore: false };
       }
 
-      const cleanedData = cleanData<HospitalMaster>(data);
+      // fallback 로직 적용
+      const processedData = applyHospitalFallback(data);
+      const cleanedData = cleanData<HospitalI18nRow>(processedData);
+
       // 전체 데이터 랜덤 정렬 (클라이언트에서 실행되므로 서버 메모리 사용 없음)
       const shuffledData = shuffleArray(cleanedData);
 
@@ -1290,6 +1587,9 @@ export async function loadHospitalsPaginated(
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
+      // 기본 정렬: rating 내림차순
+      query = query.order("hospital_rating", { ascending: false });
+
       const result = await query.range(from, to);
       data = result.data;
       error = result.error;
@@ -1303,7 +1603,9 @@ export async function loadHospitalsPaginated(
         return { data: [], total: 0, hasMore: false };
       }
 
-      const cleanedData = cleanData<HospitalMaster>(data);
+      // fallback 로직 적용
+      const processedData = applyHospitalFallback(data);
+      const cleanedData = cleanData<HospitalI18nRow>(processedData);
       // 플랫폼 우선순위 정렬
       const sortedData = sortHospitalsByPlatform(cleanedData);
 
@@ -1318,10 +1620,40 @@ export async function loadHospitalsPaginated(
   }
 }
 
-// 병원명 자동완성
+// 병원 데이터 fallback 로직 헬퍼 (번역이 없으면 KR 원본 사용)
+function applyHospitalFallback(data: any[]): any[] {
+  return data.map((row: any) => {
+    const processed: any = { ...row };
+
+    // 번역 필드가 없거나 빈 값이면 KR 원본으로 fallback
+    if (
+      !processed.hospital_name_i18n ||
+      processed.hospital_name_i18n.trim() === ""
+    ) {
+      processed.hospital_name_i18n = processed.hospital_name_kr || null;
+    }
+    if (
+      !processed.hospital_address_i18n ||
+      processed.hospital_address_i18n.trim() === ""
+    ) {
+      processed.hospital_address_i18n = processed.hospital_address_kr || null;
+    }
+    if (
+      !processed.hospital_intro_i18n ||
+      processed.hospital_intro_i18n.trim() === ""
+    ) {
+      processed.hospital_intro_i18n = processed.hospital_intro_kr || null;
+    }
+
+    return processed;
+  });
+}
+
+// 병원명 자동완성 (v_hospital_i18n 뷰 사용)
 export async function getHospitalAutocomplete(
   searchTerm: string,
-  limit: number = 10
+  limit: number = 10,
+  language?: LanguageCode
 ): Promise<string[]> {
   try {
     if (!searchTerm || searchTerm.length < 1) {
@@ -1331,11 +1663,16 @@ export async function getHospitalAutocomplete(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
+    // 언어 필터 필수 적용 (백엔드 가이드)
+    const lang = language || "KR";
+    const dbLang = getHospitalLanguageCode(lang);
+
     const term = searchTerm.toLowerCase();
     const { data, error } = await client
-      .from(TABLE_NAMES.HOSPITAL_MASTER)
-      .select("hospital_name")
-      .ilike("hospital_name", `%${term}%`)
+      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
+      .select("hospital_name_i18n,hospital_name_kr")
+      .eq("lang", dbLang) // ✅ 필수: lang 필터
+      .or(`hospital_name_i18n.ilike.%${term}%,hospital_name_kr.ilike.%${term}%`)
       .limit(limit);
 
     if (error) {
@@ -1346,13 +1683,15 @@ export async function getHospitalAutocomplete(
       return [];
     }
 
-    return Array.from(
-      new Set(
-        data
-          .map((h: { hospital_name: string | null }) => h.hospital_name)
-          .filter((name: string | null): name is string => !!name)
-      )
-    );
+    // fallback 적용: 번역이 없으면 KR 원본 사용
+    const names = data
+      .map((h: any) => {
+        const name = h.hospital_name_i18n || h.hospital_name_kr;
+        return name && name.trim() !== "" ? name.trim() : null;
+      })
+      .filter((name: string | null): name is string => !!name);
+
+    return Array.from(new Set(names));
   } catch (error) {
     console.error("병원 자동완성 데이터 로드 실패:", error);
     return [];
@@ -2554,10 +2893,10 @@ export function sortTreatmentsByPlatform(treatments: Treatment[]): Treatment[] {
   });
 }
 
-// 병원 데이터도 플랫폼 우선순위에 따라 정렬
-export function sortHospitalsByPlatform(
-  hospitals: HospitalMaster[]
-): HospitalMaster[] {
+// 병원 데이터도 플랫폼 우선순위에 따라 정렬 (HospitalMaster 또는 HospitalI18nRow 지원)
+export function sortHospitalsByPlatform<T extends { platform?: string | null }>(
+  hospitals: T[]
+): T[] {
   return [...hospitals].sort((a, b) => {
     const platformA = (a.platform || "").toLowerCase();
     const platformB = (b.platform || "").toLowerCase();
@@ -2786,9 +3125,7 @@ export async function saveConcernPost(
       concern_category: data.concern_category,
       content: data.content,
       image_paths:
-        data.image_paths && data.image_paths.length > 0
-          ? data.image_paths
-          : [],
+        data.image_paths && data.image_paths.length > 0 ? data.image_paths : [],
     };
 
     const { data: insertedData, error } = await supabase
@@ -2866,7 +3203,8 @@ export async function updateProcedureReview(
 
     // 이미지가 제공된 경우에만 업데이트
     if (data.images !== undefined) {
-      updateData.images = data.images && data.images.length > 0 ? data.images : null;
+      updateData.images =
+        data.images && data.images.length > 0 ? data.images : null;
     }
 
     const { error } = await supabase
@@ -2945,7 +3283,8 @@ export async function updateHospitalReview(
 
     // 이미지가 제공된 경우에만 업데이트
     if (data.images !== undefined) {
-      updateData.images = data.images && data.images.length > 0 ? data.images : null;
+      updateData.images =
+        data.images && data.images.length > 0 ? data.images : null;
     }
 
     const { error } = await supabase
@@ -3015,7 +3354,8 @@ export async function updateConcernPost(
 
     // 이미지가 제공된 경우에만 업데이트
     if (data.image_paths !== undefined) {
-      updateData.image_paths = data.image_paths && data.image_paths.length > 0 ? data.image_paths : [];
+      updateData.image_paths =
+        data.image_paths && data.image_paths.length > 0 ? data.image_paths : [];
     }
 
     const { error } = await supabase
@@ -3410,7 +3750,7 @@ export async function loadConcernPosts(
         if (!post.id && post.uuid) {
           post.id = post.uuid;
         }
-        
+
         // 이미지 URL 처리 (Storage 경로를 getPublicUrl로 변환)
         if (post.image_paths && Array.isArray(post.image_paths)) {
           post.image_paths = post.image_paths.map((imgUrl: string) => {
@@ -4959,12 +5299,124 @@ export interface SmallCategoryRanking {
   treatments: Treatment[]; // 이미 정렬된 시술 목록
 }
 
-// 중분류 랭킹 조회 (RPC)
+// 한국어용: treatment_master에서 직접 중분류별 랭킹 계산
+async function getMidCategoryRankingsFromTreatmentMaster(
+  client: any,
+  p_category_large: string | null = null,
+  p_limit_per_category: number = 20
+): Promise<{
+  success: boolean;
+  data?: MidCategoryRanking[];
+  error?: string;
+}> {
+  try {
+    // treatment_master에서 데이터 조회
+    let query = client.from(TABLE_NAMES.TREATMENT_MASTER).select("*");
+
+    // 대분류 필터 적용
+    if (p_category_large) {
+      query = query.ilike("category_large", `%${p_category_large}%`);
+    }
+
+    const { data: treatments, error } = await query;
+
+    if (error) {
+      console.error("treatment_master 조회 실패:", error);
+      return {
+        success: false,
+        error: error.message || "데이터 조회에 실패했습니다.",
+      };
+    }
+
+    if (!treatments || treatments.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    // 중분류별로 그룹화
+    const categoryMap = new Map<string, Treatment[]>();
+    treatments.forEach((treatment: Treatment) => {
+      const categoryMid = treatment.category_mid;
+      if (categoryMid) {
+        if (!categoryMap.has(categoryMid)) {
+          categoryMap.set(categoryMid, []);
+        }
+        categoryMap.get(categoryMid)!.push(treatment);
+      }
+    });
+
+    // 각 중분류별로 랭킹 계산
+    const rankings: MidCategoryRanking[] = [];
+
+    for (const [categoryMid, categoryTreatments] of categoryMap.entries()) {
+      // 평점 기준으로 정렬
+      const sorted = categoryTreatments
+        .filter((t) => t.rating && t.review_count && t.review_count > 0)
+        .sort((a, b) => {
+          const scoreA = (a.rating || 0) * (a.review_count || 0);
+          const scoreB = (b.rating || 0) * (b.review_count || 0);
+          return scoreB - scoreA;
+        })
+        .slice(0, p_limit_per_category);
+
+      if (sorted.length > 0) {
+        const avgRating =
+          sorted.reduce((sum, t) => sum + (t.rating || 0), 0) / sorted.length;
+        const totalReviews = sorted.reduce(
+          (sum, t) => sum + (t.review_count || 0),
+          0
+        );
+
+        rankings.push({
+          category_mid: categoryMid,
+          category_rank: 0, // 나중에 정렬 후 설정
+          category_score: avgRating * totalReviews, // 간단한 점수 계산
+          average_rating: avgRating,
+          total_reviews: totalReviews,
+          treatment_count: sorted.length,
+          treatments: sorted.map((t, index) => ({
+            treatment_id: t.treatment_id,
+            treatment_name: t.treatment_name,
+            hospital_id: t.hospital_id,
+            hospital_name: t.hospital_name,
+            category_large: t.category_large,
+            category_mid: t.category_mid,
+            category_small: t.category_small,
+            rating: t.rating,
+            review_count: t.review_count,
+            selling_price: t.selling_price,
+            dis_rate: t.dis_rate,
+            vat_info: t.vat_info,
+            main_image_url: t.main_image_url,
+            card_score: (t.rating || 0) * (t.review_count || 0),
+            treatment_rank: index + 1,
+          })),
+        });
+      }
+    }
+
+    // category_score 기준으로 정렬
+    rankings.sort((a, b) => (b.category_score || 0) - (a.category_score || 0));
+    rankings.forEach((r, index) => {
+      r.category_rank = index + 1;
+    });
+
+    return { success: true, data: rankings };
+  } catch (error: any) {
+    console.error("중분류 랭킹 계산 실패:", error);
+    return {
+      success: false,
+      error: error?.message || "랭킹 계산에 실패했습니다.",
+    };
+  }
+}
+
+// 중분류 랭킹 조회 (RPC 또는 treatment_master 직접 조회)
 export async function getMidCategoryRankings(
   p_category_large: string | null = null,
   p_m: number = 20, // 베이지안 평균 신뢰 임계값
   p_dedupe_limit_per_name: number = 2, // 같은 시술명 최대 노출 개수
-  p_limit_per_category: number = 20 // 각 중분류당 상위 N개 카드만 노출
+  p_limit_per_category: number = 20, // 각 중분류당 상위 N개 카드만 노출
+  language?: LanguageCode // 언어 파라미터 추가
 ): Promise<{
   success: boolean;
   data?: MidCategoryRanking[];
@@ -4979,28 +5431,98 @@ export async function getMidCategoryRankings(
       };
     }
 
-    const { data, error } = await client.rpc("rpc_mid_category_rankings", {
+    // 언어 코드를 DB 형식으로 변환 (KR -> null, EN -> 'en', JP -> 'ja', CN -> 'zh-CN')
+    const dbLang = getCurrentLanguageForDb(language);
+
+    // RPC 함수 파라미터 (백엔드에서 p_lang 파라미터 지원 완료)
+    const rpcParams: any = {
       p_category_large: p_category_large,
       p_m: p_m,
       p_dedupe_limit_per_name: p_dedupe_limit_per_name,
       p_limit_per_category: p_limit_per_category,
+    };
+
+    // p_lang 파라미터 전달
+    // 한국어: p_lang = null (또는 생략 가능)
+    // 다른 언어: p_lang = 'en' | 'ja' | 'zh-CN'
+    if (dbLang !== null) {
+      rpcParams.p_lang = dbLang;
+    } else {
+      // 한국어인 경우 명시적으로 null 전달 (또는 생략 가능)
+      rpcParams.p_lang = null;
+    }
+
+    // RPC 호출 전 파라미터 로깅 (디버깅용)
+    console.log("🔍 [RPC 호출 파라미터]:", {
+      function: "rpc_mid_category_rankings",
+      params: rpcParams,
+      language: language,
+      dbLang: dbLang,
     });
 
+    const { data, error } = await client.rpc(
+      "rpc_mid_category_rankings",
+      rpcParams
+    );
+
     if (error) {
-      // 에러 객체 상세 로깅
+      // 에러 객체 상세 로깅 (모든 속성 확인)
+      let errorStringified = "직렬화 실패";
+      try {
+        errorStringified = JSON.stringify(
+          error,
+          Object.getOwnPropertyNames(error),
+          2
+        );
+      } catch (e) {
+        errorStringified = `직렬화 오류: ${e}`;
+      }
+
       const errorDetails = {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        error: error,
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        // 에러 객체의 모든 속성 확인
+        errorKeys: Object.keys(error || {}),
+        errorStringified: errorStringified,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorIsNull: error === null,
+        errorIsUndefined: error === undefined,
+        errorTruthy: !!error,
+        // 에러 객체의 모든 속성 직접 확인
+        allErrorProperties: error ? Object.getOwnPropertyNames(error) : [],
       };
-      console.error("중분류 랭킹 조회 실패:", errorDetails);
+      console.error("❌ 중분류 랭킹 조회 실패:", errorDetails);
+      console.error("❌ 에러 객체 전체:", error);
+      console.error("❌ 에러 객체 타입:", typeof error);
+      console.error("❌ 에러 객체 키:", Object.keys(error || {}));
+
+      // 에러 객체가 비어있거나 속성이 없는 경우
+      if (!error || Object.keys(error).length === 0) {
+        console.warn(
+          "⚠️ 에러 객체가 비어있습니다. RPC 함수가 존재하지 않거나 파라미터가 잘못되었을 수 있습니다."
+        );
+      }
 
       // RPC 함수가 아직 준비되지 않은 경우를 위한 상세 에러 로그
       if (error.message?.includes("function") || error.code === "42883") {
         console.warn(
           "⚠️ RPC 함수가 아직 생성되지 않았을 수 있습니다. 백엔드 담당자에게 확인하세요."
+        );
+      }
+
+      // 한국어인 경우: v_treatment_i18n에는 한국어 데이터가 없어서 에러가 발생할 수 있음
+      // 이 경우 treatment_master에서 직접 조회하여 랭킹 계산 (fallback)
+      if (dbLang === null) {
+        console.warn(
+          "⚠️ 한국어 랭킹 RPC 실패 - treatment_master에서 직접 조회 (fallback)"
+        );
+        return await getMidCategoryRankingsFromTreatmentMaster(
+          client,
+          p_category_large,
+          p_limit_per_category
         );
       }
 
@@ -5022,9 +5544,13 @@ export async function getMidCategoryRankings(
         hasTreatments: "treatments" in data[0],
         treatmentsType: typeof data[0].treatments,
         treatmentsIsArray: Array.isArray(data[0].treatments),
+        hasLang: "lang" in data[0],
         sample: data[0],
       });
     }
+
+    // ✅ 백엔드에서 p_lang 파라미터로 언어별 필터링 완료
+    // 프론트엔드에서 lang 필터링 불필요 (백엔드에서 이미 필터링된 데이터 반환)
 
     // 데이터 정리 (NaN 처리)
     const cleanedData = cleanData<MidCategoryRanking>(data);
@@ -5073,7 +5599,8 @@ export async function getSmallCategoryRankings(
   p_category_mid: string,
   p_m: number = 20, // 베이지안 평균 신뢰 임계값
   p_dedupe_limit_per_name: number = 2, // 같은 시술명 최대 노출 개수
-  p_limit_per_category: number = 20 // 각 소분류당 상위 N개 카드만 노출
+  p_limit_per_category: number = 20, // 각 소분류당 상위 N개 카드만 노출
+  language?: LanguageCode // 언어 파라미터 추가
 ): Promise<{
   success: boolean;
   data?: SmallCategoryRanking[];
@@ -5092,12 +5619,31 @@ export async function getSmallCategoryRankings(
       return { success: false, error: "중분류가 필요합니다." };
     }
 
-    const { data, error } = await client.rpc("rpc_small_category_rankings", {
+    // 언어 코드를 DB 형식으로 변환 (KR -> null, EN -> 'en', JP -> 'ja', CN -> 'zh-CN')
+    const dbLang = getCurrentLanguageForDb(language);
+
+    // RPC 함수 파라미터 (백엔드에서 p_lang 파라미터 지원 완료)
+    const rpcParams: any = {
       p_category_mid: p_category_mid,
       p_m: p_m,
       p_dedupe_limit_per_name: p_dedupe_limit_per_name,
       p_limit_per_category: p_limit_per_category,
-    });
+    };
+
+    // p_lang 파라미터 전달
+    // 한국어: p_lang = null (또는 생략 가능)
+    // 다른 언어: p_lang = 'en' | 'ja' | 'zh-CN'
+    if (dbLang !== null) {
+      rpcParams.p_lang = dbLang;
+    } else {
+      // 한국어인 경우 명시적으로 null 전달 (또는 생략 가능)
+      rpcParams.p_lang = null;
+    }
+
+    const { data, error } = await client.rpc(
+      "rpc_small_category_rankings",
+      rpcParams
+    );
 
     if (error) {
       console.error("소분류 랭킹 조회 실패:", error);
@@ -5107,6 +5653,13 @@ export async function getSmallCategoryRankings(
           "⚠️ RPC 함수가 아직 생성되지 않았을 수 있습니다. 백엔드 담당자에게 확인하세요."
         );
       }
+
+      // 한국어인 경우: 에러 발생 시 fallback 처리 (필요시)
+      // 백엔드에서 p_lang=null일 때 treatment_master를 사용하므로 일반적으로 에러 발생하지 않음
+      if (dbLang === null) {
+        console.warn("⚠️ 한국어 소분류 랭킹 RPC 실패");
+      }
+
       return { success: false, error: error.message };
     }
 
@@ -5121,9 +5674,13 @@ export async function getSmallCategoryRankings(
         hasTreatments: "treatments" in data[0],
         treatmentsType: typeof data[0].treatments,
         treatmentsIsArray: Array.isArray(data[0].treatments),
+        hasLang: "lang" in data[0],
         sample: data[0],
       });
     }
+
+    // ✅ 백엔드에서 p_lang 파라미터로 언어별 필터링 완료
+    // 프론트엔드에서 lang 필터링 불필요 (백엔드에서 이미 필터링된 데이터 반환)
 
     // 데이터 정리 (NaN 처리)
     const cleanedData = cleanData<SmallCategoryRanking>(data);
@@ -5539,7 +6096,7 @@ export async function deleteSavedSchedule(
     const {
       data: { user: authUser },
     } = await client.auth.getUser();
-    
+
     if (!authUser || authUser.id !== userId) {
       console.error("인증 불일치:", {
         userId,

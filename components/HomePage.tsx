@@ -18,25 +18,34 @@ import CountryPainPointSection from "./CountryPainPointSection";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import InformationalContentSection from "./InformationalContentSection";
 import type { TravelScheduleData } from "./TravelScheduleForm";
+import { getMainCategories } from "./CategoryRankingPage";
 
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // 실제 데이터의 대분류 카테고리 10개
-  const MAIN_CATEGORIES = [
-    { id: "eyes", name: "눈성형", icon: "👀" },
-    { id: "lifting", name: "리프팅", icon: "✨" },
-    { id: "botox", name: "보톡스", icon: "💉" },
-    { id: "facial", name: "안면윤곽/양악", icon: "😊" },
-    { id: "hair-removal", name: "제모", icon: "🧴" },
-    { id: "liposuction", name: "지방성형", icon: "💪" },
-    { id: "nose", name: "코성형", icon: "👃" },
-    { id: "skin", name: "피부", icon: "🌟" },
-    { id: "filler", name: "필러", icon: "💊" },
-    { id: "breast", name: "가슴성형", icon: "💕" },
-  ];
+  // 언어 변경 시 대분류 카테고리 번역 업데이트 (랭킹 페이지와 동일)
+  const MAIN_CATEGORIES = useMemo(() => {
+    const categories = getMainCategories(t);
+    // 아이콘 추가
+    const iconMap: Record<string, string> = {
+      "눈성형": "👀",
+      "리프팅": "✨",
+      "보톡스": "💉",
+      "안면윤곽/양악": "😊",
+      "제모": "🧴",
+      "지방성형": "💪",
+      "코성형": "👃",
+      "피부": "🌟",
+      "필러": "💊",
+      "가슴성형": "💕",
+    };
+    return categories.map((cat) => ({
+      ...cat,
+      icon: cat.id ? iconMap[cat.id] || "📋" : "📋",
+    }));
+  }, [t, language]);
   const [schedule, setSchedule] = useState<{
     start: string | null;
     end: string | null;
@@ -132,12 +141,10 @@ export default function HomePage() {
   const scheduleData: TravelScheduleData | null = useMemo(() => {
     if (!schedule.start || !schedule.end) return null;
 
-    // selectedCategoryId가 null이면 "전체"로 설정
-    const categoryLabel = selectedCategoryId
-      ? MAIN_CATEGORIES.find((c) => c.id === selectedCategoryId)
-        ? MAIN_CATEGORIES.find((c) => c.id === selectedCategoryId)!.name
-        : "전체"
-      : "전체";
+      // selectedCategoryId가 null이면 "전체"로 설정
+      const categoryLabel = selectedCategoryId
+        ? MAIN_CATEGORIES.find((c) => c.id === selectedCategoryId)?.name || t("category.all")
+        : t("category.all");
 
     return {
       travelPeriod: { start: schedule.start, end: schedule.end },

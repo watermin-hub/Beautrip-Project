@@ -191,25 +191,23 @@ export default function ExploreScrollPage() {
       )}
 
       {/* 리뷰 작성 CTA 섹션 (전체 시술과 전체 병원 사이) */}
-      {!hasWrittenReview && (
-        <div className="px-4 py-6 bg-white border-b border-gray-200">
-          <div className="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-primary-main/30 text-center">
-            <FiEdit3 className="text-primary-main text-2xl mx-auto mb-2" />
-            <p className="text-sm font-semibold text-gray-900 mb-1">
-              리뷰를 작성하면
-            </p>
-            <p className="text-xs text-gray-600 mb-3">
-              더 많은 시술 정보를 볼 수 있어요!
-            </p>
-            <button
-              onClick={() => router.push("/community/write")}
-              className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-            >
-              리뷰 작성하기
-            </button>
-          </div>
+      <div className="px-4 py-6 bg-white border-b border-gray-200">
+        <div className="p-4 bg-gray-50 rounded-xl border-2 border-dashed border-primary-main/30 text-center">
+          <FiEdit3 className="text-primary-main text-2xl mx-auto mb-2" />
+          <p className="text-sm font-semibold text-gray-900 mb-1">
+            {t("explore.reviewCTA.title")}
+          </p>
+          <p className="text-xs text-gray-600 mb-3">
+            {t("explore.reviewCTA.description")}
+          </p>
+          <button
+            onClick={() => router.push("/community/write")}
+            className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            {t("explore.reviewCTA.button")}
+          </button>
         </div>
-      )}
+      </div>
 
       {/* 전체 병원 섹션 */}
       <section ref={hospitalRef} id="hospital" className="scroll-mt-[112px]">

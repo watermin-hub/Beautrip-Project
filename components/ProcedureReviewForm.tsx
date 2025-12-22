@@ -11,6 +11,7 @@ import {
   getTreatmentAutocomplete,
   getTreatmentTableName,
   getCategoryLargeList,
+  getCurrentLanguageForDb,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
@@ -59,7 +60,9 @@ export default function ProcedureReviewForm({
   // 언어별 카테고리 목록 로드
   useEffect(() => {
     const loadCategories = async () => {
-      console.log(`[ProcedureReviewForm] 카테고리 로드 시작 - 언어: ${language}`);
+      console.log(
+        `[ProcedureReviewForm] 카테고리 로드 시작 - 언어: ${language}`
+      );
       const categoryList = await getCategoryLargeList(language);
       console.log(`[ProcedureReviewForm] 받은 카테고리 목록:`, categoryList);
       setCategories(categoryList);
@@ -92,8 +95,8 @@ export default function ProcedureReviewForm({
   useEffect(() => {
     // entry_source는 대부분 "mypage" 또는 "community"에서 진입
     // URL 경로를 확인하여 정확한 진입 경로 판단
-    const entrySource = window.location.pathname.includes("/mypage") 
-      ? "mypage" 
+    const entrySource = window.location.pathname.includes("/mypage")
+      ? "mypage"
       : "community";
     trackReviewStart(entrySource);
   }, []);
@@ -125,11 +128,17 @@ export default function ProcedureReviewForm({
         if (category) {
           // category_small 검색을 위해 직접 Supabase 쿼리 사용
           const treatmentTable = getTreatmentTableName();
+          const dbLang = getCurrentLanguageForDb(language);
           let query = supabase
             .from(treatmentTable)
             .select("category_small")
             .eq("category_large", category)
             .not("category_small", "is", null);
+
+          // lang 필터 추가 (한국어가 아닌 경우만)
+          if (dbLang) {
+            query = query.eq("lang", dbLang);
+          }
 
           const { data, error } = await query.limit(1000);
 
@@ -245,7 +254,7 @@ export default function ProcedureReviewForm({
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      alert("로그인 후에만 시술 후기를 작성할 수 있습니다.");
+      alert(t("form.loginRequiredProcedure"));
       return;
     }
 
@@ -253,19 +262,19 @@ export default function ProcedureReviewForm({
     // procedureName은 procedureSearchTerm에서 가져오거나 직접 입력된 값 사용
     const finalProcedureName = procedureName || procedureSearchTerm.trim();
     if (!category || !finalProcedureName || content.length < 10) {
-      alert("필수 항목을 모두 입력하고 글을 10자 이상 작성해주세요.");
+      alert(t("form.requiredFields"));
       return;
     }
 
     // 성별, 연령대 검증
     if (!gender || !ageGroup) {
-      alert("성별과 연령대를 선택해주세요.");
+      alert(t("form.selectGenderAge"));
       return;
     }
 
     // 만족도 검증
     if (procedureRating === 0 || hospitalRating === 0) {
-      alert("시술 만족도와 병원 만족도를 모두 선택해주세요.");
+      alert(t("form.selectSatisfaction"));
       return;
     }
 
@@ -283,7 +292,12 @@ export default function ProcedureReviewForm({
             imageUrls = await uploadReviewImages(imageFiles, editData.id);
           } catch (imageError: any) {
             console.error("이미지 업로드 실패:", imageError);
-            alert(`이미지 업로드에 실패했습니다: ${imageError.message}`);
+            alert(
+              t("form.imageUploadError").replace(
+                "{message}",
+                imageError.message
+              )
+            );
             return;
           }
         } else {
@@ -292,9 +306,11 @@ export default function ProcedureReviewForm({
         }
 
         // 기존 이미지와 새 이미지 합치기 (기존 이미지가 URL이고 새 이미지가 blob인 경우)
-        const existingImageUrls = editData.images?.filter((img: string) => 
-          img && (img.startsWith("http") || img.startsWith("/"))
-        ) || [];
+        const existingImageUrls =
+          editData.images?.filter(
+            (img: string) =>
+              img && (img.startsWith("http") || img.startsWith("/"))
+          ) || [];
         const finalImageUrls = imageUrls || existingImageUrls;
 
         const result = await updateProcedureReview(editData.id, {
@@ -313,11 +329,16 @@ export default function ProcedureReviewForm({
         });
 
         if (!result.success) {
-          alert(`시술후기 수정에 실패했습니다: ${result.error}`);
+          alert(
+            t("form.procedureReviewUpdateFailed").replace(
+              "{error}",
+              result.error || ""
+            )
+          );
           return;
         }
 
-        alert("시술후기가 성공적으로 수정되었습니다!");
+        alert(t("form.procedureReviewUpdateSuccess"));
         onSubmit();
       } else {
         // 작성 모드
@@ -338,7 +359,12 @@ export default function ProcedureReviewForm({
         });
 
         if (!result.success || !result.id) {
-          alert(`시술후기 작성에 실패했습니다: ${result.error}`);
+          alert(
+            t("form.procedureReviewWriteFailed").replace(
+              "{error}",
+              result.error || ""
+            )
+          );
           return;
         }
 
@@ -365,20 +391,30 @@ export default function ProcedureReviewForm({
             }
           } catch (imageError: any) {
             console.error("이미지 업로드 실패:", imageError);
-            alert(`이미지 업로드에 실패했습니다: ${imageError.message}`);
+            alert(
+              t("form.imageUploadError").replace(
+                "{message}",
+                imageError.message
+              )
+            );
             // 이미지 업로드 실패해도 후기는 저장됨
           }
         }
 
         // GTM 이벤트: review_submit (후기 저장 API 성공 응답 이후)
         trackReviewSubmit("treatment");
-        
-        alert("시술후기가 성공적으로 작성되었습니다!");
+
+        alert(t("form.procedureReviewWriteSuccess"));
         onSubmit();
       }
     } catch (error: any) {
       console.error("시술후기 저장 오류:", error);
-      alert(`시술후기 작성 중 오류가 발생했습니다: ${error.message}`);
+      alert(
+        t("form.procedureReviewWriteError").replace(
+          "{message}",
+          error.message || ""
+        )
+      );
     }
   };
 
@@ -661,7 +697,8 @@ export default function ProcedureReviewForm({
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main resize-none"
         />
         <p className="text-xs text-gray-500 mt-1">
-          {content.length}{t("form.minCharacters")}
+          {content.length}
+          {t("form.minCharacters")}
         </p>
       </div>
 
@@ -703,7 +740,9 @@ export default function ProcedureReviewForm({
               />
               <div className="text-center">
                 <FiCamera className="text-2xl text-gray-400 mx-auto mb-2" />
-                <span className="text-xs text-gray-500">{t("form.addPhoto")}</span>
+                <span className="text-xs text-gray-500">
+                  {t("form.addPhoto")}
+                </span>
               </div>
             </label>
           )}

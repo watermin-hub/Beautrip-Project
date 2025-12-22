@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "insert-dummy": "node scripts/insertDummyData.js",
-    "generate-sql": "node scripts/generateSQL.js"
+    "generate-sql": "node scripts/generateSQL.js",
+    "check-translations": "node scripts/findMissingTranslations.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.1",

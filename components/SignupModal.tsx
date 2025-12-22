@@ -194,13 +194,11 @@ export default function SignupModal({
           onSignupSuccess();
         }
 
-        alert("회원가입 및 로그인이 완료되었습니다!");
+        alert(t("auth.signupSuccess"));
         onClose();
       } else {
         // 세션이 없는 경우 (이메일 인증 필요)
-        alert(
-          "회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요."
-        );
+        alert(t("auth.signupEmailVerification"));
         if (onSignupSuccess) {
           onSignupSuccess();
         } else {

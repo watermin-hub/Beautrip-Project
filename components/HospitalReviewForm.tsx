@@ -11,6 +11,7 @@ import {
   getTreatmentAutocomplete,
   getTreatmentTableName,
   getCategoryLargeList,
+  getCurrentLanguageForDb,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
@@ -114,11 +115,17 @@ export default function HospitalReviewForm({
         if (categoryLarge) {
           // category_small 검색을 위해 직접 Supabase 쿼리 사용
           const treatmentTable = getTreatmentTableName();
+          const dbLang = getCurrentLanguageForDb(language);
           let query = supabase
             .from(treatmentTable)
             .select("category_small")
             .eq("category_large", categoryLarge)
             .not("category_small", "is", null);
+          
+          // lang 필터 추가 (한국어가 아닌 경우만)
+          if (dbLang) {
+            query = query.eq("lang", dbLang);
+          }
 
           const { data, error } = await query.limit(1000);
 

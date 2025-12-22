@@ -16,16 +16,16 @@ import {
 import {
   loadHospitalsPaginated,
   getHospitalAutocomplete,
-  HospitalMaster,
+  HospitalI18nRow,
   getThumbnailUrl,
 } from "@/lib/api/beautripApi";
 import AutocompleteInput from "./AutocompleteInput";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HospitalInfoPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
-  const [hospitals, setHospitals] = useState<HospitalMaster[]>([]);
+  const [hospitals, setHospitals] = useState<HospitalI18nRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function HospitalInfoPage() {
         return;
       }
 
-      const suggestions = await getHospitalAutocomplete(searchTerm, 10);
+      const suggestions = await getHospitalAutocomplete(searchTerm, 10, language);
       setAutocompleteSuggestions(suggestions);
     };
 
@@ -95,6 +95,7 @@ export default function HospitalInfoPage() {
         searchTerm: searchTerm || undefined,
         category: filterCategory || undefined,
         randomOrder: true, // 랜덤 정렬
+        language: language, // ✅ 언어 필터 필수
       });
 
       // 플랫폼 정렬은 loadHospitalsPaginated에서 이미 적용됨 (gangnamunni 우선, babitalk/yeoti 후순위)
@@ -189,8 +190,9 @@ export default function HospitalInfoPage() {
     setFavorites(new Set(clinicFavorites));
   }, []);
 
-  const handleFavoriteClick = (hospital: HospitalMaster) => {
-    const hospitalName = hospital.hospital_name || "";
+  const handleFavoriteClick = (hospital: HospitalI18nRow) => {
+    // 번역 필드 또는 KR 원본 사용
+    const hospitalName = hospital.hospital_name_i18n || hospital.hospital_name_kr || "";
     const savedFavorites = JSON.parse(
       localStorage.getItem("favorites") || "[]"
     );
@@ -319,13 +321,14 @@ export default function HospitalInfoPage() {
           <>
             {/* 그리드 레이아웃 (2열 4행) - 상세 정보 포함 */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              {hospitals.map((hospital: HospitalMaster) => {
-                const hospitalName = hospital.hospital_name || t("common.noHospitalName");
+              {hospitals.map((hospital: HospitalI18nRow) => {
+                // 번역 필드 또는 KR 원본 사용
+                const hospitalName = hospital.hospital_name_i18n || hospital.hospital_name_kr || t("common.noHospitalName");
                 const isFavorite = favorites.has(hospitalName);
 
                 // hospital_img_url 우선 사용, 없으면 hospital_img 사용
                 const thumbnailUrl =
-                  hospital.hospital_img_url || hospital.hospital_img || null;
+                  hospital.hospital_img_url || (hospital as any).hospital_img || null;
 
                 // hospital_departments에서 첫 번째 진료과를 대표 시술로 사용
                 let topDepartment = "진료과 정보 없음";
@@ -349,15 +352,17 @@ export default function HospitalInfoPage() {
                   }
                 }
 
-                const location = hospital.hospital_address || "주소 정보 없음";
+                // 번역 필드 또는 KR 원본 사용
+                const location = hospital.hospital_address_i18n || hospital.hospital_address_kr || "주소 정보 없음";
 
                 return (
                   <div
                     key={hospital.hospital_id || hospitalName}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer"
                     onClick={() => {
-                      if (hospital.hospital_id) {
-                        router.push(`/hospital/${hospital.hospital_id}`);
+                      // 백엔드 가이드: (platform, hospital_id_rd) 조합으로 라우팅
+                      if (hospital.platform && hospital.hospital_id_rd) {
+                        router.push(`/hospital?platform=${hospital.platform}&hospital_id_rd=${hospital.hospital_id_rd}`);
                       }
                     }}
                   >
@@ -453,21 +458,21 @@ export default function HospitalInfoPage() {
               </div>
             )}
 
-            {/* 글 작성 유도 섹션 (리뷰 미작성 시에만 표시) */}
-            {!hasWrittenReview && !loading && hospitals.length > 0 && (
+            {/* 글 작성 유도 섹션 */}
+            {!loading && hospitals.length > 0 && (
               <div className="mt-6 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-primary-main/30 text-center">
                 <FiEdit3 className="text-primary-main text-2xl mx-auto mb-2" />
                 <p className="text-sm font-semibold text-gray-900 mb-1">
-                  리뷰를 작성하면
+                  {t("explore.reviewCTA.title")}
                 </p>
                 <p className="text-xs text-gray-600 mb-3">
-                  더 많은 병원 정보를 볼 수 있어요!
+                  {t("explore.reviewCTA.hospitalDescription")}
                 </p>
                 <button
                   onClick={() => router.push("/community/write")}
                   className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
                 >
-                  리뷰 작성하기
+                  {t("explore.reviewCTA.button")}
                 </button>
               </div>
             )}

@@ -26,20 +26,23 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
+// 탐색 탭에서는 번역을 사용하지 않음 (DeepL API rate limit 방지)
+// import { translateText, type LanguageCode, detectLanguage } from "@/lib/utils/translation";
+import { formatPrice, getCurrencyFromStorage, getCurrencyFromLanguage } from "@/lib/utils/currency";
 
-// 홈페이지와 동일한 대분류 카테고리 10개
-const MAIN_CATEGORIES = [
-  { id: null, name: "전체" },
-  { id: "눈성형", name: "눈성형" },
-  { id: "리프팅", name: "리프팅" },
-  { id: "보톡스", name: "보톡스" },
-  { id: "안면윤곽/양악", name: "안면윤곽/양악" },
-  { id: "제모", name: "제모" },
-  { id: "지방성형", name: "지방성형" },
-  { id: "코성형", name: "코성형" },
-  { id: "피부", name: "피부" },
-  { id: "필러", name: "필러" },
-  { id: "가슴성형", name: "가슴성형" },
+// 대분류 카테고리 ID와 번역 키 매핑
+export const getMainCategories = (t: (key: string) => string) => [
+  { id: null, name: t("category.all"), nameKey: "category.all" },
+  { id: "눈성형", name: t("category.eyes"), nameKey: "category.eyes" },
+  { id: "리프팅", name: t("category.lifting"), nameKey: "category.lifting" },
+  { id: "보톡스", name: t("category.botox"), nameKey: "category.botox" },
+  { id: "안면윤곽/양악", name: t("category.facial"), nameKey: "category.facial" },
+  { id: "제모", name: t("category.hairRemoval"), nameKey: "category.hairRemoval" },
+  { id: "지방성형", name: t("category.liposuction"), nameKey: "category.liposuction" },
+  { id: "코성형", name: t("category.nose"), nameKey: "category.nose" },
+  { id: "피부", name: t("category.skin"), nameKey: "category.skin" },
+  { id: "필러", name: t("category.filler"), nameKey: "category.filler" },
+  { id: "가슴성형", name: t("category.breast"), nameKey: "category.breast" },
 ];
 
 interface CategoryRankingPageProps {
@@ -70,8 +73,27 @@ export default function CategoryRankingPage({
   renderFilterBar = true,
   onMidCategoriesListChange,
 }: CategoryRankingPageProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
+  
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
+  
+  // 언어 변경 시 대분류 카테고리 번역 업데이트
+  const MAIN_CATEGORIES = useMemo(() => getMainCategories(t), [t, language]);
+  
+  // 탐색 탭에서는 시술명 번역을 사용하지 않음 (DeepL API rate limit 방지)
+  // 번역이 필요한 경우는 커뮤니티 탭에서만 사용
+  
+  // 시술명 번역 헬퍼 함수
+  // 탐색 탭에서는 번역을 사용하지 않음 (DeepL API rate limit 방지)
+  const getTreatmentName = (treatment: Treatment) => {
+    if (!treatment.treatment_name) return "";
+    // 탐색 탭에서는 원본 텍스트만 반환 (번역 비활성화)
+    return treatment.treatment_name;
+  };
 
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 여부
@@ -343,7 +365,7 @@ export default function CategoryRankingPage({
 
         if (selectedMidCategory !== null) {
           // 소분류 랭킹 로드
-          const result = await getSmallCategoryRankings(selectedMidCategory);
+          const result = await getSmallCategoryRankings(selectedMidCategory, 20, 2, 20, language);
           if (result.success && result.data) {
             // RPC가 flat row로 반환하므로 category_small_key로 그룹화
             const rows = result.data as any[];
@@ -398,7 +420,7 @@ export default function CategoryRankingPage({
           }
         } else {
           // 중분류 랭킹 로드
-          const result = await getMidCategoryRankings(selectedCategory);
+          const result = await getMidCategoryRankings(selectedCategory, 20, 2, 20, language);
           if (result.success && result.data) {
             // RPC가 flat row로 반환하므로 category_mid로 그룹화
             const rows = result.data as any[];
@@ -491,7 +513,7 @@ export default function CategoryRankingPage({
     };
 
     loadRankings();
-  }, [selectedCategory, selectedMidCategory]);
+  }, [selectedCategory, selectedMidCategory, language]);
 
   // 스크롤 관련 상태
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -771,7 +793,8 @@ export default function CategoryRankingPage({
 
   // 중분류별 설명 텍스트 매핑 (시술 설명 스타일)
   const getCategoryDescription = (categoryMid: string): string => {
-    const descriptions: Record<string, string> = {
+    // 번역 키를 사용하는 주요 중분류 설명
+    const translatedDescriptions: Record<string, string> = {
       주름보톡스:
         "주름이 많은 부위에 주사하여 톡! 하고 주름을 펴주고 주름 예방 효과도 기대할 수 있어요.",
       근육보톡스:
@@ -824,43 +847,43 @@ export default function CategoryRankingPage({
         "자신의 지방을 얼굴에 이식하여 볼륨을 채우고 주름을 개선하여 더욱 젊고 탄력 있는 피부를 만들어주는 시술이에요.",
     };
 
-    // 매핑된 설명이 있으면 사용
-    if (descriptions[categoryMid]) {
-      return descriptions[categoryMid];
+    // 매핑된 설명이 있으면 사용 (하드코딩된 설명은 그대로 사용)
+    if (translatedDescriptions[categoryMid]) {
+      return translatedDescriptions[categoryMid];
     }
 
     // 매핑되지 않은 중분류는 동적으로 구체적인 설명 생성
     // 기본 템플릿 대신 중분류명을 분석하여 구체적인 설명 생성
     const mid = categoryMid.toLowerCase();
 
-    // 패턴 매칭으로 구체적인 설명 생성
+    // 패턴 매칭으로 구체적인 설명 생성 (번역 키 사용)
     if (mid.includes("보톡스") || mid.includes("보톡")) {
-      return "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.";
+      return t("explore.categoryDescription.botox");
     }
     if (mid.includes("필러")) {
-      return "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.";
+      return t("explore.categoryDescription.filler");
     }
     if (mid.includes("리프팅")) {
-      return "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.";
+      return t("explore.categoryDescription.lifting");
     }
     if (mid.includes("제모")) {
-      return "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.";
+      return t("explore.categoryDescription.hairRemoval");
     }
     if (mid.includes("성형") || mid.includes("수술")) {
-      return "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.";
+      return t("explore.categoryDescription.surgery");
     }
     if (mid.includes("교정")) {
-      return "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.";
+      return t("explore.categoryDescription.correction");
     }
     if (mid.includes("주사")) {
-      return "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.";
+      return t("explore.categoryDescription.injection");
     }
     if (mid.includes("레이저")) {
-      return "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.";
+      return t("explore.categoryDescription.laser");
     }
 
-    // 패턴 매칭 실패 시에도 기본 템플릿 대신 더 구체적인 설명
-    return `${categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.`;
+    // 패턴 매칭 실패 시 기본 템플릿 사용 (번역 키 사용)
+    return t("explore.categoryDescription.default", { categoryMid });
   };
 
   return (
@@ -1008,11 +1031,11 @@ export default function CategoryRankingPage({
                                 const treatmentId = treatment.treatment_id || 0;
                                 const isFavorited = favorites.has(treatmentId);
                                 const thumbnailUrl = getThumbnailUrl(treatment);
-                                const price = treatment.selling_price
-                                  ? `${Math.round(
-                                      treatment.selling_price / 10000
-                                    )}만원`
-                                  : t("common.priceInquiry");
+                                const price = formatPrice(
+                                  treatment.selling_price,
+                                  currency,
+                                  t
+                                );
 
                                 return (
                                   <div
@@ -1078,7 +1101,7 @@ export default function CategoryRankingPage({
                                       <div className="space-y-1.5">
                                         {/* 시술명 */}
                                         <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
-                                          {treatment.treatment_name}
+                                          {getTreatmentName(treatment)}
                                         </h4>
 
                                         {/* 평점 */}
@@ -1170,9 +1193,9 @@ export default function CategoryRankingPage({
                     }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                   >
-                    더보기 (
-                    {smallCategoryRankings.length - visibleCategoriesCount}개
-                    더)
+                    {t("common.seeMoreWithCount", {
+                      count: smallCategoryRankings.length - visibleCategoriesCount,
+                    })}
                   </button>
                 </div>
               )}
@@ -1302,11 +1325,11 @@ export default function CategoryRankingPage({
                             const treatmentId = treatment.treatment_id || 0;
                             const isFavorited = favorites.has(treatmentId);
                             const thumbnailUrl = getThumbnailUrl(treatment);
-                            const price = treatment.selling_price
-                              ? `${Math.round(
-                                  treatment.selling_price / 10000
-                                )}만원`
-                              : "가격 문의";
+                            const price = formatPrice(
+                              treatment.selling_price,
+                              currency,
+                              t
+                            );
 
                             return (
                               <div
@@ -1373,7 +1396,7 @@ export default function CategoryRankingPage({
                                   <div className="space-y-1.5">
                                     {/* 시술명 */}
                                     <h4 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[40px] leading-5">
-                                      {treatment.treatment_name}
+                                      {getTreatmentName(treatment)}
                                     </h4>
 
                                     {/* 평점 */}
@@ -1461,7 +1484,7 @@ export default function CategoryRankingPage({
                   }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                 >
-                  더보기
+                  {t("common.seeMore")}
                 </button>
               </div>
             )}
@@ -1544,12 +1567,14 @@ export function CategoryFilterBar({
   midCategoriesList,
   onCategoryChange,
   onMidCategoryChange,
+  mainCategories,
 }: {
   selectedCategory: string | null;
   selectedMidCategory: string | null;
   midCategoriesList: string[];
   onCategoryChange: (categoryId: string | null) => void;
   onMidCategoryChange: (midCategory: string | null) => void;
+  mainCategories: Array<{ id: string | null; name: string; nameKey: string }>;
 }) {
   return (
     <div className="bg-white">
@@ -1573,7 +1598,7 @@ export function CategoryFilterBar({
 
         {/* 카테고리 버튼들 - 텍스트만 5개씩 2줄 그리드 */}
         <div className="grid grid-cols-5 gap-x-4 gap-y-3">
-          {MAIN_CATEGORIES.filter((cat) => cat.id !== null).map((category) => {
+          {mainCategories.filter((cat) => cat.id !== null).map((category) => {
             const isSelected = selectedCategory === category.id;
             return (
               <button

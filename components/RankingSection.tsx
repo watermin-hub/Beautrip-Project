@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import CategoryRankingPage, { CategoryFilterBar } from "./CategoryRankingPage";
+import CategoryRankingPage, {
+  CategoryFilterBar,
+  getMainCategories,
+} from "./CategoryRankingPage";
 import KBeautyRankingPage from "./KBeautyRankingPage";
 import HospitalRankingPage from "./HospitalRankingPage";
 import ScheduleBasedRankingPage from "./ScheduleBasedRankingPage";
@@ -37,13 +40,16 @@ export default function RankingSection({
     }
   }, [searchParams]);
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tabs = [
     { id: "category" as RankingTab, labelKey: "explore.filter.category" },
     { id: "kbeauty" as RankingTab, labelKey: "explore.ranking.kbeauty" },
     { id: "hospital" as RankingTab, labelKey: "explore.filter.hospital" },
     { id: "schedule" as RankingTab, labelKey: "explore.filter.schedule" },
   ];
+
+  // 언어 변경 시 대분류 카테고리 번역 업데이트
+  const MAIN_CATEGORIES = useMemo(() => getMainCategories(t), [t, language]);
 
   const isRankingActive = activeSection === "ranking";
 
@@ -62,10 +68,9 @@ export default function RankingSection({
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id);
-                // 탭 필터 선택 시 상단으로 스크롤
-                const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+                // 탭 필터 선택 시 맨 위로 스크롤
                 window.scrollTo({
-                  top: headerOffset,
+                  top: 0,
                   behavior: "smooth",
                 });
               }}
@@ -93,16 +98,16 @@ export default function RankingSection({
             selectedCategory={selectedCategory}
             selectedMidCategory={selectedMidCategory}
             midCategoriesList={midCategoriesList}
+            mainCategories={MAIN_CATEGORIES}
             onCategoryChange={(categoryId) => {
               setSelectedCategory(categoryId);
               setSelectedMidCategory(null);
             }}
             onMidCategoryChange={(midCategory) => {
               setSelectedMidCategory(midCategory);
-              // 필터 선택 시 상단으로 스크롤
-              const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+              // 필터 선택 시 맨 위로 스크롤
               window.scrollTo({
-                top: headerOffset,
+                top: 0,
                 behavior: "smooth",
               });
             }}
@@ -123,19 +128,17 @@ export default function RankingSection({
             onCategoryChange={(categoryId) => {
               setSelectedCategory(categoryId);
               setSelectedMidCategory(null);
-              // 대분류 필터 선택 시 상단으로 스크롤
-              const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+              // 대분류 필터 선택 시 맨 위로 스크롤
               window.scrollTo({
-                top: headerOffset,
+                top: 0,
                 behavior: "smooth",
               });
             }}
             onMidCategoryChange={(midCategory) => {
               setSelectedMidCategory(midCategory);
-              // 중분류 필터 선택 시 상단으로 스크롤
-              const headerOffset = 112; // Header(48px) + ExploreHeader(약 56px)
+              // 중분류 필터 선택 시 맨 위로 스크롤
               window.scrollTo({
-                top: headerOffset,
+                top: 0,
                 behavior: "smooth",
               });
             }}

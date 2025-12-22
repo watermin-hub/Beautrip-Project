@@ -20,7 +20,7 @@ import LoginRequiredPopup from "./LoginRequiredPopup";
 
 export default function HotConcernsSection() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
@@ -36,7 +36,9 @@ export default function HotConcernsSection() {
       try {
         setLoading(true);
         // 필요한 만큼만 로드 (50개)
-        const result = await loadTreatmentsPaginated(1, 50);
+        const result = await loadTreatmentsPaginated(1, 50, {
+          language: language,
+        });
         const allTreatments = result.data;
 
         // 추천 점수로 정렬하고 랜덤으로 10개 선택

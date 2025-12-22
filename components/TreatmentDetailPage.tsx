@@ -43,7 +43,7 @@ interface TreatmentDetailPageProps {
 export default function TreatmentDetailPage({
   treatmentId,
 }: TreatmentDetailPageProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ export default function TreatmentDetailPage({
         setLoading(true);
 
         // 현재 시술 데이터 로드
-        const treatment = await loadTreatmentById(treatmentId);
+        const treatment = await loadTreatmentById(treatmentId, language);
         if (!treatment) {
           console.error("시술 데이터를 찾을 수 없습니다.");
           setLoading(false);
@@ -104,10 +104,18 @@ export default function TreatmentDetailPage({
         // 같은 시술명의 다른 옵션들과 같은 병원의 다른 시술들 로드
         const [relatedOptions, hospitalTreatments] = await Promise.all([
           treatment.treatment_name
-            ? loadRelatedTreatments(treatment.treatment_name, treatmentId)
+            ? loadRelatedTreatments(
+                treatment.treatment_name,
+                treatmentId,
+                language
+              )
             : Promise.resolve([]),
           treatment.hospital_name
-            ? loadHospitalTreatments(treatment.hospital_name, treatmentId)
+            ? loadHospitalTreatments(
+                treatment.hospital_name,
+                treatmentId,
+                language
+              )
             : Promise.resolve([]),
         ]);
 
@@ -152,7 +160,7 @@ export default function TreatmentDetailPage({
     };
 
     loadData();
-  }, [treatmentId]);
+  }, [treatmentId, language]);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -963,7 +971,7 @@ export default function TreatmentDetailPage({
                 className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
               >
                 <FiCalendar className="text-lg" />
-                일정에 추가
+                {t("schedule.addToSchedule")}
               </button>
 
               <button

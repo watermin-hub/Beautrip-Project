@@ -34,6 +34,7 @@ import {
   getSavedSchedules,
   deleteSavedSchedule,
   type SavedSchedule,
+  type LanguageCode,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
@@ -190,7 +191,7 @@ function SimilarProcedureRecommendation({
   currentProcedureName: string;
   travelPeriod: TravelPeriod | null;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [similarTreatments, setSimilarTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -217,6 +218,7 @@ function SimilarProcedureRecommendation({
 
         const result = await loadTreatmentsPaginated(1, 100, {
           categorySmall: trimmedCategorySmall,
+          language: language,
         });
 
         // 이미 일정에 추가된 시술 제외
@@ -659,7 +661,7 @@ function SavedSchedulesTab({
       for (let i = 0; i < schedule.treatment_ids.length; i++) {
         const treatmentId = schedule.treatment_ids[i];
         try {
-          const treatment = await loadTreatmentById(treatmentId);
+          const treatment = await loadTreatmentById(treatmentId, language);
           if (!treatment) continue;
 
           // 회복 기간 정보 가져오기
@@ -1875,7 +1877,7 @@ function SavedSchedulesTab({
               {t("schedule.noSavedSchedules")}
             </p>
             <p className="text-gray-400 text-xs">
-              일정을 저장하면 여기서 확인할 수 있습니다.
+              {t("schedule.saveScheduleDescription")}
             </p>
           </div>
         ) : (
@@ -1936,6 +1938,8 @@ function SavedSchedulesTab({
               const names = schedule.treatment_names || [];
               const ids = schedule.treatment_ids || [];
 
+              const isSelected = selectedSchedule?.id === schedule.id;
+
               return (
                 <div
                   key={schedule.id}
@@ -1943,7 +1947,11 @@ function SavedSchedulesTab({
                     // 저장된 일정 탭 내에서 달력 표시 (탭 변경하지 않음)
                     await handleScheduleClickInTab(schedule);
                   }}
-                  className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                  className={`rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-blue-50 border-2 border-primary-main"
+                      : "bg-white border border-gray-200 hover:border-primary-main/30"
+                  }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -2165,7 +2173,9 @@ function RecoveryCardComponent({
           "@/lib/api/beautripApi"
         );
         // 전체를 가져오지 않고 특정 treatment_id만 찾기
-        const treatments = await loadTreatmentsPaginated(1, 1000);
+        const treatments = await loadTreatmentsPaginated(1, 1000, {
+          language: language,
+        });
         const treatment =
           treatments.data?.find((t) => t.treatment_id === rec.treatmentId) ??
           null;
@@ -2525,7 +2535,7 @@ export default function MySchedulePage() {
                   procedureName: s.procedureName,
                 });
                 // 특정 treatment_id로 직접 조회
-                const treatment = await loadTreatmentById(s.treatmentId);
+                const treatment = await loadTreatmentById(s.treatmentId, language);
                 if (treatment?.category_small) {
                   console.log(
                     "✅ [일정 로드] categorySmall 찾음:",
@@ -3233,7 +3243,7 @@ export default function MySchedulePage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="sticky top-[96px] z-30 bg-white border-b border-gray-100">
+      <div className="sticky top-[48px] z-30 bg-white border-b border-gray-100">
         <div className="flex items-center gap-6 px-4 py-3">
           <button
             onClick={() => setActiveTab("schedule")}

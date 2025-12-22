@@ -11,6 +11,7 @@ import {
   FiCamera,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Post {
   id: number;
@@ -34,12 +35,32 @@ interface CommunityPostCardProps {
   onHospitalInfo?: (postId: number) => void;
 }
 
+// 카테고리 번역 함수
+const translateCategory = (category: string, t: (key: string) => string): string => {
+  const categoryMap: Record<string, string> = {
+    "피부 고민": "concernCategory.skinConcern",
+    "시술 고민": "concernCategory.procedureConcern",
+    "병원 선택": "concernCategory.hospitalSelection",
+    "가격 문의": "concernCategory.priceInquiry",
+    "회복 기간": "concernCategory.recoveryPeriod",
+    "부작용": "concernCategory.sideEffect",
+    "기타": "concernCategory.other",
+  };
+  
+  const translationKey = categoryMap[category];
+  if (translationKey) {
+    return t(translationKey);
+  }
+  return category;
+};
+
 export default function CommunityPostCard({
   post,
   onScrap,
   onHospitalInfo,
 }: CommunityPostCardProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [isLiked, setIsLiked] = useState(false);
   const [isScrapped, setIsScrapped] = useState(false);
   const [upvotes, setUpvotes] = useState(post.upvotes);
@@ -79,7 +100,7 @@ export default function CommunityPostCard({
       {/* Category Tag */}
       <div className="mb-3 flex items-center justify-between">
         <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
-          {post.category}
+          {translateCategory(post.category, t)}
         </span>
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -124,7 +145,7 @@ export default function CommunityPostCard({
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-gray-500">{post.timestamp}</span>
             {post.edited && (
-              <span className="text-xs text-gray-400">수정됨</span>
+              <span className="text-xs text-gray-400">{t("label.edited")}</span>
             )}
           </div>
         </div>

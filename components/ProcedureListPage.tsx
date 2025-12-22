@@ -32,7 +32,7 @@ interface ProcedureListPageProps {
 export default function ProcedureListPage({
   activeSection = "procedure",
 }: ProcedureListPageProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isActive = activeSection === "procedure";
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -151,6 +151,7 @@ export default function ProcedureListPage({
         categoryLarge: categoryLarge || undefined,
         categoryMid: categoryMid || undefined,
         randomOrder: true, // 랜덤 정렬
+        language: language,
       });
 
       // 플랫폼 정렬은 loadTreatmentsPaginated에서 이미 적용됨 (gangnamunni 우선, babitalk/yeoti 후순위)

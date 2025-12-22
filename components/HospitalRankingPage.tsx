@@ -10,10 +10,12 @@ import {
   getThumbnailUrl,
   loadHospitalsPaginated,
 } from "@/lib/api/beautripApi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const ITEMS_PER_PAGE = 20;
 
 export default function HospitalRankingPage() {
+  const { language } = useLanguage();
   const router = useRouter();
   const [allTreatments, setAllTreatments] = useState<any[]>([]);
   const [hospitals, setHospitals] = useState<HospitalInfo[]>([]);
@@ -31,8 +33,8 @@ export default function HospitalRankingPage() {
         // 필요한 만큼만 로드 (300개)
         // 랭킹 페이지는 플랫폼 우선순위 정렬 없이 원본 데이터 순서로 로드
         const [treatmentsResult, hospitalsResult] = await Promise.all([
-          loadTreatmentsPaginated(1, 300, { skipPlatformSort: true }),
-          loadHospitalsPaginated(1, 1000),
+          loadTreatmentsPaginated(1, 300, { skipPlatformSort: true, language: language }),
+          loadHospitalsPaginated(1, 1000, { language: language }),
         ]);
 
         const data = treatmentsResult.data;
@@ -57,7 +59,7 @@ export default function HospitalRankingPage() {
     };
 
     loadData();
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const savedFavorites = JSON.parse(

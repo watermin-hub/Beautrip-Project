@@ -437,23 +437,23 @@ const popularPosts: Post[] = [
   },
 ];
 
-// 시간 포맷팅 함수
-const formatTimeAgo = (dateString?: string): string => {
-  if (!dateString) return "방금 전";
-
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "방금 전";
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays < 7) return `${diffDays}일 전`;
-
-  return date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+// 카테고리 번역 함수
+const translateCategory = (category: string, t: (key: string) => string): string => {
+  const categoryMap: Record<string, string> = {
+    "피부 고민": "concernCategory.skinConcern",
+    "시술 고민": "concernCategory.procedureConcern",
+    "병원 선택": "concernCategory.hospitalSelection",
+    "가격 문의": "concernCategory.priceInquiry",
+    "회복 기간": "concernCategory.recoveryPeriod",
+    "부작용": "concernCategory.sideEffect",
+    "기타": "concernCategory.other",
+  };
+  
+  const translationKey = categoryMap[category];
+  if (translationKey) {
+    return t(translationKey);
+  }
+  return category;
 };
 
 export default function PostList({
@@ -464,6 +464,42 @@ export default function PostList({
   concernCategory?: string | null;
 }) {
   const { t, language } = useLanguage();
+
+  // 시간 포맷팅 함수 (번역 지원)
+  const formatTimeAgo = (dateString?: string): string => {
+    if (!dateString) return t("time.justNow");
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return t("time.justNow");
+    if (diffMins < 60) return t("time.minutesAgo").replace("{n}", String(diffMins));
+    if (diffHours < 24) {
+      const hoursText = diffHours === 1 
+        ? t("time.hoursAgo").replace("{n}", String(diffHours))
+        : (t("time.hoursAgoPlural") || t("time.hoursAgo")).replace("{n}", String(diffHours));
+      return hoursText;
+    }
+    if (diffDays < 7) {
+      const daysText = diffDays === 1
+        ? t("time.daysAgo").replace("{n}", String(diffDays))
+        : (t("time.daysAgoPlural") || t("time.daysAgo")).replace("{n}", String(diffDays));
+      return daysText;
+    }
+
+    // 7일 이상인 경우 날짜 표시 (언어별 로케일)
+    const localeMap: Record<LanguageCode, string> = {
+      KR: "ko-KR",
+      EN: "en-US",
+      JP: "ja-JP",
+      CN: "zh-CN",
+    };
+    return date.toLocaleDateString(localeMap[language] || "ko-KR", { month: "short", day: "numeric" });
+  };
   const router = useRouter();
   const [supabaseReviews, setSupabaseReviews] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -722,6 +758,33 @@ export default function PostList({
     return () => subscription.unsubscribe();
   }, []);
 
+  // 상세 페이지에서 좋아요 변경 시 동기화
+  useEffect(() => {
+    const handleLikeUpdate = (event: CustomEvent) => {
+      const { postId, postType, isLiked: updatedIsLiked, likeCount: updatedLikeCount } = event.detail;
+      
+      // 현재 리스트에 있는 게시글인지 확인하고 업데이트
+      setLikesState((prev) => {
+        // postId가 현재 상태에 있으면 업데이트
+        if (prev[postId]) {
+          return {
+            ...prev,
+            [postId]: {
+              isLiked: updatedIsLiked,
+              likeCount: updatedLikeCount,
+            },
+          };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener("postLikeUpdated", handleLikeUpdate as EventListener);
+    return () => {
+      window.removeEventListener("postLikeUpdated", handleLikeUpdate as EventListener);
+    };
+  }, []);
+
   // 좋아요 버튼 클릭 핸들러
   const handleLikeClick = async (e: React.MouseEvent, post: Post) => {
     e.stopPropagation();
@@ -791,6 +854,16 @@ export default function PostList({
         setLikesState((prev) => ({
           ...prev,
           [postId]: {
+            isLiked: result.isLiked,
+            likeCount: count,
+          },
+        }));
+        
+        // 상세 페이지에 좋아요 변경 알림 (커스텀 이벤트)
+        window.dispatchEvent(new CustomEvent("postLikeUpdated", {
+          detail: {
+            postId,
+            postType,
             isLiked: result.isLiked,
             likeCount: count,
           },
@@ -1173,8 +1246,8 @@ export default function PostList({
     return (
       <div className="px-4 py-8 text-center text-gray-500">
         {activeTab === "consultation"
-          ? "고민글을 불러오는 중..."
-          : "최신글을 불러오는 중..."}
+          ? t("concernPosts.loading")
+          : t("common.loading")}
       </div>
     );
   }
@@ -1321,7 +1394,7 @@ export default function PostList({
         {/* 카테고리 */}
         <div className="mb-3">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
-            {post.category}
+            {translateCategory(post.category, t)}
           </span>
         </div>
 
@@ -1340,7 +1413,7 @@ export default function PostList({
               </span>
               <span className="text-xs text-gray-500">{post.timestamp}</span>
               {post.edited && (
-                <span className="text-xs text-gray-400">(수정됨)</span>
+                <span className="text-xs text-gray-400">({t("label.edited")})</span>
               )}
             </div>
           </div>
@@ -1354,21 +1427,6 @@ export default function PostList({
                 {displayTitle}
               </span>
             </h3>
-            {/* 번역 버튼 */}
-            {needsTranslation && (
-              <button
-                onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
-                disabled={isTranslating}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  isTranslated
-                    ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <FiGlobe className="text-xs" />
-                <span>{isTranslating ? "번역 중..." : isTranslated ? "원문" : "번역"}</span>
-              </button>
-            )}
           </div>
         )}
 
@@ -1422,6 +1480,25 @@ export default function PostList({
         <p className="text-gray-700 text-sm mb-4 line-clamp-3">
           {displayContent}
         </p>
+
+        {/* 번역 버튼 */}
+        {needsTranslation && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post);
+            }}
+            disabled={isTranslating}
+            className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              isTranslated
+                ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <FiGlobe className="text-xs" />
+            <span>{isTranslating ? "번역 중..." : isTranslated ? "원문" : "번역"}</span>
+          </button>
+        )}
 
         {/* 이미지 */}
         {post.images && post.images.length > 0 && (
@@ -1523,26 +1600,6 @@ export default function PostList({
               </span>
             </button>
           </div>
-          {needsTranslation && (
-            <div className="flex items-center gap-2">
-              {isTranslated ? (
-                <button
-                  onClick={(e) => handleShowOriginal(e, post)}
-                  className="text-xs text-primary-main hover:underline"
-                >
-                  원문 보기
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => handleTranslate(e, post)}
-                  disabled={isTranslating}
-                  className="flex items-center gap-1 text-xs text-primary-main hover:underline disabled:opacity-50"
-                >
-                  {isTranslating ? "번역 중..." : <><FiGlobe className="text-xs" /> 번역</>}
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
       );
@@ -1764,7 +1821,7 @@ export default function PostList({
         {/* Category Tag */}
         <div className="mb-4">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-3 py-1.5 rounded-full text-xs font-semibold border border-primary-main/20">
-            {post.category}
+            {translateCategory(post.category, t)}
           </span>
         </div>
 
@@ -1786,7 +1843,7 @@ export default function PostList({
               <span className="text-xs text-gray-500">{post.timestamp}</span>
               {post.edited && (
                 <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                  수정됨
+                  {t("label.edited")}
                 </span>
               )}
             </div>
@@ -1801,21 +1858,6 @@ export default function PostList({
                 {displayTitle}
               </span>
             </h3>
-            {/* 번역 버튼 */}
-            {needsTranslation && (
-              <button
-                onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
-                disabled={isTranslating}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  isTranslated
-                    ? "bg-primary-main/10 text-primary-main hover:bg-primary-main/20"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                <FiGlobe className="text-xs" />
-                <span>{isTranslating ? "번역 중..." : isTranslated ? "원문" : "번역"}</span>
-              </button>
-            )}
           </div>
         )}
 
@@ -1872,10 +1914,13 @@ export default function PostList({
           >
             {displayContent}
           </p>
-          {/* 번역 버튼 (고민글이 아닌 경우) */}
-          {post.reviewType !== "concern" && needsTranslation && (
+          {/* 번역 버튼 */}
+          {needsTranslation && (
             <button
-              onClick={(e) => isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post)}
+              onClick={(e) => {
+                e.stopPropagation();
+                isTranslated ? handleShowOriginal(e, post) : handleTranslate(e, post);
+              }}
               disabled={isTranslating}
               className={`mt-2 flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
                 isTranslated
@@ -2109,7 +2154,7 @@ export default function PostList({
           {/* Category Tag */}
           <div className="mb-3">
             <span className="bg-primary-light/20 text-primary-main px-3 py-1 rounded-full text-xs font-medium">
-              {post.category}
+              {translateCategory(post.category, t)}
             </span>
           </div>
 

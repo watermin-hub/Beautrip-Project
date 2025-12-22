@@ -1,0 +1,4356 @@
+{
+  "timestamp": "2025-12-22T05:55:40.913Z",
+  "totalFiles": 104,
+  "totalIssues": 707,
+  "translationKeysCount": 609,
+  "issues": {
+    "components\\AIAnalysisBanner.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AIAnalysisBanner.tsx",
+        "line": 108,
+        "text": "업로드 중 오류가 발생했습니다:",
+        "context": "`업로드 중 오류가 발생했습니다: ${error?.message ?? \"알 수 없는 오류\"}`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AIAnalysisBanner.tsx",
+        "line": 108,
+        "text": "알 수 없는 오류",
+        "context": "`업로드 중 오류가 발생했습니다: ${error?.message ?? \"알 수 없는 오류\"}`"
+      }
+    ],
+    "components\\AISkinAnalysisButton.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisButton.tsx",
+        "line": 95,
+        "text": "업로드 중 오류가 발생했습니다:",
+        "context": "`업로드 중 오류가 발생했습니다: ${error?.message ?? \"알 수 없는 오류\"}`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisButton.tsx",
+        "line": 95,
+        "text": "알 수 없는 오류",
+        "context": "`업로드 중 오류가 발생했습니다: ${error?.message ?? \"알 수 없는 오류\"}`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisButton.tsx",
+        "line": 119,
+        "text": "피부 분석 시작",
+        "context": "aria-label=\"AI 피부 분석 시작\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisButton.tsx",
+        "line": 128,
+        "text": "피부 분석",
+        "context": "alt=\"AI 피부 분석\""
+      }
+    ],
+    "components\\AISkinAnalysisCameraModal.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisCameraModal.tsx",
+        "line": 138,
+        "text": "촬영된 사진",
+        "context": "alt=\"촬영된 사진\""
+      }
+    ],
+    "components\\AISkinAnalysisResultPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisResultPage.tsx",
+        "line": 89,
+        "text": "에멀전",
+        "context": "const categories = [\"스킨 / 토너\", \"로션 / 에멀전\", \"세럼 / 에센스\"];"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisResultPage.tsx",
+        "line": 89,
+        "text": "에센스",
+        "context": "const categories = [\"스킨 / 토너\", \"로션 / 에멀전\", \"세럼 / 에센스\"];"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AISkinAnalysisResultPage.tsx",
+        "line": 128,
+        "text": "분석된 얼굴",
+        "context": "alt=\"분석된 얼굴\""
+      }
+    ],
+    "components\\AutocompleteInput.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\AutocompleteInput.tsx",
+        "line": 20,
+        "text": "검색...",
+        "context": "placeholder = \"검색...\","
+      }
+    ],
+    "components\\CategoryPhotoReviewPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 15,
+        "text": "코성형수술후기",
+        "context": "{ id: \"nose\", label: \"코성형수술후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 16,
+        "text": "눈성형수술후기",
+        "context": "{ id: \"eye\", label: \"눈성형수술후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 17,
+        "text": "시력교정후기",
+        "context": "{ id: \"vision\", label: \"시력교정후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 19,
+        "text": "양악교정치과후기",
+        "context": "{ id: \"jaw\", label: \"양악교정치과후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 20,
+        "text": "가슴성형수술후기",
+        "context": "{ id: \"breast\", label: \"가슴성형수술후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 21,
+        "text": "체형바디성형후기",
+        "context": "{ id: \"body\", label: \"체형바디성형후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 22,
+        "text": "쁘띠레이저후기",
+        "context": "{ id: \"petit\", label: \"쁘띠레이저후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 23,
+        "text": "코제거",
+        "context": "{ id: \"nose-removal\", label: \"코제거/재건후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 23,
+        "text": "재건후기",
+        "context": "{ id: \"nose-removal\", label: \"코제거/재건후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 24,
+        "text": "남자성형수술후기",
+        "context": "{ id: \"male\", label: \"남자성형수술후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 25,
+        "text": "통합발품후기",
+        "context": "{ id: \"integrated\", label: \"통합발품후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 26,
+        "text": "부작용",
+        "context": "{ id: \"failure\", label: \"실패&부작용\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 27,
+        "text": "병원등록후기",
+        "context": "{ id: \"hospital-reg\", label: \"병원등록후기\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 28,
+        "text": "성형수다",
+        "context": "{ id: \"chat\", label: \"성형수다\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 35,
+        "text": "낮은코",
+        "context": "{ id: \"low-nose\", label: \"낮은코\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 38,
+        "text": "매부리코",
+        "context": "{ id: \"aquiline-nose\", label: \"매부리코\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 42,
+        "text": "쌍꺼풀",
+        "context": "{ id: \"double-eyelid\", label: \"쌍꺼풀\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 43,
+        "text": "눈매교정",
+        "context": "{ id: \"ptosis\", label: \"눈매교정\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 44,
+        "text": "눈밑지방",
+        "context": "{ id: \"undereye\", label: \"눈밑지방\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 64,
+        "text": "성형외과 자가늑코재수술",
+        "context": "title: \"AB성형외과 자가늑코재수술 4개월차 후기 공유해요\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 64,
+        "text": "개월차 후기 공유해요",
+        "context": "title: \"AB성형외과 자가늑코재수술 4개월차 후기 공유해요\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 65,
+        "text": "뷰티러버",
+        "context": "author: \"뷰티러버123\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 68,
+        "text": "시간 전",
+        "context": "timestamp: \"2시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 69,
+        "text": "재수술",
+        "context": "tags: [\"#재수술\", \"#자가늑연골\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 69,
+        "text": "자가늑연골",
+        "context": "tags: [\"#재수술\", \"#자가늑연골\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 74,
+        "text": "코 성형 후 자연스러운 결과 만족해요! 원장님 추천",
+        "context": "title: \"코 성형 후 자연스러운 결과 만족해요! 원장님 추천\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 75,
+        "text": "만족회원",
+        "context": "author: \"만족회원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 78,
+        "text": "시간 전",
+        "context": "timestamp: \"5시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 79,
+        "text": "첫수술",
+        "context": "tags: [\"#첫수술\", \"#자연스러움\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 79,
+        "text": "자연스러움",
+        "context": "tags: [\"#첫수술\", \"#자연스러움\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 84,
+        "text": "휜코 교정 수술 받고 왔어요",
+        "context": "title: \"휜코 교정 수술 받고 왔어요 - 3개월 후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 84,
+        "text": "개월 후기",
+        "context": "title: \"휜코 교정 수술 받고 왔어요 - 3개월 후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 85,
+        "text": "코고민중",
+        "context": "author: \"코고민중\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 88,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 94,
+        "text": "복코 수술 후기입니다. 사진 첨부했어요!",
+        "context": "title: \"복코 수술 후기입니다. 사진 첨부했어요!\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 95,
+        "text": "사진러버",
+        "context": "author: \"사진러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 98,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 99,
+        "text": "비돌기",
+        "context": "tags: [\"#복코\", \"#비돌기\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 104,
+        "text": "매부리코 수술 만족 후기 남겨요",
+        "context": "title: \"매부리코 수술 만족 후기 남겨요\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 105,
+        "text": "만족중",
+        "context": "author: \"만족중\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 108,
+        "text": "일 전",
+        "context": "timestamp: \"2일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 109,
+        "text": "매부리코",
+        "context": "tags: [\"#매부리코\", \"#코끝\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 375,
+        "text": "키워드",
+        "context": "{[\"키워드1\", \"키워드2\"].map((keyword, idx) => ("
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryPhotoReviewPage.tsx",
+        "line": 375,
+        "text": "키워드",
+        "context": "{[\"키워드1\", \"키워드2\"].map((keyword, idx) => ("
+      }
+    ],
+    "components\\CategoryRankingPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 435,
+        "text": "소분류 랭킹을 불러올 수 없습니다.",
+        "context": "setError(result.error || \"소분류 랭킹을 불러올 수 없습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 511,
+        "text": "중분류 랭킹을 불러올 수 없습니다.",
+        "context": "setError(result.error || \"중분류 랭킹을 불러올 수 없습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 523,
+        "text": "랭킹 데이터 로드 실패",
+        "context": "err instanceof Error ? err.message : \"랭킹 데이터 로드 실패\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 603,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\") || result.error?.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 603,
+        "text": "로그인",
+        "context": "if (result.error?.includes(\"로그인이 필요\") || result.error?.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 815,
+        "text": "주름이 많은 부위에 주사하여 톡! 하고 주름을 펴주고 주름 예방 효과도 기대할 수 있어요.",
+        "context": "\"주름이 많은 부위에 주사하여 톡! 하고 주름을 펴주고 주름 예방 효과도 기대할 수 있어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 817,
+        "text": "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.",
+        "context": "\"근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 819,
+        "text": "글루타치온 성분이 피부를 밝게 해주며, 항산화 작용을 동반하여 노화 방지에도 효과적이에요.",
+        "context": "\"글루타치온 성분이 피부를 밝게 해주며, 항산화 작용을 동반하여 노화 방지에도 효과적이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 821,
+        "text": "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.",
+        "context": "\"피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 823,
+        "text": "초음파 에너지를 이용해 피부 깊숙이 열을 가하여 콜라겐을 재생하고 피부를 탄력 있게 만들어요.",
+        "context": "\"초음파 에너지를 이용해 피부 깊숙이 열을 가하여 콜라겐을 재생하고 피부를 탄력 있게 만들어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 825,
+        "text": "레이저를 이용해 피부 표면과 깊은 부분을 동시에 개선하여 주름을 완화하고 피부 톤을 개선해요.",
+        "context": "\"레이저를 이용해 피부 표면과 깊은 부분을 동시에 개선하여 주름을 완화하고 피부 톤을 개선해요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 827,
+        "text": "실을 이용해 처진 피부를 당겨올려 즉각적인 리프팅 효과를 주는 시술이에요.",
+        "context": "\"실을 이용해 처진 피부를 당겨올려 즉각적인 리프팅 효과를 주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 828,
+        "text": "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.",
+        "context": "필러: \"볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 829,
+        "text": "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있습니다.",
+        "context": "보톡스: \"근육을 이완시켜 주름을 예방하고 개선하는 효과가 있습니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 831,
+        "text": "눈의 아름다운 라인을 만들어주는 시술로, 자연스러운 쌍꺼풀을 만들어 눈매를 더욱 선명하게 해줍니다.",
+        "context": "\"눈의 아름다운 라인을 만들어주는 시술로, 자연스러운 쌍꺼풀을 만들어 눈매를 더욱 선명하게 해줍니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 833,
+        "text": "눈의 모양과 각도를 교정하여 더욱 밝고 선명한 눈매를 만들어주는 시술이에요.",
+        "context": "\"눈의 모양과 각도를 교정하여 더욱 밝고 선명한 눈매를 만들어주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 835,
+        "text": "눈 주변의 지방을 재배치하거나 제거하여 눈밑 주름과 다크서클을 개선하는 시술입니다.",
+        "context": "\"눈 주변의 지방을 재배치하거나 제거하여 눈밑 주름과 다크서클을 개선하는 시술입니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 837,
+        "text": "눈밑 처짐과 주름을 개선하여 더욱 밝고 젊은 눈매를 만들어주는 시술이에요.",
+        "context": "\"눈밑 처짐과 주름을 개선하여 더욱 밝고 젊은 눈매를 만들어주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 839,
+        "text": "눈꺼풀 처짐을 개선하고 눈을 더 크고 선명하게 보이게 해주는 시술입니다.",
+        "context": "\"눈꺼풀 처짐을 개선하고 눈을 더 크고 선명하게 보이게 해주는 시술입니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 841,
+        "text": "이전 코성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 코 모양을 만들어줍니다.",
+        "context": "\"이전 코성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 코 모양을 만들어줍니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 842,
+        "text": "라인 교정",
+        "context": "\"V라인 교정\":"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 843,
+        "text": "턱선을 날카롭고",
+        "context": "\"턱선을 날카롭고 V자 형태로 만들어주는 시술로, 얼굴 윤곽을 더욱 세련되게 만들어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 843,
+        "text": "자 형태로 만들어주는 시술로, 얼굴 윤곽을 더욱 세련되게 만들어요.",
+        "context": "\"턱선을 날카롭고 V자 형태로 만들어주는 시술로, 얼굴 윤곽을 더욱 세련되게 만들어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 845,
+        "text": "돌출된 광대뼈를 줄이거나 조절하여 얼굴 윤곽을 부드럽고 자연스럽게 만드는 시술입니다.",
+        "context": "\"돌출된 광대뼈를 줄이거나 조절하여 얼굴 윤곽을 부드럽고 자연스럽게 만드는 시술입니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 847,
+        "text": "턱 근육을 묶어 사각턱을 완화하고 얼굴 라인을 더욱 부드럽게 만들어주는 시술이에요.",
+        "context": "\"턱 근육을 묶어 사각턱을 완화하고 얼굴 라인을 더욱 부드럽게 만들어주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 849,
+        "text": "얼굴의 불필요한 털을 제거하여 더욱 깔끔하고 매끄러운 피부를 만들어주는 시술입니다.",
+        "context": "\"얼굴의 불필요한 털을 제거하여 더욱 깔끔하고 매끄러운 피부를 만들어주는 시술입니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 851,
+        "text": "몸의 불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.",
+        "context": "\"몸의 불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 853,
+        "text": "몸의 처진 피부를 당겨올려 탄력 있고 탄탄한 몸매를 만들어주는 시술입니다.",
+        "context": "\"몸의 처진 피부를 당겨올려 탄력 있고 탄탄한 몸매를 만들어주는 시술입니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 855,
+        "text": "리프팅과 거상을 함께 진행하여 얼굴 전체의 처짐을 개선하고 더욱 젊어 보이게 해주는 시술이에요.",
+        "context": "\"리프팅과 거상을 함께 진행하여 얼굴 전체의 처짐을 개선하고 더욱 젊어 보이게 해주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 857,
+        "text": "가슴의 모양과 위치를 개선하여 더욱 아름답고 균형 잡힌 가슴 라인을 만들어주는 시술입니다.",
+        "context": "\"가슴의 모양과 위치를 개선하여 더욱 아름답고 균형 잡힌 가슴 라인을 만들어주는 시술입니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 859,
+        "text": "이전 가슴성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 결과를 만들어줍니다.",
+        "context": "\"이전 가슴성형 결과를 개선하거나 보완하는 재수술로, 더욱 자연스럽고 만족스러운 결과를 만들어줍니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 860,
+        "text": "여드름 치료를 통해 피부와 외모를 개선할 수 있는 시술이에요.",
+        "context": "여드름: \"여드름 치료를 통해 피부와 외모를 개선할 수 있는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 861,
+        "text": "눈의 모양을 개선하고 더욱 선명하고 아름다운 눈매를 만들어주는 시술이에요.",
+        "context": "트임: \"눈의 모양을 개선하고 더욱 선명하고 아름다운 눈매를 만들어주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 863,
+        "text": "자신의 지방을 얼굴에 이식하여 볼륨을 채우고 주름을 개선하여 더욱 젊고 탄력 있는 피부를 만들어주는 시술이에요.",
+        "context": "\"자신의 지방을 얼굴에 이식하여 볼륨을 채우고 주름을 개선하여 더욱 젊고 탄력 있는 피부를 만들어주는 시술이에요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 876,
+        "text": "보톡스",
+        "context": "if (mid.includes(\"보톡스\") || mid.includes(\"보톡\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 877,
+        "text": "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.",
+        "context": "return \"근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 880,
+        "text": "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.",
+        "context": "return \"볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 882,
+        "text": "리프팅",
+        "context": "if (mid.includes(\"리프팅\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 883,
+        "text": "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.",
+        "context": "return \"피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 886,
+        "text": "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.",
+        "context": "return \"불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 889,
+        "text": "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.",
+        "context": "return \"외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 892,
+        "text": "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.",
+        "context": "return \"얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 895,
+        "text": "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.",
+        "context": "return \"주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 897,
+        "text": "레이저",
+        "context": "if (mid.includes(\"레이저\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 898,
+        "text": "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.",
+        "context": "return \"레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 902,
+        "text": "을 통해 피부와 외모를 개선할 수 있는 시술이에요.",
+        "context": "return `${categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 1072,
+        "text": "시술 이미지",
+        "context": "\"시술 이미지\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 1225,
+        "text": "랭킹 데이터가 없습니다.",
+        "context": "? \"랭킹 데이터가 없습니다.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CategoryRankingPage.tsx",
+        "line": 1365,
+        "text": "시술 이미지",
+        "context": "treatment.treatment_name || \"시술 이미지\""
+      }
+    ],
+    "components\\CommentList.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommentList.tsx",
+        "line": 52,
+        "text": "댓글을 삭제하시겠습니까?",
+        "context": "if (!confirm(\"댓글을 삭제하시겠습니까?\")) {"
+      }
+    ],
+    "components\\CommunityFloatingButton.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityFloatingButton.tsx",
+        "line": 20,
+        "text": "글 작성하기",
+        "context": "aria-label=\"글 작성하기\""
+      }
+    ],
+    "components\\CommunityHeader.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityHeader.tsx",
+        "line": 53,
+        "text": "글 작성하기",
+        "context": "aria-label=\"글 작성하기\""
+      }
+    ],
+    "components\\CommunityRecommendations.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 28,
+        "text": "포토후기",
+        "context": "category: \"포토후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 29,
+        "text": "뷰티러버",
+        "context": "username: \"뷰티러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 32,
+        "text": "인모드 리프팅",
+        "context": "\"인모드 리프팅 3개월 후기! 턱선이 확실히 올라간 게 보이시나요? 특히 팔자주름 개선이 대박이었어요. 시술 과정도 무척 편안했고 원장님이 친절하게 설명해주셨어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 32,
+        "text": "개월 후기! 턱선이 확실히 올라간 게 보이시나요? 특히 팔자주름 개선이 대박이었어요. 시술 과정도 무척 편안했고 원장님이 친절하게 설명해주셨어요.",
+        "context": "\"인모드 리프팅 3개월 후기! 턱선이 확실히 올라간 게 보이시나요? 특히 팔자주름 개선이 대박이었어요. 시술 과정도 무척 편안했고 원장님이 친절하게 설명해주셨어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 34,
+        "text": "시간 전",
+        "context": "timestamp: \"2시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 39,
+        "text": "강남 클리닉",
+        "context": "hospitalName: \"강남 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 43,
+        "text": "수술후기",
+        "context": "category: \"수술후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 44,
+        "text": "코성형러버",
+        "context": "username: \"코성형러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 47,
+        "text": "코 성형 후기 남겨요! 자연스러운 느낌으로 하고 싶었는데 완벽하게 원하는 대로 나왔어요. 회복 기간도 생각보다 빨랐고 관리도 어렵지 않았어요.",
+        "context": "\"코 성형 후기 남겨요! 자연스러운 느낌으로 하고 싶었는데 완벽하게 원하는 대로 나왔어요. 회복 기간도 생각보다 빨랐고 관리도 어렵지 않았어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 49,
+        "text": "시간 전",
+        "context": "timestamp: \"5시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 57,
+        "text": "회복수다",
+        "context": "category: \"회복수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 58,
+        "text": "회복중",
+        "context": "username: \"회복중\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 61,
+        "text": "수술 후 일주일째에요. 붓기 많이 빠졌고 통증도 거의 없어졌어요. 마사지와 찜질 열심히 하고 있는데 효과가 있는 것 같아요!",
+        "context": "\"수술 후 일주일째에요. 붓기 많이 빠졌고 통증도 거의 없어졌어요. 마사지와 찜질 열심히 하고 있는데 효과가 있는 것 같아요!\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 62,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CommunityRecommendations.tsx",
+        "line": 66,
+        "text": "서울 병원",
+        "context": "hospitalName: \"서울 병원\","
+      }
+    ],
+    "components\\ConcernPostForm.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 46,
+        "text": "피부 고민",
+        "context": "{ key: \"concernCategory.skinConcern\", value: \"피부 고민\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 47,
+        "text": "시술 고민",
+        "context": "{ key: \"concernCategory.procedureConcern\", value: \"시술 고민\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 48,
+        "text": "병원 선택",
+        "context": "{ key: \"concernCategory.hospitalSelection\", value: \"병원 선택\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 49,
+        "text": "가격 문의",
+        "context": "{ key: \"concernCategory.priceInquiry\", value: \"가격 문의\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 50,
+        "text": "회복 기간",
+        "context": "{ key: \"concernCategory.recoveryPeriod\", value: \"회복 기간\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 51,
+        "text": "부작용",
+        "context": "{ key: \"concernCategory.sideEffect\", value: \"부작용\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ConcernPostForm.tsx",
+        "line": 170,
+        "text": "알 수 없는 오류",
+        "context": "const errorMessage = imageError?.message || imageError?.toString() || \"알 수 없는 오류\";"
+      }
+    ],
+    "components\\CountryPainPointSection.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 21,
+        "text": "보톡스",
+        "context": "주름: [\"보톡스\", \"리쥬란\", \"리프팅\", \"인모드\", \"슈링크\", \"주름\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 21,
+        "text": "리쥬란",
+        "context": "주름: [\"보톡스\", \"리쥬란\", \"리프팅\", \"인모드\", \"슈링크\", \"주름\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 21,
+        "text": "리프팅",
+        "context": "주름: [\"보톡스\", \"리쥬란\", \"리프팅\", \"인모드\", \"슈링크\", \"주름\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 21,
+        "text": "인모드",
+        "context": "주름: [\"보톡스\", \"리쥬란\", \"리프팅\", \"인모드\", \"슈링크\", \"주름\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 21,
+        "text": "슈링크",
+        "context": "주름: [\"보톡스\", \"리쥬란\", \"리프팅\", \"인모드\", \"슈링크\", \"주름\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 22,
+        "text": "지방재배치",
+        "context": "다크서클: [\"필러\", \"지방재배치\", \"리쥬란\", \"다크서클\", \"눈밑\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 22,
+        "text": "리쥬란",
+        "context": "다크서클: [\"필러\", \"지방재배치\", \"리쥬란\", \"다크서클\", \"눈밑\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 22,
+        "text": "다크서클",
+        "context": "다크서클: [\"필러\", \"지방재배치\", \"리쥬란\", \"다크서클\", \"눈밑\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 23,
+        "text": "프락셀",
+        "context": "모공: [\"프락셀\", \"레이저\", \"모공\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 23,
+        "text": "레이저",
+        "context": "모공: [\"프락셀\", \"레이저\", \"모공\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 23,
+        "text": "아쿠아필",
+        "context": "모공: [\"프락셀\", \"레이저\", \"모공\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 24,
+        "text": "레이저",
+        "context": "피부톤: [\"미백\", \"레이저\", \"프락셀\", \"피부톤\", \"백옥\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 24,
+        "text": "프락셀",
+        "context": "피부톤: [\"미백\", \"레이저\", \"프락셀\", \"피부톤\", \"백옥\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 24,
+        "text": "피부톤",
+        "context": "피부톤: [\"미백\", \"레이저\", \"프락셀\", \"피부톤\", \"백옥\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 25,
+        "text": "레이저",
+        "context": "트러블: [\"레이저\", \"프락셀\", \"트러블\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 25,
+        "text": "프락셀",
+        "context": "트러블: [\"레이저\", \"프락셀\", \"트러블\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 25,
+        "text": "트러블",
+        "context": "트러블: [\"레이저\", \"프락셀\", \"트러블\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 25,
+        "text": "아쿠아필",
+        "context": "트러블: [\"레이저\", \"프락셀\", \"트러블\", \"피코\", \"아쿠아필\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 26,
+        "text": "리프팅",
+        "context": "탄력: [\"리프팅\", \"인모드\", \"슈링크\", \"울쎄라\", \"탄력\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 26,
+        "text": "인모드",
+        "context": "탄력: [\"리프팅\", \"인모드\", \"슈링크\", \"울쎄라\", \"탄력\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 26,
+        "text": "슈링크",
+        "context": "탄력: [\"리프팅\", \"인모드\", \"슈링크\", \"울쎄라\", \"탄력\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 26,
+        "text": "울쎄라",
+        "context": "탄력: [\"리프팅\", \"인모드\", \"슈링크\", \"울쎄라\", \"탄력\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 79,
+        "text": "다크서클",
+        "context": "all: [\"주름\", \"다크서클\", \"모공\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 79,
+        "text": "피부톤",
+        "context": "all: [\"주름\", \"다크서클\", \"모공\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 79,
+        "text": "트러블",
+        "context": "all: [\"주름\", \"다크서클\", \"모공\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 80,
+        "text": "피부톤",
+        "context": "korea: [\"주름\", \"탄력\", \"모공\", \"피부톤\", \"다크서클\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 80,
+        "text": "다크서클",
+        "context": "korea: [\"주름\", \"탄력\", \"모공\", \"피부톤\", \"다크서클\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 81,
+        "text": "다크서클",
+        "context": "china: [\"주름\", \"다크서클\", \"모공\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 81,
+        "text": "피부톤",
+        "context": "china: [\"주름\", \"다크서클\", \"모공\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 81,
+        "text": "트러블",
+        "context": "china: [\"주름\", \"다크서클\", \"모공\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 82,
+        "text": "다크서클",
+        "context": "japan: [\"모공\", \"주름\", \"다크서클\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 82,
+        "text": "피부톤",
+        "context": "japan: [\"모공\", \"주름\", \"다크서클\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 82,
+        "text": "트러블",
+        "context": "japan: [\"모공\", \"주름\", \"다크서클\", \"피부톤\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 83,
+        "text": "다크서클",
+        "context": "usa: [\"주름\", \"다크서클\", \"피부톤\", \"모공\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 83,
+        "text": "피부톤",
+        "context": "usa: [\"주름\", \"다크서클\", \"피부톤\", \"모공\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 83,
+        "text": "트러블",
+        "context": "usa: [\"주름\", \"다크서클\", \"피부톤\", \"모공\", \"트러블\"],"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 140,
+        "text": "키워드",
+        "context": "`키워드 \"${originalKeyword}\"에 해당하는 category_mid를 찾을 수 없습니다.`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 140,
+        "text": "에 해당하는",
+        "context": "`키워드 \"${originalKeyword}\"에 해당하는 category_mid를 찾을 수 없습니다.`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 140,
+        "text": "를 찾을 수 없습니다.",
+        "context": "`키워드 \"${originalKeyword}\"에 해당하는 category_mid를 찾을 수 없습니다.`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 221,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\") || result.error?.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 221,
+        "text": "로그인",
+        "context": "if (result.error?.includes(\"로그인이 필요\") || result.error?.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\CountryPainPointSection.tsx",
+        "line": 355,
+        "text": "시술 이미지",
+        "context": "alt={treatment.treatment_name || \"시술 이미지\"}"
+      }
+    ],
+    "components\\ExploreScrollPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ExploreScrollPage.tsx",
+        "line": 237,
+        "text": "맨 위로",
+        "context": "aria-label=\"맨 위로\""
+      }
+    ],
+    "components\\HomePage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 29,
+        "text": "눈성형",
+        "context": "{ id: \"eyes\", name: \"눈성형\", icon: \"👀\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 30,
+        "text": "리프팅",
+        "context": "{ id: \"lifting\", name: \"리프팅\", icon: \"✨\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 31,
+        "text": "보톡스",
+        "context": "{ id: \"botox\", name: \"보톡스\", icon: \"💉\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 32,
+        "text": "안면윤곽",
+        "context": "{ id: \"facial\", name: \"안면윤곽/양악\", icon: \"😊\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 34,
+        "text": "지방성형",
+        "context": "{ id: \"liposuction\", name: \"지방성형\", icon: \"💪\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 35,
+        "text": "코성형",
+        "context": "{ id: \"nose\", name: \"코성형\", icon: \"👃\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 38,
+        "text": "가슴성형",
+        "context": "{ id: \"breast\", name: \"가슴성형\", icon: \"💕\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HomePage.tsx",
+        "line": 146,
+        "text": "만원 미만",
+        "context": "estimatedBudget: \"100만원 미만\","
+      }
+    ],
+    "components\\HospitalDetailPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalDetailPage.tsx",
+        "line": 192,
+        "text": "병원 정보",
+        "context": "title: hospital?.hospital_name || \"병원 정보\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalDetailPage.tsx",
+        "line": 263,
+        "text": "병원 이미지",
+        "context": "alt={hospital.hospital_name || \"병원 이미지\"}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalDetailPage.tsx",
+        "line": 305,
+        "text": "찜하기",
+        "context": "aria-label=\"찜하기\""
+      }
+    ],
+    "components\\HospitalInfoPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalInfoPage.tsx",
+        "line": 113,
+        "text": "알 수 없는 오류가 발생했습니다.",
+        "context": "err instanceof Error ? err.message : \"알 수 없는 오류가 발생했습니다.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalInfoPage.tsx",
+        "line": 331,
+        "text": "진료과 정보 없음",
+        "context": "let topDepartment = \"진료과 정보 없음\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalInfoPage.tsx",
+        "line": 352,
+        "text": "주소 정보 없음",
+        "context": "const location = hospital.hospital_address || \"주소 정보 없음\";"
+      }
+    ],
+    "components\\HospitalReviewDetailPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalReviewDetailPage.tsx",
+        "line": 151,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalReviewDetailPage.tsx",
+        "line": 405,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${idx + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalReviewDetailPage.tsx",
+        "line": 437,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${selectedImageIndex + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalReviewDetailPage.tsx",
+        "line": 507,
+        "text": "병원 후기",
+        "context": "title: `${review.hospital_name} 병원 후기`,"
+      }
+    ],
+    "components\\HospitalReviewForm.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HospitalReviewForm.tsx",
+        "line": 133,
+        "text": "오류:",
+        "context": "throw new Error(`Supabase 오류: ${error.message}`);"
+      }
+    ],
+    "components\\HotConcernsSection.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HotConcernsSection.tsx",
+        "line": 106,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\") || result.error?.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HotConcernsSection.tsx",
+        "line": 106,
+        "text": "로그인",
+        "context": "if (result.error?.includes(\"로그인이 필요\") || result.error?.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HotConcernsSection.tsx",
+        "line": 290,
+        "text": "가격 문의",
+        "context": ": \"가격 문의\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\HotConcernsSection.tsx",
+        "line": 311,
+        "text": "시술 이미지",
+        "context": "alt={treatment.treatment_name || \"시술 이미지\"}"
+      }
+    ],
+    "components\\KBeautyRankingPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\KBeautyRankingPage.tsx",
+        "line": 256,
+        "text": "시술 이미지",
+        "context": "alt={treatment.treatment_name || \"시술 이미지\"}"
+      }
+    ],
+    "components\\LikedPostsPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LikedPostsPage.tsx",
+        "line": 29,
+        "text": "좋아요한 글을 불러올 수 없습니다.",
+        "context": "setError(result.error || \"좋아요한 글을 불러올 수 없습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LikedPostsPage.tsx",
+        "line": 33,
+        "text": "좋아요한 글을 불러오는 중 오류가 발생했습니다.",
+        "context": "setError(\"좋아요한 글을 불러오는 중 오류가 발생했습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LikedPostsPage.tsx",
+        "line": 46,
+        "text": "가이드",
+        "context": "case \"가이드\":"
+      }
+    ],
+    "components\\LoginModal.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 56,
+        "text": "클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요.",
+        "context": "\"[LoginModal] Supabase 클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 114,
+        "text": "사용자",
+        "context": "\"사용자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 146,
+        "text": "로그인 정보를 가져올 수 없습니다.",
+        "context": "throw new Error(\"Google 로그인 정보를 가져올 수 없습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 220,
+        "text": "사용자",
+        "context": "\"사용자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 233,
+        "text": "프로필 저장에 실패했습니다. 다시 시도해주세요.",
+        "context": "\"프로필 저장에 실패했습니다. 다시 시도해주세요.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 249,
+        "text": "사용자",
+        "context": "\"사용자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 259,
+        "text": "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.",
+        "context": "\"로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 422,
+        "text": "경고:",
+        "context": "\"⚠️ [Google OAuth] 경고: Supabase URL이 아닙니다. 확인 필요:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 422,
+        "text": "이 아닙니다. 확인 필요:",
+        "context": "\"⚠️ [Google OAuth] 경고: Supabase URL이 아닙니다. 확인 필요:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 477,
+        "text": "이메일 인증 미완료이지만",
+        "context": "\"이메일 인증 미완료이지만 user_profiles에 사용자 존재, 로그인 허용\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 477,
+        "text": "에 사용자 존재, 로그인 허용",
+        "context": "\"이메일 인증 미완료이지만 user_profiles에 사용자 존재, 로그인 허용\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 485,
+        "text": "사용자",
+        "context": "\"사용자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 563,
+        "text": "사용자",
+        "context": "\"사용자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\LoginModal.tsx",
+        "line": 580,
+        "text": "로그인 중 오류가 발생했습니다. 다시 시도해주세요.",
+        "context": "error.message || \"로그인 중 오류가 발생했습니다. 다시 시도해주세요.\""
+      }
+    ],
+    "components\\MyPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 84,
+        "text": "사용자",
+        "context": "\"사용자\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 111,
+        "text": "사용자",
+        "context": "\"사용자\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 137,
+        "text": "클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요.",
+        "context": "\"[MyPage] Supabase 클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 184,
+        "text": "사용자",
+        "context": "\"사용자\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 205,
+        "text": "사용자",
+        "context": "\"사용자\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 226,
+        "text": "세션과",
+        "context": "\"⚠️ [MyPage] 세션과 localStorage 모두 없음 - 로그아웃 상태\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 226,
+        "text": "모두 없음",
+        "context": "\"⚠️ [MyPage] 세션과 localStorage 모두 없음 - 로그아웃 상태\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 226,
+        "text": "로그아웃 상태",
+        "context": "\"⚠️ [MyPage] 세션과 localStorage 모두 없음 - 로그아웃 상태\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MyPage.tsx",
+        "line": 245,
+        "text": "클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요.",
+        "context": "\"[MyPage] Supabase 클라이언트가 초기화되지 않았습니다. 환경변수를 확인하세요.\""
+      }
+    ],
+    "components\\MySchedulePage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 108,
+        "text": "리쥬란 힐러",
+        "context": "procedureName: \"리쥬란 힐러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 109,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 110,
+        "text": "피부관리",
+        "context": "category: \"피부관리\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 117,
+        "text": "인모드 리프팅",
+        "context": "procedureName: \"인모드 리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 118,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 119,
+        "text": "리프팅",
+        "context": "category: \"윤곽/리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 126,
+        "text": "개의 병원",
+        "context": "{ id: 1, x: 15, y: 20, count: 12, label: \"12개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 127,
+        "text": "개의 병원",
+        "context": "{ id: 2, x: 75, y: 30, count: 4, label: \"4개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 128,
+        "text": "개의 병원",
+        "context": "{ id: 3, x: 40, y: 50, count: 22, label: \"22개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 129,
+        "text": "개의 병원",
+        "context": "{ id: 4, x: 60, y: 45, count: 9, label: \"9개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 130,
+        "text": "개의 병원",
+        "context": "{ id: 5, x: 25, y: 65, count: 15, label: \"15개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 131,
+        "text": "개의 병원",
+        "context": "{ id: 6, x: 80, y: 70, count: 7, label: \"7개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 137,
+        "text": "셀이즈연세메디컬의원",
+        "context": "name: \"셀이즈연세메디컬의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 138,
+        "text": "남부터미널역",
+        "context": "location: \"남부터미널역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 139,
+        "text": "피부미백 백옥주사",
+        "context": "procedure: \"피부미백 백옥주사\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 148,
+        "text": "장덕한방병원",
+        "context": "name: \"장덕한방병원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 149,
+        "text": "신사역",
+        "context": "location: \"신사역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 159,
+        "text": "비비의원",
+        "context": "name: \"비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 160,
+        "text": "강남역",
+        "context": "location: \"강남역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 161,
+        "text": "리쥬란 힐러",
+        "context": "procedure: \"리쥬란 힐러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 170,
+        "text": "다이아의원",
+        "context": "name: \"다이아의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 171,
+        "text": "압구정역",
+        "context": "location: \"압구정역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 172,
+        "text": "주름보톡스",
+        "context": "procedure: \"주름보톡스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 452,
+        "text": "시술 이미지",
+        "context": "alt={treatment.treatment_name || \"시술 이미지\"}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 1458,
+        "text": "회복 기간",
+        "context": "title={`${rec.procedureName} 회복 기간`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 1673,
+        "text": "날짜 수정",
+        "context": "title=\"날짜 수정\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 1846,
+        "text": "개 삭제 성공,",
+        "context": "`${successCount}개 삭제 성공, ${failCount}개 삭제 실패`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 1846,
+        "text": "개 삭제 실패",
+        "context": "`${successCount}개 삭제 성공, ${failCount}개 삭제 실패`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 2531,
+        "text": "일정 로드",
+        "context": "\"✅ [일정 로드] categorySmall 찾음:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 2531,
+        "text": "찾음:",
+        "context": "\"✅ [일정 로드] categorySmall 찾음:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 2540,
+        "text": "일정 로드",
+        "context": "`⚠️ [일정 로드] treatment_id ${s.treatmentId}의 category_small이 없습니다.`,"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 2540,
+        "text": "이 없습니다.",
+        "context": "`⚠️ [일정 로드] treatment_id ${s.treatmentId}의 category_small이 없습니다.`,"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3220,
+        "text": "캐시 데이터 삭제",
+        "context": "title=\"캐시 데이터 삭제\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3370,
+        "text": "일정 저장에 실패했습니다.",
+        "context": "result.error || \"일정 저장에 실패했습니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3376,
+        "text": "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.",
+        "context": "\"일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3378,
+        "text": "로그인",
+        "context": "} else if (errorMessage.includes(\"로그인\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3387,
+        "text": "일정 저장에 실패했습니다.",
+        "context": "error?.message || \"일정 저장에 실패했습니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3393,
+        "text": "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.",
+        "context": "\"일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3625,
+        "text": "회복 기간",
+        "context": "title={`${rec.procedureName} 회복 기간`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3833,
+        "text": "날짜 수정",
+        "context": "title=\"날짜 수정\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3917,
+        "text": "시술 카드",
+        "context": "`⚠️ [시술 카드] \"${proc.procedureName}\"의 categorySmall이 없어서 추천을 표시하지 않습니다.`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\MySchedulePage.tsx",
+        "line": 3917,
+        "text": "이 없어서 추천을 표시하지 않습니다.",
+        "context": "`⚠️ [시술 카드] \"${proc.procedureName}\"의 categorySmall이 없어서 추천을 표시하지 않습니다.`"
+      }
+    ],
+    "components\\NearbyPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 10,
+        "text": "개의 병원",
+        "context": "{ id: 1, x: 15, y: 20, count: 12, label: \"12개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 11,
+        "text": "개의 병원",
+        "context": "{ id: 2, x: 75, y: 30, count: 4, label: \"4개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 12,
+        "text": "개의 병원",
+        "context": "{ id: 3, x: 40, y: 50, count: 22, label: \"22개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 13,
+        "text": "개의 병원",
+        "context": "{ id: 4, x: 60, y: 45, count: 9, label: \"9개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 14,
+        "text": "개의 병원",
+        "context": "{ id: 5, x: 25, y: 65, count: 15, label: \"15개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 15,
+        "text": "개의 병원",
+        "context": "{ id: 6, x: 80, y: 70, count: 7, label: \"7개의 병원\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 21,
+        "text": "셀이즈연세메디컬의원",
+        "context": "name: \"셀이즈연세메디컬의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 22,
+        "text": "남부터미널역",
+        "context": "location: \"남부터미널역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 23,
+        "text": "피부미백 백옥주사",
+        "context": "procedure: \"피부미백 백옥주사\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 32,
+        "text": "장덕한방병원",
+        "context": "name: \"장덕한방병원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 33,
+        "text": "신사역",
+        "context": "location: \"신사역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 43,
+        "text": "비비의원",
+        "context": "name: \"비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 44,
+        "text": "강남역",
+        "context": "location: \"강남역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 45,
+        "text": "리쥬란 힐러",
+        "context": "procedure: \"리쥬란 힐러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 54,
+        "text": "다이아의원",
+        "context": "name: \"다이아의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 55,
+        "text": "압구정역",
+        "context": "location: \"압구정역\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\NearbyPage.tsx",
+        "line": 56,
+        "text": "주름보톡스",
+        "context": "procedure: \"주름보톡스\","
+      }
+    ],
+    "components\\PopularReviewsSection.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 36,
+        "text": "시간 정보 없음",
+        "context": "if (!dateString) return \"시간 정보 없음\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 44,
+        "text": "방금 전",
+        "context": "if (diffMins < 1) return \"방금 전\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 45,
+        "text": "분 전",
+        "context": "if (diffMins < 60) return `${diffMins}분 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 46,
+        "text": "시간 전",
+        "context": "if (diffHours < 24) return `${diffHours}시간 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 47,
+        "text": "일 전",
+        "context": "if (diffDays < 7) return `${diffDays}일 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 48,
+        "text": "주 전",
+        "context": "return `${Math.floor(diffDays / 7)}주 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PopularReviewsSection.tsx",
+        "line": 116,
+        "text": "병원후기",
+        "context": "category: review.category_large || \"병원후기\","
+      }
+    ],
+    "components\\PostList.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 61,
+        "text": "정보공유",
+        "context": "category: \"정보공유\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 62,
+        "text": "뷰티매니아",
+        "context": "username: \"뷰티매니아\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 65,
+        "text": "강남역 근처 추천 클리닉 리스트 공유해요! 가격대비 품질이 좋은 곳들만 골라봤어요. 특히 리쥬란 힐러 시술 받았을 때 만족도가 높았던 곳 위주로 정리했습니다...더 보기",
+        "context": "\"강남역 근처 추천 클리닉 리스트 공유해요! 가격대비 품질이 좋은 곳들만 골라봤어요. 특히 리쥬란 힐러 시술 받았을 때 만족도가 높았던 곳 위주로 정리했습니다...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 67,
+        "text": "시간 전",
+        "context": "timestamp: \"5시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 75,
+        "text": "질문답변",
+        "context": "category: \"질문답변\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 76,
+        "text": "시술초보자",
+        "context": "username: \"시술초보자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 79,
+        "text": "처음으로 보톡스 맞으려는데 어떤 클리닉이 좋을까요? 강남 지역 위주로 추천 부탁드려요. 가격도 궁금하고 부작용 걱정도 되네요...더 보기",
+        "context": "\"처음으로 보톡스 맞으려는데 어떤 클리닉이 좋을까요? 강남 지역 위주로 추천 부탁드려요. 가격도 궁금하고 부작용 걱정도 되네요...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 80,
+        "text": "시간 전",
+        "context": "timestamp: \"8시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 87,
+        "text": "정보공유",
+        "context": "category: \"정보공유\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 88,
+        "text": "스킨케어러버",
+        "context": "username: \"스킨케어러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 91,
+        "text": "인모드 리프팅 전후 비교 사진 공유합니다!",
+        "context": "\"인모드 리프팅 전후 비교 사진 공유합니다! 3개월 차인데 효과가 정말 만족스러워요. 특히 턱선이 확실히 올라간 게 보이시나요? ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 91,
+        "text": "개월 차인데 효과가 정말 만족스러워요. 특히 턱선이 확실히 올라간 게 보이시나요? ...더 보기",
+        "context": "\"인모드 리프팅 전후 비교 사진 공유합니다! 3개월 차인데 효과가 정말 만족스러워요. 특히 턱선이 확실히 올라간 게 보이시나요? ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 93,
+        "text": "시간 전",
+        "context": "timestamp: \"12시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 102,
+        "text": "자유수다",
+        "context": "category: \"자유수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 103,
+        "text": "코성형고민",
+        "context": "username: \"코성형고민\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 106,
+        "text": "코 재수술 고민 중인데 조언 구해요",
+        "context": "\"코 재수술 고민 중인데 조언 구해요ㅠㅠ 첫 수술이 마음에 들지 않아서... 어떤 의원이 좋은지, 재수술 시 주의사항은 무엇인지 궁금합니다...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 106,
+        "text": "첫 수술이 마음에 들지 않아서... 어떤 의원이 좋은지, 재수술 시 주의사항은 무엇인지 궁금합니다...더 보기",
+        "context": "\"코 재수술 고민 중인데 조언 구해요ㅠㅠ 첫 수술이 마음에 들지 않아서... 어떤 의원이 좋은지, 재수술 시 주의사항은 무엇인지 궁금합니다...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 107,
+        "text": "시간 전",
+        "context": "timestamp: \"15시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 114,
+        "text": "정보공유",
+        "context": "category: \"정보공유\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 115,
+        "text": "필러전문가",
+        "context": "username: \"필러전문가\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 118,
+        "text": "년 필러 가격 정보 정리했어요! 지역별, 시술별로 비교해봤는데 참고하시면 좋을 것 같아요. 특히 리쥬란, 쥬베룩 가격대가 궁금하셨던 분들...더 보기",
+        "context": "\"2024년 필러 가격 정보 정리했어요! 지역별, 시술별로 비교해봤는데 참고하시면 좋을 것 같아요. 특히 리쥬란, 쥬베룩 가격대가 궁금하셨던 분들...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 119,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 128,
+        "text": "질문답변",
+        "context": "category: \"질문답변\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 129,
+        "text": "리프팅고민",
+        "context": "username: \"리프팅고민\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 132,
+        "text": "울쎄라",
+        "context": "\"울쎄라 vs 인모드 어떤 게 나을까요? 둘 다 받아보신 분들 의견 듣고 싶어요. 가격도 비교해주시면 감사하겠습니다! ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 132,
+        "text": "인모드 어떤 게 나을까요? 둘 다 받아보신 분들 의견 듣고 싶어요. 가격도 비교해주시면 감사하겠습니다! ...더 보기",
+        "context": "\"울쎄라 vs 인모드 어떤 게 나을까요? 둘 다 받아보신 분들 의견 듣고 싶어요. 가격도 비교해주시면 감사하겠습니다! ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 133,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 146,
+        "text": "눈성형",
+        "context": "category: \"눈성형\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 147,
+        "text": "시술러버",
+        "context": "username: \"시술러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 150,
+        "text": "쌍수 재수술 받고 왔어요! 이번엔 정말 만족스럽습니다. 붓기도 예상보다 빨리 빠지고 자연스러워요.",
+        "context": "\"쌍수 재수술 받고 왔어요! 이번엔 정말 만족스럽습니다. 붓기도 예상보다 빨리 빠지고 자연스러워요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 152,
+        "text": "분 전",
+        "context": "timestamp: \"15분 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 157,
+        "text": "쌍수 재수술",
+        "context": "procedure_name: \"쌍수 재수술\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 158,
+        "text": "강남 클리닉",
+        "context": "hospital_name: \"강남 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 162,
+        "text": "보톡스",
+        "context": "category: \"보톡스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 163,
+        "text": "뷰티매니아",
+        "context": "username: \"뷰티매니아\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 166,
+        "text": "이마 보톡스 맞고 왔는데 효과가 정말 좋아요! 주름이 많이 개선되었어요.",
+        "context": "\"이마 보톡스 맞고 왔는데 효과가 정말 좋아요! 주름이 많이 개선되었어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 167,
+        "text": "분 전",
+        "context": "timestamp: \"45분 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 172,
+        "text": "이마 보톡스",
+        "context": "procedure_name: \"이마 보톡스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 173,
+        "text": "서울 병원",
+        "context": "hospital_name: \"서울 병원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 177,
+        "text": "리프팅",
+        "context": "category: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 178,
+        "text": "리프팅전문가",
+        "context": "username: \"리프팅전문가\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 181,
+        "text": "인모드 리프팅 시술 받았어요! 시술 전 주의사항 정리해서 올려봅니다. 시술 받기 전에 꼭 확인하시면 좋을 것 같아요!",
+        "context": "\"인모드 리프팅 시술 받았어요! 시술 전 주의사항 정리해서 올려봅니다. 시술 받기 전에 꼭 확인하시면 좋을 것 같아요!\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 183,
+        "text": "시간 전",
+        "context": "timestamp: \"1시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 189,
+        "text": "인모드 리프팅",
+        "context": "procedure_name: \"인모드 리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 190,
+        "text": "강남 뷰티센터",
+        "context": "hospital_name: \"강남 뷰티센터\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 200,
+        "text": "병원후기",
+        "context": "category: \"병원후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 201,
+        "text": "신규회원",
+        "context": "username: \"신규회원123\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 204,
+        "text": "강남역 신규 오픈한 클리닉 다녀왔어요! 오픈 기념 이벤트 진행 중이고 직원분들도 친절하세요.",
+        "context": "\"강남역 신규 오픈한 클리닉 다녀왔어요! 오픈 기념 이벤트 진행 중이고 직원분들도 친절하세요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 205,
+        "text": "분 전",
+        "context": "timestamp: \"10분 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 210,
+        "text": "강남역 클리닉",
+        "context": "hospital_name: \"강남역 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 214,
+        "text": "병원후기",
+        "context": "category: \"병원후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 215,
+        "text": "가격비교왕",
+        "context": "username: \"가격비교왕\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 218,
+        "text": "올해부터 필러 가격이 올랐다고 들었는데 실제로 어떠세요? 최근 시술 받으신 분들 가격 정보 공유해주세요!",
+        "context": "\"올해부터 필러 가격이 올랐다고 들었는데 실제로 어떠세요? 최근 시술 받으신 분들 가격 정보 공유해주세요!\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 219,
+        "text": "분 전",
+        "context": "timestamp: \"20분 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 224,
+        "text": "서울 뷰티센터",
+        "context": "hospital_name: \"서울 뷰티센터\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 235,
+        "text": "피부 고민",
+        "context": "category: \"피부 고민\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 236,
+        "text": "트러블폭발",
+        "context": "username: \"트러블폭발\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 239,
+        "text": "여드름 흉터가 너무 심한데 해외에서 잠깐 들어오는 동안 할 수 있는 치료가 있을까요? 다운타임이 길지 않았으면 좋겠어요.",
+        "context": "\"여드름 흉터가 너무 심한데 해외에서 잠깐 들어오는 동안 할 수 있는 치료가 있을까요? 다운타임이 길지 않았으면 좋겠어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 240,
+        "text": "시간 전",
+        "context": "timestamp: \"3시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 248,
+        "text": "피부 고민",
+        "context": "category: \"피부 고민\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 249,
+        "text": "건성인간",
+        "context": "username: \"건성인간\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 252,
+        "text": "겨울만 되면 각질",
+        "context": "\"겨울만 되면 각질+당김이 너무 심해요. 레이저를 해야 할지, 관리 위주로 가야 할지 헷갈립니다. 비슷한 분들 어떤 시술 받으셨나요?\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 252,
+        "text": "당김이 너무 심해요. 레이저를 해야 할지, 관리 위주로 가야 할지 헷갈립니다. 비슷한 분들 어떤 시술 받으셨나요?",
+        "context": "\"겨울만 되면 각질+당김이 너무 심해요. 레이저를 해야 할지, 관리 위주로 가야 할지 헷갈립니다. 비슷한 분들 어떤 시술 받으셨나요?\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 253,
+        "text": "시간 전",
+        "context": "timestamp: \"5시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 261,
+        "text": "시술 고민",
+        "context": "category: \"시술 고민\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 262,
+        "text": "첫보톡스도전",
+        "context": "username: \"첫보톡스도전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 265,
+        "text": "미간 보톡스를 처음 맞아보려는데 표정이 너무 안 어색했으면 좋겠어요. 용량이나 병원 고를 때 꼭 봐야 할 포인트가 있을까요?",
+        "context": "\"이마+미간 보톡스를 처음 맞아보려는데 표정이 너무 안 어색했으면 좋겠어요. 용량이나 병원 고를 때 꼭 봐야 할 포인트가 있을까요?\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 266,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 274,
+        "text": "시술 고민",
+        "context": "category: \"시술 고민\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 275,
+        "text": "리프팅궁금",
+        "context": "username: \"리프팅궁금\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 278,
+        "text": "인모드랑 슈링크 중에 어떤 걸 먼저 해보는 게 좋을까요? 통증이랑 붓기, 효과 지속기간 차이가 궁금합니다.",
+        "context": "\"인모드랑 슈링크 중에 어떤 걸 먼저 해보는 게 좋을까요? 통증이랑 붓기, 효과 지속기간 차이가 궁금합니다.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 279,
+        "text": "일 전",
+        "context": "timestamp: \"2일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 287,
+        "text": "병원 선택",
+        "context": "category: \"병원 선택\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 288,
+        "text": "어디가좋을까",
+        "context": "username: \"어디가좋을까\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 291,
+        "text": "신사 쪽 리프팅 잘하는 병원 어디가 괜찮을까요? 후기를 봐도 다 좋아 보여서 실제로 받아보신 분들 의견이 궁금해요.",
+        "context": "\"강남/신사 쪽 리프팅 잘하는 병원 어디가 괜찮을까요? 후기를 봐도 다 좋아 보여서 실제로 받아보신 분들 의견이 궁금해요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 292,
+        "text": "시간 전",
+        "context": "timestamp: \"6시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 300,
+        "text": "가격 문의",
+        "context": "category: \"가격 문의\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 304,
+        "text": "만 원 안쪽으로 할 수 있는 시술 추천 부탁드려요! 얼굴 전체 분위기만 조금 상큼해졌으면 좋겠어요.",
+        "context": "\"50만 원 안쪽으로 할 수 있는 시술 추천 부탁드려요! 얼굴 전체 분위기만 조금 상큼해졌으면 좋겠어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 305,
+        "text": "시간 전",
+        "context": "timestamp: \"8시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 313,
+        "text": "회복 기간",
+        "context": "category: \"회복 기간\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 314,
+        "text": "직장인휴가",
+        "context": "username: \"직장인휴가3일\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 317,
+        "text": "휴가가 딱",
+        "context": "\"휴가가 딱 3일인데, 이 기간 안에 회복 가능한 시술이 뭐가 있을까요? 붓기 심한 건 피하고 싶어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 317,
+        "text": "일인데, 이 기간 안에 회복 가능한 시술이 뭐가 있을까요? 붓기 심한 건 피하고 싶어요.",
+        "context": "\"휴가가 딱 3일인데, 이 기간 안에 회복 가능한 시술이 뭐가 있을까요? 붓기 심한 건 피하고 싶어요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 318,
+        "text": "시간 전",
+        "context": "timestamp: \"12시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 326,
+        "text": "부작용",
+        "context": "category: \"부작용\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 327,
+        "text": "붓기안빠짐",
+        "context": "username: \"붓기안빠짐\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 330,
+        "text": "턱 보톡스를 맞은 지",
+        "context": "\"턱 보톡스를 맞은 지 2주가 지났는데 아직도 씹을 때 불편한 느낌이 있어요. 이런 경우 병원에 다시 가봐야 할까요?\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 330,
+        "text": "주가 지났는데 아직도 씹을 때 불편한 느낌이 있어요. 이런 경우 병원에 다시 가봐야 할까요?",
+        "context": "\"턱 보톡스를 맞은 지 2주가 지났는데 아직도 씹을 때 불편한 느낌이 있어요. 이런 경우 병원에 다시 가봐야 할까요?\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 331,
+        "text": "일 전",
+        "context": "timestamp: \"3일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 340,
+        "text": "해외거주자",
+        "context": "username: \"해외거주자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 343,
+        "text": "해외에서 들어와서 시술",
+        "context": "\"해외에서 들어와서 시술+여행 같이 하려는데, 공항에서 가까운 지역 추천해주실 수 있나요? 일정 짜는 팁도 궁금해요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 343,
+        "text": "여행 같이 하려는데, 공항에서 가까운 지역 추천해주실 수 있나요? 일정 짜는 팁도 궁금해요.",
+        "context": "\"해외에서 들어와서 시술+여행 같이 하려는데, 공항에서 가까운 지역 추천해주실 수 있나요? 일정 짜는 팁도 궁금해요.\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 344,
+        "text": "일 전",
+        "context": "timestamp: \"4일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 355,
+        "text": "정보공유",
+        "context": "category: \"정보공유\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 356,
+        "text": "인기작가",
+        "context": "username: \"인기작가\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 359,
+        "text": "년 최고의 클리닉 랭킹 공유합니다! 직접 다녀본 곳들만 추천하는 리스트예요. 가격, 품질, 서비스 모두 고려해서 작성했습니다...더 보기",
+        "context": "\"2024년 최고의 클리닉 랭킹 공유합니다! 직접 다녀본 곳들만 추천하는 리스트예요. 가격, 품질, 서비스 모두 고려해서 작성했습니다...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 361,
+        "text": "일 전",
+        "context": "timestamp: \"2일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 371,
+        "text": "만족러버",
+        "context": "username: \"만족러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 374,
+        "text": "슈링크 유니버스 시술 받고 완전 만족해서 후기 남겨요! 효과가 정말 놀라웠고 원장님도 너무 친절하셨어요. 전후 사진 공유합니다! ...더 보기",
+        "context": "\"슈링크 유니버스 시술 받고 완전 만족해서 후기 남겨요! 효과가 정말 놀라웠고 원장님도 너무 친절하셨어요. 전후 사진 공유합니다! ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 376,
+        "text": "일 전",
+        "context": "timestamp: \"3일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 385,
+        "text": "정보공유",
+        "context": "category: \"정보공유\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 386,
+        "text": "가격정보왕",
+        "context": "username: \"가격정보왕\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 389,
+        "text": "시술별 가격대 비교표 업데이트했습니다! 지역별, 클리닉별 가격 정보를 한눈에 비교할 수 있도록 정리했어요. 많은 분들께 도움이 되면 좋겠습니다...더 보기",
+        "context": "\"시술별 가격대 비교표 업데이트했습니다! 지역별, 클리닉별 가격 정보를 한눈에 비교할 수 있도록 정리했어요. 많은 분들께 도움이 되면 좋겠습니다...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 390,
+        "text": "일 전",
+        "context": "timestamp: \"4일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 399,
+        "text": "자유수다",
+        "context": "category: \"자유수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 400,
+        "text": "화제의인물",
+        "context": "username: \"화제의인물\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 403,
+        "text": "이 클리닉 정말 추천합니다! 제가 받은 시술 중에서 최고였어요. 직원분들도 친절하고 시술도 깔끔하게 잘 끝났습니다. 여러분도 한번 가보세요! ...더 보기",
+        "context": "\"이 클리닉 정말 추천합니다! 제가 받은 시술 중에서 최고였어요. 직원분들도 친절하고 시술도 깔끔하게 잘 끝났습니다. 여러분도 한번 가보세요! ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 404,
+        "text": "일 전",
+        "context": "timestamp: \"5일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 412,
+        "text": "질문답변",
+        "context": "category: \"질문답변\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 413,
+        "text": "베테랑",
+        "context": "username: \"베테랑\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 416,
+        "text": "시술 관련 질문 받아요! 여러 번 경험한 입장에서 솔직하게 답변드리겠습니다. 어떤 질문이든 환영입니다",
+        "context": "\"시술 관련 질문 받아요! 여러 번 경험한 입장에서 솔직하게 답변드리겠습니다. 어떤 질문이든 환영입니다~ ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 416,
+        "text": "더 보기",
+        "context": "\"시술 관련 질문 받아요! 여러 번 경험한 입장에서 솔직하게 답변드리겠습니다. 어떤 질문이든 환영입니다~ ...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 417,
+        "text": "일 전",
+        "context": "timestamp: \"6일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 425,
+        "text": "정보공유",
+        "context": "category: \"정보공유\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 426,
+        "text": "리뷰마스터",
+        "context": "username: \"리뷰마스터\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 429,
+        "text": "강남역 클리닉 투어 후기 올려요!",
+        "context": "\"강남역 클리닉 투어 후기 올려요! 5곳을 직접 방문해서 비교해봤는데 각각의 특징과 장단점을 정리했습니다. 참고하시면 좋을 것 같아요...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 429,
+        "text": "곳을 직접 방문해서 비교해봤는데 각각의 특징과 장단점을 정리했습니다. 참고하시면 좋을 것 같아요...더 보기",
+        "context": "\"강남역 클리닉 투어 후기 올려요! 5곳을 직접 방문해서 비교해봤는데 각각의 특징과 장단점을 정리했습니다. 참고하시면 좋을 것 같아요...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 431,
+        "text": "주일 전",
+        "context": "timestamp: \"1주일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 956,
+        "text": "병원후기",
+        "context": "category: review.category_large || \"병원후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 979,
+        "text": "고민글",
+        "context": "category: post.concern_category || \"고민글\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 1077,
+        "text": "병원후기",
+        "context": "category: review.category_large || \"병원후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 1169,
+        "text": "고민글",
+        "context": "category: post.concern_category || \"고민글\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 1184,
+        "text": "고민상담소",
+        "context": "\"고민상담소 Supabase 데이터 로드 실패, 더미 데이터만 사용:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 1184,
+        "text": "데이터 로드 실패, 더미 데이터만 사용:",
+        "context": "\"고민상담소 Supabase 데이터 로드 실패, 더미 데이터만 사용:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 1517,
+        "text": "게시글 이미지",
+        "context": "alt={`게시글 이미지 ${idx + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 1961,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${idx + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\PostList.tsx",
+        "line": 2259,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${idx + 1}`}"
+      }
+    ],
+    "components\\ProcedureListPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 79,
+        "text": "눈성형",
+        "context": "{ key: \"category.eyes\", value: \"눈성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 80,
+        "text": "리프팅",
+        "context": "{ key: \"category.lifting\", value: \"리프팅\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 81,
+        "text": "보톡스",
+        "context": "{ key: \"category.botox\", value: \"보톡스\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 82,
+        "text": "안면윤곽",
+        "context": "{ key: \"category.facial\", value: \"안면윤곽/양악\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 84,
+        "text": "지방성형",
+        "context": "{ key: \"category.liposuction\", value: \"지방성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 85,
+        "text": "코성형",
+        "context": "{ key: \"category.nose\", value: \"코성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 88,
+        "text": "가슴성형",
+        "context": "{ key: \"category.breast\", value: \"가슴성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 169,
+        "text": "알 수 없는 오류가 발생했습니다.",
+        "context": "err instanceof Error ? err.message : \"알 수 없는 오류가 발생했습니다.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureListPage.tsx",
+        "line": 541,
+        "text": "시술 이미지",
+        "context": "alt={treatment.treatment_name || \"시술 이미지\"}"
+      }
+    ],
+    "components\\ProcedureRecommendation.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 72,
+        "text": "리쥬란 힐러",
+        "context": "procedure: \"리쥬란 힐러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 73,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 79,
+        "text": "피부관리",
+        "context": "category: \"피부관리\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 84,
+        "text": "써마지",
+        "context": "procedure: \"써마지\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 85,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 91,
+        "text": "피부관리",
+        "context": "category: \"피부관리\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 92,
+        "text": "리프팅",
+        "context": "subCategory: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 96,
+        "text": "울쎄라",
+        "context": "procedure: \"울쎄라\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 97,
+        "text": "신사역 메디컬",
+        "context": "hospital: \"신사역 메디컬\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 103,
+        "text": "피부관리",
+        "context": "category: \"피부관리\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 104,
+        "text": "리프팅",
+        "context": "subCategory: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 108,
+        "text": "프락셀",
+        "context": "procedure: \"프락셀\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 109,
+        "text": "홍대 의원",
+        "context": "hospital: \"홍대 의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 115,
+        "text": "피부관리",
+        "context": "category: \"피부관리\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 116,
+        "text": "레이저",
+        "context": "subCategory: \"레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 120,
+        "text": "아쿠아필",
+        "context": "procedure: \"아쿠아필\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 121,
+        "text": "강남 피부과",
+        "context": "hospital: \"강남 피부과\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 127,
+        "text": "피부관리",
+        "context": "category: \"피부관리\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 134,
+        "text": "프락셀 스카",
+        "context": "procedure: \"프락셀 스카\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 135,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 142,
+        "text": "레이저",
+        "context": "subCategory: \"레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 146,
+        "text": "마이크로 니들링",
+        "context": "procedure: \"마이크로 니들링\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 147,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 158,
+        "text": "레이저",
+        "context": "procedure: \"CO2 레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 159,
+        "text": "신사역 메디컬",
+        "context": "hospital: \"신사역 메디컬\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 166,
+        "text": "레이저",
+        "context": "subCategory: \"레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 169,
+        "text": "리프팅",
+        "context": "\"윤곽/리프팅\": ["
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 172,
+        "text": "인모드 리프팅",
+        "context": "procedure: \"인모드 리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 173,
+        "text": "신사역 메디컬",
+        "context": "hospital: \"신사역 메디컬\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 179,
+        "text": "리프팅",
+        "context": "category: \"윤곽/리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 180,
+        "text": "리프팅",
+        "context": "subCategory: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 184,
+        "text": "슈링크 유니버스",
+        "context": "procedure: \"슈링크 유니버스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 185,
+        "text": "홍대 의원",
+        "context": "hospital: \"홍대 의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 191,
+        "text": "리프팅",
+        "context": "category: \"윤곽/리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 192,
+        "text": "리프팅",
+        "context": "subCategory: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 196,
+        "text": "울쎄라 더블",
+        "context": "procedure: \"울쎄라 더블\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 197,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 203,
+        "text": "리프팅",
+        "context": "category: \"윤곽/리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 204,
+        "text": "리프팅",
+        "context": "subCategory: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 208,
+        "text": "실리프팅",
+        "context": "procedure: \"실리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 209,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 215,
+        "text": "리프팅",
+        "context": "category: \"윤곽/리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 222,
+        "text": "코필러",
+        "context": "procedure: \"코필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 223,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 229,
+        "text": "코성형",
+        "context": "category: \"코성형\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 234,
+        "text": "코 리프팅",
+        "context": "procedure: \"코 리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 235,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 241,
+        "text": "코성형",
+        "context": "category: \"코성형\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 242,
+        "text": "리프팅",
+        "context": "subCategory: \"리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 248,
+        "text": "눈밑 필러",
+        "context": "procedure: \"눈밑 필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 249,
+        "text": "신사역 메디컬",
+        "context": "hospital: \"신사역 메디컬\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 255,
+        "text": "눈성형",
+        "context": "category: \"눈성형\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 260,
+        "text": "눈밑 지방재배치",
+        "context": "procedure: \"눈밑 지방재배치\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 261,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 267,
+        "text": "눈성형",
+        "context": "category: \"눈성형\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 271,
+        "text": "보톡스",
+        "context": "\"보톡스/필러\": ["
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 274,
+        "text": "보톡스",
+        "context": "procedure: \"보톡스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 275,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 281,
+        "text": "보톡스",
+        "context": "category: \"보톡스/필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 282,
+        "text": "보톡스",
+        "context": "subCategory: \"보톡스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 286,
+        "text": "쥬베룩",
+        "context": "procedure: \"쥬베룩\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 287,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 293,
+        "text": "보톡스",
+        "context": "category: \"보톡스/필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 294,
+        "text": "보톡스",
+        "context": "subCategory: \"보톡스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 298,
+        "text": "볼륨 필러",
+        "context": "procedure: \"볼륨 필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 299,
+        "text": "신사역 메디컬",
+        "context": "hospital: \"신사역 메디컬\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 305,
+        "text": "보톡스",
+        "context": "category: \"보톡스/필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 310,
+        "text": "리쥬란",
+        "context": "procedure: \"리쥬란\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 311,
+        "text": "홍대 의원",
+        "context": "hospital: \"홍대 의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 317,
+        "text": "보톡스",
+        "context": "category: \"보톡스/필러\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 324,
+        "text": "지방분해 주사",
+        "context": "procedure: \"지방분해 주사\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 325,
+        "text": "강남비비의원",
+        "context": "hospital: \"강남비비의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 336,
+        "text": "쿨스컬핑",
+        "context": "procedure: \"쿨스컬핑\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 337,
+        "text": "압구정 클리닉",
+        "context": "hospital: \"압구정 클리닉\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 350,
+        "text": "제모 레이저",
+        "context": "procedure: \"제모 레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 351,
+        "text": "신사역 메디컬",
+        "context": "hospital: \"신사역 메디컬\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 358,
+        "text": "레이저",
+        "context": "subCategory: \"레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 362,
+        "text": "문신 제거",
+        "context": "procedure: \"문신 제거\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 363,
+        "text": "홍대 의원",
+        "context": "hospital: \"홍대 의원\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 370,
+        "text": "레이저",
+        "context": "subCategory: \"레이저\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 483,
+        "text": "대분류:",
+        "context": "`${categoryMid} (대분류: ${Array.from(categoryLarges).join(\", \")})`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 490,
+        "text": "데이터 상 중분류 중복 발견 (다른 대분류에 같은 중분류 이름 존재):",
+        "context": "\"⚠️ 데이터 상 중분류 중복 발견 (다른 대분류에 같은 중분류 이름 존재):\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 546,
+        "text": "데이터 로드",
+        "context": "`📥 [데이터 로드] 카테고리: \"${categoryForLoad}\", 로드된 시술: ${treatments.length}개`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 546,
+        "text": "카테고리:",
+        "context": "`📥 [데이터 로드] 카테고리: \"${categoryForLoad}\", 로드된 시술: ${treatments.length}개`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 546,
+        "text": "로드된 시술:",
+        "context": "`📥 [데이터 로드] 카테고리: \"${categoryForLoad}\", 로드된 시술: ${treatments.length}개`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 556,
+        "text": "피부 데이터 확인",
+        "context": "`🔍 [피부 데이터 확인] 로드된 시술의 중분류 (${pibuMids.size}개):`,"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 556,
+        "text": "로드된 시술의 중분류 (",
+        "context": "`🔍 [피부 데이터 확인] 로드된 시술의 중분류 (${pibuMids.size}개):`,"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 556,
+        "text": "개):",
+        "context": "`🔍 [피부 데이터 확인] 로드된 시술의 중분류 (${pibuMids.size}개):`,"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 559,
+        "text": "피부관리",
+        "context": "if (pibuMids.has(\"피부관리\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 561,
+        "text": "피부관리",
+        "context": "(t: any) => t.category_mid === \"피부관리\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 566,
+        "text": "피부관리 없음",
+        "context": "`❌ [피부관리 없음] 로드된 200개 데이터 중 \"피부관리\"가 없습니다!`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 566,
+        "text": "로드된",
+        "context": "`❌ [피부관리 없음] 로드된 200개 데이터 중 \"피부관리\"가 없습니다!`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 566,
+        "text": "개 데이터 중",
+        "context": "`❌ [피부관리 없음] 로드된 200개 데이터 중 \"피부관리\"가 없습니다!`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 566,
+        "text": "피부관리",
+        "context": "`❌ [피부관리 없음] 로드된 200개 데이터 중 \"피부관리\"가 없습니다!`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 566,
+        "text": "가 없습니다!",
+        "context": "`❌ [피부관리 없음] 로드된 200개 데이터 중 \"피부관리\"가 없습니다!`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 1214,
+        "text": "로그인이 필요",
+        "context": "result.error?.includes(\"로그인이 필요\") ||"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 1215,
+        "text": "로그인",
+        "context": "result.error?.includes(\"로그인\")"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureRecommendation.tsx",
+        "line": 1240,
+        "text": "시술 이미지",
+        "context": "alt={treatment.treatment_name || \"시술 이미지\"}"
+      }
+    ],
+    "components\\ProcedureReviewDetailPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewDetailPage.tsx",
+        "line": 156,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewDetailPage.tsx",
+        "line": 405,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${idx + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewDetailPage.tsx",
+        "line": 437,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${selectedImageIndex + 1}`}"
+      }
+    ],
+    "components\\ProcedureReviewForm.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewForm.tsx",
+        "line": 64,
+        "text": "카테고리 로드 시작",
+        "context": "`[ProcedureReviewForm] 카테고리 로드 시작 - 언어: ${language}`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewForm.tsx",
+        "line": 64,
+        "text": "언어:",
+        "context": "`[ProcedureReviewForm] 카테고리 로드 시작 - 언어: ${language}`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewForm.tsx",
+        "line": 146,
+        "text": "오류:",
+        "context": "throw new Error(`Supabase 오류: ${error.message}`);"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ProcedureReviewForm.tsx",
+        "line": 185,
+        "text": "해당 카테고리의 모든",
+        "context": "\"🔍 해당 카테고리의 모든 category_small:\","
+      }
+    ],
+    "components\\RecoveryGuideDetailPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuideDetailPage.tsx",
+        "line": 21,
+        "text": "에 대한 회복 가이드",
+        "context": "const title = `${content.title}에 대한 회복 가이드🍀`;"
+      }
+    ],
+    "components\\RecoveryGuidePostDetailPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 218,
+        "text": "의료진 공통 안내",
+        "context": ": \"의료진 공통 안내\"}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 229,
+        "text": "이 주차에 도움 되는 팁",
+        "context": ": \"이 주차에 도움 되는 팁\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 233,
+        "text": "권고사항",
+        "context": ": \"권고사항\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 266,
+        "text": "이 주차에 도움 되는 팁",
+        "context": "trimmed.includes(\"✔ 이 주차에 도움 되는 팁\") ||"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 280,
+        "text": "권고사항",
+        "context": "trimmed.includes(\"⚠ 권고사항\") ||"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 301,
+        "text": "의료진 공통 안내",
+        "context": "(text.includes(\"의료진 공통 안내\") ||"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 577,
+        "text": "해당 시술:",
+        "context": "{(post.content.includes(\"(해당 시술:\") ||"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 584,
+        "text": "해당 시술:",
+        "context": ": \"해당 시술:\"}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuidePostDetailPage.tsx",
+        "line": 593,
+        "text": "권장 회복 기간",
+        "context": "{(post.content.includes(\"권장 회복 기간\") ||"
+      }
+    ],
+    "components\\RecoveryGuideSection.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\RecoveryGuideSection.tsx",
+        "line": 46,
+        "text": "에 대한 회복 가이드",
+        "context": "const title = `${guide.title}에 대한 회복 가이드🍀`;"
+      }
+    ],
+    "components\\ReviewFilterModal.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewFilterModal.tsx",
+        "line": 38,
+        "text": "눈성형",
+        "context": "const categories = ['All', '눈성형', '코성형', '리프팅', '피부', '보톡스/필러']"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewFilterModal.tsx",
+        "line": 38,
+        "text": "코성형",
+        "context": "const categories = ['All', '눈성형', '코성형', '리프팅', '피부', '보톡스/필러']"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewFilterModal.tsx",
+        "line": 38,
+        "text": "리프팅",
+        "context": "const categories = ['All', '눈성형', '코성형', '리프팅', '피부', '보톡스/필러']"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewFilterModal.tsx",
+        "line": 38,
+        "text": "보톡스",
+        "context": "const categories = ['All', '눈성형', '코성형', '리프팅', '피부', '보톡스/필러']"
+      }
+    ],
+    "components\\ReviewList.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 40,
+        "text": "자유수다",
+        "context": "category: \"자유수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 41,
+        "text": "베소통리소",
+        "context": "username: \"베소통리소\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 44,
+        "text": "원래 눈 라인이 마음에 들지 않아서 재수술을 고민하게 되었어요 첫 수술로 잡았던 라인이 너무 낮기도 하고 여전히 눈매가 흐릿해... 자연스럽게 바꾸고 싶다는 생각이 들었네...더 보기",
+        "context": "\"원래 눈 라인이 마음에 들지 않아서 재수술을 고민하게 되었어요 첫 수술로 잡았던 라인이 너무 낮기도 하고 여전히 눈매가 흐릿해... 자연스럽게 바꾸고 싶다는 생각이 들었네...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 46,
+        "text": "시간 전",
+        "context": "timestamp: \"18시간 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 54,
+        "text": "자유수다",
+        "context": "category: \"자유수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 55,
+        "text": "홀짝댄스",
+        "context": "username: \"홀짝댄스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 58,
+        "text": "비티에서 윤곽",
+        "context": "\"비티에서 윤곽3종이랑 무보형물로 코수술 하고 왔당 ㅎㅎㅎㅎ 코는 이승호원장님, 윤곽...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 58,
+        "text": "종이랑 무보형물로 코수술 하고 왔당",
+        "context": "\"비티에서 윤곽3종이랑 무보형물로 코수술 하고 왔당 ㅎㅎㅎㅎ 코는 이승호원장님, 윤곽...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 58,
+        "text": "코는 이승호원장님, 윤곽...더 보기",
+        "context": "\"비티에서 윤곽3종이랑 무보형물로 코수술 하고 왔당 ㅎㅎㅎㅎ 코는 이승호원장님, 윤곽...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 60,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 68,
+        "text": "자유수다",
+        "context": "category: \"자유수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 69,
+        "text": "연말부뉘기",
+        "context": "username: \"연말부뉘기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 72,
+        "text": "테이아의원 울쎄라 리프팅 받고 온 후기 남겨봅니다",
+        "context": "\"테이아의원 울쎄라 리프팅 받고 온 후기 남겨봅니다~~ >< 요즘 턱선이 흐려지고 팔자 쪽...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 72,
+        "text": "요즘 턱선이 흐려지고 팔자 쪽...더 보기",
+        "context": "\"테이아의원 울쎄라 리프팅 받고 온 후기 남겨봅니다~~ >< 요즘 턱선이 흐려지고 팔자 쪽...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 73,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 80,
+        "text": "자유수다",
+        "context": "category: \"자유수다\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 81,
+        "text": "춤추는아미고",
+        "context": "username: \"춤추는아미고\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 84,
+        "text": "와.. 티타늄 맛집은 테이아였네?? ;; 나 요즘 턱선이랑 볼살이 너무 축 처져서 테이아의원에서 티타늄리프팅 받아봤거...더 보기",
+        "context": "\"와.. 티타늄 맛집은 테이아였네?? ;; 나 요즘 턱선이랑 볼살이 너무 축 처져서 테이아의원에서 티타늄리프팅 받아봤거...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 86,
+        "text": "일 전",
+        "context": "timestamp: \"1일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 95,
+        "text": "뷰티러버",
+        "context": "username: \"뷰티러버\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 98,
+        "text": "강남역 근처 클리닉에서 리쥬란 힐러 받고 왔어요! 처음 받아보는 거라 조금 걱정됐는데 원장님이 친절하게 설명해주셔서 안심이 됐네요. 시술 후 관리도 꼼꼼히 알려주셨어요...더 보기",
+        "context": "\"강남역 근처 클리닉에서 리쥬란 힐러 받고 왔어요! 처음 받아보는 거라 조금 걱정됐는데 원장님이 친절하게 설명해주셔서 안심이 됐네요. 시술 후 관리도 꼼꼼히 알려주셨어요...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 100,
+        "text": "일 전",
+        "context": "timestamp: \"2일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 109,
+        "text": "민트향기",
+        "context": "username: \"민트향기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 112,
+        "text": "사각턱 때문에 고민이 많았는데 보톡스로 해결했어요! 가격도 합리적이고 효과도 좋아서 추천하고 싶네요.",
+        "context": "\"사각턱 때문에 고민이 많았는데 보톡스로 해결했어요! 가격도 합리적이고 효과도 좋아서 추천하고 싶네요. 3개월 정도 지나니까 더 자연스러워졌어요...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 112,
+        "text": "개월 정도 지나니까 더 자연스러워졌어요...더 보기",
+        "context": "\"사각턱 때문에 고민이 많았는데 보톡스로 해결했어요! 가격도 합리적이고 효과도 좋아서 추천하고 싶네요. 3개월 정도 지나니까 더 자연스러워졌어요...더 보기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 113,
+        "text": "일 전",
+        "context": "timestamp: \"3일 전\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 122,
+        "text": "방금 전",
+        "context": "if (!dateString) return \"방금 전\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 131,
+        "text": "방금 전",
+        "context": "if (diffMins < 1) return \"방금 전\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 132,
+        "text": "분 전",
+        "context": "if (diffMins < 60) return `${diffMins}분 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 133,
+        "text": "시간 전",
+        "context": "if (diffHours < 24) return `${diffHours}시간 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 134,
+        "text": "일 전",
+        "context": "if (diffDays < 7) return `${diffDays}일 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 204,
+        "text": "병원후기",
+        "context": "category: review.category_large || \"병원후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 233,
+        "text": "고민글",
+        "context": "category: post.concern_category || \"고민글\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 435,
+        "text": "후기 이미지",
+        "context": "alt={`후기 이미지 ${idx + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewList.tsx",
+        "line": 488,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\")) {"
+      }
+    ],
+    "components\\ReviewWriteModal.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewWriteModal.tsx",
+        "line": 70,
+        "text": "사용자",
+        "context": "username: '사용자',"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ReviewWriteModal.tsx",
+        "line": 74,
+        "text": "방금 전",
+        "context": "timestamp: '방금 전',"
+      }
+    ],
+    "components\\ScheduleBasedRankingPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 10,
+        "text": "눈성형",
+        "context": "{ id: \"eyes\", name: \"눈성형\", icon: \"👀\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 11,
+        "text": "리프팅",
+        "context": "{ id: \"lifting\", name: \"리프팅\", icon: \"✨\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 12,
+        "text": "보톡스",
+        "context": "{ id: \"botox\", name: \"보톡스\", icon: \"💉\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 13,
+        "text": "안면윤곽",
+        "context": "{ id: \"facial\", name: \"안면윤곽/양악\", icon: \"😊\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 15,
+        "text": "지방성형",
+        "context": "{ id: \"liposuction\", name: \"지방성형\", icon: \"💪\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 16,
+        "text": "코성형",
+        "context": "{ id: \"nose\", name: \"코성형\", icon: \"👃\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 19,
+        "text": "가슴성형",
+        "context": "{ id: \"breast\", name: \"가슴성형\", icon: \"💕\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\ScheduleBasedRankingPage.tsx",
+        "line": 62,
+        "text": "만원 미만",
+        "context": "estimatedBudget: \"100만원 미만\","
+      }
+    ],
+    "components\\SearchModal.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 19,
+        "text": "리쥬란힐러",
+        "context": "{ id: 1, name: \"리쥬란힐러\", badge: \"BEST\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 20,
+        "text": "써마지",
+        "context": "{ id: 2, name: \"써마지\", badge: \"BEST\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 21,
+        "text": "쥬베룩",
+        "context": "{ id: 3, name: \"쥬베룩\", badge: \"BEST\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 22,
+        "text": "울쎄라",
+        "context": "{ id: 4, name: \"울쎄라\", badge: \"up\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 24,
+        "text": "스킨부",
+        "context": "{ id: 6, name: \"스킨부\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 25,
+        "text": "올리지",
+        "context": "{ id: 7, name: \"올리지\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 27,
+        "text": "쎄라플",
+        "context": "{ id: 9, name: \"쎄라플\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 28,
+        "text": "리프터",
+        "context": "{ id: 10, name: \"리프터\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 32,
+        "text": "블프 세일 대축제",
+        "context": "{ id: 1, label: \"블프 세일 대축제\", icon: \"🛍️\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 33,
+        "text": "요즘인기시술",
+        "context": "{ id: 2, label: \"요즘인기시술\", icon: \"⭐\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 34,
+        "text": "혜택 플러스",
+        "context": "{ id: 3, label: \"혜택 플러스\", icon: \"💎\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 35,
+        "text": "포인트 적립백서",
+        "context": "{ id: 4, label: \"포인트 적립백서\", icon: \"📝\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 36,
+        "text": "부작용 안심케어",
+        "context": "{ id: 5, label: \"부작용 안심케어\", icon: \"🛡️\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 43,
+        "text": "슈링크 유니버스",
+        "context": "clinic: \"본연_슈링크 유니버스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 44,
+        "text": "서울 강남역",
+        "context": "location: \"서울 강남역·본연성...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 44,
+        "text": "본연성...",
+        "context": "location: \"서울 강남역·본연성...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 50,
+        "text": "인모드",
+        "context": "title: \"Eight longtime #인모드 #슈링크\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 50,
+        "text": "슈링크",
+        "context": "title: \"Eight longtime #인모드 #슈링크\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 51,
+        "text": "지방소멸 롱타임 인모드리프팅 슈링...",
+        "context": "clinic: \"지방소멸 롱타임 인모드리프팅 슈링...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 52,
+        "text": "서울 압구정역",
+        "context": "location: \"서울 압구정역·에이...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 52,
+        "text": "에이...",
+        "context": "location: \"서울 압구정역·에이...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 58,
+        "text": "시술 시간 걱정 없이 인모드는 롱",
+        "context": "title: \"시술 시간 걱정 없이 인모드는 롱~모드로!\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 58,
+        "text": "모드로!",
+        "context": "title: \"시술 시간 걱정 없이 인모드는 롱~모드로!\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 59,
+        "text": "롱모드 인모드 풀페이스",
+        "context": "clinic: \"롱모드 인모드 풀페이스 10분 FX...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 60,
+        "text": "서울 홍대입구역",
+        "context": "location: \"서울 홍대입구역·리...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 60,
+        "text": "리...",
+        "context": "location: \"서울 홍대입구역·리...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 66,
+        "text": "디에이 자려한 코성형",
+        "context": "title: \"후기 6,000+ 디에이 자려한 코성형\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 67,
+        "text": "예쁘면",
+        "context": "clinic: \"예쁘면DA야_자려한 코성형_비순각코수...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 67,
+        "text": "자려한 코성형",
+        "context": "clinic: \"예쁘면DA야_자려한 코성형_비순각코수...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 67,
+        "text": "비순각코수...",
+        "context": "clinic: \"예쁘면DA야_자려한 코성형_비순각코수...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 68,
+        "text": "서울 역삼역",
+        "context": "location: \"서울 역삼역·디에이...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 68,
+        "text": "디에이...",
+        "context": "location: \"서울 역삼역·디에이...\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 75,
+        "text": "인모드리프팅",
+        "context": "\"인모드리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 76,
+        "text": "슈링크리프팅",
+        "context": "\"슈링크리프팅\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 77,
+        "text": "슈링크유니버스",
+        "context": "\"슈링크유니버스\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 78,
+        "text": "코재수술",
+        "context": "\"코재수술\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 79,
+        "text": "아이슈링크",
+        "context": "\"아이슈링크\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 83,
+        "text": "눈성형",
+        "context": "{ icon: \"👁️\", label: \"눈성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 84,
+        "text": "코성형",
+        "context": "{ icon: \"👃\", label: \"코성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 85,
+        "text": "안면윤곽",
+        "context": "{ icon: \"😊\", label: \"안면윤곽/양악\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 86,
+        "text": "가슴성형",
+        "context": "{ icon: \"💪\", label: \"가슴성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 87,
+        "text": "지방성형",
+        "context": "{ icon: \"🏃\", label: \"지방성형\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 89,
+        "text": "보톡스",
+        "context": "{ icon: \"💉\", label: \"보톡스\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 90,
+        "text": "리프팅",
+        "context": "{ icon: \"✨\", label: \"리프팅\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SearchModal.tsx",
+        "line": 93,
+        "text": "모발이식",
+        "context": "{ icon: \"💇\", label: \"모발이식\" },"
+      }
+    ],
+    "components\\SignupModal.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 38,
+        "text": "이메일을 입력해주세요.",
+        "context": "setError(\"이메일을 입력해주세요.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 44,
+        "text": "올바른 이메일 형식을 입력해주세요.",
+        "context": "setError(\"올바른 이메일 형식을 입력해주세요.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 48,
+        "text": "비밀번호를 입력해주세요.",
+        "context": "setError(\"비밀번호를 입력해주세요.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 52,
+        "text": "비밀번호는",
+        "context": "setError(\"비밀번호는 6자 이상이어야 합니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 52,
+        "text": "자 이상이어야 합니다.",
+        "context": "setError(\"비밀번호는 6자 이상이어야 합니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 56,
+        "text": "비밀번호가 일치하지 않습니다.",
+        "context": "setError(\"비밀번호가 일치하지 않습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 89,
+        "text": "이미 등록된 이메일입니다.",
+        "context": "throw new Error(\"이미 등록된 이메일입니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 91,
+        "text": "올바른 이메일 형식을 입력해주세요.",
+        "context": "throw new Error(\"올바른 이메일 형식을 입력해주세요.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 93,
+        "text": "비밀번호가 너무 짧습니다.",
+        "context": "throw new Error(\"비밀번호가 너무 짧습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 99,
+        "text": "회원가입에 실패했습니다.",
+        "context": "throw new Error(\"회원가입에 실패했습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 132,
+        "text": "이미 존재하는 사용자입니다.",
+        "context": "throw new Error(\"이미 존재하는 사용자입니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 134,
+        "text": "사용자 정보를 찾을 수 없습니다.",
+        "context": "throw new Error(\"사용자 정보를 찾을 수 없습니다.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 136,
+        "text": "프로필 저장에 실패했습니다:",
+        "context": "throw new Error(`프로필 저장에 실패했습니다: ${profileError.message}`);"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 150,
+        "text": "자동 로그인 실패 (이메일 인증 필요할 수 있음):",
+        "context": "\"자동 로그인 실패 (이메일 인증 필요할 수 있음):\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 182,
+        "text": "사용자",
+        "context": "\"사용자\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 222,
+        "text": "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.",
+        "context": "\"회원가입 중 오류가 발생했습니다. 다시 시도해주세요.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 366,
+        "text": "한국어",
+        "context": "? \"한국어\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\SignupModal.tsx",
+        "line": 390,
+        "text": "한국어",
+        "context": "{ code: \"KR\" as LanguageCode, label: \"한국어\" },"
+      }
+    ],
+    "components\\TravelScheduleBar.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TravelScheduleBar.tsx",
+        "line": 196,
+        "text": "날짜 선택 취소",
+        "context": "aria-label=\"날짜 선택 취소\""
+      }
+    ],
+    "components\\TravelScheduleForm.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TravelScheduleForm.tsx",
+        "line": 27,
+        "text": "만원 미만",
+        "context": "estimatedBudget: \"100만원 미만\","
+      }
+    ],
+    "components\\TreatmentDetailPage.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 193,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 210,
+        "text": "시술 정보",
+        "context": "title: currentTreatment?.treatment_name || \"시술 정보\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 265,
+        "text": "미입력",
+        "context": "hospitalName || \"미입력\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 479,
+        "text": "권장체류일수(일)",
+        "context": "(currentTreatment as any)[\"권장체류일수(일)\"] ||"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 617,
+        "text": "분 이상",
+        "context": "? `${procedureTimeMin}분 이상`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 619,
+        "text": "분 이하",
+        "context": "? `${procedureTimeMax}분 이하`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 647,
+        "text": "일 이상",
+        "context": "? `${recoveryPeriodMin}일 이상`"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\components\\TreatmentDetailPage.tsx",
+        "line": 649,
+        "text": "일 이하",
+        "context": "? `${recoveryPeriodMax}일 이하`"
+      }
+    ],
+    "app\\ai-skin-analysis-result\\page.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\ai-skin-analysis-result\\page.tsx",
+        "line": 44,
+        "text": "유효하지 않은 이미지",
+        "context": "throw new Error(\"유효하지 않은 이미지 URL\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\ai-skin-analysis-result\\page.tsx",
+        "line": 63,
+        "text": "이 생성되지 않았습니다.",
+        "context": "\"공개 URL이 생성되지 않았습니다. filePath:\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\ai-skin-analysis-result\\page.tsx",
+        "line": 66,
+        "text": "생성 실패",
+        "context": "throw new Error(\"공개 URL 생성 실패\");"
+      }
+    ],
+    "app\\api\\exchange-rate\\route.ts": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\exchange-rate\\route.ts",
+        "line": 56,
+        "text": "한국수출입은행",
+        "context": "\"⚠️ 한국수출입은행 API 키가 설정되지 않았습니다. 기본 환율을 사용합니다.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\exchange-rate\\route.ts",
+        "line": 56,
+        "text": "키가 설정되지 않았습니다. 기본 환율을 사용합니다.",
+        "context": "\"⚠️ 한국수출입은행 API 키가 설정되지 않았습니다. 기본 환율을 사용합니다.\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\exchange-rate\\route.ts",
+        "line": 77,
+        "text": "한국수출입은행",
+        "context": "throw new Error(`한국수출입은행 API 오류: ${response.status}`);"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\exchange-rate\\route.ts",
+        "line": 77,
+        "text": "오류:",
+        "context": "throw new Error(`한국수출입은행 API 오류: ${response.status}`);"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\exchange-rate\\route.ts",
+        "line": 164,
+        "text": "호출 실패, 기본 환율 사용",
+        "context": "message: \"API 호출 실패, 기본 환율 사용\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\exchange-rate\\route.ts",
+        "line": 179,
+        "text": "환율 조회 실패",
+        "context": "error: error.message || \"환율 조회 실패\","
+      }
+    ],
+    "app\\api\\translate\\route.ts": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\translate\\route.ts",
+        "line": 23,
+        "text": "키가 설정되지 않았습니다.",
+        "context": "{ error: \"DeepL API 키가 설정되지 않았습니다.\" },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\translate\\route.ts",
+        "line": 39,
+        "text": "지원하지 않는 언어 코드:",
+        "context": "{ error: `지원하지 않는 언어 코드: ${targetLang}` },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\translate\\route.ts",
+        "line": 78,
+        "text": "번역 실패:",
+        "context": "{ error: `번역 실패: ${response.status}` },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\translate\\route.ts",
+        "line": 105,
+        "text": "지원하지 않는 언어 코드:",
+        "context": "{ error: `지원하지 않는 언어 코드: ${targetLang}` },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\translate\\route.ts",
+        "line": 138,
+        "text": "번역 실패:",
+        "context": "{ error: `번역 실패: ${response.status}` },"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\api\\translate\\route.ts",
+        "line": 158,
+        "text": "번역 중 오류가 발생했습니다.",
+        "context": "{ error: \"번역 중 오류가 발생했습니다.\" },"
+      }
+    ],
+    "app\\auth\\callback\\page.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 32,
+        "text": "로그인 중 오류가 발생했습니다.",
+        "context": "const errorMessage = errorDescription || \"로그인 중 오류가 발생했습니다.\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 55,
+        "text": "로그인 처리 중 오류가 발생했습니다:",
+        "context": "setError(`로그인 처리 중 오류가 발생했습니다: ${exchangeError.message}`);"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 85,
+        "text": "로그인 세션을 생성할 수 없습니다. 다시 시도해주세요.",
+        "context": "setError(\"로그인 세션을 생성할 수 없습니다. 다시 시도해주세요.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 180,
+        "text": "사용자",
+        "context": "\"사용자\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 202,
+        "text": "세션이 저장되지 않았습니다. 다시 시도해주세요.",
+        "context": "setError(\"세션이 저장되지 않았습니다. 다시 시도해주세요.\");"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 228,
+        "text": "로그인 처리 중 오류가 발생했습니다:",
+        "context": "setError(`로그인 처리 중 오류가 발생했습니다: ${err.message || \"알 수 없는 오류\"}`);"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\auth\\callback\\page.tsx",
+        "line": 228,
+        "text": "알 수 없는 오류",
+        "context": "setError(`로그인 처리 중 오류가 발생했습니다: ${err.message || \"알 수 없는 오류\"}`);"
+      }
+    ],
+    "app\\community\\my-comments\\page.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 73,
+        "text": "시술 후기",
+        "context": "titles[key] = post.procedure_name || \"시술 후기\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 79,
+        "text": "병원 후기",
+        "context": "titles[key] = post.hospital_name || \"병원 후기\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 85,
+        "text": "고민글",
+        "context": "titles[key] = post.title || \"고민글\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 125,
+        "text": "시술 후기",
+        "context": "? \"시술 후기\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 127,
+        "text": "병원 후기",
+        "context": "? \"병원 후기\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 128,
+        "text": "고민글",
+        "context": ": \"고민글\")"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 181,
+        "text": "시술 후기",
+        "context": "? \"시술 후기\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 183,
+        "text": "병원 후기",
+        "context": "? \"병원 후기\""
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-comments\\page.tsx",
+        "line": 184,
+        "text": "고민글",
+        "context": ": \"고민글\"}"
+      }
+    ],
+    "app\\community\\my-posts\\page.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 45,
+        "text": "방금 전",
+        "context": "if (!dateString) return \"방금 전\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 54,
+        "text": "방금 전",
+        "context": "if (diffMins < 1) return \"방금 전\";"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 55,
+        "text": "분 전",
+        "context": "if (diffMins < 60) return `${diffMins}분 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 56,
+        "text": "시간 전",
+        "context": "if (diffHours < 24) return `${diffHours}시간 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 57,
+        "text": "일 전",
+        "context": "if (diffDays < 7) return `${diffDays}일 전`;"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 113,
+        "text": "병원후기",
+        "context": "category: review.category_large || \"병원후기\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 341,
+        "text": "이미지",
+        "context": "alt={`이미지 ${idx + 1}`}"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\my-posts\\page.tsx",
+        "line": 426,
+        "text": "병원후기",
+        "context": "category: review.category_large || \"병원후기\","
+      }
+    ],
+    "app\\community\\posts\\page.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\posts\\page.tsx",
+        "line": 25,
+        "text": "커뮤니티",
+        "context": "return \"커뮤니티\";"
+      }
+    ],
+    "app\\community\\posts\\[id]\\page.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\posts\\[id]\\page.tsx",
+        "line": 148,
+        "text": "고민글",
+        "context": "category: foundPost.concern_category || \"고민글\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\posts\\[id]\\page.tsx",
+        "line": 236,
+        "text": "로그인이 필요",
+        "context": "if (result.error?.includes(\"로그인이 필요\")) {"
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\community\\posts\\[id]\\page.tsx",
+        "line": 569,
+        "text": "게시글 이미지",
+        "context": "alt={`게시글 이미지 ${idx + 1}`}"
+      }
+    ],
+    "app\\layout.tsx": [
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\layout.tsx",
+        "line": 8,
+        "text": "믿고 찾는",
+        "context": "title: \"☁️BeauTrip - 믿고 찾는 K-Beauty 메디컬 여행 플랫폼✈️\","
+      },
+      {
+        "file": "C:\\Users\\user\\Desktop\\sm\\1_final_project\\beautrip\\app\\layout.tsx",
+        "line": 8,
+        "text": "메디컬 여행 플랫폼",
+        "context": "title: \"☁️BeauTrip - 믿고 찾는 K-Beauty 메디컬 여행 플랫폼✈️\","
+      }
+    ]
+  }
+}

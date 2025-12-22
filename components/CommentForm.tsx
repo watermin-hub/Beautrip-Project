@@ -61,7 +61,7 @@ export default function CommentForm({
     }
 
     if (!content.trim()) {
-      alert("댓글 내용을 입력해주세요.");
+      alert(t("comment.contentRequired"));
       return;
     }
 
@@ -81,11 +81,11 @@ export default function CommentForm({
           onSuccess();
         }
       } else {
-        alert(result.error || "댓글 작성에 실패했습니다.");
+        alert(result.error || t("comment.writeFailed"));
       }
     } catch (error: any) {
       console.error("댓글 작성 중 오류:", error);
-      alert("댓글 작성 중 오류가 발생했습니다.");
+      alert(t("comment.writeError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +110,7 @@ export default function CommentForm({
               className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors whitespace-nowrap"
               disabled={isSubmitting}
             >
-              취소
+              {t('common.cancel')}
             </button>
           )}
           <button
@@ -119,7 +119,7 @@ export default function CommentForm({
             className="px-4 py-2 bg-primary-main text-white rounded-lg text-sm font-medium hover:bg-[#2DB8A0] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
           >
             <FiSend className="text-sm" />
-            {commentId ? "수정" : "등록"}
+            {commentId ? t('comment.edit') : t('comment.submit')}
           </button>
         </div>
       </div>

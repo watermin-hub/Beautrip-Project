@@ -60,7 +60,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
 
   const handleSubmit = () => {
     if (!content.trim()) {
-      alert('리뷰 내용을 입력해주세요.')
+      alert(t('review.contentRequired'))
       return
     }
 
@@ -88,7 +88,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
     // 이벤트 발생하여 최신글 업데이트
     window.dispatchEvent(new Event('reviewAdded'))
 
-    alert('리뷰가 작성되었습니다!')
+    alert(t('review.writeSuccess'))
     setContent('')
     setRating(0)
     setProcedure('')
@@ -105,7 +105,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold text-gray-900">리뷰 작성</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('review.writeTitle')}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -118,7 +118,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
         <div className="px-4 py-6 space-y-6">
           {/* Procedure Selection */}
           <div>
-            <label className="text-sm font-semibold text-gray-900 mb-2 block">시술 종류</label>
+            <label className="text-sm font-semibold text-gray-900 mb-2 block">{t('review.procedureType')}</label>
             <input
               type="text"
               value={procedure}
@@ -130,7 +130,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
 
           {/* Clinic Selection */}
           <div>
-            <label className="text-sm font-semibold text-gray-900 mb-2 block">병원/클리닉</label>
+            <label className="text-sm font-semibold text-gray-900 mb-2 block">{t('review.hospitalClinic')}</label>
             <input
               type="text"
               value={clinic}
@@ -142,7 +142,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
 
           {/* Rating */}
           <div>
-            <label className="text-sm font-semibold text-gray-900 mb-2 block">평점</label>
+            <label className="text-sm font-semibold text-gray-900 mb-2 block">{t('label.rating')}</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -164,7 +164,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
 
           {/* Review Content */}
           <div>
-            <label className="text-sm font-semibold text-gray-900 mb-2 block">리뷰 내용</label>
+            <label className="text-sm font-semibold text-gray-900 mb-2 block">{t('review.content')}</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -176,7 +176,7 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
 
           {/* Image Upload */}
           <div>
-            <label className="text-sm font-semibold text-gray-900 mb-2 block">사진 첨부 (최대 5장)</label>
+            <label className="text-sm font-semibold text-gray-900 mb-2 block">{t('review.photoAttachment')}</label>
             <div className="flex gap-2 flex-wrap">
               {images.map((img, idx) => (
                 <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden">
@@ -211,13 +211,13 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
             onClick={onClose}
             className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold transition-colors hover:bg-gray-200"
           >
-            취소
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSubmit}
             className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold transition-colors hover:bg-[#2DB8A0]"
           >
-            작성 완료
+            {t('common.writeComplete')}
           </button>
         </div>
       </div>

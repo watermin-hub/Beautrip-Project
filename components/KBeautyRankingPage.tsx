@@ -18,7 +18,7 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function KBeautyRankingPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [allTreatments, setAllTreatments] = useState<Treatment[]>([]);
   const [rankings, setRankings] = useState<Treatment[]>([]);
@@ -37,6 +37,7 @@ export default function KBeautyRankingPage() {
         // 랭킹 페이지는 플랫폼 우선순위 정렬 없이 원본 데이터 순서로 로드
         const result = await loadTreatmentsPaginated(1, 200, {
           skipPlatformSort: true,
+          language: language,
         });
         const data = result.data;
         setAllTreatments(data);
@@ -50,7 +51,7 @@ export default function KBeautyRankingPage() {
     };
 
     loadData();
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const loadFavorites = async () => {
