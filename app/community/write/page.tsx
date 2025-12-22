@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiCamera,
@@ -11,11 +12,41 @@ import {
 } from "react-icons/fi";
 import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
+import LoginRequiredPopup from "@/components/LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/lib/supabase";
 
 export default function WritePage() {
   const router = useRouter();
   const { t } = useLanguage();
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!supabase) {
+        setIsLoggedIn(false);
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+  }, []);
+
+  // 버튼 클릭 핸들러 (로그인 체크 후 이동)
+  const handleButtonClick = (path: string) => {
+    if (isLoggedIn) {
+      router.push(path);
+    } else {
+      setPendingPath(path);
+      setShowLoginRequiredPopup(true);
+    }
+  };
 
   const writeOptions = [
     {
@@ -75,7 +106,7 @@ export default function WritePage() {
           return (
             <button
               key={option.id}
-              onClick={() => router.push(option.path)}
+              onClick={() => handleButtonClick(option.path)}
               className="w-full p-4 bg-gradient-to-r rounded-xl border-2 border-gray-100 hover:border-primary-main/30 hover:shadow-lg transition-all text-left group"
             >
               <div className="flex items-start gap-4">
@@ -101,7 +132,7 @@ export default function WritePage() {
         {/* 내 글 관리 & 내 댓글 관리 */}
         <div className="border-t border-gray-200 pt-3 mt-3 space-y-3">
           <button
-            onClick={() => router.push("/community/my-posts")}
+            onClick={() => handleButtonClick("/community/my-posts")}
             className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border-2 border-gray-200 hover:border-primary-main/30 transition-all text-left group"
           >
             <div className="flex items-start gap-4">
@@ -123,7 +154,7 @@ export default function WritePage() {
           </button>
 
           <button
-            onClick={() => router.push("/community/my-comments")}
+            onClick={() => handleButtonClick("/community/my-comments")}
             className="w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-xl border-2 border-gray-200 hover:border-primary-main/30 transition-all text-left group"
           >
             <div className="flex items-start gap-4">
@@ -148,6 +179,24 @@ export default function WritePage() {
 
       {/* Bottom Navigation */}
       <BottomNavigation />
+
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => {
+          setShowLoginRequiredPopup(false);
+          setPendingPath(null);
+        }}
+        onLoginSuccess={() => {
+          setShowLoginRequiredPopup(false);
+          setIsLoggedIn(true);
+          // 로그인 성공 후 대기 중인 경로로 이동
+          if (pendingPath) {
+            router.push(pendingPath);
+            setPendingPath(null);
+          }
+        }}
+      />
     </div>
   );
 }

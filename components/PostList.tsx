@@ -28,6 +28,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { maskNickname } from "@/lib/utils/nicknameMask";
 import { translateText, type LanguageCode, detectLanguage } from "@/lib/utils/translation";
 import { supabase } from "@/lib/supabase";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 import LoginModal from "./LoginModal";
 
 interface Post {
@@ -1609,47 +1610,11 @@ export default function PostList({
         )}
         
         {/* 로그인 필요 팝업 */}
-        {showLoginRequiredPopup && (
-          <>
-            <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
-            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-              <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
-                <div className="text-center">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">
-                    {t("common.loginRequired")}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    {t("common.loginRequiredMoreInfo")}
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowLoginRequiredPopup(false)}
-                      className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
-                    >
-                      {t("common.cancel")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowLoginRequiredPopup(false);
-                        setShowLoginModal(true);
-                      }}
-                      className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
-                    >
-                      {t("common.login")}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* 로그인 모달 */}
-        <LoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
+        <LoginRequiredPopup
+          isOpen={showLoginRequiredPopup}
+          onClose={() => setShowLoginRequiredPopup(false)}
           onLoginSuccess={() => {
-            setShowLoginModal(false);
+            setShowLoginRequiredPopup(false);
             setIsLoggedIn(true);
           }}
         />
@@ -2102,47 +2067,11 @@ export default function PostList({
         </div>
         
         {/* 로그인 필요 팝업 */}
-        {showLoginRequiredPopup && (
-          <>
-            <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
-            <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-              <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
-                <div className="text-center">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">
-                    {t("common.loginRequired")}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    {t("common.loginRequiredMoreInfo")}
-                  </p>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowLoginRequiredPopup(false)}
-                      className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
-                    >
-                      {t("common.cancel")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowLoginRequiredPopup(false);
-                        setShowLoginModal(true);
-                      }}
-                      className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
-                    >
-                      {t("common.login")}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* 로그인 모달 */}
-        <LoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
+        <LoginRequiredPopup
+          isOpen={showLoginRequiredPopup}
+          onClose={() => setShowLoginRequiredPopup(false)}
           onLoginSuccess={() => {
-            setShowLoginModal(false);
+            setShowLoginRequiredPopup(false);
             setIsLoggedIn(true);
           }}
         />
@@ -2362,47 +2291,11 @@ export default function PostList({
       ))}
       
       {/* 로그인 필요 팝업 */}
-      {showLoginRequiredPopup && (
-        <>
-          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">
-                  {t("common.loginRequired")}
-                </h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  {t("common.loginRequiredMoreInfo")}
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowLoginRequiredPopup(false)}
-                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    {t("common.cancel")}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLoginRequiredPopup(false);
-                      setShowLoginModal(true);
-                    }}
-                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    {t("common.login")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* 로그인 모달 */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
         onLoginSuccess={() => {
-          setShowLoginModal(false);
+          setShowLoginRequiredPopup(false);
           setIsLoggedIn(true);
         }}
       />

@@ -15,7 +15,7 @@ import OverlayBar from "./OverlayBar";
 import BottomNavigation from "./BottomNavigation";
 import ProcedureRecommendation from "./ProcedureRecommendation";
 import CountryPainPointSection from "./CountryPainPointSection";
-import LoginModal from "./LoginModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 import InformationalContentSection from "./InformationalContentSection";
 import type { TravelScheduleData } from "./TravelScheduleForm";
 
@@ -48,7 +48,7 @@ export default function HomePage() {
     null
   );
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const procedureRecommendationRef = useRef<HTMLDivElement>(null);
   const aiAnalysisBannerRef = useRef<HTMLDivElement>(null);
@@ -154,7 +154,7 @@ export default function HomePage() {
     if (isLoggedIn) {
       router.push("/community/write");
     } else {
-      setIsLoginModalOpen(true);
+      setShowLoginRequiredPopup(true);
     }
   };
 
@@ -279,13 +279,13 @@ export default function HomePage() {
 
       <OverlayBar />
 
-      {/* 로그인 모달 */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
         onLoginSuccess={() => {
           setIsLoggedIn(true);
-          setIsLoginModalOpen(false);
+          setShowLoginRequiredPopup(false);
           // 로그인 성공 후 후기 작성 페이지로 이동
           router.push("/community/write");
         }}

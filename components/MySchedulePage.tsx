@@ -36,6 +36,8 @@ import {
   type SavedSchedule,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
+import { supabase } from "@/lib/supabase";
 
 /**
  * 받침 유무에 따라 "와" 또는 "과"를 반환하는 함수
@@ -2380,6 +2382,8 @@ export default function MySchedulePage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [isTravelModalOpen, setIsTravelModalOpen] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   // 각 시술의 날짜 수정 상태 관리 (여행 일정 탭용)
   const [editingDates, setEditingDates] = useState<{ [key: number]: boolean }>(
     {}
@@ -2413,6 +2417,21 @@ export default function MySchedulePage() {
     return () => {
       window.removeEventListener("travelPeriodUpdated", loadTravelPeriod);
     };
+  }, []);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!supabase) {
+        setIsLoggedIn(false);
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
   }, []);
 
   // 여행 기간 저장
@@ -3357,9 +3376,7 @@ export default function MySchedulePage() {
                         "일정 저장 기능이 아직 준비되지 않았습니다. 관리자에게 문의해주세요."
                       );
                     } else if (errorMessage.includes("로그인")) {
-                      if (confirm(t("confirm.loginRequiredToSave"))) {
-                        router.push("/mypage");
-                      }
+                      setShowLoginRequiredPopup(true);
                     } else {
                       alert(errorMessage);
                     }
@@ -3951,6 +3968,16 @@ export default function MySchedulePage() {
         onDateSelect={handleTravelPeriodSave}
         selectedStartDate={travelPeriod?.start || null}
         selectedEndDate={travelPeriod?.end || null}
+      />
+
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
+        onLoginSuccess={() => {
+          setShowLoginRequiredPopup(false);
+          setIsLoggedIn(true);
+        }}
       />
     </div>
   );

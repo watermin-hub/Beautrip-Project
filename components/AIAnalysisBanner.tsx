@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { uploadFaceImageToStorage } from "@/lib/api/faceImageUpload";
 import { supabase } from "@/lib/supabase";
-import LoginModal from "./LoginModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 
 export default function AIAnalysisBanner() {
   const { t } = useLanguage();
@@ -16,7 +16,7 @@ export default function AIAnalysisBanner() {
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -48,7 +48,7 @@ export default function AIAnalysisBanner() {
   const handleStartAnalysis = () => {
     // 로그인 체크
     if (!isLoggedIn || !userId) {
-      setShowLoginModal(true);
+      setShowLoginRequiredPopup(true);
       return;
     }
     setIsConsentModalOpen(true);
@@ -77,8 +77,7 @@ export default function AIAnalysisBanner() {
     try {
       // 로그인 및 user_id 재확인
       if (!isLoggedIn || !userId) {
-        alert("로그인이 필요합니다.");
-        setShowLoginModal(true);
+        setShowLoginRequiredPopup(true);
         setIsUploading(false);
         return;
       }
@@ -154,9 +153,9 @@ export default function AIAnalysisBanner() {
         isUploading={isUploading}
       />
 
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
         onLoginSuccess={async () => {
           const {
             data: { session },
@@ -164,7 +163,7 @@ export default function AIAnalysisBanner() {
           if (session?.user) {
             setIsLoggedIn(true);
             setUserId(session.user.id);
-            setShowLoginModal(false);
+            setShowLoginRequiredPopup(false);
             // 로그인 성공 후 동의 모달 열기
             setIsConsentModalOpen(true);
           } else {
@@ -172,7 +171,7 @@ export default function AIAnalysisBanner() {
             if (savedUserId) {
               setIsLoggedIn(true);
               setUserId(savedUserId);
-              setShowLoginModal(false);
+              setShowLoginRequiredPopup(false);
               setIsConsentModalOpen(true);
             }
           }

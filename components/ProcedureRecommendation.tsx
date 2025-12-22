@@ -17,7 +17,7 @@ import {
 } from "react-icons/fi";
 import ProcedureFilterModal, { ProcedureFilter } from "./ProcedureFilterModal";
 import AddToScheduleModal from "./AddToScheduleModal";
-import LoginModal from "./LoginModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 import {
   loadTreatmentsPaginated,
   getScheduleBasedRecommendations,
@@ -433,7 +433,7 @@ export default function ProcedureRecommendation({
     null
   );
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // 중분류 카테고리 표시 개수 (초기 5개)
@@ -1408,7 +1408,7 @@ export default function ProcedureRecommendation({
                   <button
                     onClick={() => {
                       setIsInfoModalOpen(false);
-                      setIsLoginModalOpen(true);
+                      setShowLoginRequiredPopup(true);
                     }}
                     className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
                   >
@@ -1422,11 +1422,11 @@ export default function ProcedureRecommendation({
       )}
 
       {/* 로그인 모달 */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
         onLoginSuccess={() => {
-          setIsLoginModalOpen(false);
+          setShowLoginRequiredPopup(false);
         }}
       />
     </div>

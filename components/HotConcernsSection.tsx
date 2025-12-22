@@ -16,7 +16,7 @@ import {
   type Treatment,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
-import LoginModal from "./LoginModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 
 export default function HotConcernsSection() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function HotConcernsSection() {
     null
   );
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
@@ -445,7 +445,7 @@ export default function HotConcernsSection() {
                   <button
                     onClick={() => {
                       setIsInfoModalOpen(false);
-                      setIsLoginModalOpen(true);
+                      setShowLoginRequiredPopup(true);
                     }}
                     className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
                   >
@@ -458,12 +458,12 @@ export default function HotConcernsSection() {
         </>
       )}
 
-      {/* 로그인 모달 */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
         onLoginSuccess={() => {
-          setIsLoginModalOpen(false);
+          setShowLoginRequiredPopup(false);
         }}
       />
     </div>

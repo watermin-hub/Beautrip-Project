@@ -33,7 +33,7 @@ import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
-import LoginModal from "./LoginModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 
 interface ProcedureReviewDetailPageProps {
   reviewId: string;
@@ -56,7 +56,6 @@ export default function ProcedureReviewDetailPage({
   const [userTimezone, setUserTimezone] = useState<string | null>(null);
   const [userLocale, setUserLocale] = useState<string | null>(null);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // 로그인 상태 확인
@@ -575,7 +574,7 @@ export default function ProcedureReviewDetailPage({
                   <button
                     onClick={() => {
                       setShowLoginRequiredPopup(false);
-                      setShowLoginModal(true);
+                      setShowLoginRequiredPopup(true);
                     }}
                     className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
                   >
@@ -589,11 +588,11 @@ export default function ProcedureReviewDetailPage({
       )}
 
       {/* 로그인 모달 */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
         onLoginSuccess={() => {
-          setShowLoginModal(false);
+          setShowLoginRequiredPopup(false);
           setIsLoggedIn(true);
         }}
       />
