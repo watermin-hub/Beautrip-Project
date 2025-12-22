@@ -14,6 +14,8 @@ import {
   getViewCount,
 } from "@/lib/api/beautripApi";
 import { maskNickname } from "@/lib/utils/nicknameMask";
+import { supabase } from "@/lib/supabase";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 
 interface ReviewPost {
   id: number | string;
@@ -77,6 +79,23 @@ export default function PopularReviewsSection() {
   const { t } = useLanguage();
   const [popularReviews, setPopularReviews] = useState<ReviewPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!supabase) {
+        setIsLoggedIn(false);
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     const loadPopularReviews = async () => {
@@ -204,6 +223,11 @@ export default function PopularReviewsSection() {
   }, []);
 
   const handleReviewClick = (post: ReviewPost) => {
+    if (!isLoggedIn) {
+      setShowLoginRequiredPopup(true);
+      return;
+    }
+    
     if (post.reviewType && post.id) {
       const postId = String(post.id);
       if (post.reviewType === "procedure") {
@@ -218,6 +242,10 @@ export default function PopularReviewsSection() {
 
   const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isLoggedIn) {
+      setShowLoginRequiredPopup(true);
+      return;
+    }
     router.push("/community?tab=popular");
   };
 
@@ -314,6 +342,16 @@ export default function PopularReviewsSection() {
         ))}
         </div>
       )}
+
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
+        onLoginSuccess={() => {
+          setIsLoggedIn(true);
+          setShowLoginRequiredPopup(false);
+        }}
+      />
     </div>
   );
 }

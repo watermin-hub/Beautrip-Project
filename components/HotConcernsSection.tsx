@@ -36,7 +36,6 @@ export default function HotConcernsSection() {
         setLoading(true);
         // RPC로 인기 시술 조회 (서버에서 점수 산정/정렬/랜덤 셔플까지 처리)
         const hotTreatments = await getHomeHotTreatments(language, {
-          pool: 50,
           limit: 10,
         });
         setTreatments(hotTreatments);

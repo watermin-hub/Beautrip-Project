@@ -129,8 +129,10 @@ export interface Treatment {
   treatment_id?: number;
   treatment_name?: string;
   hospital_name?: string;
+  hospital_id?: number;
   category_large?: string;
-  category_mid?: string; // 중분류
+  category_mid?: string; // 중분류 (UI 표시용, 언어별)
+  category_mid_key?: string; // 중분류 키 (로직/그룹핑용, 한글 고정) ⚠️ 핵심
   category_small?: string; // 소분류
   selling_price?: number;
   original_price?: number;
@@ -6580,7 +6582,6 @@ export async function getViewCount(
 export async function getHomeHotTreatments(
   language?: LanguageCode,
   options?: {
-    pool?: number; // 상위 풀 크기 (기본: 50)
     limit?: number; // 반환 개수 (기본: 10)
   }
 ): Promise<Treatment[]> {
@@ -6593,7 +6594,6 @@ export async function getHomeHotTreatments(
 
     const { data, error } = await client.rpc("rpc_home_hot_treatments", {
       p_lang: pLang,
-      p_pool: options?.pool ?? 50,
       p_limit: options?.limit ?? 10,
     });
 
@@ -6606,7 +6606,39 @@ export async function getHomeHotTreatments(
       return [];
     }
 
-    return cleanData<Treatment>(data);
+    // RPC 결과를 Treatment 형식으로 매핑
+    // 백엔드에서 반환하는 필드명 확인: rating, review_count, selling_price 등
+    const treatments: Treatment[] = data.map((row: any) => {
+      // 숫자 필드가 null이거나 undefined인 경우 0으로 처리하지 않고 그대로 유지
+      const treatment: Treatment = {
+        treatment_id: row.treatment_id,
+        treatment_name: row.treatment_name,
+        hospital_name: row.hospital_name,
+        hospital_id: row.hospital_id,
+        category_large: row.category_large,
+        category_mid: row.category_mid, // UI 표시용 (언어별)
+        category_mid_key: row.category_mid_key, // 로직용 (한글 고정)
+        category_small: row.category_small,
+        // 숫자 필드: null/undefined 체크 후 그대로 전달 (0이 아닌 null 유지)
+        selling_price: row.selling_price ?? null,
+        original_price: row.original_price ?? null,
+        dis_rate: row.dis_rate ?? null,
+        rating: row.rating ?? null,
+        review_count: row.review_count ?? null,
+        main_image_url: row.main_img_url || row.main_image_url || null, // 백엔드에서 main_img_url로 반환
+        event_url: row.event_url || null,
+        vat_info: row.vat_info || null,
+        treatment_hashtags: row.treatment_hashtags || null,
+        surgery_time: row.surgery_time || null,
+        downtime: row.downtime || null,
+        platform: row.platform || null,
+        ...row, // 추가 필드 포함 (원본 데이터 우선)
+      };
+      return treatment;
+    });
+
+    // cleanData는 NaN만 null로 변환 (0은 유지)
+    return cleanData<Treatment>(treatments);
   } catch (error) {
     console.error("홈 인기 시술 로드 실패:", error);
     return [];
@@ -6617,8 +6649,9 @@ export async function getHomeHotTreatments(
 // 일정이 있을 때 여행 기간과 선택된 카테고리에 맞춰 추천 목록 반환
 // 서버에서 카테고리(중분류) 랭킹 + 카테고리별 카드 정렬까지 처리
 export interface HomeScheduleRecommendation {
-  categoryMid: string; // 컴포넌트 호환성을 위해 camelCase 유지
-  category_mid: string; // RPC 결과의 snake_case
+  categoryMid: string; // 컴포넌트 호환성을 위해 camelCase 유지 (UI 표시용)
+  category_mid: string; // UI 표시용 (언어별)
+  category_mid_key: string; // 로직/그룹핑용 (한글 고정) ⚠️ 핵심
   category_large: string;
   treatments: Treatment[];
   averageRecoveryPeriod?: number;
@@ -6665,6 +6698,20 @@ export async function getHomeScheduleRecommendations(
 
     if (error) {
       console.error("rpc_home_schedule_recommendations 오류:", error);
+      
+      // RPC 함수가 아직 생성되지 않은 경우를 위한 처리
+      if (
+        error.message?.includes("Could not find the function") ||
+        error.message?.includes("function") ||
+        error.code === "42883"
+      ) {
+        console.warn(
+          "⚠️ rpc_home_schedule_recommendations 함수가 아직 생성되지 않았습니다. 백엔드 담당자에게 확인하세요."
+        );
+        // 함수가 없을 때는 빈 배열 반환 (앱이 크래시되지 않도록)
+        return [];
+      }
+      
       throw new Error(`RPC 오류: ${error.message}`);
     }
 
@@ -6672,17 +6719,22 @@ export async function getHomeScheduleRecommendations(
       return [];
     }
 
-    // RPC 결과를 category_mid 기준으로 그룹화
+    // ⚠️ 핵심: RPC 결과를 category_mid_key 기준으로 그룹화 (한글 고정, 로직용)
+    // UI 표시는 category_mid 사용 (언어별)
     const groupedByCategory = new Map<string, HomeScheduleRecommendation>();
 
     data.forEach((row: any) => {
-      const categoryMid = row.category_mid || "기타";
+      // category_mid_key: 로직/그룹핑용 (한글 고정)
+      const categoryMidKey = row.category_mid_key || row.category_mid || "기타";
+      // category_mid: UI 표시용 (언어별)
+      const categoryMid = row.category_mid || categoryMidKey;
       const categoryLarge = row.category_large || "";
 
-      if (!groupedByCategory.has(categoryMid)) {
-        groupedByCategory.set(categoryMid, {
-          categoryMid: categoryMid, // 컴포넌트 호환성
-          category_mid: categoryMid, // RPC 결과
+      if (!groupedByCategory.has(categoryMidKey)) {
+        groupedByCategory.set(categoryMidKey, {
+          categoryMid: categoryMid, // UI 표시용 (언어별)
+          category_mid: categoryMid, // UI 표시용 (언어별)
+          category_mid_key: categoryMidKey, // ⚠️ 로직/그룹핑용 (한글 고정)
           category_large: categoryLarge,
           treatments: [],
           averageRecoveryPeriod: row.average_recovery_period,
@@ -6696,29 +6748,32 @@ export async function getHomeScheduleRecommendations(
       }
 
       // Treatment 객체 생성 (RPC 결과에서 필요한 필드 추출)
+      // 숫자 필드가 null이거나 undefined인 경우 그대로 유지 (0으로 변환하지 않음)
       const treatment: Treatment = {
         treatment_id: row.treatment_id,
         treatment_name: row.treatment_name,
         hospital_name: row.hospital_name,
         category_large: row.category_large,
-        category_mid: row.category_mid,
+        category_mid: row.category_mid, // UI 표시용 (언어별)
+        category_mid_key: row.category_mid_key, // 로직용 (한글 고정)
         category_small: row.category_small,
-        selling_price: row.selling_price,
-        original_price: row.original_price,
-        dis_rate: row.dis_rate,
-        rating: row.rating,
-        review_count: row.review_count,
-        main_image_url: row.main_image_url,
-        event_url: row.event_url,
-        vat_info: row.vat_info,
-        treatment_hashtags: row.treatment_hashtags,
-        surgery_time: row.surgery_time,
-        downtime: row.downtime,
-        platform: row.platform,
-        ...row, // 추가 필드 포함
+        // 숫자 필드: null/undefined 체크 후 그대로 전달
+        selling_price: row.selling_price ?? null,
+        original_price: row.original_price ?? null,
+        dis_rate: row.dis_rate ?? null,
+        rating: row.rating ?? null,
+        review_count: row.review_count ?? null,
+        main_image_url: row.main_img_url || row.main_image_url || null, // 백엔드에서 main_img_url로 반환
+        event_url: row.event_url || null,
+        vat_info: row.vat_info || null,
+        treatment_hashtags: row.treatment_hashtags || null,
+        surgery_time: row.surgery_time || null,
+        downtime: row.downtime || null,
+        platform: row.platform || null,
+        ...row, // 추가 필드 포함 (원본 데이터 우선)
       };
 
-      groupedByCategory.get(categoryMid)!.treatments.push(treatment);
+      groupedByCategory.get(categoryMidKey)!.treatments.push(treatment);
     });
 
     // treatment_rank 순서로 정렬 (서버에서 정렬된 순서 유지)

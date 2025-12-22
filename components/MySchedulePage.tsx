@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FiCalendar,
@@ -39,6 +39,7 @@ import {
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { supabase } from "@/lib/supabase";
+import { trackScheduleSaveClick, trackSavedScheduleView } from "@/lib/gtm";
 
 /**
  * 받침 유무에 따라 "와" 또는 "과"를 반환하는 함수
@@ -2387,6 +2388,22 @@ export default function MySchedulePage() {
       }
     }
   }, []);
+
+  // 저장된 일정 화면 조회 추적 (중복 방지)
+  const hasTrackedSavedScheduleView = useRef(false);
+
+  useEffect(() => {
+    if (activeTab === "saved" && !hasTrackedSavedScheduleView.current) {
+      // 현재는 일정 페이지에서만 진입하므로 "schedule"로 설정
+      // 추후 마이페이지에서 진입하는 경우가 확인되면 동적으로 변경 필요
+      trackSavedScheduleView("schedule");
+      hasTrackedSavedScheduleView.current = true;
+    }
+    // 탭이 변경되면 플래그 리셋 (다시 saved 탭으로 돌아올 때 재추적 가능하도록)
+    if (activeTab !== "saved") {
+      hasTrackedSavedScheduleView.current = false;
+    }
+  }, [activeTab]);
   // 초기 날짜를 현재 날짜로 설정
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -3292,6 +3309,9 @@ export default function MySchedulePage() {
                   alert(t("alert.noScheduleToSave"));
                   return;
                 }
+
+                // GTM 이벤트: 일정 저장 의도 측정
+                trackScheduleSaveClick("schedule");
 
                 // 일정 기간 포맷팅 (예: "25.12.14~25.12.20")
                 const formatPeriod = (start: string, end: string) => {

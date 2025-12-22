@@ -266,7 +266,13 @@ export default function HomePage() {
         {/* 리뷰 작성 버튼 */}
         <div className="mb-4">
           <button
-            onClick={() => router.push("/community/write")}
+            onClick={() => {
+              if (isLoggedIn) {
+                router.push("/community/write");
+              } else {
+                setShowLoginRequiredPopup(true);
+              }
+            }}
             className="w-full bg-primary-main hover:bg-[#2DB8A0] text-white rounded-xl px-4 py-3 flex items-center justify-center gap-2 font-semibold transition-colors shadow-md"
           >
             <span>{t("home.reviewButton")}</span>

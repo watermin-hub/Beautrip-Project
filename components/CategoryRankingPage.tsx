@@ -126,10 +126,6 @@ export default function CategoryRankingPage({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  // 스크롤 버튼 클릭 횟수 추적 (카테고리별)
-  const [scrollButtonClickCount, setScrollButtonClickCount] = useState<
-    Record<string, number>
-  >({});
 
   // ✅ RPC 기반 랭킹 데이터
   const [midCategoryRankings, setMidCategoryRankings] = useState<
@@ -941,29 +937,8 @@ export default function CategoryRankingPage({
 
                   const handleScrollRight = () => {
                     if (!isLoggedIn) {
-                      const key = ranking.category_small_key;
-                      const currentCount = scrollButtonClickCount[key] || 0;
-                      const newCount = currentCount + 1;
-                      setScrollButtonClickCount((prev) => ({
-                        ...prev,
-                        [key]: newCount,
-                      }));
-                      
-                      if (newCount >= 2) {
-                        setIsInfoModalOpen(true);
-                        // 카운트 리셋
-                        setScrollButtonClickCount((prev) => ({
-                          ...prev,
-                          [key]: 0,
-                        }));
-                      } else {
-                        // 스크롤은 정상적으로 실행
-                        const element =
-                          scrollRefs.current[ranking.category_small_key];
-                        if (element) {
-                          element.scrollBy({ left: 300, behavior: "smooth" });
-                        }
-                      }
+                      // 로그인 안 된 경우 즉시 팝업 표시
+                      setIsInfoModalOpen(true);
                     } else {
                       const element =
                         scrollRefs.current[ranking.category_small_key];
@@ -1237,28 +1212,8 @@ export default function CategoryRankingPage({
 
                 const handleScrollRight = () => {
                   if (!isLoggedIn) {
-                    const key = ranking.category_mid;
-                    const currentCount = scrollButtonClickCount[key] || 0;
-                    const newCount = currentCount + 1;
-                    setScrollButtonClickCount((prev) => ({
-                      ...prev,
-                      [key]: newCount,
-                    }));
-                    
-                    if (newCount >= 2) {
-                      setIsInfoModalOpen(true);
-                      // 카운트 리셋
-                      setScrollButtonClickCount((prev) => ({
-                        ...prev,
-                        [key]: 0,
-                      }));
-                    } else {
-                      // 스크롤은 정상적으로 실행
-                      const element = scrollRefs.current[ranking.category_mid];
-                      if (element) {
-                        element.scrollBy({ left: 300, behavior: "smooth" });
-                      }
-                    }
+                    // 로그인 안 된 경우 즉시 팝업 표시
+                    setIsInfoModalOpen(true);
                   } else {
                     const element = scrollRefs.current[ranking.category_mid];
                     if (element) {

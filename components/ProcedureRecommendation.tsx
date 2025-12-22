@@ -458,16 +458,18 @@ export default function ProcedureRecommendation({
       recommendations.length > 0 &&
       scheduleData.procedureCategory === "전체"
     ) {
+      // ⚠️ 핵심: 로직은 category_mid_key 사용 (한글 고정)
       const categoryMidCounts = new Map<string, Set<string>>();
       recommendations.forEach((rec) => {
-        if (!categoryMidCounts.has(rec.categoryMid)) {
-          categoryMidCounts.set(rec.categoryMid, new Set());
+        const categoryMidKey = rec.category_mid_key || rec.categoryMid;
+        if (!categoryMidCounts.has(categoryMidKey)) {
+          categoryMidCounts.set(categoryMidKey, new Set());
         }
         // 해당 중분류가 속한 대분류 확인
         rec.treatments.forEach((treatment) => {
           if (treatment.category_large) {
             categoryMidCounts
-              .get(rec.categoryMid)!
+              .get(categoryMidKey)!
               .add(treatment.category_large);
           }
         });
@@ -475,10 +477,15 @@ export default function ProcedureRecommendation({
 
       // 중복된 중분류 확인 (같은 중분류가 여러 대분류에 속한 경우)
       const duplicates: string[] = [];
-      categoryMidCounts.forEach((categoryLarges, categoryMid) => {
+      categoryMidCounts.forEach((categoryLarges, categoryMidKey) => {
         if (categoryLarges.size > 1) {
+          // UI 표시용으로 category_mid 찾기
+          const rec = recommendations.find(
+            (r) => (r.category_mid_key || r.categoryMid) === categoryMidKey
+          );
+          const displayName = rec?.category_mid || rec?.categoryMid || categoryMidKey;
           duplicates.push(
-            `${categoryMid} (대분류: ${Array.from(categoryLarges).join(", ")})`
+            `${displayName} (대분류: ${Array.from(categoryLarges).join(", ")})`
           );
         }
       });
@@ -809,8 +816,9 @@ export default function ProcedureRecommendation({
     filter.budget !== null;
 
   // 스크롤 핸들러
-  const handleScroll = (categoryMid: string) => {
-    const element = scrollRefs.current[categoryMid];
+  // ⚠️ 핵심: 로직은 category_mid_key 사용 (한글 고정)
+  const handleScroll = (categoryMidKey: string) => {
+    const element = scrollRefs.current[categoryMidKey];
     if (!element) return;
 
     const scrollLeft = element.scrollLeft;
@@ -821,16 +829,17 @@ export default function ProcedureRecommendation({
 
     setScrollPositions((prev) => ({
       ...prev,
-      [categoryMid]: { left: scrollLeft, canScrollLeft, canScrollRight },
+      [categoryMidKey]: { left: scrollLeft, canScrollLeft, canScrollRight },
     }));
   };
 
-  // 초기 스크롤 상태 확인
+  // 초기 스크롤 상태 확인 (category_mid_key 기준)
   useEffect(() => {
     if (recommendations.length > 0) {
       const timer = setTimeout(() => {
         recommendations.forEach((rec) => {
-          const element = scrollRefs.current[rec.categoryMid];
+          const categoryMidKey = rec.category_mid_key || rec.categoryMid;
+          const element = scrollRefs.current[categoryMidKey];
           if (element) {
             const scrollLeft = element.scrollLeft;
             const scrollWidth = element.scrollWidth;
@@ -840,7 +849,7 @@ export default function ProcedureRecommendation({
 
             setScrollPositions((prev) => ({
               ...prev,
-              [rec.categoryMid]: {
+              [categoryMidKey]: {
                 left: scrollLeft,
                 canScrollLeft,
                 canScrollRight,
@@ -1040,21 +1049,26 @@ export default function ProcedureRecommendation({
       )}
 
       {filteredRecommendations.slice(0, visibleCategoriesCount).map((rec) => {
-        const scrollState = scrollPositions[rec.categoryMid] || {
+        // ⚠️ 핵심: 로직은 category_mid_key 사용 (한글 고정)
+        const categoryMidKey = rec.category_mid_key || rec.categoryMid;
+        // UI 표시는 category_mid 사용 (언어별)
+        const categoryMidDisplay = rec.category_mid || rec.categoryMid;
+
+        const scrollState = scrollPositions[categoryMidKey] || {
           left: 0,
           canScrollLeft: false,
           canScrollRight: true,
         };
 
         const handleScrollLeft = () => {
-          const element = scrollRefs.current[rec.categoryMid];
+          const element = scrollRefs.current[categoryMidKey];
           if (element) {
             element.scrollBy({ left: -300, behavior: "smooth" });
           }
         };
 
         const handleScrollRight = () => {
-          const element = scrollRefs.current[rec.categoryMid];
+          const element = scrollRefs.current[categoryMidKey];
           if (element) {
             element.scrollBy({ left: 300, behavior: "smooth" });
           }
@@ -1064,25 +1078,25 @@ export default function ProcedureRecommendation({
         const handleShowMore = () => {
           setVisibleTreatmentsCount((prev) => ({
             ...prev,
-            [rec.categoryMid]: (prev[rec.categoryMid] || 3) + 10,
+            [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
           }));
         };
 
         // 현재 표시된 카드 수
         const currentVisibleCount =
-          visibleTreatmentsCount[rec.categoryMid] || 3;
+          visibleTreatmentsCount[categoryMidKey] || 3;
         const hasMoreTreatments = rec.treatments.length > currentVisibleCount;
         // 우측 버튼 표시 조건: 스크롤 가능하거나 더보기 가능할 때
         const shouldShowRightButton =
           scrollState.canScrollRight || hasMoreTreatments;
 
         return (
-          <div key={rec.categoryMid} className="space-y-3">
+          <div key={categoryMidKey} className="space-y-3">
             {/* 중분류 헤더 */}
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-base font-bold text-gray-900">
-                  {rec.categoryMid}
+                  {categoryMidDisplay}
                 </h4>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {t("procedure.averageProcedureTime")}{" "}
@@ -1136,13 +1150,13 @@ export default function ProcedureRecommendation({
               {/* 카드 스크롤 영역 */}
               <div
                 ref={(el) => {
-                  scrollRefs.current[rec.categoryMid] = el;
+                  scrollRefs.current[categoryMidKey] = el;
                 }}
                 className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
-                onScroll={() => handleScroll(rec.categoryMid)}
+                onScroll={() => handleScroll(categoryMidKey)}
               >
                 {rec.treatments
-                  .slice(0, visibleTreatmentsCount[rec.categoryMid] || 3)
+                  .slice(0, visibleTreatmentsCount[categoryMidKey] || 3)
                   .map((treatment) => {
                     const recoveryPeriod = parseRecoveryPeriod(
                       treatment.downtime
@@ -1346,18 +1360,6 @@ export default function ProcedureRecommendation({
         </button>
       )}
 
-      {/* 맞춤 병원정보 */}
-      <div className="bg-primary-light/10 rounded-xl p-4 mt-4">
-        <h4 className="font-semibold text-gray-900 mb-2">
-          {t("procedure.matchingHospital")}
-        </h4>
-        <p className="text-sm text-gray-700 mb-3">
-          {t("procedure.hospitalRecommendation")}
-        </p>
-        <button className="w-full bg-primary-main hover:bg-[#2DB8A0] text-white py-2.5 rounded-lg text-sm font-semibold transition-colors">
-          {t("procedure.viewHospitalInfo")}
-        </button>
-      </div>
 
       {/* Filter Modal */}
       <ProcedureFilterModal

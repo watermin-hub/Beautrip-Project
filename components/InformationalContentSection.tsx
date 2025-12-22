@@ -8,6 +8,8 @@ import {
   getAllRecoveryGuides,
   type RecoveryGuidePost,
 } from "@/lib/content/recoveryGuidePosts";
+import { supabase } from "@/lib/supabase";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 
 interface ContentItem {
   id: number | string;
@@ -59,6 +61,23 @@ export default function InformationalContentSection() {
     RecoveryGuidePost[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!supabase) {
+        setIsLoggedIn(false);
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+  }, []);
 
   // 카테고리 변경 시 더보기 상태 리셋
   const handleCategoryChange = (category: string) => {
@@ -174,6 +193,12 @@ export default function InformationalContentSection() {
               <button
                 key={content.id}
                 onClick={() => {
+                  // 로그인 체크
+                  if (!isLoggedIn) {
+                    setShowLoginRequiredPopup(true);
+                    return;
+                  }
+                  
                   // 회복 가이드인 경우 상세 페이지로 이동
                   if (content.category === recoveryGuideCategoryKey && content.slug) {
                     router.push(`/community/recovery-guide/${content.slug}`);
@@ -289,6 +314,16 @@ export default function InformationalContentSection() {
           </button>
         </div>
       )}
+
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => setShowLoginRequiredPopup(false)}
+        onLoginSuccess={() => {
+          setIsLoggedIn(true);
+          setShowLoginRequiredPopup(false);
+        }}
+      />
     </div>
   );
 }
