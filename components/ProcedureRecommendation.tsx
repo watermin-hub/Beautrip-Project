@@ -52,7 +52,7 @@ interface Recommendation {
 }
 
 interface Category {
-  id: string;
+  id: string | null;
   name: string;
   icon: string;
 }
