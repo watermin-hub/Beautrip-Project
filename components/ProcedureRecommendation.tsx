@@ -24,8 +24,7 @@ import ProcedureFilterModal, { ProcedureFilter } from "./ProcedureFilterModal";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import {
-  loadTreatmentsPaginated,
-  getScheduleBasedRecommendations,
+  getHomeScheduleRecommendations,
   getThumbnailUrl,
   parseRecoveryPeriod,
   parseProcedureTime,
@@ -33,7 +32,7 @@ import {
   toggleProcedureFavorite,
   getFavoriteStatus,
   type Treatment,
-  type ScheduleBasedRecommendation,
+  type HomeScheduleRecommendation,
 } from "@/lib/api/beautripApi";
 
 // 필터 옵션은 ProcedureFilterModal에서 동일하게 사용
@@ -426,9 +425,8 @@ export default function ProcedureRecommendation({
     recovery: null,
     budget: null,
   });
-  const [allTreatments, setAllTreatments] = useState<Treatment[]>([]);
   const [recommendations, setRecommendations] = useState<
-    ScheduleBasedRecommendation[]
+    HomeScheduleRecommendation[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [scrollPositions, setScrollPositions] = useState<
@@ -525,72 +523,40 @@ export default function ProcedureRecommendation({
           setLoading(true);
         }
 
-        // selectedCategoryId를 한국어 카테고리 이름으로 변환
-        let categoryForLoad: string | undefined;
-        if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
-          const selectedCategory = mainCategories.find(
-            (cat) => cat.id === selectedCategoryId
-          );
-          categoryForLoad = selectedCategory?.name || selectedCategoryId;
-        } else if (scheduleData.procedureCategory !== "전체") {
-          categoryForLoad = scheduleData.procedureCategory;
-        }
-
-        // 필요한 만큼만 로드 (200개 - 일정 기반 추천에 충분)
-        const result = await loadTreatmentsPaginated(1, 200, {
-          categoryLarge: categoryForLoad,
-          language: language,
-        });
-        const treatments = result.data;
-
-        console.log(
-          `📥 [데이터 로드] 카테고리: "${categoryForLoad}", 로드된 시술: ${treatments.length}개`
-        );
-
-        // "피부" 카테고리 선택 시 로드된 데이터 확인
-        if (categoryForLoad === "피부") {
-          const pibuMids = new Set<string>();
-          treatments.forEach((t: any) => {
-            if (t.category_mid) pibuMids.add(t.category_mid);
-          });
-          console.log(
-            `🔍 [피부 데이터 확인] 로드된 시술의 중분류 (${pibuMids.size}개):`,
-            Array.from(pibuMids).slice(0, 20)
-          );
-          if (pibuMids.has("피부관리")) {
-            const count = treatments.filter(
-              (t: any) => t.category_mid === "피부관리"
-            ).length;
-            console.log(`✅ [피부관리 발견] 로드된 데이터 중 ${count}개 발견!`);
-          } else {
-            console.warn(
-              `❌ [피부관리 없음] 로드된 200개 데이터 중 "피부관리"가 없습니다!`
-            );
-          }
-        }
-
-        setAllTreatments(treatments);
-
-        // 일정 기반 추천 데이터 생성
+        // 일정 기반 추천 데이터 조회 (RPC 사용)
         if (scheduleData.travelPeriod.start && scheduleData.travelPeriod.end) {
-          // selectedCategoryId를 한국어 카테고리 이름으로 변환
-          let categoryToUse: string;
+          // selectedCategoryId를 현재 언어의 카테고리 이름으로 변환
+          // ⚠️ 중요: 현재 언어 데이터의 category_large 값과 동일해야 필터가 정상 동작
+          let categoryToUse: string | null = null;
           if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
             // mainCategories에서 선택된 카테고리의 name을 찾기
+            // name은 현재 언어에 맞는 category_large 값이어야 함
             const selectedCategory = mainCategories.find(
               (cat) => cat.id === selectedCategoryId
             );
             categoryToUse = selectedCategory?.name || selectedCategoryId;
-          } else {
-            categoryToUse = scheduleData.procedureCategory || "전체";
+          } else if (
+            scheduleData.procedureCategory &&
+            scheduleData.procedureCategory !== "전체"
+          ) {
+            categoryToUse = scheduleData.procedureCategory;
           }
-          const scheduleBasedRecs = await getScheduleBasedRecommendations(
-            treatments,
-            categoryToUse,
+
+          // RPC로 일정 기반 추천 조회 (서버에서 카테고리 랭킹 + 정렬까지 처리)
+          const scheduleRecs = await getHomeScheduleRecommendations(
             scheduleData.travelPeriod.start,
-            scheduleData.travelPeriod.end
+            scheduleData.travelPeriod.end,
+            categoryToUse,
+            language,
+            {
+              limitCategories: 5,
+              limitPerCategory: 10,
+            }
           );
-          setRecommendations(scheduleBasedRecs);
+          setRecommendations(scheduleRecs);
+        } else {
+          // 일정이 없으면 빈 배열
+          setRecommendations([]);
         }
       } catch (error) {
         console.error("데이터 로드 실패:", error);
@@ -1120,8 +1086,8 @@ export default function ProcedureRecommendation({
                 </h4>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {t("procedure.averageProcedureTime")}{" "}
-                  {rec.averageProcedureTimeMin > 0 ||
-                  rec.averageProcedureTimeMax > 0
+                  {(rec.averageProcedureTimeMin ?? 0) > 0 ||
+                  (rec.averageProcedureTimeMax ?? 0) > 0
                     ? rec.averageProcedureTimeMin ===
                       rec.averageProcedureTimeMax
                       ? `${rec.averageProcedureTimeMax}${t(
@@ -1130,14 +1096,14 @@ export default function ProcedureRecommendation({
                       : `${rec.averageProcedureTimeMin}~${
                           rec.averageProcedureTimeMax
                         }${t("procedure.procedureTime")}`
-                    : rec.averageProcedureTime > 0
+                    : (rec.averageProcedureTime ?? 0) > 0
                     ? `${rec.averageProcedureTime}${t(
                         "procedure.procedureTime"
                       )}`
                     : t("pdp.noInfo")}{" "}
                   · {t("procedure.recoveryPeriod")}{" "}
-                  {rec.averageRecoveryPeriodMin > 0 ||
-                  rec.averageRecoveryPeriodMax > 0
+                  {(rec.averageRecoveryPeriodMin ?? 0) > 0 ||
+                  (rec.averageRecoveryPeriodMax ?? 0) > 0
                     ? rec.averageRecoveryPeriodMin ===
                       rec.averageRecoveryPeriodMax
                       ? `${rec.averageRecoveryPeriodMax}${t(
@@ -1146,7 +1112,7 @@ export default function ProcedureRecommendation({
                       : `${rec.averageRecoveryPeriodMin}~${
                           rec.averageRecoveryPeriodMax
                         }${t("procedure.recoveryDays")}`
-                    : rec.averageRecoveryPeriod > 0
+                    : (rec.averageRecoveryPeriod ?? 0) > 0
                     ? `${rec.averageRecoveryPeriod}${t(
                         "procedure.recoveryDays"
                       )}`

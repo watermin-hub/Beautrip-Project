@@ -84,6 +84,8 @@ export function getHospitalLanguageCode(language?: LanguageCode): string {
 
 // 언어에 따라 적절한 테이블 이름 반환
 // 한국어: treatment_master, 다른 언어: v_treatment_i18n
+// ⚠️ 중요: v_treatment_i18n을 사용할 때도 category_mid는 한국어 원본 값이어야 함
+// (category_treattime_recovery 테이블의 "중분류" 컬럼과 매칭하기 위해)
 export function getTreatmentTableName(language?: LanguageCode): string {
   // 언어 코드 가져오기
   let lang: LanguageCode = language || "KR";
@@ -99,6 +101,8 @@ export function getTreatmentTableName(language?: LanguageCode): string {
   }
 
   // 한국어일 때는 treatment_master, 다른 언어일 때는 v_treatment_i18n
+  // ⚠️ v_treatment_i18n 뷰는 treatment_master와 treatment_translation을 JOIN하므로
+  // category_mid는 treatment_master의 원본 값(한국어)을 사용함
   if (lang === "KR") {
     return TABLE_NAMES.TREATMENT_MASTER;
   }
@@ -2638,10 +2642,12 @@ export async function getScheduleBasedRecommendations(
       treatmentList,
     ]): Promise<ScheduleBasedRecommendation | null> => {
       // uniqueKey에서 중분류 이름만 추출 (대분류::중분류 형식)
-      // ⚠️ 중요: treatment_master의 category_mid와 정확히 일치해야 함
+      // ⚠️ 중요: v_treatment_i18n을 사용할 때도 category_mid는 한국어 원본 값이어야 함
+      // category_treattime_recovery 테이블의 "중분류" 컬럼과 매칭하기 위해 한국어 원본 필요
       const categoryMid = uniqueKey.split("::")[1] || "기타";
 
       // 디버깅: category_mid 정확 일치 확인
+      // v_treatment_i18n을 사용할 때도 category_mid는 한국어 원본 값이어야 함
       const allCategoryMidsInGroup = new Set(
         treatmentList.map((t) => t.category_mid || "").filter(Boolean)
       );
@@ -2653,10 +2659,14 @@ export async function getScheduleBasedRecommendations(
           `⚠️ [중분류 그룹 불일치] uniqueKey: "${uniqueKey}", categoryMid: "${categoryMid}", 실제 category_mid들:`,
           Array.from(allCategoryMidsInGroup)
         );
+        console.warn(
+          `⚠️ [v_treatment_i18n 확인] v_treatment_i18n을 사용할 때 category_mid가 한국어 원본 값인지 확인 필요`
+        );
       }
 
       // 먼저 category_treattime_recovery 테이블에서 권장체류일수 및 회복기간 범위 가져오기
       // ⚠️ 중요: 정확히 같은 category_mid로만 매칭 (부분 일치 제거)
+      // ⚠️ 중요: v_treatment_i18n을 사용할 때도 category_mid는 한국어 원본 값이어야 함
       let recommendedStayDays = 0;
       let recoveryMin = 0;
       let recoveryMax = 0;
@@ -2687,61 +2697,65 @@ export async function getScheduleBasedRecommendations(
         );
       }
 
-      // 권장체류일수(일)만 사용하여 여행 기간에 맞는 시술만 필터링
-      // - 결정 기준은 category_treattime_recovery 테이블의 "권장체류일수(일)" 컬럼
+      // 회복 기간에 맞게 필터링 (회복기간_max 기준)
+      // - 결정 기준은 category_treattime_recovery 테이블의 "회복기간_max(일)" 컬럼
+      // - 권장체류일수가 있으면 그것도 고려하되, 회복 기간이 우선
       // - 이 값이 없을 때만 기존 로직(downtime)으로 fallback
-      const groupStayDays = recommendedStayDays;
+      const groupRecoveryMax = recoveryMax; // 회복기간_max 사용
+      const groupRecoveryMin = recoveryMin; // 회복기간_min도 참고용
 
       // 디버깅: 피부관리 카테고리 확인
       if (categoryMid === "피부관리") {
         console.log(
-          `🔍 [피부관리 디버깅] category_mid: "${categoryMid}", 권장체류일수: ${groupStayDays}, effectiveTravelDays: ${effectiveTravelDays}, 여행일수: ${effectiveTravelDays}일`
+          `🔍 [피부관리 디버깅] category_mid: "${categoryMid}", 회복기간_max: ${groupRecoveryMax}일, 회복기간_min: ${groupRecoveryMin}일, 여행일수: ${effectiveTravelDays}일`
         );
       }
 
-      // 권장체류일수가 여행 일수보다 크면, 이 중분류 전체를 추천에서 제외
-      // 단, 당일/1박 2일은 effectiveTravelDays=3으로 간주하여 3일짜리 시술까지 허용
-      // (임시 주석 처리: 1박2일에서 3일짜리 포함 로직 비활성화)
-      if (groupStayDays > 0 && groupStayDays > effectiveTravelDays) {
+      // 회복기간_max가 여행 일수보다 크면, 이 중분류 전체를 추천에서 제외
+      // 회복기간_max는 시술 당일을 포함한 총 필요 일수 (시술 당일 + 회복 기간)
+      // 예: 회복기간_max가 3일이면 시술 당일 포함 4일 필요
+      const totalDaysNeeded = groupRecoveryMax > 0 ? groupRecoveryMax + 1 : 0; // 시술 당일 포함
+
+      if (groupRecoveryMax > 0 && totalDaysNeeded > effectiveTravelDays) {
         console.log(
-          `❌ [필터링 제외] "${categoryMid}": 권장체류일수 ${groupStayDays}일 > 여행일수 ${effectiveTravelDays}일로 제외됨`
+          `❌ [필터링 제외] "${categoryMid}": 회복기간_max ${groupRecoveryMax}일 (총 필요일수 ${totalDaysNeeded}일) > 여행일수 ${effectiveTravelDays}일로 제외됨`
         );
         return null;
       }
 
-      // 권장체류일수가 0이 아니고 여행일수 이하이면 포함 (로그 추가)
-      if (groupStayDays > 0) {
+      // 회복기간_max가 0이 아니고 여행일수 이하이면 포함 (로그 추가)
+      if (groupRecoveryMax > 0) {
         console.log(
-          `✅ [필터링 포함] "${categoryMid}": 권장체류일수 ${groupStayDays}일 <= 여행일수 ${effectiveTravelDays}일로 포함됨`
+          `✅ [필터링 포함] "${categoryMid}": 회복기간_max ${groupRecoveryMax}일 (총 필요일수 ${totalDaysNeeded}일) <= 여행일수 ${effectiveTravelDays}일로 포함됨`
         );
       }
 
       let suitableTreatments: Treatment[];
-      if (groupStayDays > 0) {
-        // 권장체류일수가 여행 일수 이내면 해당 중분류 전체를 포함
+      if (groupRecoveryMax > 0) {
+        // 회복기간_max가 여행 일수 이내면 해당 중분류 전체를 포함
         if (categoryMid === "피부관리") {
           console.log(
-            `✅ [피부관리 포함] 권장체류일수 ${groupStayDays}일 <= 여행일수 ${effectiveTravelDays}일, 시술 ${treatmentList.length}개 포함`
+            `✅ [피부관리 포함] 회복기간_max ${groupRecoveryMax}일 (총 필요일수 ${totalDaysNeeded}일) <= 여행일수 ${effectiveTravelDays}일, 시술 ${treatmentList.length}개 포함`
           );
         }
         suitableTreatments = treatmentList;
       } else {
-        // 권장체류일수가 없으면 기존 로직 사용 (downtime 기반)
+        // 회복기간 정보가 없으면 기존 로직 사용 (downtime 기반)
         suitableTreatments = treatmentList.filter((treatment) => {
           const recoveryPeriod = parseRecoveryPeriod(treatment.downtime);
           // 회복기간 정보가 없으면 포함 (기본적으로 표시)
           if (recoveryPeriod === 0) return true;
           // 여행 일수에서 최소 1일은 여유를 둠 (시술 당일 제외)
-          // 당일/1박 2일의 경우 effectiveTravelDays=3이므로 2일까지 허용
-          // (임시 주석 처리: 1박2일에서 3일짜리 포함 로직 비활성화)
-          return recoveryPeriod <= effectiveTravelDays - 1;
+          // 시술 당일 포함 총 필요일수 = recoveryPeriod + 1
+          const treatmentTotalDays = recoveryPeriod + 1;
+          return treatmentTotalDays <= effectiveTravelDays;
         });
       }
 
       // 필터링 결과가 없거나 회복기간 정보가 없으면 전체 시술 표시 (최대 20개)
-      // 권장체류일수 또는 개별 downtime 정보가 있는 경우에만 필터링 적용
+      // 회복기간_max 또는 개별 downtime 정보가 있는 경우에만 필터링 적용
       const hasRecoveryData =
-        recommendedStayDays > 0 ||
+        recoveryMax > 0 ||
         treatmentList.some((t) => parseRecoveryPeriod(t.downtime) > 0);
 
       const finalTreatments =
@@ -6553,5 +6567,170 @@ export async function getViewCount(
     // views 컬럼이 없을 수 있으므로 오류 메시지 숨김
     // console.error("조회수 조회 중 오류:", error);
     return 0;
+  }
+}
+
+// ============================================
+// 홈 RPC 함수 (백엔드 RPC 사용)
+// ============================================
+
+// 홈 인기 시술 조회 (rpc_home_hot_treatments)
+// 일정이 없을 때 홈에서 보여주는 "인기 시술 카드" 데이터 반환
+// 서버에서 점수 산정/정렬/상위풀 추출/랜덤 셔플까지 처리
+export async function getHomeHotTreatments(
+  language?: LanguageCode,
+  options?: {
+    pool?: number; // 상위 풀 크기 (기본: 50)
+    limit?: number; // 반환 개수 (기본: 10)
+  }
+): Promise<Treatment[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return [];
+
+    // 언어 코드 변환: KR → null, 다른 언어 → 'en' | 'ja' | 'zh-CN'
+    const pLang = language === "KR" ? null : getCurrentLanguageForDb(language);
+
+    const { data, error } = await client.rpc("rpc_home_hot_treatments", {
+      p_lang: pLang,
+      p_pool: options?.pool ?? 50,
+      p_limit: options?.limit ?? 10,
+    });
+
+    if (error) {
+      console.error("rpc_home_hot_treatments 오류:", error);
+      throw new Error(`RPC 오류: ${error.message}`);
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+
+    return cleanData<Treatment>(data);
+  } catch (error) {
+    console.error("홈 인기 시술 로드 실패:", error);
+    return [];
+  }
+}
+
+// 홈 일정 기반 추천 조회 (rpc_home_schedule_recommendations)
+// 일정이 있을 때 여행 기간과 선택된 카테고리에 맞춰 추천 목록 반환
+// 서버에서 카테고리(중분류) 랭킹 + 카테고리별 카드 정렬까지 처리
+export interface HomeScheduleRecommendation {
+  categoryMid: string; // 컴포넌트 호환성을 위해 camelCase 유지
+  category_mid: string; // RPC 결과의 snake_case
+  category_large: string;
+  treatments: Treatment[];
+  averageRecoveryPeriod?: number;
+  averageRecoveryPeriodMin?: number;
+  averageRecoveryPeriodMax?: number;
+  averageProcedureTime?: number; // 컴포넌트 호환성
+  averageProcedureTimeMin?: number; // 컴포넌트 호환성
+  averageProcedureTimeMax?: number; // 컴포넌트 호환성
+  treatment_rank?: number; // 서버에서 정렬된 순서
+}
+
+export async function getHomeScheduleRecommendations(
+  tripStart: string, // 'YYYY-MM-DD'
+  tripEnd: string, // 'YYYY-MM-DD'
+  categoryLarge: string | null,
+  language?: LanguageCode,
+  options?: {
+    limitCategories?: number; // 카테고리 개수 (기본: 5)
+    limitPerCategory?: number; // 카테고리당 시술 개수 (기본: 10)
+  }
+): Promise<HomeScheduleRecommendation[]> {
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) return [];
+
+    // 언어 코드 변환: KR → null, 다른 언어 → 'en' | 'ja' | 'zh-CN'
+    const pLang = language === "KR" ? null : getCurrentLanguageForDb(language);
+
+    // 카테고리 필터: null이면 전체
+    const pCategoryLarge =
+      categoryLarge === "전체" || !categoryLarge ? null : categoryLarge;
+
+    const { data, error } = await client.rpc(
+      "rpc_home_schedule_recommendations",
+      {
+        p_trip_start: tripStart,
+        p_trip_end: tripEnd,
+        p_category_large: pCategoryLarge,
+        p_lang: pLang,
+        p_limit_categories: options?.limitCategories ?? 5,
+        p_limit_per_category: options?.limitPerCategory ?? 10,
+      }
+    );
+
+    if (error) {
+      console.error("rpc_home_schedule_recommendations 오류:", error);
+      throw new Error(`RPC 오류: ${error.message}`);
+    }
+
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+
+    // RPC 결과를 category_mid 기준으로 그룹화
+    const groupedByCategory = new Map<string, HomeScheduleRecommendation>();
+
+    data.forEach((row: any) => {
+      const categoryMid = row.category_mid || "기타";
+      const categoryLarge = row.category_large || "";
+
+      if (!groupedByCategory.has(categoryMid)) {
+        groupedByCategory.set(categoryMid, {
+          categoryMid: categoryMid, // 컴포넌트 호환성
+          category_mid: categoryMid, // RPC 결과
+          category_large: categoryLarge,
+          treatments: [],
+          averageRecoveryPeriod: row.average_recovery_period,
+          averageRecoveryPeriodMin: row.average_recovery_period_min,
+          averageRecoveryPeriodMax: row.average_recovery_period_max,
+          averageProcedureTime: row.average_procedure_time,
+          averageProcedureTimeMin: row.average_procedure_time_min,
+          averageProcedureTimeMax: row.average_procedure_time_max,
+          treatment_rank: row.treatment_rank,
+        });
+      }
+
+      // Treatment 객체 생성 (RPC 결과에서 필요한 필드 추출)
+      const treatment: Treatment = {
+        treatment_id: row.treatment_id,
+        treatment_name: row.treatment_name,
+        hospital_name: row.hospital_name,
+        category_large: row.category_large,
+        category_mid: row.category_mid,
+        category_small: row.category_small,
+        selling_price: row.selling_price,
+        original_price: row.original_price,
+        dis_rate: row.dis_rate,
+        rating: row.rating,
+        review_count: row.review_count,
+        main_image_url: row.main_image_url,
+        event_url: row.event_url,
+        vat_info: row.vat_info,
+        treatment_hashtags: row.treatment_hashtags,
+        surgery_time: row.surgery_time,
+        downtime: row.downtime,
+        platform: row.platform,
+        ...row, // 추가 필드 포함
+      };
+
+      groupedByCategory.get(categoryMid)!.treatments.push(treatment);
+    });
+
+    // treatment_rank 순서로 정렬 (서버에서 정렬된 순서 유지)
+    const result = Array.from(groupedByCategory.values()).sort((a, b) => {
+      const rankA = a.treatment_rank ?? 999;
+      const rankB = b.treatment_rank ?? 999;
+      return rankA - rankB;
+    });
+
+    return result;
+  } catch (error) {
+    console.error("홈 일정 기반 추천 로드 실패:", error);
+    return [];
   }
 }

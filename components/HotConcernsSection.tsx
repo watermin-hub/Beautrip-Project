@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiTrendingUp, FiHeart, FiStar, FiCalendar } from "react-icons/fi";
 import {
-  loadTreatmentsPaginated,
+  getHomeHotTreatments,
   getThumbnailUrl,
-  calculateRecommendationScore,
   parseRecoveryPeriod,
   parseProcedureTime,
   getRecoveryInfoByCategoryMid,
@@ -35,35 +34,21 @@ export default function HotConcernsSection() {
     async function fetchData() {
       try {
         setLoading(true);
-        // 필요한 만큼만 로드 (50개)
-        const result = await loadTreatmentsPaginated(1, 50, {
-          language: language,
+        // RPC로 인기 시술 조회 (서버에서 점수 산정/정렬/랜덤 셔플까지 처리)
+        const hotTreatments = await getHomeHotTreatments(language, {
+          pool: 50,
+          limit: 10,
         });
-        const allTreatments = result.data;
-
-        // 추천 점수로 정렬하고 랜덤으로 10개 선택
-        const sortedTreatments = allTreatments
-          .map((treatment) => ({
-            ...treatment,
-            recommendationScore: calculateRecommendationScore(treatment),
-          }))
-          .sort((a, b) => b.recommendationScore - a.recommendationScore);
-
-        // 상위 50개 중에서 랜덤으로 10개 선택
-        const top50 = sortedTreatments.slice(0, 50);
-        const shuffled = [...top50].sort(() => Math.random() - 0.5);
-        const random10 = shuffled.slice(0, 10);
-
-        setTreatments(random10);
+        setTreatments(hotTreatments);
       } catch (error) {
-        // 데이터 로드 실패 시 에러 처리 (콘솔 출력 제거)
+        console.error("인기 시술 로드 실패:", error);
       } finally {
         setLoading(false);
       }
     }
 
     fetchData();
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const loadFavorites = async () => {
