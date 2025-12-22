@@ -2078,7 +2078,7 @@ function RecoveryCardComponent({
   isOutsideTravel: boolean;
   onDelete: (id: number) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [recoveryText, setRecoveryText] = useState<string | null>(
     rec.recoveryText || null
