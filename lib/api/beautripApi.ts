@@ -6035,11 +6035,14 @@ export async function getMidCategoryRankings(
         actualColumns,
         missingColumns: missingColumns.length > 0 ? missingColumns : "없음",
         extraColumns: extraColumns.length > 0 ? extraColumns : "없음",
+        language: language,
+        dbLang: dbLang,
         sampleRow: {
           category_mid_key: sampleRow.category_mid_key,
           category_mid: sampleRow.category_mid,
           treatment_id: sampleRow.treatment_id,
           treatment_name: sampleRow.treatment_name,
+          hospital_name: sampleRow.hospital_name,
           main_img_url: sampleRow.main_img_url,
           // ✅ v2 집계 필드
           category_rank: sampleRow.category_rank,
@@ -6047,6 +6050,12 @@ export async function getMidCategoryRankings(
           average_rating: sampleRow.average_rating,
           total_reviews: sampleRow.total_reviews,
           treatment_count: sampleRow.treatment_count,
+        },
+        // ✅ 언어별 데이터 확인용: 실제 반환된 treatment_name과 category_mid 샘플
+        languageCheck: {
+          treatment_name_sample: sampleRow.treatment_name,
+          category_mid_sample: sampleRow.category_mid,
+          hospital_name_sample: sampleRow.hospital_name,
         },
       });
     }
@@ -6072,15 +6081,72 @@ export async function getMidCategoryRankings(
         null,
     }));
 
-    // RPC는 flat row로 반환하므로 그대로 사용 (CategoryRankingPage에서 그룹화)
-    const processedData = cleanedData;
+    // ✅ RPC에서 가격 정보가 없을 수 있으므로, treatment_id로 추가 조회
+    const treatmentIds = cleanedData
+      .map((row: any) => row.treatment_id)
+      .filter((id: any): id is number => id !== null && id !== undefined);
 
-    console.log(
-      `✅ [중분류 랭킹] ${processedData.length}개 항목 처리 완료`,
-      processedData[0]
-        ? `첫 번째 항목 구조: ${Object.keys(processedData[0]).join(", ")}`
-        : ""
-    );
+    // 가격 정보를 treatment_master에서 조회
+    let priceMap = new Map<
+      number,
+      {
+        selling_price: number | null;
+        original_price: number | null;
+        dis_rate: number | null;
+      }
+    >();
+    if (treatmentIds.length > 0) {
+      try {
+        const { data: priceData, error: priceError } = await client
+          .from("treatment_master")
+          .select("treatment_id, selling_price, original_price, dis_rate")
+          .in("treatment_id", treatmentIds);
+
+        if (!priceError && priceData) {
+          priceData.forEach((item: any) => {
+            priceMap.set(item.treatment_id, {
+              selling_price: item.selling_price ?? null,
+              original_price: item.original_price ?? null,
+              dis_rate: item.dis_rate ?? null,
+            });
+          });
+        }
+      } catch (err) {
+        console.error("가격 정보 조회 실패:", err);
+      }
+    }
+
+    // 가격 정보를 각 row에 추가
+    const processedData = cleanedData.map((row: any) => {
+      const priceInfo = priceMap.get(row.treatment_id) || {
+        selling_price: null,
+        original_price: null,
+        dis_rate: null,
+      };
+
+      return {
+        ...row,
+        // 가격 정보는 treatment_master에서 조회한 값 사용 (RPC 값이 있으면 우선)
+        selling_price: row.selling_price ?? priceInfo.selling_price,
+        original_price: row.original_price ?? priceInfo.original_price,
+        dis_rate: row.dis_rate ?? priceInfo.dis_rate,
+      };
+    });
+
+    // ✅ 언어별 데이터 확인용 로그
+    if (processedData.length > 0) {
+      const firstItem = processedData[0];
+      console.log(`✅ [중분류 랭킹] ${processedData.length}개 항목 처리 완료`, {
+        language: language,
+        dbLang: dbLang,
+        firstItemSample: {
+          treatment_name: firstItem.treatment_name,
+          category_mid: firstItem.category_mid,
+          hospital_name: firstItem.hospital_name,
+        },
+        allKeys: Object.keys(firstItem).join(", "),
+      });
+    }
 
     return { success: true, data: processedData };
   } catch (error: any) {
@@ -6189,13 +6255,22 @@ export async function getSmallCategoryRankings(
 
     // 디버깅: 실제 반환된 데이터 구조 확인
     if (data.length > 0) {
+      const sampleRow = data[0];
       console.log("🔍 [rpc_small_category_rankings 반환 데이터 샘플]:", {
-        keys: Object.keys(data[0]),
-        main_img_url: data[0].main_img_url,
-        main_image_url: data[0].main_image_url,
-        image_url: data[0].image_url,
-        img_url: data[0].img_url,
-        sample: data[0],
+        keys: Object.keys(sampleRow),
+        language: language,
+        dbLang: dbLang,
+        main_img_url: sampleRow.main_img_url,
+        main_image_url: sampleRow.main_image_url,
+        image_url: sampleRow.image_url,
+        img_url: sampleRow.img_url,
+        // ✅ 언어별 데이터 확인용
+        languageCheck: {
+          treatment_name_sample: sampleRow.treatment_name,
+          category_mid_sample: sampleRow.category_mid,
+          hospital_name_sample: sampleRow.hospital_name,
+        },
+        sample: sampleRow,
       });
     }
 
@@ -6215,15 +6290,72 @@ export async function getSmallCategoryRankings(
         null,
     }));
 
-    // RPC는 flat row로 반환하므로 그대로 사용 (CategoryRankingPage에서 그룹화)
-    const processedData = cleanedData;
+    // ✅ RPC에서 가격 정보가 없을 수 있으므로, treatment_id로 추가 조회
+    const treatmentIds = cleanedData
+      .map((row: any) => row.treatment_id)
+      .filter((id: any): id is number => id !== null && id !== undefined);
 
-    console.log(
-      `✅ [소분류 랭킹] ${processedData.length}개 항목 처리 완료`,
-      processedData[0]
-        ? `첫 번째 항목 구조: ${Object.keys(processedData[0]).join(", ")}`
-        : ""
-    );
+    // 가격 정보를 treatment_master에서 조회
+    let priceMap = new Map<
+      number,
+      {
+        selling_price: number | null;
+        original_price: number | null;
+        dis_rate: number | null;
+      }
+    >();
+    if (treatmentIds.length > 0) {
+      try {
+        const { data: priceData, error: priceError } = await client
+          .from("treatment_master")
+          .select("treatment_id, selling_price, original_price, dis_rate")
+          .in("treatment_id", treatmentIds);
+
+        if (!priceError && priceData) {
+          priceData.forEach((item: any) => {
+            priceMap.set(item.treatment_id, {
+              selling_price: item.selling_price ?? null,
+              original_price: item.original_price ?? null,
+              dis_rate: item.dis_rate ?? null,
+            });
+          });
+        }
+      } catch (err) {
+        console.error("가격 정보 조회 실패:", err);
+      }
+    }
+
+    // 가격 정보를 각 row에 추가
+    const processedData = cleanedData.map((row: any) => {
+      const priceInfo = priceMap.get(row.treatment_id) || {
+        selling_price: null,
+        original_price: null,
+        dis_rate: null,
+      };
+
+      return {
+        ...row,
+        // 가격 정보는 treatment_master에서 조회한 값 사용 (RPC 값이 있으면 우선)
+        selling_price: row.selling_price ?? priceInfo.selling_price,
+        original_price: row.original_price ?? priceInfo.original_price,
+        dis_rate: row.dis_rate ?? priceInfo.dis_rate,
+      };
+    });
+
+    // ✅ 언어별 데이터 확인용 로그
+    if (processedData.length > 0) {
+      const firstItem = processedData[0];
+      console.log(`✅ [소분류 랭킹] ${processedData.length}개 항목 처리 완료`, {
+        language: language,
+        dbLang: dbLang,
+        firstItemSample: {
+          treatment_name: firstItem.treatment_name,
+          category_mid: firstItem.category_mid,
+          hospital_name: firstItem.hospital_name,
+        },
+        allKeys: Object.keys(firstItem).join(", "),
+      });
+    }
 
     return { success: true, data: processedData };
   } catch (error: any) {

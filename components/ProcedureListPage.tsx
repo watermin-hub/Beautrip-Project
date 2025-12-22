@@ -24,6 +24,11 @@ import {
 } from "@/lib/api/beautripApi";
 import AutocompleteInput from "./AutocompleteInput";
 import AddToScheduleModal from "./AddToScheduleModal";
+import {
+  formatPrice,
+  getCurrencyFromStorage,
+  getCurrencyFromLanguage,
+} from "@/lib/utils/currency";
 
 interface ProcedureListPageProps {
   activeSection?: string;
@@ -36,6 +41,12 @@ export default function ProcedureListPage({
   const isActive = activeSection === "procedure";
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
+  
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -518,9 +529,12 @@ export default function ProcedureListPage({
                 const fallbackUrl = getThumbnailUrl({
                   category_large: treatment.category_large,
                 });
-                const sellingPrice = treatment.selling_price
-                  ? `${Math.round(treatment.selling_price / 10000)}만원`
-                  : t("common.priceInquiry");
+                const sellingPrice =
+                  treatment.selling_price && treatment.selling_price > 0
+                    ? currency === "KRW"
+                      ? `${Math.round(treatment.selling_price / 10000)}만원`
+                      : formatPrice(treatment.selling_price, currency, t)
+                    : t("common.priceInquiry");
                 const discountRate = treatment.dis_rate
                   ? `${treatment.dis_rate}%`
                   : "";

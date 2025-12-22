@@ -26,6 +26,11 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
+import {
+  formatPrice,
+  getCurrencyFromStorage,
+  getCurrencyFromLanguage,
+} from "@/lib/utils/currency";
 
 // 홈페이지와 동일한 대분류 카테고리 10개
 const MAIN_CATEGORIES = [
@@ -81,6 +86,11 @@ export default function CategoryRankingPage({
 }: CategoryRankingPageProps) {
   const { t, language } = useLanguage();
   const router = useRouter();
+
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
 
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 여부
@@ -351,13 +361,13 @@ export default function CategoryRankingPage({
         setError(null);
 
         if (selectedMidCategory !== null) {
-          // 소분류 랭킹 로드 (한국어로 먼저)
+          // 소분류 랭킹 로드 (현재 언어로 로드)
           const result = await getSmallCategoryRankings(
             selectedMidCategory,
             20,
             2,
             20,
-            "KR" // ✅ 한국어로 먼저 로드
+            language // ✅ 현재 언어로 로드
           );
           if (result.success && result.data) {
             // RPC가 flat row로 반환하므로 category_small_key로 그룹화
@@ -412,16 +422,17 @@ export default function CategoryRankingPage({
             setSmallCategoryRankings([]);
           }
         } else {
-          // 중분류 랭킹 로드 (한국어로 먼저)
+          // 중분류 랭킹 로드 (현재 언어로 로드)
           console.log("🔍 [CategoryRankingPage] 중분류 랭킹 로드 시작:", {
             selectedCategory,
+            language,
           });
           const result = await getMidCategoryRankings(
             selectedCategory,
             20,
             2,
             20,
-            "KR" // ✅ 한국어로 먼저 로드
+            language // ✅ 현재 언어로 로드
           );
           console.log("📊 [CategoryRankingPage] 중분류 랭킹 결과:", {
             success: result.success,
@@ -527,57 +538,9 @@ export default function CategoryRankingPage({
       }
     };
 
-    // 언어 변경이 아닐 때만 실행 (카테고리 변경 시)
-    if (
-      language === "KR" ||
-      (midCategoryRankings.length === 0 && smallCategoryRankings.length === 0)
-    ) {
-      loadInitialRankings();
-    }
-  }, [selectedCategory, selectedMidCategory]); // ✅ language 제거 (카테고리 변경 시에만 실행)
-
-  // ✅ 언어 변경 시 번역만 적용 (전체 재로드 없이)
-  useEffect(() => {
-    const translateRankings = async () => {
-      // 데이터가 없거나 한국어면 스킵
-      if (
-        (midCategoryRankings.length === 0 &&
-          smallCategoryRankings.length === 0) ||
-        language === "KR"
-      ) {
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const { translateMidCategoryRankings, translateSmallCategoryRankings } =
-          await import("@/lib/utils/translateRankings");
-
-        if (selectedMidCategory !== null) {
-          // 소분류 랭킹 번역
-          const translated = await translateSmallCategoryRankings(
-            smallCategoryRankings,
-            language
-          );
-          setSmallCategoryRankings(translated);
-        } else {
-          // 중분류 랭킹 번역
-          const translated = await translateMidCategoryRankings(
-            midCategoryRankings,
-            language
-          );
-          setMidCategoryRankings(translated);
-        }
-      } catch (error) {
-        console.error("랭킹 번역 실패:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    translateRankings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]); // ✅ language 변경 시에만 실행
+    // 초기 로드 또는 카테고리 변경 시 실행
+    loadInitialRankings();
+  }, [selectedCategory, selectedMidCategory, language]); // ✅ language 추가: 언어 변경 시에도 재로드
 
   // 스크롤 관련 상태
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -1100,11 +1063,19 @@ export default function CategoryRankingPage({
                                 const treatmentId = treatment.treatment_id || 0;
                                 const isFavorited = favorites.has(treatmentId);
                                 const thumbnailUrl = getThumbnailUrl(treatment);
-                                const price = treatment.selling_price
-                                  ? `${Math.round(
-                                      treatment.selling_price / 10000
-                                    )}만원`
-                                  : t("common.priceInquiry");
+                                const price =
+                                  treatment.selling_price &&
+                                  treatment.selling_price > 0
+                                    ? currency === "KRW"
+                                      ? `${Math.round(
+                                          treatment.selling_price / 10000
+                                        )}만원`
+                                      : formatPrice(
+                                          treatment.selling_price,
+                                          currency,
+                                          t
+                                        )
+                                    : t("common.priceInquiry");
 
                                 return (
                                   <div
@@ -1396,11 +1367,19 @@ export default function CategoryRankingPage({
                             const treatmentId = treatment.treatment_id || 0;
                             const isFavorited = favorites.has(treatmentId);
                             const thumbnailUrl = getThumbnailUrl(treatment);
-                            const price = treatment.selling_price
-                              ? `${Math.round(
-                                  treatment.selling_price / 10000
-                                )}만원`
-                              : "가격 문의";
+                            const price =
+                              treatment.selling_price &&
+                              treatment.selling_price > 0
+                                ? currency === "KRW"
+                                  ? `${Math.round(
+                                      treatment.selling_price / 10000
+                                    )}만원`
+                                  : formatPrice(
+                                      treatment.selling_price,
+                                      currency,
+                                      t
+                                    )
+                                : t("common.priceInquiry");
 
                             return (
                               <div
