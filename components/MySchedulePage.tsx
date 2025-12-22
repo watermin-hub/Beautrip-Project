@@ -554,7 +554,7 @@ function SimilarProcedureRecommendation({
           }
           selectedStartDate={travelPeriod?.start || null}
           selectedEndDate={travelPeriod?.end || null}
-          categoryMid={selectedTreatment.category_mid || null}
+          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
         />
       )}
     </>

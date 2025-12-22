@@ -40,16 +40,24 @@ export default function HotConcernsSection() {
     return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
   }, [language]);
 
-  // ✅ 한국어로 초기 로드 (한 번만)
+  // ✅ 초기 로드: 현재 언어로 로드 (처음부터 다른 언어로 시작해도 작동)
+  const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<string | null>(null);
+  
   useEffect(() => {
     async function fetchInitialData() {
+      // 이미 같은 언어로 로드했으면 스킵
+      if (initialLanguageLoaded === language && treatments.length > 0) {
+        return;
+      }
+
       try {
         setLoading(true);
-        // 한국어로 초기 데이터 로드
-        const hotTreatments = await getHomeHotTreatments("KR", {
+        // 현재 언어로 초기 데이터 로드 (처음부터 다른 언어로 시작해도 작동)
+        const hotTreatments = await getHomeHotTreatments(language, {
           limit: 10,
         });
         setTreatments(hotTreatments);
+        setInitialLanguageLoaded(language);
       } catch (error) {
         console.error("인기 시술 로드 실패:", error);
       } finally {
@@ -57,17 +65,23 @@ export default function HotConcernsSection() {
       }
     }
 
-    // 초기 로드는 한 번만
-    if (treatments.length === 0) {
+    // 초기 로드 또는 언어 변경 시
+    if (treatments.length === 0 || initialLanguageLoaded !== language) {
       fetchInitialData();
     }
-  }, []); // 빈 배열: 초기 로드만
+  }, [language]); // language 변경 시 실행
 
-  // ✅ 언어 변경 시 번역만 적용 (전체 재로드 없이)
+  // ✅ 언어 변경 시 번역만 적용 (이미 로드된 데이터가 있고, 언어만 변경된 경우)
   useEffect(() => {
     async function translateData() {
-      if (treatments.length === 0 || language === "KR") {
-        return; // 데이터가 없거나 한국어면 스킵
+      // 초기 로드가 완료되지 않았거나, 한국어면 스킵
+      if (treatments.length === 0 || language === "KR" || !initialLanguageLoaded) {
+        return;
+      }
+
+      // 이미 같은 언어로 로드했으면 스킵
+      if (initialLanguageLoaded === language) {
+        return;
       }
 
       try {
@@ -76,6 +90,7 @@ export default function HotConcernsSection() {
         const { translateTreatments } = await import("@/lib/utils/translateTreatments");
         const translated = await translateTreatments(treatments, language);
         setTreatments(translated);
+        setInitialLanguageLoaded(language);
       } catch (error) {
         console.error("시술 번역 실패:", error);
       } finally {
@@ -83,9 +98,12 @@ export default function HotConcernsSection() {
       }
     }
 
-    translateData();
+    // 초기 로드가 완료된 후에만 번역 적용
+    if (initialLanguageLoaded && initialLanguageLoaded !== language) {
+      translateData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]); // language 변경 시에만 실행 (treatments는 의도적으로 제외)
+  }, [language, initialLanguageLoaded]); // language와 initialLanguageLoaded 변경 시 실행
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -191,9 +209,11 @@ export default function HotConcernsSection() {
     let recoveryText: string | null = null;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
-    if (selectedTreatment.category_mid) {
+    // ⚠️ 중요: category_mid_key (한국어 고정)를 사용해야 category_treattime_recovery와 매칭됨
+    const categoryMidForRecovery = selectedTreatment.category_mid_key || selectedTreatment.category_mid;
+    if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        selectedTreatment.category_mid
+        categoryMidForRecovery
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
@@ -241,7 +261,7 @@ export default function HotConcernsSection() {
         selectedTreatment.category_mid ||
         selectedTreatment.category_large ||
         "기타",
-      categoryMid: selectedTreatment.category_mid || null,
+      categoryMid: selectedTreatment.category_mid_key || selectedTreatment.category_mid || null,
       recoveryDays,
       recoveryText, // 회복 기간 텍스트 추가
       recoveryGuides, // 회복 가이드 범위별 텍스트 추가
@@ -453,7 +473,7 @@ export default function HotConcernsSection() {
           treatmentName={
             selectedTreatment.treatment_name || t("common.noTreatmentName")
           }
-          categoryMid={selectedTreatment.category_mid || null}
+          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
         />
       )}
 

@@ -451,6 +451,8 @@ export default function ProcedureRecommendation({
   const prevSelectedCategoryIdRef = useRef<string | null | undefined>(
     undefined
   );
+  // 초기 로드된 언어 추적 (번역 로직용)
+  const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<string | null>(null);
 
   // 중분류 중복 확인을 위한 로그 (개발용)
   useEffect(() => {
@@ -532,37 +534,53 @@ export default function ProcedureRecommendation({
           setLoading(true);
         }
 
-        // 일정 기반 추천 데이터 조회 (한국어로 먼저 로드)
+        // 일정 기반 추천 데이터 조회
+        // ⚠️ 중요: 초기 로드 시에만 현재 언어로 로드, 언어 변경은 번역 로직에서 처리
         if (scheduleData.travelPeriod.start && scheduleData.travelPeriod.end) {
           // selectedCategoryId를 현재 언어의 카테고리 이름으로 변환
           // ⚠️ 중요: 현재 언어 데이터의 category_large 값과 동일해야 필터가 정상 동작
           let categoryToUse: string | null = null;
-          if (selectedCategoryId !== null && selectedCategoryId !== undefined) {
+          
+          // ⚠️ 핵심: selectedCategoryId가 명시적으로 null이면 "전체" 선택이므로 무조건 null 사용
+          // (scheduleData.procedureCategory는 무시)
+          if (selectedCategoryId === null) {
+            categoryToUse = null; // 전체 카테고리
+          } else if (selectedCategoryId !== undefined) {
             // mainCategories에서 선택된 카테고리의 name을 찾기
             // name은 현재 언어에 맞는 category_large 값이어야 함
             const selectedCategory = mainCategories.find(
               (cat) => cat.id === selectedCategoryId
             );
             categoryToUse = selectedCategory?.name || selectedCategoryId;
-          } else if (
-            scheduleData.procedureCategory &&
-            scheduleData.procedureCategory !== "전체"
-          ) {
-            categoryToUse = scheduleData.procedureCategory;
+          } else {
+            // selectedCategoryId가 undefined인 경우 (초기 로드 시)
+            // scheduleData.procedureCategory가 있으면 그것을 사용 (하지만 "전체"는 제외)
+            if (
+              scheduleData.procedureCategory &&
+              scheduleData.procedureCategory !== "전체"
+            ) {
+              categoryToUse = scheduleData.procedureCategory;
+            }
+            // 그 외에는 null로 유지 (전체 카테고리)
           }
 
-          // ✅ 한국어로 먼저 로드 (RPC 호출)
-          console.log("🔍 [일정 기반 추천] 초기 로드 (한국어):", {
+          // ✅ 초기 로드 시 현재 언어로 로드 (처음부터 다른 언어로 시작해도 작동)
+          // ⚠️ 언어 변경은 번역 로직에서 처리하므로, 여기서는 일정/카테고리 변경 시에만 로드
+          // 일정이나 카테고리가 변경되면 항상 로드 (언어는 현재 언어 사용)
+          console.log("🔍 [일정 기반 추천] 초기 로드:", {
             start: scheduleData.travelPeriod.start,
             end: scheduleData.travelPeriod.end,
             category: categoryToUse,
+            language: language,
+            isScheduleChanged: isScheduleDataChanged,
+            isCategoryChanged: isCategoryOnlyChanged,
           });
 
           const scheduleRecs = await getHomeScheduleRecommendations(
             scheduleData.travelPeriod.start,
             scheduleData.travelPeriod.end,
             categoryToUse,
-            "KR", // ✅ 한국어로 먼저 로드
+            language, // ✅ 현재 언어로 로드
             {
               limitCategories: 5,
               limitPerCategory: 10,
@@ -606,17 +624,46 @@ export default function ProcedureRecommendation({
       }
     }
 
-    // 언어 변경이 아닐 때만 실행 (일정/카테고리 변경 시)
-    if (language === "KR" || recommendations.length === 0) {
-      fetchInitialData();
-    }
-  }, [scheduleData, selectedCategoryId, mainCategories]); // ✅ language 제거
+    // 초기 로드 또는 일정/카테고리 변경 시 실행
+    // ⚠️ language는 제외: 언어 변경은 번역 로직에서 처리
+    fetchInitialData();
+  }, [scheduleData, selectedCategoryId, mainCategories]); // language 제외: 번역 로직에서 처리
 
-  // ✅ 언어 변경 시 번역만 적용 (전체 재로드 없이)
+  // 초기 로드 완료 시 언어 저장 (일정/카테고리 변경 시에만 업데이트)
+  useEffect(() => {
+    if (recommendations.length > 0) {
+      // 일정이나 카테고리가 변경되었는지 확인
+      const isScheduleDataChanged =
+        prevScheduleDataRef.current === null ||
+        prevScheduleDataRef.current.travelPeriod.start !==
+          scheduleData.travelPeriod.start ||
+        prevScheduleDataRef.current.travelPeriod.end !==
+          scheduleData.travelPeriod.end;
+      
+      // 일정이 변경되었거나 아직 언어가 저장되지 않았으면 저장
+      // ⚠️ 언어 변경은 번역 로직에서 처리하므로, 여기서는 일정/카테고리 변경 시에만 업데이트
+      if (isScheduleDataChanged || !initialLanguageLoaded) {
+        setInitialLanguageLoaded(language);
+      }
+      // 일정이 변경되지 않았고 이미 언어가 저장되어 있으면 유지 (번역 로직에서 처리)
+    } else {
+      // 데이터가 없으면 리셋
+      setInitialLanguageLoaded(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommendations.length, scheduleData.travelPeriod.start, scheduleData.travelPeriod.end]); // language 제외: 번역 로직에서 처리
+
+  // ✅ 언어 변경 시 번역만 적용 (이미 로드된 데이터가 있고, 언어만 변경된 경우)
   useEffect(() => {
     async function translateData() {
-      if (recommendations.length === 0 || language === "KR") {
-        return; // 데이터가 없거나 한국어면 스킵
+      // 초기 로드가 완료되지 않았거나, 데이터가 없으면 스킵
+      if (recommendations.length === 0 || !initialLanguageLoaded) {
+        return;
+      }
+
+      // 이미 같은 언어로 로드했으면 스킵
+      if (initialLanguageLoaded === language) {
+        return;
       }
 
       try {
@@ -639,6 +686,7 @@ export default function ProcedureRecommendation({
         );
         
         setRecommendations(translated);
+        setInitialLanguageLoaded(language);
       } catch (error) {
         console.error("시술 번역 실패:", error);
       } finally {
@@ -646,8 +694,12 @@ export default function ProcedureRecommendation({
       }
     }
 
-    translateData();
-  }, [language]); // ✅ language 변경 시에만 실행
+    // 초기 로드가 완료된 후에만 번역 적용
+    if (initialLanguageLoaded && initialLanguageLoaded !== language) {
+      translateData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language, initialLanguageLoaded]); // language와 initialLanguageLoaded 변경 시 실행
 
   // 찜 상태 로드 (recommendations가 변경될 때마다)
   useEffect(() => {
@@ -679,9 +731,11 @@ export default function ProcedureRecommendation({
     let recommendedStayDays = 0;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
-    if (selectedTreatment.category_mid) {
+    // ⚠️ 중요: category_mid_key (한국어 고정)를 사용해야 category_treattime_recovery와 매칭됨
+    const categoryMidForRecovery = selectedTreatment.category_mid_key || selectedTreatment.category_mid;
+    if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        selectedTreatment.category_mid
+        categoryMidForRecovery
       );
       if (recoveryInfo) {
         recommendedStayDays = recoveryInfo.recommendedStayDays || 0;
@@ -1436,7 +1490,7 @@ export default function ProcedureRecommendation({
           treatmentName={
             selectedTreatment.treatment_name || t("common.noTreatmentName")
           }
-          categoryMid={selectedTreatment.category_mid || null}
+          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
         />
       )}
 

@@ -290,14 +290,15 @@ export default function ProcedureListPage({
   const handleDateSelect = async (date: string) => {
     if (!selectedTreatment) return;
 
-    // category_mid로 회복 기간 정보 가져오기 (소분류_리스트와 매칭)
+    // ⚠️ 중요: category_mid_key (한국어 고정)를 사용해야 category_treattime_recovery와 매칭됨
     let recoveryDays = 0;
     let recoveryText: string | null = null;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
-    if (selectedTreatment.category_mid) {
+    const categoryMidForRecovery = selectedTreatment.category_mid_key || selectedTreatment.category_mid;
+    if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        selectedTreatment.category_mid
+        categoryMidForRecovery
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
@@ -347,7 +348,7 @@ export default function ProcedureListPage({
         selectedTreatment.category_mid ||
         selectedTreatment.category_large ||
         "기타",
-      categoryMid: selectedTreatment.category_mid || null,
+      categoryMid: selectedTreatment.category_mid_key || selectedTreatment.category_mid || null,
       categorySmall: selectedTreatment.category_small || null, // 소분류 추가
       recoveryDays,
       recoveryText, // 회복 기간 텍스트 추가
@@ -656,7 +657,7 @@ export default function ProcedureListPage({
           treatmentName={
             selectedTreatment.treatment_name || t("common.noTreatmentName")
           }
-          categoryMid={selectedTreatment.category_mid || null}
+          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
         />
       )}
     </div>
