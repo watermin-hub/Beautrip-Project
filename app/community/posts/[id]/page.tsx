@@ -104,13 +104,13 @@ function PostDetailContent() {
       const { postId: updatedPostId, postType: updatedPostType, isLiked: updatedIsLiked, likeCount: updatedLikeCount } = event.detail;
       
       // postType에 따라 post_type 매핑
-      const postTypeMap: Record<string, string> = {
+      const postTypeMap: Record<string, "treatment_review" | "hospital_review" | "concern_post" | "guide"> = {
         procedure: "treatment_review",
         hospital: "hospital_review",
         concern: "concern_post",
       };
-      const mappedPostType = postTypeMap[postType] || postType;
-      const mappedUpdatedPostType = updatedPostType || mappedPostType;
+      const mappedPostType = (postTypeMap[postType] || postType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
+      const mappedUpdatedPostType = (updatedPostType || mappedPostType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
       
       // 현재 게시글과 일치하는 경우에만 업데이트
       if (updatedPostId === postId && mappedUpdatedPostType === mappedPostType) {
@@ -155,12 +155,12 @@ function PostDetailContent() {
         setPost(postData);
         
         // postType에 따라 post_type 매핑
-        const postTypeMap: Record<string, string> = {
+        const postTypeMap: Record<string, "treatment_review" | "hospital_review" | "concern_post" | "guide"> = {
           procedure: "treatment_review",
           hospital: "hospital_review",
           concern: "concern_post",
         };
-        const mappedPostType = postTypeMap[postType] || postType;
+        const mappedPostType = (postTypeMap[postType] || postType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
 
         // 좋아요 상태, 댓글 수, 조회수 증가, 조회수를 병렬로 처리
         const [liked, likeCnt, count, views] = await Promise.all([
@@ -210,12 +210,12 @@ function PostDetailContent() {
 
     try {
       // postType에 따라 post_type 매핑
-      const postTypeMap: Record<string, string> = {
+      const postTypeMap: Record<string, "treatment_review" | "hospital_review" | "concern_post" | "guide"> = {
         procedure: "treatment_review",
         hospital: "hospital_review",
         concern: "concern_post",
       };
-      const mappedPostType = postTypeMap[postType] || postType;
+      const mappedPostType = (postTypeMap[postType] || postType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
 
       const result = await togglePostLike(postId, mappedPostType);
       if (result.success) {
