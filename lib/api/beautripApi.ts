@@ -5492,7 +5492,7 @@ async function getMidCategoryRankingsFromTreatmentMaster(
 
 // category_i18n 테이블을 통해 현재 언어의 category_mid를 한국어 category_mid로 변환
 // treatment_id를 매개로 연결
-async function convertCategoryMidToKorean(
+export async function convertCategoryMidToKorean(
   categoryMid: string,
   currentLanguage: LanguageCode,
   treatmentId?: number

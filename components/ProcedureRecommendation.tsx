@@ -453,7 +453,9 @@ export default function ProcedureRecommendation({
     undefined
   );
   // 초기 로드된 언어 추적 (번역 로직용)
-  const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<string | null>(null);
+  const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<
+    string | null
+  >(null);
 
   // 중분류 중복 확인을 위한 로그 (개발용)
   useEffect(() => {
@@ -541,7 +543,7 @@ export default function ProcedureRecommendation({
           // selectedCategoryId를 현재 언어의 카테고리 이름으로 변환
           // ⚠️ 중요: 현재 언어 데이터의 category_large 값과 동일해야 필터가 정상 동작
           let categoryToUse: string | null = null;
-          
+
           // ⚠️ 핵심: selectedCategoryId가 명시적으로 null이면 "전체" 선택이므로 무조건 null 사용
           // (scheduleData.procedureCategory는 무시)
           if (selectedCategoryId === null) {
@@ -640,7 +642,7 @@ export default function ProcedureRecommendation({
           scheduleData.travelPeriod.start ||
         prevScheduleDataRef.current.travelPeriod.end !==
           scheduleData.travelPeriod.end;
-      
+
       // 일정이 변경되었거나 아직 언어가 저장되지 않았으면 저장
       // ⚠️ 언어 변경은 번역 로직에서 처리하므로, 여기서는 일정/카테고리 변경 시에만 업데이트
       if (isScheduleDataChanged || !initialLanguageLoaded) {
@@ -652,7 +654,11 @@ export default function ProcedureRecommendation({
       setInitialLanguageLoaded(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recommendations.length, scheduleData.travelPeriod.start, scheduleData.travelPeriod.end]); // language 제외: 번역 로직에서 처리
+  }, [
+    recommendations.length,
+    scheduleData.travelPeriod.start,
+    scheduleData.travelPeriod.end,
+  ]); // language 제외: 번역 로직에서 처리
 
   // ✅ 언어 변경 시 번역만 적용 (이미 로드된 데이터가 있고, 언어만 변경된 경우)
   useEffect(() => {
@@ -670,8 +676,10 @@ export default function ProcedureRecommendation({
       try {
         setLoading(true);
         // 같은 treatment_id로 lang만 바꿔서 번역 데이터 가져오기
-        const { translateTreatments } = await import("@/lib/utils/translateTreatments");
-        
+        const { translateTreatments } = await import(
+          "@/lib/utils/translateTreatments"
+        );
+
         // 각 중분류별로 시술 번역
         const translated = await Promise.all(
           recommendations.map(async (rec) => {
@@ -685,7 +693,7 @@ export default function ProcedureRecommendation({
             };
           })
         );
-        
+
         setRecommendations(translated);
         setInitialLanguageLoaded(language);
       } catch (error) {
@@ -733,7 +741,8 @@ export default function ProcedureRecommendation({
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
     // ⚠️ 중요: category_mid_key (한국어 고정)를 사용해야 category_treattime_recovery와 매칭됨
-    const categoryMidForRecovery = selectedTreatment.category_mid_key || selectedTreatment.category_mid;
+    const categoryMidForRecovery =
+      selectedTreatment.category_mid_key || selectedTreatment.category_mid;
     if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
         categoryMidForRecovery
@@ -1048,7 +1057,7 @@ export default function ProcedureRecommendation({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              <span className="font-bold">ALL</span> 전체
+              <span className="font-bold">ALL</span>
             </button>
           </div>
 
@@ -1491,7 +1500,11 @@ export default function ProcedureRecommendation({
           treatmentName={
             selectedTreatment.treatment_name || t("common.noTreatmentName")
           }
-          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
+          categoryMid={
+            selectedTreatment.category_mid_key ||
+            selectedTreatment.category_mid ||
+            null
+          }
         />
       )}
 

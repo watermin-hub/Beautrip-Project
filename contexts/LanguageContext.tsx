@@ -70,6 +70,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.views": "조회수",
     "common.above": "이상",
     "common.below": "이하",
+    "common.vatIncluded": "VAT 포함",
     // Form validation messages
     "form.loginRequired": "로그인 후에만 사용할 수 있습니다.",
     "form.loginRequiredConcern": "로그인 후에만 고민글을 작성할 수 있습니다.",
@@ -827,6 +828,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.readTime": "min",
     "common.views": "Views",
     "common.above": "or more",
+    "common.vatIncluded": "VAT included",
     "common.below": "or less",
     // Form validation messages
     "form.loginRequired": "Please log in to continue.",
@@ -1601,6 +1603,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.noHospitalName": "病院名なし",
     "common.all": "すべて",
     "common.readTime": "分",
+    "common.vatIncluded": "VAT含む",
     "common.views": "閲覧数",
     "common.above": "以上",
     "common.below": "以下",
@@ -2370,6 +2373,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.noHospitalName": "无医院名称",
     "common.notFound": "未找到",
     "common.all": "全部",
+    "common.vatIncluded": "含增值税",
     "common.readTime": "分钟",
     "common.views": "浏览量",
     "common.above": "以上",

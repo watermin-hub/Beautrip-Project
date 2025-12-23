@@ -464,7 +464,7 @@ export default function HotConcernsSection() {
                     </span>
                     {treatment.vat_info && (
                       <span className="text-[10px] text-gray-500">
-                        {treatment.vat_info}
+                        {t("common.vatIncluded")}
                       </span>
                     )}
                   </div>

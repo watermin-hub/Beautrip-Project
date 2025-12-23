@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FiSearch, FiGlobe, FiBell, FiChevronDown } from "react-icons/fi";
-import { BsCloud } from "react-icons/bs";
 import SearchModal from "./SearchModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -87,15 +86,13 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
             {/* 로고 이미지: public 폴더에 이미지를 넣고 파일명을 맞춰주세요
                 예: public/beautrip-logo.png 또는 public/logo.png
                 이미지가 없으면 기존 아이콘이 표시됩니다 */}
-            {!logoError ? (
+            {!logoError && (
               <img
                 src="/beautrip-logo.png"
                 alt={t("header.logoAlt")}
                 className="h-6 w-auto object-contain"
                 onError={() => setLogoError(true)}
               />
-            ) : (
-              <BsCloud className="text-primary-main text-xl" />
             )}
             {/* <h1 className="text-primary-main text-xl font-bold">BeauTrip</h1> */}
           </button>
