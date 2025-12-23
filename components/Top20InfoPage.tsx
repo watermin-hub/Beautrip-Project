@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiChevronLeft } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { trackContentPdpView } from "@/lib/gtm";
 
 export default function Top20InfoPage() {
   const { language, t } = useLanguage();
@@ -21,6 +23,18 @@ export default function Top20InfoPage() {
 
   // 제목 (언어별 번역)
   const title = t("community.top20.title");
+
+  // GTM: 콘텐츠 PDP 뷰 이벤트
+  useEffect(() => {
+    // 진입 경로 확인 (referrer 또는 pathname 기반)
+    const entrySource = document.referrer.includes("/home") || document.referrer.includes("/") 
+      ? "home" 
+      : document.referrer.includes("/community") 
+      ? "community" 
+      : "unknown";
+    
+    trackContentPdpView("top20", entrySource);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">

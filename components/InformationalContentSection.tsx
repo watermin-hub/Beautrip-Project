@@ -10,6 +10,7 @@ import {
 } from "@/lib/content/recoveryGuidePosts";
 import { supabase } from "@/lib/supabase";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import { trackContentPdpView, trackPdpClick } from "@/lib/gtm";
 
 interface ContentItem {
   id: number | string;
@@ -198,6 +199,17 @@ export default function InformationalContentSection() {
                     setShowLoginRequiredPopup(true);
                     return;
                   }
+                  
+                  // GTM: 콘텐츠 PDP 클릭 이벤트
+                  const contentType = content.category === recoveryGuideCategoryKey 
+                    ? "recovery_guide" 
+                    : content.slug === "top20" 
+                    ? "top20" 
+                    : content.slug === "travel-recommendation"
+                    ? "travel_recommendation"
+                    : "info";
+                  
+                  trackPdpClick("content", content.id);
                   
                   // 회복 가이드인 경우 상세 페이지로 이동
                   if (content.category === recoveryGuideCategoryKey && content.slug) {

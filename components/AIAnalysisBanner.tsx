@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { uploadFaceImageToStorage } from "@/lib/api/faceImageUpload";
 import { supabase } from "@/lib/supabase";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import { trackAIAnalysisStart } from "@/lib/gtm";
 
 export default function AIAnalysisBanner() {
   const { t } = useLanguage();
@@ -68,6 +69,9 @@ export default function AIAnalysisBanner() {
   }, [isLoggedIn, userId]);
 
   const handleConsentAgree = () => {
+    // GTM: AI 분석 시작 이벤트
+    trackAIAnalysisStart();
+    
     setIsConsentModalOpen(false);
     setIsCameraModalOpen(true);
   };

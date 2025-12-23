@@ -43,6 +43,8 @@ export default function PromotionBanner({
         id: 1,
         image: getBannerImageUrl(1),
         onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트
+          trackHomeBannerClick("banner_01", "review");
           // 1번 배너: 로그인 회원 - 후기 작성 모달, 비로그인 회원 - 로그인 모달
           if (onBanner1Click) {
             onBanner1Click();
@@ -53,6 +55,8 @@ export default function PromotionBanner({
         id: 2,
         image: getBannerImageUrl(2),
         onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트
+          trackHomeBannerClick("banner_02", "ai");
           // 2번 배너: AI 피부 분석 모달 열기
           setIsConsentModalOpen(true);
         },
@@ -61,6 +65,8 @@ export default function PromotionBanner({
         id: 3,
         image: getBannerImageUrl(3),
         onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트
+          trackHomeBannerClick("banner_03", "kbeauty");
           // 3번 배너: 하단 네비게이션바의 [탐색] 탭 → [kbeauty]로 바로 이동
           router.push("/explore?tab=kbeauty");
         },
@@ -69,6 +75,8 @@ export default function PromotionBanner({
         id: 4,
         image: getBannerImageUrl(4),
         onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트
+          trackHomeBannerClick("banner_04", "travel");
           // 4번 배너: 여행지 추천 페이지로 이동
           router.push("/community/info/travel-recommendation");
         },
@@ -77,6 +85,8 @@ export default function PromotionBanner({
         id: 5,
         image: getBannerImageUrl(5),
         onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트
+          trackHomeBannerClick("banner_05", "schedule");
           // 5번 배너: 여행 일정 오늘 기준으로 2박 3일로 설정된 일정으로 맞춤 시술 추천 섹션까지 뜨는 곳으로 이동
           if (onBanner5Click) {
             onBanner5Click();
@@ -92,6 +102,8 @@ export default function PromotionBanner({
         id: 7,
         image: getBannerImageUrl(7),
         onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트
+          trackHomeBannerClick("banner_07", "top20");
           // 7번 배너: TOP20 정보 페이지로 이동
           router.push("/community/info/top20");
         },

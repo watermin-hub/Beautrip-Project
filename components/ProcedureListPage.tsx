@@ -547,6 +547,11 @@ export default function ProcedureListPage({
                     key={treatmentId}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer flex flex-col"
                     onClick={() => {
+                      // GTM: PDP 클릭 이벤트
+                      if (typeof window !== "undefined") {
+                        const { trackPdpClick } = require("@/lib/gtm");
+                        trackPdpClick("treatment", treatmentId);
+                      }
                       router.push(`/explore/treatment/${treatmentId}`);
                     }}
                   >

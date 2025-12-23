@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackLoginStart, trackLoginSuccess } from "@/lib/gtm";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -384,6 +385,9 @@ export default function LoginModal({
   ];
 
   const handleSocialLogin = async (provider: string) => {
+    // GTM: 로그인 시작 이벤트
+    trackLoginStart();
+    
     setIsLoading(true);
 
     try {
@@ -446,6 +450,9 @@ export default function LoginModal({
       return;
     }
 
+    // GTM: 로그인 시작 이벤트
+    trackLoginStart();
+
     setIsLoading(true);
 
     try {
@@ -497,6 +504,9 @@ export default function LoginModal({
             if (autoLogin && typeof window !== "undefined") {
               localStorage.setItem("autoLogin", "true");
             }
+
+            // GTM: 로그인 성공 이벤트
+            trackLoginSuccess();
 
             onLoginSuccess(userInfo);
             onClose();
@@ -570,6 +580,9 @@ export default function LoginModal({
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
         localStorage.setItem("userId", authData.user.id); // user_id 저장 (항상 저장)
       }
+
+      // GTM: 로그인 성공 이벤트
+      trackLoginSuccess();
 
       onLoginSuccess(userInfo);
       onClose();

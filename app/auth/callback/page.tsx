@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { trackLoginSuccess } from "@/lib/gtm";
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -212,6 +213,10 @@ function AuthCallbackContent() {
           email: finalSession.user.email,
           hasAccessToken: !!finalSession.access_token,
         });
+        
+        // GTM: 로그인 성공 이벤트
+        trackLoginSuccess();
+        
         console.log("🔗 마이페이지로 리다이렉트 중...");
 
         // 세션이 성공적으로 생성되었으면 마이페이지로 리다이렉트

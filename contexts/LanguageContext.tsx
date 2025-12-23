@@ -2858,9 +2858,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [language, isMounted]);
 
-  const setLanguage = (lang: LanguageCode) => {
-    setLanguageState(lang);
-  };
+    const setLanguage = (lang: LanguageCode) => {
+      setLanguageState(lang);
+      // GTM: 언어 변경 이벤트
+      if (typeof window !== "undefined") {
+        const { trackLanguageChange } = require("@/lib/gtm");
+        trackLanguageChange(lang);
+      }
+    };
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     const langTranslations = translations[language];

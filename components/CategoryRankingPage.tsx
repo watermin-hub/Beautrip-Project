@@ -26,6 +26,7 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
+import { trackExploreCategoryClick, trackExploreFilterClick } from "@/lib/gtm";
 import {
   formatPrice,
   getCurrencyFromStorage,
@@ -350,6 +351,20 @@ export default function CategoryRankingPage({
     }
   }, [midCategories, externalMidCategoriesList, onMidCategoriesListChange]);
 
+  // 카테고리 변경 시 GTM 이벤트 트래킹
+  useEffect(() => {
+    if (selectedCategory !== null && !isInitialLoad) {
+      trackExploreCategoryClick(selectedCategory);
+    }
+  }, [selectedCategory, isInitialLoad]);
+
+  // 중분류 변경 시 GTM 이벤트 트래킹
+  useEffect(() => {
+    if (selectedMidCategory !== null && !isInitialLoad) {
+      trackExploreFilterClick("category");
+    }
+  }, [selectedMidCategory, isInitialLoad]);
+
   // ✅ 초기 데이터 로드 (한국어로 먼저 로드)
   useEffect(() => {
     const loadInitialRankings = async () => {
@@ -364,9 +379,11 @@ export default function CategoryRankingPage({
           // 소분류 랭킹 로드 (현재 언어로 로드)
           const result = await getSmallCategoryRankings(
             selectedMidCategory,
-            20,
-            2,
-            20,
+            null, // p_category_large (대분류 필터 없음)
+            20, // p_m (베이지안 가중치)
+            2, // p_dedupe_limit_per_name
+            20, // p_limit_categories (소분류 개수 제한)
+            20, // p_limit_per_category (소분류별 시술 개수)
             language // ✅ 현재 언어로 로드
           );
           if (result.success && result.data) {
@@ -1082,6 +1099,11 @@ export default function CategoryRankingPage({
                                     key={treatmentId}
                                     className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                                     onClick={() => {
+                                      // GTM: PDP 클릭 이벤트
+                                      if (typeof window !== "undefined") {
+                                        const { trackPdpClick } = require("@/lib/gtm");
+                                        trackPdpClick("treatment", treatmentId);
+                                      }
                                       router.push(
                                         `/explore/treatment/${treatmentId}`
                                       );

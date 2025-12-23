@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "./Header";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,6 +10,7 @@ import {
   type RecoveryGroupContent,
   type WeekContent,
 } from "@/lib/content/recoveryGuideContent";
+import { trackContentPdpView } from "@/lib/gtm";
 
 export default function RecoveryGuidePage() {
   const router = useRouter();
@@ -24,6 +25,18 @@ export default function RecoveryGuidePage() {
     RecoveryGroupKey,
     RecoveryGroupContent
   ][];
+
+  // GTM: 콘텐츠 PDP 뷰 이벤트
+  useEffect(() => {
+    // 진입 경로 확인 (referrer 또는 pathname 기반)
+    const entrySource = document.referrer.includes("/home") || document.referrer.includes("/") 
+      ? "home" 
+      : document.referrer.includes("/community") 
+      ? "community" 
+      : "unknown";
+    
+    trackContentPdpView("recovery_guide", entrySource);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">

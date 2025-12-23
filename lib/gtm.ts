@@ -127,3 +127,135 @@ export function trackSavedScheduleView(entrySource: EntrySource) {
     entry_source: entrySource,
   });
 }
+
+/**
+ * login_start 이벤트 트래킹
+ *
+ * 호출 위치: 로그인 버튼 클릭 시점
+ * 목적: 사용자가 로그인을 시작했음을 측정
+ */
+export function trackLoginStart() {
+  pushToDataLayer({
+    event: "login_start",
+  });
+}
+
+/**
+ * login_success 이벤트 트래킹
+ *
+ * 호출 위치: 로그인 성공 시점 (세션 생성 후)
+ * 목적: 로그인 성공 여부를 측정
+ */
+export function trackLoginSuccess() {
+  pushToDataLayer({
+    event: "login_success",
+  });
+}
+
+/**
+ * explore_filter_click 이벤트 트래킹
+ *
+ * 호출 위치: 탐색 페이지에서 필터 클릭 시
+ * 목적: 사용자가 어떤 필터를 선택했는지 측정
+ *
+ * @param filterType 필터 타입 ("ranking" | "procedure" | "hospital" 등)
+ */
+export function trackExploreFilterClick(filterType: string) {
+  pushToDataLayer({
+    event: "explore_filter_click",
+    filter_type: filterType,
+  });
+}
+
+/**
+ * explore_category_click 이벤트 트래킹
+ *
+ * 호출 위치: 탐색 페이지에서 카테고리 클릭 시
+ * 목적: 사용자가 어떤 카테고리를 선택했는지 측정
+ *
+ * @param categoryId 카테고리 ID
+ */
+export function trackExploreCategoryClick(categoryId: string | null) {
+  pushToDataLayer({
+    event: "explore_category_click",
+    category_id: categoryId || "all",
+  });
+}
+
+/**
+ * language_change 이벤트 트래킹
+ *
+ * 호출 위치: 언어/국가 변경 시
+ * 목적: 사용자가 언어를 변경했는지 측정
+ *
+ * @param languageCode 변경된 언어 코드 ("KR" | "EN" | "JP" | "CN")
+ */
+export function trackLanguageChange(languageCode: string) {
+  pushToDataLayer({
+    event: "language_change",
+    language_code: languageCode,
+  });
+}
+
+/**
+ * ai_analysis_start 이벤트 트래킹
+ *
+ * 호출 위치: AI 분석 화면이 노출될 때 (카메라 모달 열릴 때)
+ * 목적: AI 분석 시작 여부를 측정
+ */
+export function trackAIAnalysisStart() {
+  pushToDataLayer({
+    event: "ai_analysis_start",
+  });
+}
+
+/**
+ * home_banner_click 이벤트 트래킹
+ *
+ * 호출 위치: 홈 페이지 배너 클릭 시
+ * 목적: 어떤 배너가 클릭되었는지 측정
+ *
+ * @param bannerId 배너 ID (예: "banner_01", "banner_02")
+ * @param bannerType 배너 타입 (예: "ai", "review", "kbeauty")
+ */
+export function trackHomeBannerClick(bannerId: string, bannerType?: string) {
+  pushToDataLayer({
+    event: "home_banner_click",
+    banner_id: bannerId,
+    banner_type: bannerType || "unknown",
+  });
+}
+
+/**
+ * content_pdp_view 이벤트 트래킹
+ *
+ * 호출 위치: 콘텐츠 PDP 페이지가 렌더링될 때 (회복 가이드, 정보성 콘텐츠 등)
+ * 목적: 콘텐츠 PDP 조회 여부와 진입 경로를 측정
+ *
+ * @param contentType 콘텐츠 타입 ("recovery_guide" | "info" 등)
+ * @param entrySource 진입 경로 ("home" | "community" | "banner" 등)
+ */
+export function trackContentPdpView(contentType: string, entrySource: EntrySource) {
+  pushToDataLayer({
+    event: "content_pdp_view",
+    content_type: contentType,
+    entry_source: entrySource,
+  });
+}
+
+/**
+ * pdp_click 이벤트 트래킹
+ *
+ * 호출 위치: PDP 카드 클릭 시 (페이지 이동 직전)
+ * 목적: 어떤 PDP가 클릭되었는지 측정
+ *
+ * @param pdpType PDP 타입 ("treatment" | "hospital")
+ * @param pdpId PDP ID
+ */
+export function trackPdpClick(pdpType: string, pdpId: number | string) {
+  pushToDataLayer({
+    event: "pdp_click",
+    pdp_type: pdpType,
+    pdp_id: String(pdpId),
+  });
+}
