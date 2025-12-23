@@ -2413,8 +2413,7 @@ function RecoveryCardComponent({
           "@/lib/api/beautripApi"
         );
         const recoveryGuideIdByCategory = await findRecoveryGuideByCategoryMid(
-          rec.categoryMid,
-          language
+          rec.categoryMid
         );
         if (recoveryGuideIdByCategory) {
           router.push(`/community/recovery-guide/${recoveryGuideIdByCategory}`);
