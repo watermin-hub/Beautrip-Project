@@ -166,15 +166,21 @@ export function trackLoginSuccess(
 /**
  * explore_filter_click 이벤트 트래킹
  *
- * 호출 위치: 탐색 페이지에서 필터 클릭 시
+ * 호출 위치: 탐색 페이지에서 필터 버튼 클릭 시 ([카테고리별, K-Beauty, 병원별, 일정 맞춤])
  * 목적: 사용자가 어떤 필터를 선택했는지 측정
  *
- * @param filterType 필터 타입 ("ranking" | "procedure" | "hospital" 등)
+ * @param filterType 필터 타입 ("category" | "kbeauty" | "hospital" | "schedule")
+ *   - "category": 카테고리별
+ *   - "kbeauty": K-Beauty
+ *   - "hospital": 병원별
+ *   - "schedule": 일정 맞춤
  */
-export function trackExploreFilterClick(filterType: string) {
+export function trackExploreFilterClick(
+  filterType: "category" | "kbeauty" | "hospital" | "schedule"
+) {
   pushToDataLayer({
     event: "explore_filter_click",
-    filter_type: filterType,
+    entry_source: filterType,
   });
 }
 
@@ -213,11 +219,17 @@ export function trackLanguageChange(country: string) {
  *
  * 호출 위치: AI 분석 버튼 클릭 시 (동의 모달 열기 전, 버튼 클릭 시점)
  * 목적: AI 분석 시작 여부를 측정
- * 참고: 배너 no.2와 플로팅 버튼 둘 다 home에서 진입하므로 entry_source는 자동으로 "home"으로 설정됨
+ *
+ * @param entrySource 진입 경로 ("banner" | "floating_button")
+ *   - "banner": 홈의 배너 이미지 중 2번째 것 (PromotionBanner의 banner_02)
+ *   - "floating_button": 하단 플로팅 버튼 (AISkinAnalysisButton)
  */
-export function trackAIAnalysisStart() {
+export function trackAIAnalysisStart(
+  entrySource: "banner" | "floating_button"
+) {
   pushToDataLayer({
     event: "ai_analysis_start",
+    entry_source: entrySource,
   });
 }
 
@@ -259,12 +271,15 @@ export function trackContentPdpView(
   entrySource: "banner" | "home" | "community",
   contentId: string | number
 ) {
-  pushToDataLayer({
+  const payload = {
     event: "content_pdp_view",
     content_type: contentType,
     entry_source: entrySource,
     content_id: String(contentId),
-  });
+  };
+
+  console.log("[GTM] trackContentPdpView 호출:", payload);
+  pushToDataLayer(payload);
 }
 
 /**

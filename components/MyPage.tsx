@@ -704,7 +704,7 @@ function MainContent({
           icon={FiEdit3}
           label={t("mypage.writePost")}
           onClick={() => {
-            router.push("/community/write?entrySource=mypage");
+            router.push("/community/write?entry_source=mypage");
           }}
           isButton
         />

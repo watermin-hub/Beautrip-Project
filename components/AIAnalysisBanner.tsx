@@ -47,9 +47,11 @@ export default function AIAnalysisBanner() {
   }, []);
 
   const handleStartAnalysis = () => {
-    // GTM: AI 분석 시작 이벤트 (버튼 클릭 시점, 동의 전)
-    trackAIAnalysisStart();
-    
+    // GTM: AI 분석 시작 이벤트 (AIAnalysisBanner 버튼 클릭 시점, 동의 전)
+    // 주의: PromotionBanner의 2번 배너는 "banner", AISkinAnalysisButton은 "floating_button"
+    // AIAnalysisBanner는 별도 배너이지만 사용자 요구사항에 없으므로 일단 "banner"로 설정 (필요시 변경 가능)
+    trackAIAnalysisStart("banner");
+
     // 로그인 체크
     if (!isLoggedIn || !userId) {
       setShowLoginRequiredPopup(true);
@@ -88,14 +90,17 @@ export default function AIAnalysisBanner() {
 
       // 찍은 사진을 localStorage에 먼저 저장 (즉시 표시용)
       localStorage.setItem("capturedFaceImage", imageData);
-      
+
       // 최근 분석 결과 저장 (AI 리포트용)
       const recentAnalysis = {
         imageData,
         timestamp: Date.now(),
         userId,
       };
-      localStorage.setItem("lastAIAnalysisResult", JSON.stringify(recentAnalysis));
+      localStorage.setItem(
+        "lastAIAnalysisResult",
+        JSON.stringify(recentAnalysis)
+      );
 
       // Supabase Storage에 업로드
       const { filePath } = await uploadFaceImageToStorage(imageData);

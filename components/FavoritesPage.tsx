@@ -18,6 +18,7 @@ import {
   removeProcedureFavorite,
 } from "@/lib/api/beautripApi";
 import { useRouter } from "next/navigation";
+import { trackPdpClick } from "@/lib/gtm";
 
 interface FavoriteItem {
   id: number;
@@ -282,6 +283,8 @@ export default function FavoritesPage() {
             className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => {
               if (item.type === "procedure" && item.id) {
+                // GTM: PDP 클릭 이벤트 (마이페이지에서 클릭)
+                trackPdpClick("mypage");
                 router.push(`/favorites/treatment/${item.id}`);
               } else if (item.type === "clinic") {
                 // 병원 상세 페이지로 이동 (병원명으로 검색)

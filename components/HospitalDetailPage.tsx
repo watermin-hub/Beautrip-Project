@@ -513,7 +513,7 @@ export default function HospitalDetailPage({
             </h3>
             <button
               onClick={() =>
-                router.push("/community/write?entrySource=explore")
+                router.push("/community/write?entry_source=explore")
               }
               className="text-primary-main text-sm font-medium"
             >
@@ -560,7 +560,7 @@ export default function HospitalDetailPage({
           </button>
 
           <button
-            onClick={() => router.push("/community/write?entrySource=explore")}
+            onClick={() => router.push("/community/write?entry_source=explore")}
             className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
           >
             <FiMessageCircle className="text-lg" />

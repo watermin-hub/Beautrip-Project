@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackExploreFilterClick } from "@/lib/gtm";
 import { FiEdit3, FiChevronUp } from "react-icons/fi";
 import Header from "./Header";
 import ExploreHeader from "./ExploreHeader";
@@ -38,17 +37,8 @@ export default function ExploreScrollPage() {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
-    // GTM: 탐색 필터 클릭 이벤트
-    // sectionId를 filter_type으로 매핑
-    // 요구사항: ranking / kbeauty / hospital / schedule
-    const filterTypeMap: Record<string, string> = {
-      ranking: "ranking",
-      procedure: "kbeauty",
-      hospital: "hospital",
-      schedule: "schedule",
-    };
-    const filterType = filterTypeMap[sectionId] || sectionId;
-    trackExploreFilterClick(filterType);
+    // 주의: explore_filter_click은 RankingSection의 [카테고리별, K-Beauty, 병원별, 일정 맞춤] 필터 버튼 클릭 시에만 발생합니다.
+    // ExploreHeader의 [랭킹, 전체 시술, 전체 병원] 탭 클릭은 다른 이벤트입니다.
 
     let targetRef: React.RefObject<HTMLDivElement> | null = null;
 
@@ -214,7 +204,7 @@ export default function ExploreScrollPage() {
             {t("explore.reviewCTA.description")}
           </p>
           <button
-            onClick={() => router.push("/community/write?entrySource=explore")}
+            onClick={() => router.push("/community/write?entry_source=explore")}
             className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             {t("explore.reviewCTA.button")}

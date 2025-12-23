@@ -16,7 +16,7 @@ import {
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackAddToSchedule } from "@/lib/gtm";
+import { trackAddToSchedule, trackPdpClick } from "@/lib/gtm";
 
 export default function KBeautyRankingPage() {
   const { t, language } = useLanguage();
@@ -239,6 +239,8 @@ export default function KBeautyRankingPage() {
                   className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => {
                     if (treatment.treatment_id) {
+                      // GTM: PDP 클릭 이벤트 (탐색 페이지에서 클릭)
+                      trackPdpClick("explore");
                       router.push(
                         `/explore/treatment/${treatment.treatment_id}`
                       );

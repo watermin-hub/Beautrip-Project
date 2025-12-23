@@ -14,6 +14,9 @@ const TABLE_NAMES = {
   HOSPITAL_PDP_VIEW: "v_hospital_pdp", // 병원 PDP용 뷰 테이블
   HOSPITAL_I18N_VIEW: "v_hospital_i18n", // 병원 다국어 통합 뷰 (삭제됨 - 더 이상 사용하지 않음)
   CATEGORY_TREATTIME_RECOVERY: "category_treattime_recovery",
+  CATEGORY_TREATTIME_RECOVERY_EN: "category_treattime_recovery_en",
+  CATEGORY_TREATTIME_RECOVERY_CN: "category_treattime_recovery_cn",
+  CATEGORY_TREATTIME_RECOVERY_JP: "category_treattime_recovery_jp",
   HOSPITAL_MASTER: "hospital_master",
   KEYWORD_MONTHLY_TRENDS: "keyword_monthly_trends",
   CATEGORY_TOGGLE_MAP: "category_toggle_map",
@@ -147,6 +150,38 @@ export function getHospitalTableName(language?: LanguageCode): string {
   }
 }
 
+// 언어에 따라 적절한 category_treattime_recovery 테이블 이름 반환
+export function getCategoryTreatTimeRecoveryTableName(
+  language?: LanguageCode
+): string {
+  // 언어 코드 가져오기
+  let lang: LanguageCode = language || "KR";
+
+  if (typeof window !== "undefined" && !language) {
+    const saved = localStorage.getItem("language") as LanguageCode;
+    if (
+      saved &&
+      (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")
+    ) {
+      lang = saved;
+    }
+  }
+
+  // 언어별 category_treattime_recovery_* 테이블 직접 사용
+  switch (lang) {
+    case "KR":
+      return TABLE_NAMES.CATEGORY_TREATTIME_RECOVERY;
+    case "EN":
+      return TABLE_NAMES.CATEGORY_TREATTIME_RECOVERY_EN;
+    case "CN":
+      return TABLE_NAMES.CATEGORY_TREATTIME_RECOVERY_CN;
+    case "JP":
+      return TABLE_NAMES.CATEGORY_TREATTIME_RECOVERY_JP;
+    default:
+      return TABLE_NAMES.CATEGORY_TREATTIME_RECOVERY;
+  }
+}
+
 // Supabase 클라이언트 안전 접근 헬퍼
 // 환경변수가 없어서 supabase가 초기화되지 않은 경우
 // 런타임 TypeError 대신 빈 결과를 반환하도록 각 함수에서 사용합니다.
@@ -187,20 +222,31 @@ export interface Treatment {
 
 // 카테고리별 시술 시간/회복 기간 인터페이스
 export interface CategoryTreatTimeRecovery {
+  id?: number; // 행 식별 키 (언어 테이블 간 조인용)
+  category_mid_key?: string; // 중분류 그룹 키 (언어와 무관, "필러", "주름보톡스" 등)
   category_large?: string;
-  중분류?: string; // 중분류 (category_mid와 매칭)
-  category_mid?: string; // category_mid (중분류와 동일)
+  중분류?: string; // 중분류 (category_mid와 매칭, 레거시)
+  category_mid?: string; // category_mid (언어별 중분류 이름)
   keyword_kr?: string; // 한국어 키워드 (keyword_monthly_trends의 keyword와 매칭)
+  keyword_en?: string; // 영어 키워드
+  keyword_cn?: string; // 중국어 키워드
+  keyword_jp?: string; // 일본어 키워드
   소분류_리스트?: string; // 소분류 리스트
   그룹?: string;
   procedure_type?: string;
   시술시간_min?: number; // 시술시간_min(분)
   시술시간_max?: number; // 시술시간_max(분)
+  "시술시간_min(분)"?: number; // 시술시간_min(분) (새 테이블 구조)
+  "시술시간_max(분)"?: number; // 시술시간_max(분) (새 테이블 구조)
   "회복기간_min(일)"?: number; // 회복기간_min(일)
   "회복기간_max(일)"?: number; // 회복기간_max(일)
-  다운타임레벨?: number; // 다운타임레벨(0-3)
-  권장체류일수?: number; // 권장체류일수(일)
-  Trip_friendly_level?: number; // Trip_friendly_level(0-3)
+  "다운타임일수(0-3)"?: number; // 다운타임일수(0-3) (새 테이블 구조)
+  다운타임레벨?: number; // 다운타임레벨(0-3) (레거시)
+  "권장체류일수(일)"?: number; // 권장체류일수(일) (새 테이블 구조)
+  권장체류일수?: number; // 권장체류일수(일) (레거시)
+  trip_friendly_level?: number; // Trip_friendly_level(0-3) (새 테이블 구조)
+  Trip_friendly_level?: number; // Trip_friendly_level(0-3) (레거시)
+  category_small?: string; // 소분류 (새 테이블 구조)
   "1~3"?: string; // 1~3일 회복 기간 텍스트
   "4~7"?: string; // 4~7일 회복 기간 텍스트
   "8~14"?: string; // 8~14일 회복 기간 텍스트
@@ -834,16 +880,15 @@ export async function getTreatmentAutocomplete(
 }
 
 // 카테고리별 시술 시간/회복 기간 데이터 로드
-export async function loadCategoryTreatTimeRecovery(): Promise<
-  CategoryTreatTimeRecovery[]
-> {
+export async function loadCategoryTreatTimeRecovery(
+  language?: LanguageCode
+): Promise<CategoryTreatTimeRecovery[]> {
   try {
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const { data, error } = await client
-      .from(TABLE_NAMES.CATEGORY_TREATTIME_RECOVERY)
-      .select("*");
+    const tableName = getCategoryTreatTimeRecoveryTableName(language);
+    const { data, error } = await client.from(tableName).select("*");
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -908,7 +953,10 @@ export async function getRecoveryInfoByCategoryMid(
       if (cached) return cached;
     }
 
-    const recoveryData = await loadCategoryTreatTimeRecovery();
+    // ✅ 새로운 테이블 구조: 현재 언어에 맞는 테이블 사용
+    // language가 없으면 기본값 KR 사용
+    const currentLanguage = language || "KR";
+    const recoveryData = await loadCategoryTreatTimeRecovery(currentLanguage);
 
     // 키/샘플 확인 (디버깅용)
     console.log(
@@ -919,15 +967,19 @@ export async function getRecoveryInfoByCategoryMid(
       "🔎 sample 중분류:",
       recoveryData
         ?.slice(0, 5)
-        .map((x: any) => x["중분류"] ?? x.중분류 ?? x.category_mid)
+        .map(
+          (x: any) =>
+            x["category_mid"] ?? x.category_mid ?? x["중분류"] ?? x.중분류 ?? ""
+        )
     );
 
+    // ✅ 새로운 테이블 구조: category_mid 우선 사용, 레거시 필드 fallback
     const getMid = (item: any) =>
       String(
-        item["중분류"] ??
-          item.중분류 ??
-          item["category_mid"] ??
+        item["category_mid"] ??
           item.category_mid ??
+          item["중분류"] ??
+          item.중분류 ??
           item["categoryMid"] ??
           item.categoryMid ??
           ""
@@ -984,7 +1036,7 @@ export async function getRecoveryInfoByCategoryMid(
       );
     }
 
-    // 중분류 컬럼과 category_mid를 정확히 일치시켜서 매칭 (정확 일치만 허용)
+    // ✅ 새로운 테이블 구조: category_mid로 매칭
     // 1) 원본 문자열 정확 일치 (최우선)
     let matched = normalizedRecoveryData.find(
       (item) => item._mid === categoryMidTrimmed
@@ -995,6 +1047,38 @@ export async function getRecoveryInfoByCategoryMid(
       matched = normalizedRecoveryData.find(
         (item) => item._normalized && item._normalized === normalizedCategoryMid
       );
+    }
+
+    // 3) ✅ 새로운 테이블 구조: category_mid_key로도 매칭 시도 (fallback)
+    // category_mid_key는 언어와 무관한 그룹 키이므로, 한국어 테이블에서 찾아서
+    // 현재 언어 테이블의 같은 id로 매칭
+    if (!matched && currentLanguage !== "KR") {
+      // 한국어 테이블에서 category_mid_key 찾기
+      const krRecoveryData = await loadCategoryTreatTimeRecovery("KR");
+      const krMatched = krRecoveryData.find((item: any) => {
+        const krMid = String(
+          item["category_mid"] ??
+            item.category_mid ??
+            item["중분류"] ??
+            item.중분류 ??
+            ""
+        ).trim();
+        return (
+          krMid === categoryMidTrimmed ||
+          normalize(krMid) === normalizedCategoryMid
+        );
+      });
+
+      if (krMatched && (krMatched as any).category_mid_key) {
+        const categoryMidKey = (krMatched as any).category_mid_key;
+        // 현재 언어 테이블에서 같은 category_mid_key로 찾기
+        matched = normalizedRecoveryData.find((item: any) => {
+          const itemKey = item["category_mid_key"] ?? item.category_mid_key;
+          return (
+            itemKey && String(itemKey).trim() === String(categoryMidKey).trim()
+          );
+        });
+      }
     }
 
     // 부분 일치 제거: 모든 category_mid 값이 정확히 일치해야 함
@@ -1056,15 +1140,17 @@ export async function getRecoveryInfoByCategoryMid(
 
     const m: any = matched;
 
-    const recoveryMax = m["회복기간_max(일)"] || m["회복기간_min(일)"] || 0;
-    const recoveryMin = m["회복기간_min(일)"] || 0;
+    // ✅ 새로운 테이블 구조: 컬럼명 우선 사용, 레거시 필드 fallback
+    const recoveryMax =
+      m["회복기간_max(일)"] ?? m["회복기간_max"] ?? m["회복기간_min(일)"] ?? 0;
+    const recoveryMin = m["회복기간_min(일)"] ?? m["회복기간_min"] ?? 0;
     const procedureTimeMax =
-      m["시술시간_max(분)"] ||
-      m["시술시간_min(분)"] ||
-      m["시술시간_max"] ||
-      m["시술시간_min"] ||
+      m["시술시간_max(분)"] ??
+      m["시술시간_max"] ??
+      m["시술시간_min(분)"] ??
+      m["시술시간_min"] ??
       0;
-    const procedureTimeMin = m["시술시간_min(분)"] || m["시술시간_min"] || 0;
+    const procedureTimeMin = m["시술시간_min(분)"] ?? m["시술시간_min"] ?? 0;
 
     console.log(
       `✅ 매칭 성공! category_mid: "${categoryMidTrimmed}", 회복기간_max: ${recoveryMax}, 회복기간_min: ${recoveryMin}`
@@ -1098,8 +1184,9 @@ export async function getRecoveryInfoByCategoryMid(
       recoveryText = recoveryGuides["15~21"];
     }
 
-    // 권장체류일수(일) 가져오기 - 컬럼명 변형까지 대응
+    // ✅ 새로운 테이블 구조: 권장체류일수(일) 가져오기 - 컬럼명 변형까지 대응
     const recommendedStayDays = (() => {
+      // 새 테이블 구조 컬럼명 우선
       const direct =
         m["권장체류일수(일)"] ?? m["권장체류일수"] ?? m.권장체류일수;
       if (typeof direct === "number" && !isNaN(direct) && direct > 0) {
@@ -1109,6 +1196,7 @@ export async function getRecoveryInfoByCategoryMid(
         return direct;
       }
 
+      // 동적 키 찾기 (공백 제거 후 매칭)
       const dynamicKey = Object.keys(m).find((k) =>
         k.replace(/\s+/g, "").includes("권장체류")
       );
@@ -1863,7 +1951,8 @@ export async function getCategoryMidByKeyword(
   try {
     if (!keyword) return null;
 
-    const recoveryData = await loadCategoryTreatTimeRecovery();
+    // ✅ keyword_kr은 한국어 테이블에만 있으므로 KR 테이블 사용
+    const recoveryData = await loadCategoryTreatTimeRecovery("KR");
     const keywordTrimmed = keyword.trim();
 
     // keyword_kr 컬럼과 정확히 일치하는 항목 찾기
@@ -1873,8 +1962,8 @@ export async function getCategoryMidByKeyword(
     });
 
     if (matched) {
-      // 중분류 또는 category_mid 반환
-      return matched.중분류 || matched.category_mid || null;
+      // ✅ 새로운 테이블 구조: category_mid 우선, 레거시 필드 fallback
+      return matched.category_mid || matched.중분류 || null;
     }
 
     return null;
@@ -2021,11 +2110,12 @@ export async function getPopularKeywordsByCountry(
 }
 
 // 모든 테이블 데이터를 한 번에 로드
-export async function loadAllData() {
+export async function loadAllData(language?: LanguageCode) {
   try {
+    // ✅ 언어 파라미터 전달 (기본값 KR)
     const [treatments, categoryData, hospitals, trends] = await Promise.all([
-      loadTreatments(),
-      loadCategoryTreatTimeRecovery(),
+      loadTreatments(language),
+      loadCategoryTreatTimeRecovery(language),
       loadHospitalMaster(),
       loadKeywordMonthlyTrends(),
     ]);

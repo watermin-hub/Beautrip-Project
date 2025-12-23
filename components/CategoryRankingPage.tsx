@@ -1468,6 +1468,13 @@ export default function CategoryRankingPage({
                                 key={treatmentId}
                                 className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                                 onClick={() => {
+                                  // GTM: PDP 클릭 이벤트 (탐색 페이지에서 클릭)
+                                  if (typeof window !== "undefined") {
+                                    const {
+                                      trackPdpClick,
+                                    } = require("@/lib/gtm");
+                                    trackPdpClick("explore");
+                                  }
                                   router.push(
                                     `/explore/treatment/${treatmentId}`
                                   );

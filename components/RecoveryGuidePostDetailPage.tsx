@@ -503,7 +503,14 @@ export default function RecoveryGuidePostDetailPage({
         ? `recovery_guide_${String(postIndex + 1).padStart(2, "0")}` // recovery_guide_01 ~ recovery_guide_18
         : postId; // 찾지 못하면 원본 postId 사용 (fallback)
       
-      // content_type: "recovery_guide", content_id: "recovery_guide_01" ~ "recovery_guide_18"
+      // content_type: "recovery_guide", content_id: recovery_guide_01 ~ recovery_guide_18
+      console.log("[GTM] content_pdp_view 이벤트 트리거:", { 
+        contentType: "recovery_guide", 
+        entrySource, 
+        contentId,
+        postId,
+        postIndex 
+      });
       trackContentPdpView("recovery_guide", entrySource, contentId);
     };
     

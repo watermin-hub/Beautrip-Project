@@ -7,7 +7,7 @@ import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import AISkinAnalysisConsentModal from "./AISkinAnalysisConsentModal";
 import AISkinAnalysisCameraModal from "./AISkinAnalysisCameraModal";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackHomeBannerClick } from "@/lib/gtm";
+import { trackHomeBannerClick, trackAIAnalysisStart } from "@/lib/gtm";
 
 interface BannerSlide {
   id: number;
@@ -58,6 +58,8 @@ export default function PromotionBanner({
         onClick: () => {
           // GTM: 홈 배너 클릭 이벤트 (ai: 2)
           trackHomeBannerClick("banner_02", "ai");
+          // GTM: AI 분석 시작 이벤트 (배너 클릭, entry_source: "banner")
+          trackAIAnalysisStart("banner");
           // 2번 배너: AI 피부 분석 모달 열기
           setIsConsentModalOpen(true);
         },

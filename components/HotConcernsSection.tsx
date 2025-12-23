@@ -21,7 +21,7 @@ import {
 } from "@/lib/utils/currency";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
-import { trackAddToSchedule } from "@/lib/gtm";
+import { trackAddToSchedule, trackPdpClick } from "@/lib/gtm";
 
 export default function HotConcernsSection() {
   const router = useRouter();
@@ -378,6 +378,8 @@ export default function HotConcernsSection() {
               className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
               onClick={() => {
                 if (treatment.treatment_id) {
+                  // GTM: PDP 클릭 이벤트 (홈 페이지에서 클릭)
+                  trackPdpClick("home");
                   router.push(`/home/treatment/${treatment.treatment_id}`);
                 }
               }}

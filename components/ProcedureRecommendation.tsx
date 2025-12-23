@@ -34,7 +34,7 @@ import {
   type Treatment,
   type HomeScheduleRecommendation,
 } from "@/lib/api/beautripApi";
-import { trackAddToSchedule } from "@/lib/gtm";
+import { trackAddToSchedule, trackPdpClick } from "@/lib/gtm";
 
 // 필터 옵션은 ProcedureFilterModal에서 동일하게 사용
 
@@ -1332,6 +1332,8 @@ export default function ProcedureRecommendation({
                         className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                         onClick={() => {
                           if (treatment.treatment_id) {
+                            // GTM: PDP 클릭 이벤트 (홈 페이지에서 클릭)
+                            trackPdpClick("home");
                             router.push(
                               `/home/treatment/${treatment.treatment_id}`
                             );

@@ -15,6 +15,7 @@ import {
   type PopularKeyword,
 } from "@/lib/api/beautripApi";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import { trackPdpClick } from "@/lib/gtm";
 
 // 고민 키워드와 시술 매핑 (fallback용)
 const CONCERN_KEYWORDS: Record<string, string[]> = {
@@ -345,6 +346,8 @@ export default function CountryPainPointSection() {
                     className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                     onClick={() => {
                       if (treatment.treatment_id) {
+                        // GTM: PDP 클릭 이벤트 (홈 페이지에서 클릭)
+                        trackPdpClick("home");
                         router.push(
                           `/home/treatment/${treatment.treatment_id}`
                         );

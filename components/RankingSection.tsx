@@ -10,6 +10,7 @@ import KBeautyRankingPage from "./KBeautyRankingPage";
 import HospitalRankingPage from "./HospitalRankingPage";
 import ScheduleBasedRankingPage from "./ScheduleBasedRankingPage";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackExploreFilterClick } from "@/lib/gtm";
 
 type RankingTab = "category" | "kbeauty" | "hospital" | "schedule";
 
@@ -67,6 +68,8 @@ export default function RankingSection({
             <button
               key={tab.id}
               onClick={() => {
+                // GTM: 탐색 필터 클릭 이벤트 ([카테고리별, K-Beauty, 병원별, 일정 맞춤])
+                trackExploreFilterClick(tab.id);
                 setActiveTab(tab.id);
                 // 탭 필터 선택 시 맨 위로 스크롤
                 window.scrollTo({

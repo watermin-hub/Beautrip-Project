@@ -39,7 +39,7 @@ import {
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { supabase } from "@/lib/supabase";
-import { trackScheduleSaveClick, trackSavedScheduleView } from "@/lib/gtm";
+import { trackScheduleSaveClick, trackSavedScheduleView, trackPdpClick } from "@/lib/gtm";
 
 /**
  * 받침 유무에 따라 "와" 또는 "과"를 반환하는 함수
@@ -270,7 +270,9 @@ function SimilarProcedureRecommendation({
             if (treatment.treatment_id && treatment.category_mid) {
               try {
                 const recoveryInfo = await getRecoveryInfoByCategoryMid(
-                  treatment.category_mid
+                  treatment.category_mid,
+                  language, // ✅ 현재 언어 전달
+                  treatment.treatment_id // ✅ treatment_id 전달
                 );
                 if (recoveryInfo) {
                   recoveryMap[treatment.treatment_id] =
@@ -445,6 +447,8 @@ function SimilarProcedureRecommendation({
                 className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                 onClick={() => {
                   if (treatment.treatment_id) {
+                    // GTM: PDP 클릭 이벤트 (일정 페이지에서 클릭)
+                    trackPdpClick("schedule");
                     router.push(
                       `/schedule/treatment/${treatment.treatment_id}`
                     );
@@ -724,7 +728,9 @@ function SavedSchedulesTab({
 
           if (treatment.category_mid) {
             const recoveryInfo = await getRecoveryInfoByCategoryMid(
-              treatment.category_mid
+              treatment.category_mid,
+              language, // ✅ 현재 언어 전달
+              treatment.treatment_id // ✅ treatment_id 전달
             );
             if (recoveryInfo) {
               recoveryDays = recoveryInfo.recoveryMax;
@@ -1591,6 +1597,8 @@ function SavedSchedulesTab({
                 ).map((proc) => {
                   const handleCardClick = () => {
                     if (proc.treatmentId) {
+                      // GTM: PDP 클릭 이벤트 (일정 페이지에서 클릭)
+                      trackPdpClick("schedule");
                       router.push(`/schedule/treatment/${proc.treatmentId}`);
                     } else {
                       alert(t("alert.loadTreatmentDetailError"));
@@ -2658,30 +2666,39 @@ function RecoveryCardComponent({
 export default function MySchedulePage() {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"schedule" | "saved">("schedule");
+  const searchParams = useSearchParams();
+  
+  // URL 쿼리 파라미터에서 초기 탭 확인
+  const initialTab = searchParams.get("tab") === "saved" ? "saved" : "schedule";
+  const [activeTab, setActiveTab] = useState<"schedule" | "saved">(initialTab);
 
-  // URL 쿼리 파라미터에서 탭 확인
+  // URL 쿼리 파라미터 변경 시 activeTab 업데이트
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab");
-      if (tab === "saved") {
-        setActiveTab("saved");
-      } else if (tab === "schedule") {
-        setActiveTab("schedule");
-      }
+    const tab = searchParams.get("tab");
+    if (tab === "saved") {
+      setActiveTab("saved");
+    } else if (tab === "schedule") {
+      setActiveTab("schedule");
     }
-  }, []);
+  }, [searchParams]);
 
   // 저장된 일정 화면 조회 추적 (중복 방지)
   const hasTrackedSavedScheduleView = useRef(false);
 
   useEffect(() => {
+    // activeTab이 "saved"일 때만 이벤트 트리거
     if (activeTab === "saved" && !hasTrackedSavedScheduleView.current) {
-      // URL 기준으로 entry_source 구분
-      const entrySource = typeof window !== "undefined" && window.location.pathname.includes("/mypage")
-        ? "mypage"
-        : "schedule";
+      // referrer 기준으로 entry_source 구분
+      // /mypage에서 왔으면 "mypage", 그 외에는 "schedule"
+      const referrer = typeof window !== "undefined" ? document.referrer : "";
+      const entrySource = referrer.includes("/mypage") ? "mypage" : "schedule";
+      
+      console.log("[GTM] saved_schedule_view 이벤트 트리거:", { 
+        entrySource, 
+        referrer, 
+        activeTab,
+        pathname: typeof window !== "undefined" ? window.location.pathname : ""
+      });
       trackSavedScheduleView(entrySource);
       hasTrackedSavedScheduleView.current = true;
     }
@@ -3596,8 +3613,13 @@ export default function MySchedulePage() {
                   return;
                 }
 
-                // GTM 이벤트: 일정 저장 의도 측정
-                trackScheduleSaveClick("schedule");
+                // GTM 이벤트: 일정 저장 의도 측정 (일정 탭에서만 발생)
+                // 주의: add_to_schedule와는 다른 이벤트입니다.
+                // add_to_schedule는 시술을 일정에 추가할 때 발생하고,
+                // schedule_save_click은 [일정] 탭에서 "현재 일정 저장" 버튼을 클릭할 때만 발생합니다.
+                if (activeTab === "schedule") {
+                  trackScheduleSaveClick("schedule");
+                }
 
                 // 일정 기간 포맷팅 (예: "25.12.14~25.12.20")
                 const formatPeriod = (start: string, end: string) => {
@@ -4013,6 +4035,8 @@ export default function MySchedulePage() {
                 {selectedProcedures.map((proc) => {
                   const handleCardClick = () => {
                     if (proc.treatmentId) {
+                      // GTM: PDP 클릭 이벤트 (일정 페이지에서 클릭)
+                      trackPdpClick("schedule");
                       router.push(`/schedule/treatment/${proc.treatmentId}`);
                     } else {
                       alert(t("alert.loadTreatmentDetailError"));

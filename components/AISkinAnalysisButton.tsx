@@ -49,9 +49,9 @@ export default function AISkinAnalysisButton() {
   }, []);
 
   const handleStartAnalysis = () => {
-    // GTM: AI 분석 시작 이벤트 (버튼 클릭 시점, 동의 전)
-    trackAIAnalysisStart();
-
+    // GTM: AI 분석 시작 이벤트 (플로팅 버튼 클릭 시점, 동의 전, entry_source: "floating_button")
+    trackAIAnalysisStart("floating_button");
+    
     // 로그인 체크
     if (!isLoggedIn || !userId) {
       setShowLoginRequiredPopup(true);

@@ -40,10 +40,15 @@ export default function WritePage() {
 
   // 버튼 클릭 핸들러 (로그인 체크 후 이동)
   const handleButtonClick = (path: string) => {
+    // URL에서 entrySource 또는 entry_source 파라미터 가져오기
+    const searchParams = new URLSearchParams(window.location.search);
+    const entrySource = searchParams.get("entrySource") || searchParams.get("entry_source");
+    const targetPath = entrySource ? `${path}?entry_source=${entrySource}` : path;
+    
     if (isLoggedIn) {
-      router.push(path);
+      router.push(targetPath);
     } else {
-      setPendingPath(path);
+      setPendingPath(targetPath);
       setShowLoginRequiredPopup(true);
     }
   };

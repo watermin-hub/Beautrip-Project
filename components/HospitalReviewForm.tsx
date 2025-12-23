@@ -85,7 +85,8 @@ export default function HospitalReviewForm({
   // GTM 이벤트: review_start (후기 작성 화면 진입 완료 시점)
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const qsSource = searchParams.get("entrySource");
+    // entry_source 또는 entrySource 둘 다 체크 (우선순위: entry_source > entrySource)
+    const qsSource = searchParams.get("entry_source") || searchParams.get("entrySource");
 
     const fallbackByPath: EntrySource = (() => {
       const path = window.location.pathname;
@@ -101,6 +102,12 @@ export default function HospitalReviewForm({
         ? (qsSource as EntrySource)
         : fallbackByPath;
 
+    console.log("[GTM] review_start 이벤트 트리거:", { 
+      entrySource, 
+      qsSource, 
+      fallbackByPath,
+      path: window.location.pathname 
+    });
     trackReviewStart(entrySource);
   }, []);
 

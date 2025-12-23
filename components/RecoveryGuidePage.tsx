@@ -36,6 +36,7 @@ export default function RecoveryGuidePage() {
     if (storedEntrySource === "banner" || storedEntrySource === "home" || storedEntrySource === "community") {
       entrySource = storedEntrySource;
       sessionStorage.removeItem("content_entry_source"); // 사용 후 삭제
+      console.log("[GTM] content_pdp_view (recovery_guide) - sessionStorage에서 entry_source 사용:", entrySource, "activeKey:", activeKey);
     } else {
       // 2. referrer 기반으로 판단
       const referrer = document.referrer;
@@ -44,9 +45,11 @@ export default function RecoveryGuidePage() {
       } else {
         entrySource = "home";
       }
+      console.log("[GTM] content_pdp_view (recovery_guide) - referrer 기반 entry_source:", entrySource, "referrer:", referrer, "activeKey:", activeKey);
     }
     
     // content_type: "recovery_guide", content_id: activeKey (그룹 키)
+    console.log("[GTM] content_pdp_view 이벤트 트리거:", { contentType: "recovery_guide", entrySource, contentId: activeKey });
     trackContentPdpView("recovery_guide", entrySource, activeKey);
   }, [activeKey]);
 
