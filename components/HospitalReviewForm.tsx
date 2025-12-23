@@ -87,7 +87,7 @@ export default function HospitalReviewForm({
     const searchParams = new URLSearchParams(window.location.search);
     const qsSource = searchParams.get("entrySource");
 
-    const fallbackByPath = (() => {
+    const fallbackByPath: EntrySource = (() => {
       const path = window.location.pathname;
       if (path.includes("/mypage")) return "mypage";
       if (path.includes("/explore")) return "explore";
@@ -98,7 +98,7 @@ export default function HospitalReviewForm({
 
     const entrySource: EntrySource =
       qsSource && ["home", "explore", "community", "mypage"].includes(qsSource)
-        ? qsSource
+        ? (qsSource as EntrySource)
         : fallbackByPath;
 
     trackReviewStart(entrySource);
