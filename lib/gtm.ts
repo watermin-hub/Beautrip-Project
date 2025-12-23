@@ -26,6 +26,7 @@ export type EntrySource =
   | "community"
   | "banner"
   | "mypage"
+  | "schedule"
   | "unknown";
 
 /**

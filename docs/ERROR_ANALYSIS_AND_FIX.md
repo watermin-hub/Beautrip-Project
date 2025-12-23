@@ -60,68 +60,64 @@ export async function getSmallCategoryRankings(
 
 ## 🔍 문제 2: 다른 언어(EN/CN/JP)에서 대분류 선택 시 중분류 랭킹이 안 보임
 
-### 원인 분석
+### 원인 분석 (확인 필요)
 
-1. **백엔드 RPC 함수가 삭제된 뷰 사용**:
+⚠️ **주의**: 실제 백엔드 함수 구현을 확인하지 않고 추측한 내용입니다. 실제 에러 메시지와 백엔드 스펙을 확인해야 합니다.
 
-   - `rpc_mid_category_rankings_i18n` 함수가 `v_treatment_i18n` 뷰를 사용
-   - 이 뷰가 삭제되어서 다른 언어에서 작동하지 않음
-   - 한국어(KR)는 `treatment_master` 테이블을 직접 사용하므로 작동하지만
-   - 다른 언어(EN/CN/JP)는 `v_treatment_i18n` 뷰를 통해 `treatment_master_en/cn/jp`에 접근해야 하는데 뷰가 없어서 실패
+**가능한 원인들:**
+
+1. **백엔드 RPC 함수 구현 문제**:
+
+   - `rpc_mid_category_rankings_i18n` 함수가 다른 언어에서 제대로 작동하지 않을 수 있음
+   - 실제 함수 구현 확인 필요 (뷰 사용 여부, 언어별 테이블 사용 여부 등)
 
 2. **대분류 카테고리 이름 언어 불일치 가능성**:
+
    - 프론트엔드에서 `selectedCategory`는 항상 한국어 값 (예: "피부", "눈성형")
    - 하지만 다른 언어의 DB 테이블(`treatment_master_en/cn/jp`)에는 영어/중국어/일본어 값이 있을 수 있음
    - 예: `treatment_master_en.category_large`가 "Skin"인데, 프론트엔드에서 "피부"를 전달하면 매칭 실패
 
+3. **파라미터 전달 문제**:
+   - `p_lang` 파라미터 형식이 맞지 않을 수 있음
+   - `p_category_large` 파라미터가 언어별로 다른 값을 받아야 하는데 한국어 값만 전달하고 있을 수 있음
+
 ### 해결 방안
 
-#### ✅ 백엔드에서 할 일 (필수)
+#### ✅ 확인 필요 사항 (우선)
 
-**1. `rpc_mid_category_rankings_i18n` 함수 수정**
+1. **실제 에러 메시지 확인**:
 
-현재 함수가 `v_treatment_i18n` 뷰를 사용하는 부분을 언어별 테이블을 직접 사용하도록 변경:
+   - 브라우저 콘솔에서 실제 에러 메시지 확인
+   - `❌ [중분류 랭킹 조회 실패] 상세 정보` 로그 확인
+   - 에러 코드, 메시지, 상세 정보 확인
 
-```sql
--- ❌ 현재 (삭제된 뷰 사용)
-FROM public.v_treatment_i18n vi
-WHERE ...
+2. **백엔드 함수 스펙 확인**:
 
--- ✅ 수정 후 (언어별 테이블 직접 사용)
-CASE
-  WHEN p_lang = 'KR' OR p_lang IS NULL THEN
-    FROM treatment_master
-  WHEN p_lang = 'EN' THEN
-    FROM treatment_master_en
-  WHEN p_lang = 'CN' THEN
-    FROM treatment_master_cn
-  WHEN p_lang = 'JP' THEN
-    FROM treatment_master_jp
-END
-```
+   - `rpc_mid_category_rankings_i18n` 함수의 실제 구현 확인
+   - 어떤 테이블/뷰를 사용하는지 확인
+   - `p_category_large` 파라미터가 언어별로 다른 값을 받는지 확인
 
-**또는** `rpc_small_category_rankings_i18n`처럼 UNION ALL 방식 사용:
+3. **파라미터 전달 확인**:
+   - 프론트엔드에서 전달하는 파라미터 값 확인
+   - `p_lang` 형식이 올바른지 확인 (`'KR' | 'EN' | 'CN' | 'JP'`)
+   - `p_category_large` 값이 올바른지 확인
 
-```sql
-SELECT ... FROM treatment_master WHERE ...
-UNION ALL
-SELECT ... FROM treatment_master_en WHERE ...
-UNION ALL
-SELECT ... FROM treatment_master_cn WHERE ...
-UNION ALL
-SELECT ... FROM treatment_master_jp WHERE ...
-```
+#### ✅ 백엔드에서 확인할 사항
 
-**2. `p_category_large` 파라미터 처리 확인**
+1. **`rpc_mid_category_rankings_i18n` 함수 구현 확인**:
 
-- `p_category_large`가 언어별로 다른 값을 받는지 확인
-- 예: 영어 UI에서 "Eye Surgery"를 전달해야 하는지, 아니면 항상 한국어 "눈성형"을 전달해야 하는지
-- **권장**: `p_category_large`는 항상 한국어 기준으로 받고, RPC 함수 내부에서 언어별 테이블의 `category_large`와 매칭하도록 처리
+   - 어떤 테이블/뷰를 사용하는지 확인
+   - 언어별 테이블(`treatment_master_en/cn/jp`)을 올바르게 사용하는지 확인
+   - `rpc_small_category_rankings_i18n`처럼 UNION ALL 방식으로 구현되어 있는지 확인
 
-**3. 에러 처리 개선**
+2. **`p_category_large` 파라미터 처리 확인**:
 
-- `v_treatment_i18n` 뷰가 없을 때 명확한 에러 메시지 반환
-- 또는 자동으로 언어별 테이블로 fallback
+   - `p_category_large`가 언어별로 다른 값을 받는지 확인
+   - 예: 영어 UI에서 "Eye Surgery"를 전달해야 하는지, 아니면 항상 한국어 "눈성형"을 전달해야 하는지
+   - **권장**: `p_category_large`는 항상 한국어 기준으로 받고, RPC 함수 내부에서 언어별 테이블의 `category_large`와 매칭하도록 처리
+
+3. **에러 처리 확인**:
+   - 다른 언어에서 에러가 발생할 때 명확한 에러 메시지 반환하는지 확인
 
 #### ✅ 프론트엔드에서 할 일 (선택)
 
@@ -169,14 +165,15 @@ console.log("🔍 [중분류 랭킹 조회]", {
 2. ✅ **문제 2 개선**: 에러 메시지 및 로그 개선
    - 백엔드 에러를 더 명확하게 표시
 
-### 백엔드에서 할 일 (필수)
+### 백엔드에서 확인할 사항
 
-1. ✅ **문제 2 해결**: `rpc_mid_category_rankings_i18n` 함수 수정
+1. ⚠️ **문제 2 원인 확인**: `rpc_mid_category_rankings_i18n` 함수 구현 확인
 
-   - `v_treatment_i18n` 뷰 사용 제거
-   - 언어별 테이블(`treatment_master_en/cn/jp`) 직접 사용 또는 UNION ALL 방식으로 변경
+   - 실제 함수 구현 확인 (어떤 테이블/뷰를 사용하는지)
+   - 다른 언어에서 작동하지 않는 원인 확인
+   - 필요시 언어별 테이블(`treatment_master_en/cn/jp`) 직접 사용 또는 UNION ALL 방식으로 수정
 
-2. ✅ **`p_category_large` 파라미터 처리 확인**
+2. ⚠️ **`p_category_large` 파라미터 처리 확인**
    - 언어별로 다른 값을 받는지, 아니면 항상 한국어 기준인지 명확히 정의
    - 권장: 항상 한국어 기준으로 받고, RPC 함수 내부에서 처리
 
