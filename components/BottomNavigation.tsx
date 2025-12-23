@@ -57,8 +57,11 @@ export default function BottomNavigation({
         {navItems.map((item) => {
           const Icon = item.icon;
           // 커뮤니티는 /community로 시작하는 모든 경로에서 활성화
+          // 탐색은 /explore와 /hospital로 시작하는 모든 경로에서 활성화
           const isActive = item.path === "/community" 
             ? pathname.startsWith("/community")
+            : item.path === "/explore"
+            ? pathname === "/explore" || pathname.startsWith("/hospital")
             : pathname === item.path;
 
           return (

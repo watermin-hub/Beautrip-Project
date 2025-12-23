@@ -7,7 +7,6 @@ import RankingBanner from "./RankingBanner";
 import Header from "./Header";
 import TravelScheduleBar from "./TravelScheduleBar";
 import HotConcernsSection from "./HotConcernsSection";
-import AIAnalysisBanner from "./AIAnalysisBanner";
 import PromotionBanner from "./PromotionBanner";
 import AISkinAnalysisButton from "./AISkinAnalysisButton";
 import PopularReviewsSection from "./PopularReviewsSection";
@@ -60,7 +59,6 @@ export default function HomePage() {
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const procedureRecommendationRef = useRef<HTMLDivElement>(null);
-  const aiAnalysisBannerRef = useRef<HTMLDivElement>(null);
 
   // 로그인 상태 확인
   useEffect(() => {
@@ -90,35 +88,6 @@ export default function HomePage() {
       }, 100);
     }
   }, [searchParams, router]);
-
-  // AI 피부분석 배너 열기 이벤트 리스너
-  useEffect(() => {
-    const handleOpenAIAnalysis = () => {
-      // AI 분석 배너로 스크롤
-      if (aiAnalysisBannerRef.current) {
-        const headerOffset = 96; // 헤더 높이
-        const elementPosition = aiAnalysisBannerRef.current.offsetTop;
-        const offsetPosition = elementPosition - headerOffset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-
-        // 스크롤 후 약간의 딜레이를 두고 배너의 시작 버튼 클릭 이벤트 발생
-        setTimeout(() => {
-          // AIAnalysisBanner 컴포넌트 내부의 시작 버튼을 클릭하는 이벤트 발생
-          const event = new CustomEvent("triggerAIAnalysis");
-          window.dispatchEvent(event);
-        }, 500);
-      }
-    };
-
-    window.addEventListener("openAIAnalysis", handleOpenAIAnalysis);
-    return () => {
-      window.removeEventListener("openAIAnalysis", handleOpenAIAnalysis);
-    };
-  }, []);
 
   const handleScheduleChange = (
     start: string | null,
@@ -252,11 +221,6 @@ export default function HomePage() {
 
         {/* 국가별 인기 시술 - 제거됨 (해시태그 클릭 시 시술 추천으로 대체) */}
         {/* <KBeautyByCountry /> */}
-
-        {/* AI 분석 배너 */}
-        <div ref={aiAnalysisBannerRef}>
-          <AIAnalysisBanner />
-        </div>
 
         {/* 인기 급상승 리뷰 */}
         <PopularReviewsSection />

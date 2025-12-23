@@ -3765,11 +3765,34 @@ export async function saveInquiry(
         .single();
 
       if (error) {
-        console.error("문의 저장 실패:", error);
-        // 테이블이 없을 수도 있으므로 에러를 반환하지 않고 로그만 남김
-        console.warn(
-          "inquiries 테이블이 없거나 저장에 실패했습니다. 테이블을 생성해주세요."
-        );
+        console.error("문의 저장 실패:", {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          fullError: error,
+        });
+
+        // FK 제약조건 위반 (treatment_id가 treatment_master에 없음)
+        if (error.code === "23503") {
+          console.warn(
+            `treatment_id ${inquiryData.treatment_id}가 treatment_master에 존재하지 않습니다.`
+          );
+        }
+        // RLS 정책 위반
+        else if (error.code === "42501") {
+          console.warn(
+            "RLS 정책 위반: inquiries 테이블의 INSERT 정책을 확인해주세요."
+          );
+        }
+        // 기타 에러
+        else {
+          console.warn(
+            "inquiries 테이블 저장에 실패했습니다. 에러 코드:",
+            error.code
+          );
+        }
+
         // 에러가 나도 mailto는 작동하므로 성공으로 처리
         return { success: true };
       }
@@ -3780,7 +3803,12 @@ export async function saveInquiry(
     // 전화 또는 AI 채팅 문의는 저장하지 않음 (로컬스토리지만 사용)
     return { success: true };
   } catch (error: any) {
-    console.error("문의 저장 중 오류:", error);
+    console.error("문의 저장 중 오류:", {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      fullError: error,
+    });
     // 에러가 나도 mailto/tel 링크는 작동하므로 성공으로 처리
     return { success: true };
   }

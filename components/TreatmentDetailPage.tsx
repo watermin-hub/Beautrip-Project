@@ -35,7 +35,7 @@ import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
-import { trackAddToSchedule } from "@/lib/gtm";
+import { trackAddToSchedule, trackPdpInquiryClick } from "@/lib/gtm";
 import {
   formatPrice,
   getCurrencyFromStorage,
@@ -252,6 +252,17 @@ export default function TreatmentDetailPage({
   // 문의하기
   const handleInquiry = async (type: "chat" | "phone" | "email") => {
     if (!currentTreatment) return;
+
+    // GTM 이벤트 트래킹: 문의 수단 클릭
+    const inquiryTypeMap: Record<
+      "chat" | "phone" | "email",
+      "ai_chat" | "phone" | "email"
+    > = {
+      chat: "ai_chat",
+      phone: "phone",
+      email: "email",
+    };
+    trackPdpInquiryClick(inquiryTypeMap[type], treatmentId);
 
     // 로컬스토리지에 문의 기록 저장
     const inquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");

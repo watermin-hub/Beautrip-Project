@@ -1,73 +1,88 @@
--- ============================================
--- inquiries 테이블 생성 마이그레이션
--- ============================================
+-- =========================================================
+-- inquiries 테이블 (CRM/문의하기 클릭 로그)
+-- ✅ 그대로 복붙 실행용 "최종본"
+-- =========================================================
 -- 이 파일을 Supabase SQL Editor에서 실행하세요.
 -- Supabase 대시보드 > SQL Editor > New query > 이 SQL 붙여넣기 > Run
 -- 
 -- 이 테이블은 시술 상세 페이지에서 문의하기 기능을 통해 생성된 문의 내역을 저장합니다.
 -- CRM - Zapier - KIT 자동화를 위해 사용됩니다.
 
--- inquiries 테이블 생성
-CREATE TABLE IF NOT EXISTS public.inquiries (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  inquiry_type TEXT NOT NULL CHECK (inquiry_type IN ('chat', 'phone', 'email')),
-  treatment_id INTEGER NOT NULL, -- treatment_master의 treatment_id 참조
-  treatment_name TEXT,
-  hospital_name TEXT,
-  hospital_phone TEXT, -- 전화 문의인 경우 병원 전화번호
-  user_email TEXT, -- 메일 문의인 경우 사용자 이메일 (선택적)
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- 로그인한 사용자의 경우
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+-- 0) UUID 생성 함수 준비 (pgcrypto)
+create extension if not exists pgcrypto;
+
+-- 1) 테이블 생성
+create table if not exists public.inquiries (
+  id uuid primary key default gen_random_uuid(),
+  inquiry_type text not null
+    check (inquiry_type in ('chat', 'phone', 'email')),
+  -- ✅ treatment_master.treatment_id 가 integer 이므로 동일하게 integer
+  treatment_id integer not null,
+  -- 스냅샷(나중에 treatment_master가 바뀌어도 문의 당시 정보 보존)
+  treatment_name text,
+  hospital_name text,
+  hospital_phone text,
+  user_email text,
+  -- 로그인 유저면 저장, 비로그인이면 NULL 가능
+  user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
--- 인덱스 생성 (조회 성능 향상)
-CREATE INDEX IF NOT EXISTS idx_inquiries_treatment_id ON public.inquiries(treatment_id);
-CREATE INDEX IF NOT EXISTS idx_inquiries_user_id ON public.inquiries(user_id);
-CREATE INDEX IF NOT EXISTS idx_inquiries_inquiry_type ON public.inquiries(inquiry_type);
-CREATE INDEX IF NOT EXISTS idx_inquiries_created_at ON public.inquiries(created_at DESC);
+-- 2) FK (시술 존재하는 경우만 문의 저장되게)
+alter table public.inquiries
+  drop constraint if exists fk_inquiries_treatment;
+alter table public.inquiries
+  add constraint fk_inquiries_treatment
+  foreign key (treatment_id)
+  references public.treatment_master(treatment_id)
+  on delete restrict;
 
--- updated_at 자동 업데이트 트리거 함수
-CREATE OR REPLACE FUNCTION update_inquiries_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- 3) updated_at 트리거 함수
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
--- updated_at 자동 업데이트 트리거
-DROP TRIGGER IF EXISTS update_inquiries_updated_at ON public.inquiries;
-CREATE TRIGGER update_inquiries_updated_at
-  BEFORE UPDATE ON public.inquiries
-  FOR EACH ROW
-  EXECUTE FUNCTION update_inquiries_updated_at();
+-- 4) updated_at 트리거
+drop trigger if exists trg_inquiries_updated_at on public.inquiries;
+create trigger trg_inquiries_updated_at
+before update on public.inquiries
+for each row
+execute function public.set_updated_at();
 
--- RLS (Row Level Security) 활성화
-ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+-- 5) 인덱스
+create index if not exists idx_inquiries_treatment_id on public.inquiries(treatment_id);
+create index if not exists idx_inquiries_user_id on public.inquiries(user_id);
+create index if not exists idx_inquiries_inquiry_type on public.inquiries(inquiry_type);
+create index if not exists idx_inquiries_created_at on public.inquiries(created_at desc);
 
--- RLS 정책: 모든 사용자가 문의를 생성할 수 있음 (비로그인 사용자 포함)
-DROP POLICY IF EXISTS "Anyone can insert inquiries" ON public.inquiries;
-CREATE POLICY "Anyone can insert inquiries"
-  ON public.inquiries
-  FOR INSERT
-  WITH CHECK (true);
+-- 6) RLS 활성화
+alter table public.inquiries enable row level security;
 
--- RLS 정책: 사용자는 자신의 문의만 조회 가능 (선택적 - 필요시 활성화)
--- DROP POLICY IF EXISTS "Users can view their own inquiries" ON public.inquiries;
--- CREATE POLICY "Users can view their own inquiries"
---   ON public.inquiries
---   FOR SELECT
---   USING (auth.uid() = user_id OR user_id IS NULL);
+-- ✅ 비로그인 포함 INSERT 허용 (수집 목적)
+drop policy if exists "inquiries_insert_anyone" on public.inquiries;
+create policy "inquiries_insert_anyone"
+on public.inquiries
+for insert
+to anon, authenticated
+with check (true);
 
--- RLS 정책: 모든 문의 조회 가능 (CRM 연동을 위해 필요할 수 있음)
--- 주의: 이 정책을 활성화하면 모든 사용자가 모든 문의를 볼 수 있습니다.
--- 필요에 따라 위의 user_id 기반 정책을 사용하거나, 서비스 롤(service_role)을 사용하세요.
-DROP POLICY IF EXISTS "Anyone can view inquiries" ON public.inquiries;
-CREATE POLICY "Anyone can view inquiries"
-  ON public.inquiries
-  FOR SELECT
-  USING (true);
+-- ✅ (옵션) 로그인 사용자는 본인 문의만 조회
+-- drop policy if exists "inquiries_select_own" on public.inquiries;
+-- create policy "inquiries_select_own"
+-- on public.inquiries
+-- for select
+-- to authenticated
+-- using (user_id = auth.uid());
+
+-- ❌ 전체 SELECT 공개 정책은 만들지 마세요.
+-- CRM 조회는 service_role(서버/엣지함수/Zapier 서버측)로 처리 권장
 
 -- 완료 메시지
 DO $$

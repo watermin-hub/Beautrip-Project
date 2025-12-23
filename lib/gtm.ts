@@ -301,3 +301,24 @@ export function trackPdpClick(
     entry_source: entrySource,
   });
 }
+
+/**
+ * pdp_inquiry_click 이벤트 트래킹
+ *
+ * 호출 위치: 시술 PDP 페이지에서 문의 수단 클릭 시 (AI 채팅, 전화, 메일)
+ * 목적: 어떤 문의 수단이 클릭되었는지 측정
+ *
+ * @param inquiryType 문의 타입 ("ai_chat" | "phone" | "email")
+ * @param treatmentId 시술 ID (문자열로 변환)
+ */
+export function trackPdpInquiryClick(
+  inquiryType: "ai_chat" | "phone" | "email",
+  treatmentId: string | number
+) {
+  pushToDataLayer({
+    event: "pdp_inquiry_click",
+    inquiry_type: inquiryType,
+    treatment_id: String(treatmentId),
+    entry_source: "pdp",
+  });
+}
