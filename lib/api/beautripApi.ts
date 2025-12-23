@@ -5332,6 +5332,7 @@ export async function getLikedPostsWithDetails(): Promise<{
 // 중분류 랭킹 결과 인터페이스
 export interface MidCategoryRanking {
   category_mid: string;
+  category_mid_key?: string; // 백엔드 RPC에서 반환하는 필드 (옵셔널)
   category_rank: number;
   treatment_count: number;
   total_reviews: number;

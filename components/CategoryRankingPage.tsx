@@ -26,7 +26,11 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
-import { trackExploreCategoryClick, trackExploreFilterClick, trackAddToSchedule } from "@/lib/gtm";
+import {
+  trackExploreCategoryClick,
+  trackExploreFilterClick,
+  trackAddToSchedule,
+} from "@/lib/gtm";
 import {
   formatPrice,
   getCurrencyFromStorage,
@@ -39,9 +43,21 @@ export const getMainCategories = (t: (key: string) => string) => [
   { id: "눈성형", name: t("category.eyes"), nameKey: "category.eyes" },
   { id: "리프팅", name: t("category.lifting"), nameKey: "category.lifting" },
   { id: "보톡스", name: t("category.botox"), nameKey: "category.botox" },
-  { id: "안면윤곽/양악", name: t("category.facial"), nameKey: "category.facial" },
-  { id: "제모", name: t("category.hairRemoval"), nameKey: "category.hairRemoval" },
-  { id: "지방성형", name: t("category.liposuction"), nameKey: "category.liposuction" },
+  {
+    id: "안면윤곽/양악",
+    name: t("category.facial"),
+    nameKey: "category.facial",
+  },
+  {
+    id: "제모",
+    name: t("category.hairRemoval"),
+    nameKey: "category.hairRemoval",
+  },
+  {
+    id: "지방성형",
+    name: t("category.liposuction"),
+    nameKey: "category.liposuction",
+  },
   { id: "코성형", name: t("category.nose"), nameKey: "category.nose" },
   { id: "피부", name: t("category.skin"), nameKey: "category.skin" },
   { id: "필러", name: t("category.filler"), nameKey: "category.filler" },
@@ -83,7 +99,7 @@ export default function CategoryRankingPage({
   const currency = useMemo(() => {
     return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
   }, [language]);
-  
+
   // 언어별 대분류 카테고리 목록
   const MAIN_CATEGORIES = useMemo(() => getMainCategories(t), [t, language]);
 
@@ -458,21 +474,27 @@ export default function CategoryRankingPage({
             // 반환 데이터는 MidCategoryRanking[] 형태 (중분류 단위)
             // 백엔드에서 이미 정렬되어 있음
             const midGrouped = result.data;
-            
-            console.log("✅ [CategoryRankingPage] 중분류 랭킹 데이터 로드 성공:", {
-              count: midGrouped.length,
-              firstItem: midGrouped[0],
-              sampleTreatments: midGrouped[0]?.treatments?.length || 0,
-            });
+
+            console.log(
+              "✅ [CategoryRankingPage] 중분류 랭킹 데이터 로드 성공:",
+              {
+                count: midGrouped.length,
+                firstItem: midGrouped[0],
+                sampleTreatments: midGrouped[0]?.treatments?.length || 0,
+              }
+            );
 
             setMidCategoryRankings(midGrouped);
             setSmallCategoryRankings([]);
 
             // 중분류 목록도 저장 (필터 유지용)
+            // category_mid_key가 있으면 우선 사용, 없으면 category_mid 사용 (백엔드 호환성)
             const midCategorySet = new Set<string>();
             midGrouped.forEach((ranking) => {
-              if (ranking.category_mid || ranking.category_mid_key) {
-                midCategorySet.add(ranking.category_mid || ranking.category_mid_key);
+              const midCategory =
+                ranking.category_mid_key || ranking.category_mid;
+              if (midCategory) {
+                midCategorySet.add(midCategory);
               }
             });
             // 인코딩이 깨져서 "" 문자가 포함된 중분류는 필터링하여 표시하지 않음 (라인 95와 동일)
@@ -489,7 +511,8 @@ export default function CategoryRankingPage({
             }
           } else {
             // 데이터가 없거나 에러 발생
-            const errorMsg = result.error || "중분류 랭킹을 불러올 수 없습니다.";
+            const errorMsg =
+              result.error || "중분류 랭킹을 불러올 수 없습니다.";
             console.warn("⚠️ [CategoryRankingPage] 중분류 랭킹 로드 실패:", {
               success: result.success,
               hasData: !!result.data,
@@ -730,11 +753,11 @@ export default function CategoryRankingPage({
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
-      
+
       // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
       // entry_source: "explore" (탐색 페이지에서 진입)
       trackAddToSchedule("explore");
-      
+
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsAddToScheduleModalOpen(false);
       setSelectedTreatmentForSchedule(null);
@@ -1071,7 +1094,9 @@ export default function CategoryRankingPage({
                                     onClick={() => {
                                       // GTM: PDP 클릭 이벤트
                                       if (typeof window !== "undefined") {
-                                        const { trackPdpClick } = require("@/lib/gtm");
+                                        const {
+                                          trackPdpClick,
+                                        } = require("@/lib/gtm");
                                         trackPdpClick("treatment", treatmentId);
                                       }
                                       router.push(
@@ -1659,9 +1684,7 @@ export function CategoryFilterBar({
                     onMidCategoryChange(null);
                   }}
                   className={`text-xs font-medium transition-colors ${
-                    isEnglish
-                      ? "line-clamp-3 break-words"
-                      : "truncate"
+                    isEnglish ? "line-clamp-3 break-words" : "truncate"
                   } ${
                     isSelected
                       ? "text-primary-main font-bold"
