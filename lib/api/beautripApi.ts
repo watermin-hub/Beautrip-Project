@@ -7296,12 +7296,21 @@ export async function getHomeHotTreatments(
     });
 
     if (error) {
-      console.error("rpc_home_hot_treatments 오류:", error);
+      // 에러 정보 상세 로깅
+      console.error("rpc_home_hot_treatments 오류:", {
+        error,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        fullError: JSON.stringify(error, null, 2),
+      });
 
       // 함수가 없는 경우 빈 배열 반환
       if (
         error.message?.includes("Could not find the function") ||
-        error.message?.includes("schema cache")
+        error.message?.includes("schema cache") ||
+        error.code === "42883" // PostgreSQL function does not exist
       ) {
         console.warn(
           "⚠️ rpc_home_hot_treatments 함수를 찾을 수 없습니다. 빈 배열 반환합니다."
@@ -7312,13 +7321,19 @@ export async function getHomeHotTreatments(
       // timeout 에러인 경우 빈 배열 반환
       if (
         error.message?.includes("timeout") ||
-        error.message?.includes("canceling statement")
+        error.message?.includes("canceling statement") ||
+        error.code === "57014" // PostgreSQL query_canceled
       ) {
         console.warn("rpc_home_hot_treatments timeout 발생, 빈 배열 반환");
         return [];
       }
 
-      throw new Error(`RPC 오류: ${error.message}`);
+      // 기타 에러는 빈 배열 반환 (앱이 계속 작동하도록)
+      console.warn(
+        `rpc_home_hot_treatments 알 수 없는 에러 발생, 빈 배열 반환:`,
+        error.message || error
+      );
+      return [];
     }
 
     if (!data || !Array.isArray(data)) {

@@ -182,15 +182,18 @@ export default function PromotionBanner({
 
   return (
     <>
-      <div className="mb-6 relative rounded-xl overflow-hidden">
+      <div className="mb-6 relative rounded-2xl overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-main/10 via-transparent to-primary-main/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         <div className="relative h-48">
           {bannerSlides.map((slide, index) => (
             <div
               key={slide.id}
-              className={`absolute inset-0 transition-opacity duration-500 ${
+              className={`absolute inset-0 transition-opacity duration-500 transform transition-transform ${
                 slide.onClick ? "cursor-pointer" : "cursor-default"
               } ${
-                index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
+                index === currentSlide
+                  ? "opacity-100 z-10 scale-[1.01]"
+                  : "opacity-0 z-0 scale-95"
               }`}
               onClick={slide.onClick}
             >
@@ -213,13 +216,13 @@ export default function PromotionBanner({
           {/* Navigation arrows */}
           <button
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition-colors z-20"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-20 p-2 rounded-full hover:bg-opacity-40 transition-colors z-20 backdrop-blur-sm"
           >
             <IoChevronBack className="text-white text-xl" />
           </button>
           <button
             onClick={goToNext}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition-colors z-20"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-20 p-2 rounded-full hover:bg-opacity-40 transition-colors z-20 backdrop-blur-sm"
           >
             <IoChevronForward className="text-white text-xl" />
           </button>

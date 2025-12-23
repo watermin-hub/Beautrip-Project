@@ -14,6 +14,7 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
 
@@ -50,6 +51,20 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
     };
   }, []);
 
+  // 스크롤 시 헤더 스타일 동적 변경 (살짝 떠 있는 느낌 + 블러)
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset;
+      setIsScrolled(scrollY > 4);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const languages = [
     { code: "KR" as const, nameKey: "header.language.korean", flag: "🇰🇷" },
     { code: "EN" as const, nameKey: "header.language.english", flag: "🇺🇸" },
@@ -75,7 +90,11 @@ export default function Header({ hasRankingBanner = false }: HeaderProps) {
           isCalendarModalOpen || isFilterModalOpen
             ? "z-[30] opacity-50 pointer-events-none"
             : "z-[60]"
-        } bg-white px-4 py-3 transition-opacity`}
+        } px-4 py-3 transition-all duration-200 ${
+          isScrolled
+            ? "bg-white/80 backdrop-blur-md shadow-[0_6px_20px_rgba(15,23,42,0.16)]"
+            : "bg-white"
+        }`}
       >
         <div className="flex items-center justify-between">
           {/* Logo */}

@@ -2688,16 +2688,16 @@ export default function MySchedulePage() {
   useEffect(() => {
     // activeTab이 "saved"일 때만 이벤트 트리거
     if (activeTab === "saved" && !hasTrackedSavedScheduleView.current) {
-      // referrer 기준으로 entry_source 구분
-      // /mypage에서 왔으면 "mypage", 그 외에는 "schedule"
-      const referrer = typeof window !== "undefined" ? document.referrer : "";
-      const entrySource = referrer.includes("/mypage") ? "mypage" : "schedule";
+      // 현재 경로 기준으로 entry_source 구분
+      // /mypage에 있으면 "mypage", /schedule에 있으면 "schedule"
+      const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+      const entrySource = pathname.includes("/mypage") ? "mypage" : "schedule";
       
       console.log("[GTM] saved_schedule_view 이벤트 트리거:", { 
         entrySource, 
-        referrer, 
+        pathname,
         activeTab,
-        pathname: typeof window !== "undefined" ? window.location.pathname : ""
+        referrer: typeof window !== "undefined" ? document.referrer : ""
       });
       trackSavedScheduleView(entrySource);
       hasTrackedSavedScheduleView.current = true;
@@ -3566,7 +3566,12 @@ export default function MySchedulePage() {
       <div className="sticky top-[48px] z-30 bg-white border-b border-gray-100">
         <div className="flex items-center gap-6 px-4 py-3">
           <button
-            onClick={() => setActiveTab("schedule")}
+            onClick={() => {
+              const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+              const basePath = pathname.includes("/mypage") ? "/mypage" : "/schedule";
+              router.push(`${basePath}?tab=schedule`);
+              setActiveTab("schedule");
+            }}
             className={`text-sm font-medium transition-colors pb-1 relative ${
               activeTab === "schedule" ? "text-gray-900" : "text-gray-500"
             }`}
@@ -3580,7 +3585,12 @@ export default function MySchedulePage() {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("saved")}
+            onClick={() => {
+              const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+              const basePath = pathname.includes("/mypage") ? "/mypage" : "/schedule";
+              router.push(`${basePath}?tab=saved`);
+              setActiveTab("saved");
+            }}
             className={`text-sm font-medium transition-colors pb-1 relative ${
               activeTab === "saved" ? "text-gray-900" : "text-gray-500"
             }`}

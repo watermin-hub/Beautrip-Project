@@ -169,19 +169,22 @@ export function trackLoginSuccess(
  * 호출 위치: 탐색 페이지에서 필터 버튼 클릭 시 ([카테고리별, K-Beauty, 병원별, 일정 맞춤])
  * 목적: 사용자가 어떤 필터를 선택했는지 측정
  *
- * @param filterType 필터 타입 ("category" | "kbeauty" | "hospital" | "schedule")
- *   - "category": 카테고리별
+ * @param filterType 필터 타입 ("ranking" | "kbeauty" | "hospital" | "schedule")
+ *   - "ranking": 카테고리별 (랭킹)
  *   - "kbeauty": K-Beauty
  *   - "hospital": 병원별
  *   - "schedule": 일정 맞춤
  */
 export function trackExploreFilterClick(
-  filterType: "category" | "kbeauty" | "hospital" | "schedule"
+  filterType: "ranking" | "kbeauty" | "hospital" | "schedule"
 ) {
-  pushToDataLayer({
+  const payload = {
     event: "explore_filter_click",
     entry_source: filterType,
-  });
+  };
+
+  console.log("[GTM] trackExploreFilterClick 호출:", payload);
+  pushToDataLayer(payload);
 }
 
 /**

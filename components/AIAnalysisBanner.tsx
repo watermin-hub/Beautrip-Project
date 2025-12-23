@@ -123,10 +123,13 @@ export default function AIAnalysisBanner() {
 
   return (
     <>
-      <div className="mb-6 border border-gray-200 rounded-xl p-4 bg-gradient-to-r from-primary-light/20 to-primary-main/20 relative overflow-hidden shadow-sm">
+      <div className="mb-6 border border-gray-200 rounded-2xl p-4 bg-gradient-to-r from-primary-light/20 to-primary-main/20 relative overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <FiZap className="text-primary-main text-xl" />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-primary-main/40 blur-md animate-pulse-slow" />
+              <FiZap className="relative text-primary-main text-xl" />
+            </div>
             <h3 className="text-lg font-bold text-gray-900">
               {t("banner.ai.title")}
             </h3>
@@ -135,7 +138,7 @@ export default function AIAnalysisBanner() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleStartAnalysis}
-              className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-transform transition-colors duration-150 hover:-translate-y-0.5 active:translate-y-0"
             >
               {t("banner.ai.start")}
             </button>
@@ -144,8 +147,8 @@ export default function AIAnalysisBanner() {
             </button>
           </div>
         </div>
-        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-10">
-          <div className="w-24 h-24 bg-primary-main rounded-full"></div>
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 opacity-20 pointer-events-none">
+          <div className="w-24 h-24 bg-primary-main rounded-full blur-xl scale-110" />
         </div>
       </div>
 

@@ -52,6 +52,14 @@ export default function RankingSection({
   // 언어 변경 시 대분류 카테고리 번역 업데이트
   const MAIN_CATEGORIES = useMemo(() => getMainCategories(t), [t, language]);
 
+  // 언어 변경 시 선택된 대분류, 중분류를 ALL(null)로 리셋
+  useEffect(() => {
+    if (selectedCategory !== null || selectedMidCategory !== null) {
+      setSelectedCategory(null);
+      setSelectedMidCategory(null);
+    }
+  }, [language]); // language 변경 시에만 실행
+
   const isRankingActive = activeSection === "ranking";
 
   return (
@@ -69,7 +77,11 @@ export default function RankingSection({
               key={tab.id}
               onClick={() => {
                 // GTM: 탐색 필터 클릭 이벤트 ([카테고리별, K-Beauty, 병원별, 일정 맞춤])
-                trackExploreFilterClick(tab.id);
+                // "category"는 "ranking"으로 매핑
+                const filterType = tab.id === "category" ? "ranking" : tab.id;
+                trackExploreFilterClick(
+                  filterType as "ranking" | "kbeauty" | "hospital" | "schedule"
+                );
                 setActiveTab(tab.id);
                 // 탭 필터 선택 시 맨 위로 스크롤
                 window.scrollTo({

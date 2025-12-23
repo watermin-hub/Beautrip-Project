@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import {
   FiChevronRight,
@@ -18,6 +18,7 @@ import {
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import LoginModal from "./LoginModal";
+import MySchedulePage from "./MySchedulePage";
 import {
   getFavoriteProcedures,
   getLikedPosts,
@@ -36,10 +37,15 @@ interface UserInfo {
 export default function MyPage() {
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const subscriptionRef = useRef<any>(null);
+  
+  // tab=saved 또는 tab=schedule일 때 일정 페이지 표시
+  const tab = searchParams.get("tab");
+  const showSchedulePage = tab === "saved" || tab === "schedule";
 
   // Check if user is logged in (Supabase 세션 + localStorage 모두 확인)
   useEffect(() => {
@@ -345,6 +351,11 @@ export default function MyPage() {
         onLoginSuccess={handleLoginSuccess}
       />
     );
+  }
+
+  // tab=saved일 때 일정 페이지 표시
+  if (showSchedulePage) {
+    return <MySchedulePage />;
   }
 
   // 로그인했을 때만 마이페이지 내용 표시
@@ -686,14 +697,14 @@ function MainContent({
           icon={FiCalendar}
           label={t("mypage.viewSchedule")}
           onClick={() => {
-            router.push("/schedule?tab=schedule");
+            router.push("/mypage?tab=schedule");
           }}
         />
         <MenuItem
           icon={FiCalendar}
           label={t("mypage.viewSavedSchedule")}
           onClick={() => {
-            router.push("/schedule?tab=saved");
+            router.push("/mypage?tab=saved");
           }}
         />
       </div>
