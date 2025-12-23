@@ -16,6 +16,7 @@ import {
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackAddToSchedule } from "@/lib/gtm";
 
 export default function KBeautyRankingPage() {
   const { t, language } = useLanguage();

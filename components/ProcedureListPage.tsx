@@ -29,6 +29,7 @@ import {
   getCurrencyFromStorage,
   getCurrencyFromLanguage,
 } from "@/lib/utils/currency";
+import { trackPdpClick } from "@/lib/gtm";
 
 interface ProcedureListPageProps {
   activeSection?: string;

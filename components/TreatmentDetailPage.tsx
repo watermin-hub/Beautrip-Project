@@ -35,6 +35,7 @@ import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import { trackAddToSchedule } from "@/lib/gtm";
 
 interface TreatmentDetailPageProps {
   treatmentId: number;

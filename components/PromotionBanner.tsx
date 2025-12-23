@@ -7,6 +7,7 @@ import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 import AISkinAnalysisConsentModal from "./AISkinAnalysisConsentModal";
 import AISkinAnalysisCameraModal from "./AISkinAnalysisCameraModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackHomeBannerClick } from "@/lib/gtm";
 
 interface BannerSlide {
   id: number;

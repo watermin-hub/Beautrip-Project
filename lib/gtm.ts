@@ -235,7 +235,10 @@ export function trackHomeBannerClick(bannerId: string, bannerType?: string) {
  * @param contentType 콘텐츠 타입 ("recovery_guide" | "info" 등)
  * @param entrySource 진입 경로 ("home" | "community" | "banner" 등)
  */
-export function trackContentPdpView(contentType: string, entrySource: EntrySource) {
+export function trackContentPdpView(
+  contentType: string,
+  entrySource: EntrySource
+) {
   pushToDataLayer({
     event: "content_pdp_view",
     content_type: contentType,

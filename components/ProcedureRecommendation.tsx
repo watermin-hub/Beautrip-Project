@@ -34,6 +34,7 @@ import {
   type Treatment,
   type HomeScheduleRecommendation,
 } from "@/lib/api/beautripApi";
+import { trackAddToSchedule } from "@/lib/gtm";
 
 // 필터 옵션은 ProcedureFilterModal에서 동일하게 사용
 

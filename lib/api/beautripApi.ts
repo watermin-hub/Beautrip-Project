@@ -12,7 +12,7 @@ const TABLE_NAMES = {
   TREATMENT_MASTER_JP: "treatment_master_jp",
   TREATMENT_PDP_VIEW: "v_treatment_pdp", // 시술 PDP용 뷰 테이블 (레거시)
   HOSPITAL_PDP_VIEW: "v_hospital_pdp", // 병원 PDP용 뷰 테이블
-  HOSPITAL_I18N_VIEW: "v_hospital_i18n", // 병원 다국어 통합 뷰 (hospital_master + hospital_translation)
+  HOSPITAL_I18N_VIEW: "v_hospital_i18n", // 병원 다국어 통합 뷰 (삭제됨 - 더 이상 사용하지 않음)
   CATEGORY_TREATTIME_RECOVERY: "category_treattime_recovery",
   HOSPITAL_MASTER: "hospital_master",
   KEYWORD_MONTHLY_TRENDS: "keyword_monthly_trends",
@@ -112,6 +112,37 @@ export function getTreatmentTableName(language?: LanguageCode): string {
       return TABLE_NAMES.TREATMENT_MASTER_JP;
     default:
       return TABLE_NAMES.TREATMENT_MASTER;
+  }
+}
+
+// 언어에 따라 적절한 병원 테이블 이름 반환
+// v_hospital_i18n 뷰를 제거하고 언어별 hospital_master_* 테이블을 직접 사용
+export function getHospitalTableName(language?: LanguageCode): string {
+  // 언어 코드 가져오기
+  let lang: LanguageCode = language || "KR";
+
+  if (typeof window !== "undefined" && !language) {
+    const saved = localStorage.getItem("language") as LanguageCode;
+    if (
+      saved &&
+      (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")
+    ) {
+      lang = saved;
+    }
+  }
+
+  // 언어별 hospital_master_* 테이블 직접 사용
+  switch (lang) {
+    case "KR":
+      return "hospital_master";
+    case "EN":
+      return "hospital_master_en";
+    case "CN":
+      return "hospital_master_zh_cn";
+    case "JP":
+      return "hospital_master_jp";
+    default:
+      return "hospital_master";
   }
 }
 
@@ -1136,9 +1167,7 @@ export async function loadHospitalMaster(): Promise<HospitalMaster[]> {
   }
 }
 
-// 병원 데이터 조회 (v_hospital_i18n 뷰 사용) - 백엔드 가이드 준수
-// ✅ 반드시 lang 필터 적용 (중복 방지)
-// ✅ 번역이 없으면 KR 원본으로 fallback
+// 병원 데이터 조회 (언어별 hospital_master_* 테이블 직접 사용) - 백엔드 가이드 준수
 export async function getHospitals(
   lang: LanguageCode,
   filters?: {
@@ -1156,21 +1185,32 @@ export async function getHospitals(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    // lang 필터 필수 적용 (백엔드 가이드)
-    const dbLang = getHospitalLanguageCode(lang);
+    // 언어별 병원 테이블 선택
+    const tableName = getHospitalTableName(lang);
 
-    let query = client
-      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
-      .select("*")
-      .eq("lang", dbLang); // ✅ 필수: lang 필터
+    let query = client.from(tableName).select(
+      `
+        platform,
+        hospital_id_rd,
+        hospital_name,
+        hospital_address,
+        opening_hours,
+        hospital_departments,
+        hospital_intro,
+        hospital_info_raw,
+        hospital_img_url,
+        hospital_rating,
+        review_count,
+        hospital_phone_safe,
+        hospital_language_support
+      `
+    );
 
     // 필터 적용
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
       const term = filters.searchTerm.toLowerCase().trim();
-      // 번역 필드 또는 KR 원본 필드로 검색
-      query = query.or(
-        `hospital_name_i18n.ilike.%${term}%,hospital_name_kr.ilike.%${term}%`
-      );
+      // 병원명으로 검색
+      query = query.ilike("hospital_name", `%${term}%`);
     }
 
     if (filters?.platform) {
@@ -1209,10 +1249,8 @@ export async function getHospitals(
       return [];
     }
 
-    // fallback 로직 적용 (번역이 없으면 KR 원본 사용)
-    const processedData = applyHospitalFallback(data);
-
-    return cleanData<HospitalI18nRow>(processedData);
+    // 데이터 정리 (fallback 로직 불필요 - 테이블이 이미 언어별로 분리됨)
+    return cleanData<HospitalI18nRow>(data);
   } catch (error) {
     console.error("병원 데이터 로드 실패:", error);
     throw error;
@@ -1220,7 +1258,7 @@ export async function getHospitals(
 }
 
 // ID로 단일 시술 데이터 로드 (PDP 페이지용)
-// 한국어: treatment_master, 다른 언어: v_treatment_i18n 사용
+// 언어별 treatment_master_* 테이블 직접 사용
 export async function loadTreatmentById(
   treatmentId: number,
   language?: LanguageCode
@@ -1329,7 +1367,7 @@ export async function loadHospitalTreatments(
   }
 }
 
-// 병원 단건 조회 (v_hospital_i18n 뷰 사용) - (platform, hospital_id_rd) 기준
+// 병원 단건 조회 (언어별 hospital_master_* 테이블 직접 사용) - (platform, hospital_id_rd) 기준
 // 백엔드 가이드: (platform, hospital_id_rd) 조합으로 병원 식별
 export async function loadHospitalByKey(
   platform: string,
@@ -1340,16 +1378,31 @@ export async function loadHospitalByKey(
     const client = getSupabaseOrNull();
     if (!client) return null;
 
-    // 언어 필터 필수 적용 (백엔드 가이드)
+    // 언어별 병원 테이블 선택
     const lang = language || "KR";
-    const dbLang = getHospitalLanguageCode(lang);
+    const tableName = getHospitalTableName(lang);
 
     const { data, error } = await client
-      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
-      .select("*")
+      .from(tableName)
+      .select(
+        `
+        platform,
+        hospital_id_rd,
+        hospital_name,
+        hospital_address,
+        opening_hours,
+        hospital_departments,
+        hospital_intro,
+        hospital_info_raw,
+        hospital_img_url,
+        hospital_rating,
+        review_count,
+        hospital_phone_safe,
+        hospital_language_support
+      `
+      )
       .eq("platform", platform)
       .eq("hospital_id_rd", hospitalIdRd)
-      .eq("lang", dbLang) // ✅ 필수: lang 필터
       .maybeSingle();
 
     if (error) {
@@ -1360,16 +1413,15 @@ export async function loadHospitalByKey(
       return null;
     }
 
-    // fallback 로직 적용
-    const processedData = applyHospitalFallback([data]);
-    return cleanData<HospitalI18nRow>(processedData)[0];
+    // 데이터 정리 (fallback 로직 불필요 - 테이블이 이미 언어별로 분리됨)
+    return cleanData<HospitalI18nRow>([data])[0];
   } catch (error) {
     console.error("병원 데이터 로드 실패:", error);
     return null;
   }
 }
 
-// 병원 단건 조회 (hospital_id_rd만으로) - platform 자동 감지 (v_hospital_i18n 뷰 사용)
+// 병원 단건 조회 (hospital_id_rd만으로) - platform 자동 감지 (언어별 hospital_master_* 테이블 직접 사용)
 export async function loadHospitalByIdRd(
   hospitalIdRd: number,
   language?: LanguageCode
@@ -1378,16 +1430,31 @@ export async function loadHospitalByIdRd(
     const client = getSupabaseOrNull();
     if (!client) return null;
 
-    // 언어 필터 필수 적용 (백엔드 가이드)
+    // 언어별 병원 테이블 선택
     const lang = language || "KR";
-    const dbLang = getHospitalLanguageCode(lang);
+    const tableName = getHospitalTableName(lang);
 
     // hospital_id_rd로 조회 (여러 platform 결과 중 첫 번째 사용)
     const { data, error } = await client
-      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
-      .select("*")
+      .from(tableName)
+      .select(
+        `
+        platform,
+        hospital_id_rd,
+        hospital_name,
+        hospital_address,
+        opening_hours,
+        hospital_departments,
+        hospital_intro,
+        hospital_info_raw,
+        hospital_img_url,
+        hospital_rating,
+        review_count,
+        hospital_phone_safe,
+        hospital_language_support
+      `
+      )
       .eq("hospital_id_rd", hospitalIdRd)
-      .eq("lang", dbLang) // ✅ 필수: lang 필터
       .limit(1)
       .maybeSingle();
 
@@ -1399,9 +1466,8 @@ export async function loadHospitalByIdRd(
       return null;
     }
 
-    // fallback 로직 적용
-    const processedData = applyHospitalFallback([data]);
-    return cleanData<HospitalI18nRow>(processedData)[0];
+    // 데이터 정리 (fallback 로직 불필요 - 테이블이 이미 언어별로 분리됨)
+    return cleanData<HospitalI18nRow>([data])[0];
   } catch (error) {
     console.error("병원 데이터 로드 실패:", error);
     return null;
@@ -1476,7 +1542,7 @@ export async function loadTreatmentsByHospitalIdRd(
   }
 }
 
-// 병원 데이터 페이지네이션 로드 (v_hospital_i18n 뷰 사용)
+// 병원 데이터 페이지네이션 로드 (언어별 hospital_master_* 테이블 직접 사용)
 export async function loadHospitalsPaginated(
   page: number = 1,
   pageSize: number = 50,
@@ -1493,22 +1559,34 @@ export async function loadHospitalsPaginated(
       return { data: [], total: 0, hasMore: false };
     }
 
-    // 언어 필터 필수 적용 (백엔드 가이드)
+    // 언어별 병원 테이블 선택
     const lang = filters?.language || "KR";
-    const dbLang = getHospitalLanguageCode(lang);
+    const tableName = getHospitalTableName(lang);
 
-    let query = client
-      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
-      .select("*", { count: "exact" })
-      .eq("lang", dbLang); // ✅ 필수: lang 필터
+    let query = client.from(tableName).select(
+      `
+        platform,
+        hospital_id_rd,
+        hospital_name,
+        hospital_address,
+        opening_hours,
+        hospital_departments,
+        hospital_intro,
+        hospital_info_raw,
+        hospital_img_url,
+        hospital_rating,
+        review_count,
+        hospital_phone_safe,
+        hospital_language_support
+      `,
+      { count: "exact" }
+    );
 
     // 필터 적용 (최소 2글자 이상일 때만 검색)
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
       const term = filters.searchTerm.toLowerCase().trim();
-      // 번역 필드 또는 KR 원본 필드로 검색
-      query = query.or(
-        `hospital_name_i18n.ilike.%${term}%,hospital_name_kr.ilike.%${term}%`
-      );
+      // 병원명으로 검색
+      query = query.ilike("hospital_name", `%${term}%`);
     } else if (filters?.searchTerm && filters.searchTerm.trim().length === 1) {
       // 1글자일 때는 검색하지 않음 (빈 결과 반환)
       return { data: [], total: 0, hasMore: false };
@@ -1534,9 +1612,8 @@ export async function loadHospitalsPaginated(
         return { data: [], total: 0, hasMore: false };
       }
 
-      // fallback 로직 적용
-      const processedData = applyHospitalFallback(data);
-      const cleanedData = cleanData<HospitalI18nRow>(processedData);
+      // 데이터 정리 (fallback 로직 불필요 - 테이블이 이미 언어별로 분리됨)
+      const cleanedData = cleanData<HospitalI18nRow>(data);
 
       // 전체 데이터 랜덤 정렬 (클라이언트에서 실행되므로 서버 메모리 사용 없음)
       const shuffledData = shuffleArray(cleanedData);
@@ -1570,9 +1647,8 @@ export async function loadHospitalsPaginated(
         return { data: [], total: 0, hasMore: false };
       }
 
-      // fallback 로직 적용
-      const processedData = applyHospitalFallback(data);
-      const cleanedData = cleanData<HospitalI18nRow>(processedData);
+      // 데이터 정리 (fallback 로직 불필요 - 테이블이 이미 언어별로 분리됨)
+      const cleanedData = cleanData<HospitalI18nRow>(data);
       // 플랫폼 우선순위 정렬
       const sortedData = sortHospitalsByPlatform(cleanedData);
 
@@ -1616,7 +1692,7 @@ function applyHospitalFallback(data: any[]): any[] {
   });
 }
 
-// 병원명 자동완성 (v_hospital_i18n 뷰 사용)
+// 병원명 자동완성 (언어별 hospital_master_* 테이블 직접 사용)
 export async function getHospitalAutocomplete(
   searchTerm: string,
   limit: number = 10,
@@ -1630,16 +1706,15 @@ export async function getHospitalAutocomplete(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    // 언어 필터 필수 적용 (백엔드 가이드)
+    // 언어별 병원 테이블 선택
     const lang = language || "KR";
-    const dbLang = getHospitalLanguageCode(lang);
+    const tableName = getHospitalTableName(lang);
 
     const term = searchTerm.toLowerCase();
     const { data, error } = await client
-      .from(TABLE_NAMES.HOSPITAL_I18N_VIEW)
-      .select("hospital_name_i18n,hospital_name_kr")
-      .eq("lang", dbLang) // ✅ 필수: lang 필터
-      .or(`hospital_name_i18n.ilike.%${term}%,hospital_name_kr.ilike.%${term}%`)
+      .from(tableName)
+      .select("hospital_name")
+      .ilike("hospital_name", `%${term}%`)
       .limit(limit);
 
     if (error) {
@@ -1650,10 +1725,10 @@ export async function getHospitalAutocomplete(
       return [];
     }
 
-    // fallback 적용: 번역이 없으면 KR 원본 사용
+    // 병원명 추출 및 중복 제거
     const names = data
       .map((h: any) => {
-        const name = h.hospital_name_i18n || h.hospital_name_kr;
+        const name = h.hospital_name;
         return name && name.trim() !== "" ? name.trim() : null;
       })
       .filter((name: string | null): name is string => !!name);

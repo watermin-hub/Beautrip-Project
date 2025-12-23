@@ -21,6 +21,7 @@ import {
 } from "@/lib/utils/currency";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import { trackAddToSchedule } from "@/lib/gtm";
 
 export default function HotConcernsSection() {
   const router = useRouter();
@@ -41,8 +42,10 @@ export default function HotConcernsSection() {
   }, [language]);
 
   // ✅ 초기 로드: 현재 언어로 로드 (처음부터 다른 언어로 시작해도 작동)
-  const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<string | null>(null);
-  
+  const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<
+    string | null
+  >(null);
+
   useEffect(() => {
     async function fetchInitialData() {
       // 이미 같은 언어로 로드했으면 스킵
@@ -75,7 +78,11 @@ export default function HotConcernsSection() {
   useEffect(() => {
     async function translateData() {
       // 초기 로드가 완료되지 않았거나, 한국어면 스킵
-      if (treatments.length === 0 || language === "KR" || !initialLanguageLoaded) {
+      if (
+        treatments.length === 0 ||
+        language === "KR" ||
+        !initialLanguageLoaded
+      ) {
         return;
       }
 
@@ -87,7 +94,9 @@ export default function HotConcernsSection() {
       try {
         setLoading(true);
         // 같은 treatment_id로 lang만 바꿔서 번역 데이터 가져오기
-        const { translateTreatments } = await import("@/lib/utils/translateTreatments");
+        const { translateTreatments } = await import(
+          "@/lib/utils/translateTreatments"
+        );
         const translated = await translateTreatments(treatments, language);
         setTreatments(translated);
         setInitialLanguageLoaded(language);
@@ -210,7 +219,8 @@ export default function HotConcernsSection() {
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
     // ⚠️ 중요: category_mid_key (한국어 고정)를 사용해야 category_treattime_recovery와 매칭됨
-    const categoryMidForRecovery = selectedTreatment.category_mid_key || selectedTreatment.category_mid;
+    const categoryMidForRecovery =
+      selectedTreatment.category_mid_key || selectedTreatment.category_mid;
     if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
         categoryMidForRecovery
@@ -261,7 +271,10 @@ export default function HotConcernsSection() {
         selectedTreatment.category_mid ||
         selectedTreatment.category_large ||
         "기타",
-      categoryMid: selectedTreatment.category_mid_key || selectedTreatment.category_mid || null,
+      categoryMid:
+        selectedTreatment.category_mid_key ||
+        selectedTreatment.category_mid ||
+        null,
       recoveryDays,
       recoveryText, // 회복 기간 텍스트 추가
       recoveryGuides, // 회복 가이드 범위별 텍스트 추가
@@ -473,7 +486,11 @@ export default function HotConcernsSection() {
           treatmentName={
             selectedTreatment.treatment_name || t("common.noTreatmentName")
           }
-          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
+          categoryMid={
+            selectedTreatment.category_mid_key ||
+            selectedTreatment.category_mid ||
+            null
+          }
         />
       )}
 
