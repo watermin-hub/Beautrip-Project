@@ -1396,7 +1396,42 @@ export async function loadTreatmentById(
       return null;
     }
 
-    return cleanData<Treatment>([data])[0];
+    // 언어별 테이블에 가격 정보가 없을 수 있으므로, 한국어 테이블에서 가격 정보 가져오기
+    let priceInfo = null;
+    if (language !== "KR") {
+      try {
+        const { data: krData } = await client
+          .from("treatment_master")
+          .select("dis_rate, vat_info, selling_price, original_price")
+          .eq("treatment_id", treatmentId)
+          .maybeSingle();
+
+        if (krData) {
+          priceInfo = krData;
+        }
+      } catch (error) {
+        console.warn(
+          `[loadTreatmentById] treatment_id ${treatmentId} 가격 정보 조회 실패:`,
+          error
+        );
+      }
+    }
+
+    const result = cleanData<Treatment>([data])[0];
+
+    // 가격 정보가 있으면 병합
+    if (priceInfo) {
+      return {
+        ...result,
+        dis_rate: result.dis_rate ?? priceInfo.dis_rate ?? null,
+        vat_info: result.vat_info ?? priceInfo.vat_info ?? null,
+        selling_price: result.selling_price ?? priceInfo.selling_price ?? null,
+        original_price:
+          result.original_price ?? priceInfo.original_price ?? null,
+      };
+    }
+
+    return result;
   } catch (error) {
     console.error("시술 데이터 로드 실패:", error);
     return null;
@@ -7383,15 +7418,52 @@ export async function getHomeHotTreatments(
     }
 
     // RPC 응답 필드명 매핑: main_img_url → main_image_url (Treatment 타입 호환성)
-    const mappedData = data.map((item: any) => ({
-      ...item,
-      main_image_url: item.main_img_url || item.main_image_url, // 명세서: main_img_url, 하위 호환성 유지
-      // selling_price가 없거나 0인 경우 확인
-      selling_price: item.selling_price ?? null,
-      // dis_rate와 vat_info 명시적으로 보존 (RPC에서 반환하지 않을 수 있음)
-      dis_rate: item.dis_rate ?? null,
-      vat_info: item.vat_info ?? null,
-    }));
+    // ⚠️ 중요: RPC가 dis_rate, vat_info를 반환하지 않을 수 있으므로 treatment_id로 추가 조회
+    const mappedData = await Promise.all(
+      data.map(async (item: any) => {
+        // RPC에서 가격 정보가 없으면 treatment_id로 다시 조회
+        if (
+          (!item.dis_rate && item.dis_rate !== 0) ||
+          !item.vat_info ||
+          !item.selling_price
+        ) {
+          try {
+            // 한국어 테이블에서 가격 정보만 가져오기 (가장 확실한 방법)
+            const priceInfo = await client
+              .from("treatment_master")
+              .select("dis_rate, vat_info, selling_price, original_price")
+              .eq("treatment_id", item.treatment_id)
+              .maybeSingle();
+
+            if (priceInfo?.data) {
+              return {
+                ...item,
+                main_image_url: item.main_img_url || item.main_image_url,
+                selling_price:
+                  item.selling_price ?? priceInfo.data.selling_price ?? null,
+                original_price:
+                  item.original_price ?? priceInfo.data.original_price ?? null,
+                dis_rate: item.dis_rate ?? priceInfo.data.dis_rate ?? null,
+                vat_info: item.vat_info ?? priceInfo.data.vat_info ?? null,
+              };
+            }
+          } catch (error) {
+            console.warn(
+              `[getHomeHotTreatments] treatment_id ${item.treatment_id} 가격 정보 조회 실패:`,
+              error
+            );
+          }
+        }
+
+        return {
+          ...item,
+          main_image_url: item.main_img_url || item.main_image_url,
+          selling_price: item.selling_price ?? null,
+          dis_rate: item.dis_rate ?? null,
+          vat_info: item.vat_info ?? null,
+        };
+      })
+    );
 
     return cleanData<Treatment>(mappedData);
   } catch (error) {
