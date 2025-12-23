@@ -215,7 +215,8 @@ function AuthCallbackContent() {
         });
         
         // GTM: 로그인 성공 이벤트
-        trackLoginSuccess();
+        const loginMethod = user.app_metadata?.provider === "google" ? "google" : "local";
+        trackLoginSuccess(loginMethod, user.id);
         
         console.log("🔗 마이페이지로 리다이렉트 중...");
 

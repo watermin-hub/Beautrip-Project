@@ -307,10 +307,13 @@ export default function ProcedureListPage({
     let recoveryText: string | null = null;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
+    // ✅ 언어 변경 시 회복기간 가이드 연결: category_i18n → category_toggle_map 경로 사용
     const categoryMidForRecovery = selectedTreatment.category_mid_key || selectedTreatment.category_mid;
     if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        categoryMidForRecovery
+        categoryMidForRecovery,
+        language, // 현재 언어 전달
+        selectedTreatment.treatment_id // treatment_id 전달 (category_i18n 매칭용)
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
@@ -553,10 +556,10 @@ export default function ProcedureListPage({
                     key={treatmentId}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer flex flex-col"
                     onClick={() => {
-                      // GTM: PDP 클릭 이벤트
+                      // GTM: PDP 클릭 이벤트 (탐색 페이지에서 클릭)
                       if (typeof window !== "undefined") {
                         const { trackPdpClick } = require("@/lib/gtm");
-                        trackPdpClick("treatment", treatmentId);
+                        trackPdpClick("explore");
                       }
                       router.push(`/explore/treatment/${treatmentId}`);
                     }}

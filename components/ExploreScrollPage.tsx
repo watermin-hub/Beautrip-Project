@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackExploreFilterClick } from "@/lib/gtm";
 import { FiEdit3, FiChevronUp } from "react-icons/fi";
 import Header from "./Header";
 import ExploreHeader from "./ExploreHeader";
@@ -37,6 +38,16 @@ export default function ExploreScrollPage() {
   }, []);
 
   const scrollToSection = (sectionId: string) => {
+    // GTM: 탐색 필터 클릭 이벤트
+    // sectionId를 filter_type으로 매핑: "ranking" → "ranking", "procedure" → "kbeauty", "hospital" → "hospital"
+    const filterTypeMap: Record<string, string> = {
+      ranking: "ranking",
+      procedure: "kbeauty",
+      hospital: "hospital",
+    };
+    const filterType = filterTypeMap[sectionId] || sectionId;
+    trackExploreFilterClick(filterType);
+
     let targetRef: React.RefObject<HTMLDivElement> | null = null;
 
     switch (sectionId) {

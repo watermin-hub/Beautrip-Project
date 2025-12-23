@@ -7,6 +7,7 @@ import { saveConcernPost, updateConcernPost } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadConcernImages } from "@/lib/api/imageUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { trackReviewSubmit } from "@/lib/gtm";
 
 interface ConcernPostFormProps {
   onBack: () => void;
@@ -147,6 +148,9 @@ export default function ConcernPostForm({
           alert(`${t("form.saveFailed")}: ${result.error}`);
           return;
         }
+
+        // GTM: 후기 제출 이벤트 (일반 후기)
+        trackReviewSubmit("general");
 
         // 이미지가 있으면 업로드 (concern-images 버킷 사용)
         let imageUrls: string[] | undefined = undefined;

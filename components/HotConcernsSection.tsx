@@ -347,6 +347,18 @@ export default function HotConcernsSection() {
         {treatments.map((treatment) => {
           const isFavorite = favorites.has(treatment.treatment_id || 0);
           const thumbnailUrl = getThumbnailUrl(treatment);
+
+          // 디버깅: 가격 정보 확인
+          if (treatment.treatment_id && !treatment.selling_price) {
+            console.log("⚠️ [가격 정보 없음]:", {
+              treatment_id: treatment.treatment_id,
+              treatment_name: treatment.treatment_name,
+              selling_price: treatment.selling_price,
+              original_price: treatment.original_price,
+              allKeys: Object.keys(treatment),
+            });
+          }
+
           // 가격 표시: KRW는 원래 형식(43만원), 다른 통화는 환율 변환
           const price =
             treatment.selling_price && treatment.selling_price > 0

@@ -200,16 +200,14 @@ export default function InformationalContentSection() {
                     return;
                   }
                   
-                  // GTM: 콘텐츠 PDP 클릭 이벤트
-                  const contentType = content.category === recoveryGuideCategoryKey 
-                    ? "recovery_guide" 
-                    : content.slug === "top20" 
-                    ? "top20" 
-                    : content.slug === "travel-recommendation"
-                    ? "travel_recommendation"
-                    : "info";
+                  // GTM: PDP 클릭 이벤트 (진입 경로 확인)
+                  const entrySource = pathname === "/" || pathname === "/home" 
+                    ? "home" 
+                    : pathname?.includes("/community") 
+                    ? "community" 
+                    : "unknown";
                   
-                  trackPdpClick("content", content.id);
+                  trackPdpClick(entrySource);
                   
                   // 회복 가이드인 경우 상세 페이지로 이동
                   if (content.category === recoveryGuideCategoryKey && content.slug) {

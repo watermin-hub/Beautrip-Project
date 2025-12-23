@@ -191,8 +191,8 @@ export default function HospitalInfoPage() {
   }, []);
 
   const handleFavoriteClick = (hospital: HospitalI18nRow) => {
-    // 번역 필드 또는 KR 원본 사용
-    const hospitalName = hospital.hospital_name_i18n || hospital.hospital_name_kr || "";
+    // 새 구조: 언어별 테이블에서 이미 번역된 hospital_name 사용
+    const hospitalName = hospital.hospital_name || hospital.hospital_name_i18n || hospital.hospital_name_kr || "";
     const savedFavorites = JSON.parse(
       localStorage.getItem("favorites") || "[]"
     );
@@ -322,8 +322,8 @@ export default function HospitalInfoPage() {
             {/* 그리드 레이아웃 (2열 4행) - 상세 정보 포함 */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               {hospitals.map((hospital: HospitalI18nRow, index: number) => {
-                // 번역 필드 또는 KR 원본 사용
-                const hospitalName = hospital.hospital_name_i18n || hospital.hospital_name_kr || t("common.noHospitalName");
+                // 새 구조: 언어별 테이블에서 이미 번역된 hospital_name 사용
+                const hospitalName = hospital.hospital_name || hospital.hospital_name_i18n || hospital.hospital_name_kr || t("common.noHospitalName");
                 const isFavorite = favorites.has(hospitalName);
 
                 // hospital_img_url 우선 사용, 없으면 hospital_img 사용
@@ -352,8 +352,8 @@ export default function HospitalInfoPage() {
                   }
                 }
 
-                // 번역 필드 또는 KR 원본 사용
-                const location = hospital.hospital_address_i18n || hospital.hospital_address_kr || "주소 정보 없음";
+                // 새 구조: 언어별 테이블에서 이미 번역된 hospital_address 사용
+                const location = hospital.hospital_address || hospital.hospital_address_i18n || hospital.hospital_address_kr || t("common.noAddress") || "주소 정보 없음";
 
                 // 고유한 key 생성 (hospital_id_rd + platform 조합 또는 인덱스)
                 const uniqueKey = hospital.hospital_id_rd && hospital.platform

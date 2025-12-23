@@ -33,7 +33,8 @@ export default function Top20InfoPage() {
       ? "community" 
       : "unknown";
     
-    trackContentPdpView("top20", entrySource);
+    // content_type: "guide", content_id: "top20"
+    trackContentPdpView("guide", entrySource, "top20");
   }, []);
 
   return (

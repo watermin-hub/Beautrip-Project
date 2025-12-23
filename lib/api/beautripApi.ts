@@ -17,6 +17,7 @@ const TABLE_NAMES = {
   HOSPITAL_MASTER: "hospital_master",
   KEYWORD_MONTHLY_TRENDS: "keyword_monthly_trends",
   CATEGORY_TOGGLE_MAP: "category_toggle_map",
+  CATEGORY_I18N: "category_i18n", // 카테고리 다국어 테이블
 };
 
 // DB 언어 코드 타입 (레거시, 현재는 사용하지 않음 - 테이블이 언어별로 분리됨)
@@ -246,15 +247,19 @@ export interface HospitalPdp {
   [key: string]: any;
 }
 
-// 병원 i18n 뷰 데이터 인터페이스 (v_hospital_i18n)
-// 백엔드 가이드: hospital_master + hospital_translation을 합친 뷰
-// lang 필드로 언어 구분 (KR/en/jp/cn 등)
+// 병원 i18n 뷰 데이터 인터페이스 (v_hospital_i18n - 삭제됨, 이제 hospital_master* 직접 사용)
+// 새 구조: 언어별 hospital_master* 테이블에서 직접 조회
+// 각 테이블의 hospital_name, hospital_address가 이미 해당 언어로 번역되어 있음
 export interface HospitalI18nRow {
   platform: string;
   hospital_id_rd: number;
-  lang: string; // 언어 코드 (KR, en, jp, cn 등)
+  lang?: string; // 언어 코드 (옵셔널, 테이블이 이미 언어별로 분리됨)
 
-  // 번역된 필드 (i18n) - 없으면 KR 원본으로 fallback
+  // 새 구조: 언어별 테이블에서 직접 가져온 필드 (이미 번역됨)
+  hospital_name?: string | null; // ✅ 새 구조: 언어별 테이블의 hospital_name
+  hospital_address?: string | null; // ✅ 새 구조: 언어별 테이블의 hospital_address
+
+  // 레거시 필드 (하위 호환성 유지)
   hospital_name_i18n?: string | null;
   hospital_address_i18n?: string | null;
   hospital_intro_i18n?: string | null;
@@ -856,8 +861,11 @@ export async function loadCategoryTreatTimeRecovery(): Promise<
 }
 
 // category_mid로 회복 기간 정보 가져오기 (중분류 컬럼과 매칭)
+// ✅ 언어 변경 시 category_i18n → category_toggle_map 경로 지원
 export async function getRecoveryInfoByCategoryMid(
-  categoryMid: string
+  categoryMid: string,
+  language?: LanguageCode,
+  treatmentId?: number
 ): Promise<{
   recoveryMin: number;
   recoveryMax: number;
@@ -870,7 +878,23 @@ export async function getRecoveryInfoByCategoryMid(
   try {
     if (!categoryMid) return null;
 
-    const categoryMidTrimmed = categoryMid.trim();
+    // ✅ 언어가 KR이 아니면 category_i18n을 통해 한국어 category_mid로 변환
+    let koreanCategoryMid = categoryMid;
+    if (language && language !== "KR") {
+      const converted = await convertCategoryMidToKorean(
+        categoryMid,
+        language,
+        treatmentId
+      );
+      if (converted) {
+        koreanCategoryMid = converted;
+        console.log(
+          `✅ [회복기간 가이드] "${categoryMid}" (${language}) → "${koreanCategoryMid}" (KR) 변환 완료`
+        );
+      }
+    }
+
+    const categoryMidTrimmed = koreanCategoryMid.trim();
 
     // "시력교정" 카테고리는 API 데이터에서 제거되었으므로 조용히 null 반환
     if (categoryMidTrimmed === "시력교정") {
@@ -4049,12 +4073,13 @@ export async function getUserNickname(
     }
 
     if (profile) {
-      console.log("[getUserNickname] 프로필 조회 성공:", {
-        userId: userId,
-        nickname: profile.nickname,
-        display_name: profile.display_name,
-        login_id: profile.login_id,
-      });
+      // 디버깅 로그는 개발 모드에서만 출력 (불필요한 로그 제거)
+      // console.log("[getUserNickname] 프로필 조회 성공:", {
+      //   userId: userId,
+      //   nickname: profile.nickname,
+      //   display_name: profile.display_name,
+      //   login_id: profile.login_id,
+      // });
 
       // 1순위: nickname 컬럼 (백엔드 트리거로 자동 채워짐)
       if (profile.nickname) {
@@ -5463,9 +5488,259 @@ async function getMidCategoryRankingsFromTreatmentMaster(
   }
 }
 
+// category_i18n 테이블을 통해 현재 언어의 category_mid를 한국어 category_mid로 변환
+// treatment_id를 매개로 연결
+async function convertCategoryMidToKorean(
+  categoryMid: string,
+  currentLanguage: LanguageCode,
+  treatmentId?: number
+): Promise<string | null> {
+  // KR이면 변환 불필요
+  if (currentLanguage === "KR") {
+    return categoryMid;
+  }
+
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return categoryMid; // fallback
+    }
+
+    // 방법 1: treatment_id가 있으면 treatment_id로 매칭
+    if (treatmentId) {
+      // 한국어 테이블에서 같은 treatment_id의 category_mid 조회
+      const { data: krData, error: krError } = await client
+        .from(TABLE_NAMES.TREATMENT_MASTER)
+        .select("category_mid")
+        .eq("treatment_id", treatmentId)
+        .limit(1);
+
+      if (!krError && krData && krData.length > 0 && krData[0].category_mid) {
+        return krData[0].category_mid;
+      }
+    }
+
+    // 방법 2: category_i18n 테이블 사용 (있는 경우)
+    // category_i18n 테이블 구조 가정: category_mid (현재 언어), category_mid_kr (한국어), lang
+    try {
+      const langCode =
+        currentLanguage === "EN"
+          ? "en"
+          : currentLanguage === "CN"
+          ? "zh-CN"
+          : currentLanguage === "JP"
+          ? "ja"
+          : "ko";
+      const { data: i18nData, error: i18nError } = await client
+        .from(TABLE_NAMES.CATEGORY_I18N)
+        .select("category_mid_kr, category_mid")
+        .eq("category_mid", categoryMid)
+        .eq("lang", langCode)
+        .limit(1);
+
+      if (
+        !i18nError &&
+        i18nData &&
+        i18nData.length > 0 &&
+        i18nData[0].category_mid_kr
+      ) {
+        return i18nData[0].category_mid_kr;
+      }
+    } catch (e) {
+      // category_i18n 테이블이 없을 수 있음
+      console.warn("⚠️ category_i18n 테이블 조회 실패, fallback 사용:", e);
+    }
+
+    return categoryMid; // fallback: 원본 반환
+  } catch (error) {
+    console.error("카테고리 중분류 변환 실패:", error);
+    return categoryMid; // fallback
+  }
+}
+
+// 한국어 category_mid key를 해당 언어의 category_mid 값으로 변환
+// 방법: treatment_id를 매개로 한국어 테이블과 해당 언어 테이블을 연결
+async function convertCategoryMidToLanguage(
+  koreanCategoryMid: string,
+  targetLanguage: LanguageCode
+): Promise<string | null> {
+  // KR이면 변환 불필요
+  if (targetLanguage === "KR") {
+    return koreanCategoryMid;
+  }
+
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return koreanCategoryMid; // fallback: 원본 반환
+    }
+
+    // 1. 한국어 테이블에서 해당 category_mid를 가진 시술들의 treatment_id 조회
+    const { data: krData, error: krError } = await client
+      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .select("treatment_id")
+      .eq("category_mid", koreanCategoryMid)
+      .limit(100); // 샘플링 (너무 많으면 첫 100개만)
+
+    if (krError || !krData || krData.length === 0) {
+      console.warn(
+        `⚠️ [중분류 변환] 한국어 테이블에서 "${koreanCategoryMid}" 찾을 수 없음`,
+        krError
+      );
+      return koreanCategoryMid; // fallback
+    }
+
+    const treatmentIds = krData.map((row) => row.treatment_id).filter(Boolean);
+
+    if (treatmentIds.length === 0) {
+      return koreanCategoryMid; // fallback
+    }
+
+    // 2. 해당 언어 테이블에서 같은 treatment_id를 가진 시술들의 category_mid 조회
+    const targetTable = getTreatmentTableName(targetLanguage);
+    const { data: langData, error: langError } = await client
+      .from(targetTable)
+      .select("category_mid")
+      .in("treatment_id", treatmentIds)
+      .limit(100);
+
+    if (langError || !langData || langData.length === 0) {
+      console.warn(
+        `⚠️ [중분류 변환] ${targetLanguage} 테이블에서 매칭되는 시술 없음`,
+        langError
+      );
+      return koreanCategoryMid; // fallback
+    }
+
+    // 3. 가장 많이 나온 category_mid 값 반환
+    const categoryCounts = new Map<string, number>();
+    langData.forEach((row) => {
+      if (row.category_mid) {
+        categoryCounts.set(
+          row.category_mid,
+          (categoryCounts.get(row.category_mid) || 0) + 1
+        );
+      }
+    });
+
+    if (categoryCounts.size === 0) {
+      return koreanCategoryMid; // fallback
+    }
+
+    // 가장 많이 나온 값 찾기
+    let maxCount = 0;
+    let mostCommonCategory = koreanCategoryMid; // 기본값
+    categoryCounts.forEach((count, category) => {
+      if (count > maxCount) {
+        maxCount = count;
+        mostCommonCategory = category;
+      }
+    });
+
+    console.log(
+      `✅ [중분류 변환] "${koreanCategoryMid}" (KR) → "${mostCommonCategory}" (${targetLanguage})`
+    );
+
+    return mostCommonCategory;
+  } catch (error) {
+    console.error("중분류 변환 실패:", error);
+    return koreanCategoryMid; // fallback: 원본 반환
+  }
+}
+
+// 한국어 category_large key를 해당 언어의 category_large 값으로 변환
+// 방법: treatment_id를 매개로 한국어 테이블과 해당 언어 테이블을 연결
+async function convertCategoryLargeToLanguage(
+  koreanCategoryLarge: string,
+  targetLanguage: LanguageCode
+): Promise<string | null> {
+  // KR이면 변환 불필요
+  if (targetLanguage === "KR") {
+    return koreanCategoryLarge;
+  }
+
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return koreanCategoryLarge; // fallback: 원본 반환
+    }
+
+    // 1. 한국어 테이블에서 해당 category_large를 가진 시술들의 treatment_id 조회
+    const { data: krData, error: krError } = await client
+      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .select("treatment_id")
+      .eq("category_large", koreanCategoryLarge)
+      .limit(100); // 샘플링 (너무 많으면 첫 100개만)
+
+    if (krError || !krData || krData.length === 0) {
+      console.warn(
+        `⚠️ [카테고리 변환] 한국어 테이블에서 "${koreanCategoryLarge}" 찾을 수 없음`,
+        krError
+      );
+      return koreanCategoryLarge; // fallback
+    }
+
+    const treatmentIds = krData.map((row) => row.treatment_id).filter(Boolean);
+
+    if (treatmentIds.length === 0) {
+      return koreanCategoryLarge; // fallback
+    }
+
+    // 2. 해당 언어 테이블에서 같은 treatment_id를 가진 시술들의 category_large 조회
+    const targetTable = getTreatmentTableName(targetLanguage);
+    const { data: langData, error: langError } = await client
+      .from(targetTable)
+      .select("category_large")
+      .in("treatment_id", treatmentIds)
+      .limit(100);
+
+    if (langError || !langData || langData.length === 0) {
+      console.warn(
+        `⚠️ [카테고리 변환] ${targetLanguage} 테이블에서 매칭되는 시술 없음`,
+        langError
+      );
+      return koreanCategoryLarge; // fallback
+    }
+
+    // 3. 가장 많이 나온 category_large 값 반환 (또는 첫 번째 값)
+    const categoryCounts = new Map<string, number>();
+    langData.forEach((row) => {
+      if (row.category_large) {
+        categoryCounts.set(
+          row.category_large,
+          (categoryCounts.get(row.category_large) || 0) + 1
+        );
+      }
+    });
+
+    if (categoryCounts.size === 0) {
+      return koreanCategoryLarge; // fallback
+    }
+
+    // 가장 많이 나온 값 찾기
+    let maxCount = 0;
+    let mostCommonCategory = koreanCategoryLarge; // 기본값
+    categoryCounts.forEach((count, category) => {
+      if (count > maxCount) {
+        maxCount = count;
+        mostCommonCategory = category;
+      }
+    });
+
+    console.log(
+      `✅ [카테고리 변환] "${koreanCategoryLarge}" (KR) → "${mostCommonCategory}" (${targetLanguage})`
+    );
+
+    return mostCommonCategory;
+  } catch (error) {
+    console.error("카테고리 변환 실패:", error);
+    return koreanCategoryLarge; // fallback: 원본 반환
+  }
+}
+
 // 중분류 랭킹 조회 (RPC - 중분류 단위 랭킹)
 export async function getMidCategoryRankings(
-  p_category_large: string | null = null, // 선택: 대분류 필터 (null, '', '전체' 모두 허용)
+  p_category_large: string | null = null, // 선택: 대분류 필터 (null, '', '전체' 모두 허용) - 한국어 key로 전달 가능
   p_m: number = 20, // 베이지안 평균 신뢰 임계값
   p_dedupe_limit_per_name: number = 2, // 같은 시술명 최대 노출 개수
   p_limit_per_category: number = 20, // 각 중분류당 상위 N개 카드만 노출
@@ -5488,12 +5763,21 @@ export async function getMidCategoryRankings(
     const pLang: "KR" | "EN" | "CN" | "JP" = language || "KR";
 
     // p_category_large 처리: null, '', '전체' 모두 허용 (명세서)
-    const pCategoryLarge =
+    let pCategoryLarge: string | null =
       !p_category_large ||
       p_category_large === "" ||
       p_category_large === "전체"
         ? null
         : p_category_large;
+
+    // ✅ 프론트엔드 해결: 한국어 key를 해당 언어의 category_large 값으로 변환
+    if (pCategoryLarge && pLang !== "KR") {
+      const convertedCategory = await convertCategoryLargeToLanguage(
+        pCategoryLarge,
+        pLang
+      );
+      pCategoryLarge = convertedCategory;
+    }
 
     // RPC 함수 파라미터
     const rpcParams = {
@@ -5747,17 +6031,37 @@ export async function getSmallCategoryRankings(
       return { success: false, error: "중분류가 필요합니다." };
     }
 
-    // 언어 코드 변환: 명세서에 따르면 'KR' | 'EN' | 'CN' | 'JP' | null 형식
-    // KR → null, 다른 언어 → 그대로 전달
-    const pLang: "KR" | "EN" | "CN" | "JP" | null =
-      language === "KR" || !language ? null : language;
+    // 언어 코드 변환: 'KR' | 'EN' | 'CN' | 'JP' 형식 (필수)
+    const pLang: "KR" | "EN" | "CN" | "JP" = language || "KR";
+
+    // ✅ 프론트엔드 해결: 한국어 category_mid key를 해당 언어의 category_mid 값으로 변환
+    let pCategoryMid: string = p_category_mid;
+    if (pLang !== "KR") {
+      const convertedCategoryMid = await convertCategoryMidToLanguage(
+        pCategoryMid,
+        pLang
+      );
+      if (convertedCategoryMid) {
+        pCategoryMid = convertedCategoryMid;
+      }
+    }
 
     // p_category_large 처리: null이면 대분류 필터 없음
-    const pCategoryLarge = p_category_large;
+    // ✅ 대분류도 언어별 변환 필요 (있는 경우)
+    let pCategoryLarge: string | null = p_category_large;
+    if (pCategoryLarge && pLang !== "KR") {
+      const convertedCategoryLarge = await convertCategoryLargeToLanguage(
+        pCategoryLarge,
+        pLang
+      );
+      if (convertedCategoryLarge) {
+        pCategoryLarge = convertedCategoryLarge;
+      }
+    }
 
     // RPC 함수 파라미터
     const rpcParams = {
-      p_category_mid: p_category_mid,
+      p_category_mid: pCategoryMid,
       p_category_large: pCategoryLarge,
       p_lang: pLang,
       p_m: p_m,
@@ -5765,6 +6069,21 @@ export async function getSmallCategoryRankings(
       p_limit_categories: p_limit_categories,
       p_limit_per_category: p_limit_per_category,
     };
+
+    // RPC 호출 전 파라미터 로깅 (디버깅용)
+    console.log("🔍 [소분류 RPC 호출 파라미터]:", {
+      function: "rpc_small_category_rankings_i18n",
+      params: rpcParams,
+      // 명확한 필드 표시
+      p_category_mid: rpcParams.p_category_mid,
+      p_category_large: rpcParams.p_category_large,
+      p_lang: rpcParams.p_lang,
+      p_m: rpcParams.p_m,
+      p_dedupe_limit_per_name: rpcParams.p_dedupe_limit_per_name,
+      p_limit_categories: rpcParams.p_limit_categories,
+      p_limit_per_category: rpcParams.p_limit_per_category,
+      language: language, // 프론트엔드 언어 코드
+    });
 
     const { data, error } = await client.rpc(
       "rpc_small_category_rankings_i18n",
@@ -5827,8 +6146,21 @@ export async function getSmallCategoryRankings(
     const categoryOrder: string[] = []; // 카테고리 순서 유지용
 
     cleanedData.forEach((item: any) => {
+      // category_small_key가 없으면 category_small 사용, 둘 다 없으면 "기타"
       const categoryKey =
         item.category_small_key || item.category_small || "기타";
+
+      // 디버깅: 첫 번째 아이템의 필드 확인
+      if (cleanedData.indexOf(item) === 0) {
+        console.log("🔍 [그룹화 전 첫 번째 아이템]:", {
+          category_small_key: item.category_small_key,
+          category_small: item.category_small,
+          categoryKey: categoryKey,
+          treatment_id: item.treatment_id,
+          treatment_name: item.treatment_name,
+          allKeys: Object.keys(item),
+        });
+      }
 
       if (!groupedByCategory.has(categoryKey)) {
         // 카테고리 순서 기록 (첫 등장 순서 유지)
@@ -5846,6 +6178,12 @@ export async function getSmallCategoryRankings(
       }
 
       // Treatment 객체로 변환 (쿼리 반환 필드 모두 포함)
+      // treatment_id가 없으면 스킵 (유효한 시술 데이터만 추가)
+      if (!item.treatment_id) {
+        console.warn("⚠️ [소분류 랭킹] treatment_id가 없는 아이템 스킵:", item);
+        return;
+      }
+
       const treatment: Treatment = {
         treatment_id: item.treatment_id,
         treatment_name: item.treatment_name,
@@ -5864,7 +6202,10 @@ export async function getSmallCategoryRankings(
       };
 
       // 데이터가 내려온 순서대로 추가 (쿼리에서 이미 category_rank, treatment_rank로 정렬됨)
-      groupedByCategory.get(categoryKey)!.treatments.push(treatment);
+      const group = groupedByCategory.get(categoryKey);
+      if (group) {
+        group.treatments.push(treatment);
+      }
     });
 
     // SmallCategoryRanking 형태로 변환 (카테고리 순서 유지)
@@ -5884,6 +6225,32 @@ export async function getSmallCategoryRankings(
     console.log(
       `✅ [소분류 랭킹] ${processedData.length}개 소분류, 총 ${cleanedData.length}개 시술 처리 완료`
     );
+
+    // 디버깅: 처리된 데이터 구조 확인
+    if (processedData.length > 0) {
+      console.log("🔍 [소분류 랭킹 처리 결과 샘플]:", {
+        firstCategory: processedData[0].category_small_key,
+        firstCategoryTreatmentsCount: processedData[0].treatments?.length || 0,
+        firstTreatment: processedData[0].treatments?.[0]
+          ? {
+              treatment_id: processedData[0].treatments[0].treatment_id,
+              treatment_name: processedData[0].treatments[0].treatment_name,
+              hospital_name: processedData[0].treatments[0].hospital_name,
+              main_image_url: processedData[0].treatments[0].main_image_url,
+            }
+          : null,
+        allCategories: processedData.map((p) => ({
+          key: p.category_small_key,
+          treatmentsCount: p.treatments?.length || 0,
+          hasTreatments: Array.isArray(p.treatments) && p.treatments.length > 0,
+        })),
+        // 전체 treatments 개수 확인
+        totalTreatmentsInAllCategories: processedData.reduce(
+          (sum, p) => sum + (p.treatments?.length || 0),
+          0
+        ),
+      });
+    }
 
     return { success: true, data: processedData };
   } catch (error: any) {
@@ -6801,10 +7168,22 @@ export async function getHomeHotTreatments(
       return [];
     }
 
+    // 디버깅: RPC 반환 데이터 구조 확인
+    if (data.length > 0) {
+      console.log("🔍 [rpc_home_hot_treatments 반환 데이터 샘플]:", {
+        keys: Object.keys(data[0]),
+        hasSellingPrice: "selling_price" in data[0],
+        sellingPrice: data[0].selling_price,
+        sample: data[0],
+      });
+    }
+
     // RPC 응답 필드명 매핑: main_img_url → main_image_url (Treatment 타입 호환성)
     const mappedData = data.map((item: any) => ({
       ...item,
       main_image_url: item.main_img_url || item.main_image_url, // 명세서: main_img_url, 하위 호환성 유지
+      // selling_price가 없거나 0인 경우 확인
+      selling_price: item.selling_price ?? null,
     }));
 
     return cleanData<Treatment>(mappedData);

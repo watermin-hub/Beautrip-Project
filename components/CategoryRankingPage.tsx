@@ -364,16 +364,15 @@ export default function CategoryRankingPage({
   // 카테고리 변경 시 GTM 이벤트 트래킹
   useEffect(() => {
     if (selectedCategory !== null && !isInitialLoad) {
-      trackExploreCategoryClick(selectedCategory);
+      // 번역된 대분류명 가져오기
+      const category = MAIN_CATEGORIES.find((c) => c.id === selectedCategory);
+      const categoryLarge = category?.name || selectedCategory;
+      trackExploreCategoryClick(categoryLarge);
     }
-  }, [selectedCategory, isInitialLoad]);
+  }, [selectedCategory, isInitialLoad, MAIN_CATEGORIES]);
 
-  // 중분류 변경 시 GTM 이벤트 트래킹
-  useEffect(() => {
-    if (selectedMidCategory !== null && !isInitialLoad) {
-      trackExploreFilterClick("category");
-    }
-  }, [selectedMidCategory, isInitialLoad]);
+  // 중분류 변경 시 GTM 이벤트 트래킹 (필터 클릭이 아니라 카테고리 내부 필터이므로 제거)
+  // explore_filter_click은 ExploreHeader의 탭 클릭 시에만 발생해야 함
 
   // ✅ 초기 데이터 로드 (한국어로 먼저 로드)
   useEffect(() => {
@@ -399,50 +398,37 @@ export default function CategoryRankingPage({
             language // ✅ 현재 언어로 로드
           );
           if (result.success && result.data) {
-            // RPC가 flat row로 반환하므로 category_small_key로 그룹화
-            const rows = result.data as any[];
-            const grouped = new Map<string, any>();
+            // ✅ getSmallCategoryRankings()가 이미 SmallCategoryRanking[] 형태로 그룹화해서 반환
+            // 따라서 추가 그룹화 불필요, 그대로 사용
+            const smallGrouped = result.data as SmallCategoryRanking[];
 
-            for (const r of rows) {
-              const key = r.category_small_key;
-              if (!key) continue;
-
-              if (!grouped.has(key)) {
-                grouped.set(key, {
-                  category_small_key: r.category_small_key,
-                  category_rank: r.category_rank,
-                  category_score: r.category_score,
-                  average_rating: r.average_rating,
-                  total_reviews: r.total_reviews,
-                  treatment_count: r.treatment_count,
-                  treatments: [],
-                });
-              }
-
-              // 시술 카드 객체로 push
-              grouped.get(key).treatments.push({
-                treatment_id: r.treatment_id,
-                treatment_name: r.treatment_name,
-                hospital_id: r.hospital_id,
-                hospital_name: r.hospital_name,
-                category_large: r.category_large,
-                category_mid: r.category_mid,
-                category_small: r.category_small,
-                rating: r.rating,
-                review_count: r.review_count,
-                selling_price: r.selling_price,
-                dis_rate: r.dis_rate,
-                vat_info: r.vat_info,
-                main_image_url: r.main_img_url || r.main_image_url,
-                card_score: r.card_score,
-                treatment_rank: r.treatment_rank,
-              });
-            }
-
-            const smallGrouped = Array.from(grouped.values()).sort(
-              (a, b) =>
-                (a.category_rank ?? 999999) - (b.category_rank ?? 999999)
-            );
+            console.log("✅ [소분류 랭킹 데이터 로드 성공]:", {
+              count: smallGrouped.length,
+              firstItem: smallGrouped[0],
+              sampleTreatments: smallGrouped[0]?.treatments?.length || 0,
+              firstTreatment: smallGrouped[0]?.treatments?.[0]
+                ? {
+                    treatment_id: smallGrouped[0].treatments[0].treatment_id,
+                    treatment_name:
+                      smallGrouped[0].treatments[0].treatment_name,
+                    hospital_name: smallGrouped[0].treatments[0].hospital_name,
+                    category_small:
+                      smallGrouped[0].treatments[0].category_small,
+                    category_small_key: smallGrouped[0].category_small_key,
+                    main_image_url:
+                      smallGrouped[0].treatments[0].main_image_url,
+                    rating: smallGrouped[0].treatments[0].rating,
+                    review_count: smallGrouped[0].treatments[0].review_count,
+                    selling_price: smallGrouped[0].treatments[0].selling_price,
+                  }
+                : null,
+              allCategories: smallGrouped.map((s) => ({
+                key: s.category_small_key,
+                treatmentsCount: s.treatments?.length || 0,
+                hasTreatments:
+                  Array.isArray(s.treatments) && s.treatments.length > 0,
+              })),
+            });
 
             setSmallCategoryRankings(smallGrouped);
             setMidCategoryRankings([]);
@@ -1074,7 +1060,7 @@ export default function CategoryRankingPage({
                       key={`${ranking.category_small_key}-${ranking.category_rank}-${index}`}
                     >
                       <div className="space-y-4">
-                        {/* 소분류 헤더 with 순위 */}
+                        {/* 소분류 헤더 with 순위 - 중분류와 동일한 형식 */}
                         <div className="flex items-start gap-4">
                           <span className="text-primary-main text-4xl font-bold leading-none">
                             {rank}
@@ -1083,6 +1069,12 @@ export default function CategoryRankingPage({
                             <h4 className="text-xl font-bold text-gray-900 mb-2">
                               {ranking.category_small_key}
                             </h4>
+                            {/* 중분류와 동일하게 설명 텍스트 추가 */}
+                            <p className="text-sm text-gray-600 mb-2 leading-relaxed">
+                              {getCategoryDescription(
+                                ranking.category_small_key || ""
+                              )}
+                            </p>
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
                                 <FiStar className="text-yellow-400 fill-yellow-400 text-sm" />
@@ -1125,6 +1117,22 @@ export default function CategoryRankingPage({
                               handleScroll(ranking.category_small_key)
                             }
                           >
+                            {/* 디버깅: treatments 배열 확인 */}
+                            {(() => {
+                              const treatments = ranking.treatments || [];
+                              console.log(
+                                `🔍 [소분류 렌더링] ${ranking.category_small_key}:`,
+                                {
+                                  treatmentsCount: treatments.length,
+                                  hasTreatments:
+                                    Array.isArray(treatments) &&
+                                    treatments.length > 0,
+                                  firstTreatment: treatments[0] || null,
+                                  allTreatments: treatments.slice(0, 3), // 처음 3개만
+                                }
+                              );
+                              return null; // 로그만 출력하고 렌더링은 계속
+                            })()}
                             {shuffleByThumbnail(ranking.treatments || []).map(
                               (treatment) => {
                                 const treatmentId = treatment.treatment_id || 0;
@@ -1149,12 +1157,12 @@ export default function CategoryRankingPage({
                                     key={treatmentId}
                                     className="flex-shrink-0 w-[150px] bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col"
                                     onClick={() => {
-                                      // GTM: PDP 클릭 이벤트
+                                      // GTM: PDP 클릭 이벤트 (탐색 페이지에서 클릭)
                                       if (typeof window !== "undefined") {
                                         const {
                                           trackPdpClick,
                                         } = require("@/lib/gtm");
-                                        trackPdpClick("treatment", treatmentId);
+                                        trackPdpClick("explore");
                                       }
                                       router.push(
                                         `/explore/treatment/${treatmentId}`

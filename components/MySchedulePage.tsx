@@ -349,9 +349,12 @@ function SimilarProcedureRecommendation({
     let recoveryText: string | null = null;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
+    // ✅ 언어 변경 시 회복기간 가이드 연결: category_i18n → category_toggle_map 경로 사용
     if (selectedTreatment.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        selectedTreatment.category_mid
+        selectedTreatment.category_mid,
+        language, // 현재 언어 전달
+        selectedTreatment.treatment_id // treatment_id 전달 (category_i18n 매칭용)
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax;

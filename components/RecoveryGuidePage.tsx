@@ -35,8 +35,9 @@ export default function RecoveryGuidePage() {
       ? "community" 
       : "unknown";
     
-    trackContentPdpView("recovery_guide", entrySource);
-  }, []);
+    // content_id는 recovery guide의 경우 activeKey 사용
+    trackContentPdpView("recovery_guide", entrySource, activeKey);
+  }, [activeKey]);
 
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto w-full">

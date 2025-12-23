@@ -386,8 +386,8 @@ export default function LoginModal({
 
   const handleSocialLogin = async (provider: string) => {
     // GTM: 로그인 시작 이벤트
-    trackLoginStart();
-    
+    trackLoginStart(provider === "google" ? "google" : "local");
+
     setIsLoading(true);
 
     try {
@@ -451,7 +451,7 @@ export default function LoginModal({
     }
 
     // GTM: 로그인 시작 이벤트
-    trackLoginStart();
+    trackLoginStart("local");
 
     setIsLoading(true);
 
@@ -506,7 +506,7 @@ export default function LoginModal({
             }
 
             // GTM: 로그인 성공 이벤트
-            trackLoginSuccess();
+            trackLoginSuccess("local", profileByEmail.user_id);
 
             onLoginSuccess(userInfo);
             onClose();
@@ -582,7 +582,7 @@ export default function LoginModal({
       }
 
       // GTM: 로그인 성공 이벤트
-      trackLoginSuccess();
+      trackLoginSuccess("local", authData.user.id);
 
       onLoginSuccess(userInfo);
       onClose();

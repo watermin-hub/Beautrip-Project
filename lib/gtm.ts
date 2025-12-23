@@ -133,10 +133,13 @@ export function trackSavedScheduleView(entrySource: EntrySource) {
  *
  * 호출 위치: 로그인 버튼 클릭 시점
  * 목적: 사용자가 로그인을 시작했음을 측정
+ *
+ * @param loginMethod 로그인 방법 ("google" | "local")
  */
-export function trackLoginStart() {
+export function trackLoginStart(loginMethod: "google" | "local") {
   pushToDataLayer({
     event: "login_start",
+    login_method: loginMethod,
   });
 }
 
@@ -145,10 +148,18 @@ export function trackLoginStart() {
  *
  * 호출 위치: 로그인 성공 시점 (세션 생성 후)
  * 목적: 로그인 성공 여부를 측정
+ *
+ * @param loginMethod 로그인 방법 ("google" | "local")
+ * @param userId 사용자 ID
  */
-export function trackLoginSuccess() {
+export function trackLoginSuccess(
+  loginMethod: "google" | "local",
+  userId: string
+) {
   pushToDataLayer({
     event: "login_success",
+    login_method: loginMethod,
+    user_id: userId,
   });
 }
 
@@ -173,12 +184,12 @@ export function trackExploreFilterClick(filterType: string) {
  * 호출 위치: 탐색 페이지에서 카테고리 클릭 시
  * 목적: 사용자가 어떤 카테고리를 선택했는지 측정
  *
- * @param categoryId 카테고리 ID
+ * @param categoryLarge 대분류명 (현재 언어로 번역된 이름, 예: "눈성형", "리프팅" 등)
  */
-export function trackExploreCategoryClick(categoryId: string | null) {
+export function trackExploreCategoryClick(categoryLarge: string | null) {
   pushToDataLayer({
     event: "explore_category_click",
-    category_id: categoryId || "all",
+    category_large: categoryLarge || "all",
   });
 }
 
@@ -188,12 +199,12 @@ export function trackExploreCategoryClick(categoryId: string | null) {
  * 호출 위치: 언어/국가 변경 시
  * 목적: 사용자가 언어를 변경했는지 측정
  *
- * @param languageCode 변경된 언어 코드 ("KR" | "EN" | "JP" | "CN")
+ * @param country 변경된 국가 코드 ("KR" | "EN" | "JP" | "CN")
  */
-export function trackLanguageChange(languageCode: string) {
+export function trackLanguageChange(country: string) {
   pushToDataLayer({
     event: "language_change",
-    language_code: languageCode,
+    country: country,
   });
 }
 
@@ -232,17 +243,20 @@ export function trackHomeBannerClick(bannerId: string, bannerType?: string) {
  * 호출 위치: 콘텐츠 PDP 페이지가 렌더링될 때 (회복 가이드, 정보성 콘텐츠 등)
  * 목적: 콘텐츠 PDP 조회 여부와 진입 경로를 측정
  *
- * @param contentType 콘텐츠 타입 ("recovery_guide" | "info" 등)
+ * @param contentType 콘텐츠 타입 ("guide" | "recovery_guide")
  * @param entrySource 진입 경로 ("home" | "community" | "banner" 등)
+ * @param contentId 콘텐츠 ID (예: "top20", recovery guide의 ID 등)
  */
 export function trackContentPdpView(
-  contentType: string,
-  entrySource: EntrySource
+  contentType: "guide" | "recovery_guide",
+  entrySource: EntrySource,
+  contentId: string | number
 ) {
   pushToDataLayer({
     event: "content_pdp_view",
     content_type: contentType,
     entry_source: entrySource,
+    content_id: String(contentId),
   });
 }
 
@@ -252,13 +266,11 @@ export function trackContentPdpView(
  * 호출 위치: PDP 카드 클릭 시 (페이지 이동 직전)
  * 목적: 어떤 PDP가 클릭되었는지 측정
  *
- * @param pdpType PDP 타입 ("treatment" | "hospital")
- * @param pdpId PDP ID
+ * @param entrySource 진입 경로 ("home" | "explore" | "schedule" | "mypage")
  */
-export function trackPdpClick(pdpType: string, pdpId: number | string) {
+export function trackPdpClick(entrySource: EntrySource) {
   pushToDataLayer({
     event: "pdp_click",
-    pdp_type: pdpType,
-    pdp_id: String(pdpId),
+    entry_source: entrySource,
   });
 }
