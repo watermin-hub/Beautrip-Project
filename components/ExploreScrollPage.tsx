@@ -204,7 +204,7 @@ export default function ExploreScrollPage() {
             {t("explore.reviewCTA.description")}
           </p>
           <button
-            onClick={() => router.push("/community/write?entry_source=explore")}
+            onClick={() => router.push("/explore/write")}
             className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             {t("explore.reviewCTA.button")}

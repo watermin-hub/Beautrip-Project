@@ -35,7 +35,11 @@ import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
-import { trackAddToSchedule, trackPdpInquiryClick } from "@/lib/gtm";
+import {
+  trackAddToSchedule,
+  trackPdpInquiryClickStart,
+  trackPdpInquiryClickSubmit,
+} from "@/lib/gtm";
 import {
   formatPrice,
   getCurrencyFromStorage,
@@ -253,7 +257,7 @@ export default function TreatmentDetailPage({
   const handleInquiry = async (type: "chat" | "phone" | "email") => {
     if (!currentTreatment) return;
 
-    // GTM 이벤트 트래킹: 문의 수단 클릭
+    // GTM 이벤트 트래킹: 문의 수단 클릭 (submit)
     const inquiryTypeMap: Record<
       "chat" | "phone" | "email",
       "ai_chat" | "phone" | "email"
@@ -262,7 +266,7 @@ export default function TreatmentDetailPage({
       phone: "phone",
       email: "email",
     };
-    trackPdpInquiryClick(inquiryTypeMap[type], treatmentId);
+    trackPdpInquiryClickSubmit(inquiryTypeMap[type], treatmentId);
 
     // 로컬스토리지에 문의 기록 저장
     const inquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");
@@ -370,13 +374,17 @@ export default function TreatmentDetailPage({
     }
 
     // category_mid로 회복 기간 정보 가져오기 (소분류_리스트와 매칭)
+    // ⚠️ 중요: category_mid_key (한국어 고정)를 사용해야 category_treattime_recovery와 매칭됨
     let recoveryDays = 0;
     let recoveryText: string | null = null;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
-    if (currentTreatment.category_mid) {
+    const categoryMidForRecovery =
+      (currentTreatment as any).category_mid_key ||
+      currentTreatment.category_mid;
+    if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        currentTreatment.category_mid
+        categoryMidForRecovery
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
@@ -1037,7 +1045,12 @@ export default function TreatmentDetailPage({
 
               <button
                 onClick={() => {
-                  setIsInquiryDropdownOpen(!isInquiryDropdownOpen);
+                  const isOpening = !isInquiryDropdownOpen;
+                  setIsInquiryDropdownOpen(isOpening);
+                  // GTM 이벤트 트래킹: 문의 버튼 클릭 (start)
+                  if (isOpening) {
+                    trackPdpInquiryClickStart(treatmentId);
+                  }
                 }}
                 className="flex flex-col items-center gap-1 p-2"
               >
@@ -1055,7 +1068,14 @@ export default function TreatmentDetailPage({
 
               <button
                 ref={inquiryButtonRef}
-                onClick={() => setIsInquiryDropdownOpen(!isInquiryDropdownOpen)}
+                onClick={() => {
+                  const isOpening = !isInquiryDropdownOpen;
+                  setIsInquiryDropdownOpen(isOpening);
+                  // GTM 이벤트 트래킹: 문의 버튼 클릭 (start)
+                  if (isOpening) {
+                    trackPdpInquiryClickStart(treatmentId);
+                  }
+                }}
                 className="flex-1 bg-primary-main text-white py-3 rounded-lg font-semibold hover:bg-primary-main/90 transition-colors relative"
               >
                 {t("pdp.inquiry")}
@@ -1081,7 +1101,7 @@ export default function TreatmentDetailPage({
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
                     >
                       <FiMessageCircle className="text-gray-500" />
-                      AI 채팅 문의
+                      {t("pdp.inquiry.aiChat")}
                     </div>
                     <div
                       role="button"
@@ -1093,7 +1113,7 @@ export default function TreatmentDetailPage({
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
                     >
                       <FiPhone className="text-gray-500" />
-                      전화 문의
+                      {t("pdp.inquiry.phone")}
                     </div>
                     <div
                       role="button"
@@ -1105,7 +1125,7 @@ export default function TreatmentDetailPage({
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
                     >
                       <FiMail className="text-gray-500" />
-                      메일 문의
+                      {t("pdp.inquiry.email")}
                     </div>
                   </div>
                 </>
@@ -1126,7 +1146,11 @@ export default function TreatmentDetailPage({
           treatmentName={
             currentTreatment.treatment_name || t("common.noTreatmentName")
           }
-          categoryMid={currentTreatment.category_mid || null}
+          categoryMid={
+            (currentTreatment as any).category_mid_key ||
+            currentTreatment.category_mid ||
+            null
+          }
         />
       )}
 

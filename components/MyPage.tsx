@@ -42,7 +42,7 @@ export default function MyPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const subscriptionRef = useRef<any>(null);
-  
+
   // tab=saved 또는 tab=schedule일 때 일정 페이지 표시
   const tab = searchParams.get("tab");
   const showSchedulePage = tab === "saved" || tab === "schedule";
@@ -573,9 +573,11 @@ function MainContent({
     loadMyPostsCount();
 
     // 설정 로드
-    const savedLanguage = (localStorage.getItem("language") ||
-      "KR") as LanguageCode;
-    setLanguage(savedLanguage);
+    // ⚠️ 주의: setLanguage는 GTM 이벤트를 트리거하므로, 초기 로드 시에는 호출하지 않음
+    // LanguageContext가 이미 초기 마운트 시 localStorage에서 언어를 읽어서 설정함
+    // const savedLanguage = (localStorage.getItem("language") ||
+    //   "KR") as LanguageCode;
+    // setLanguage(savedLanguage);
 
     const savedCurrency = localStorage.getItem("currency") || "KRW";
     setCurrency(savedCurrency);
@@ -715,7 +717,7 @@ function MainContent({
           icon={FiEdit3}
           label={t("mypage.writePost")}
           onClick={() => {
-            router.push("/community/write?entry_source=mypage");
+            router.push("/explore/write");
           }}
           isButton
         />
@@ -741,7 +743,9 @@ function MainContent({
         <MenuItem
           icon={FiGlobe}
           label={t("mypage.languageCurrency")}
-          value={`${t(selectedLanguage.nameKey)} / ${t(`currency.${currency}`)}`}
+          value={`${t(selectedLanguage.nameKey)} / ${t(
+            `currency.${currency}`
+          )}`}
           onClick={() => setIsLanguageCurrencyOpen(true)}
         />
       </div>

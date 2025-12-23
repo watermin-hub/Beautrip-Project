@@ -7374,6 +7374,10 @@ export async function getHomeHotTreatments(
         keys: Object.keys(data[0]),
         hasSellingPrice: "selling_price" in data[0],
         sellingPrice: data[0].selling_price,
+        hasDisRate: "dis_rate" in data[0],
+        disRate: data[0].dis_rate,
+        hasVatInfo: "vat_info" in data[0],
+        vatInfo: data[0].vat_info,
         sample: data[0],
       });
     }
@@ -7384,6 +7388,9 @@ export async function getHomeHotTreatments(
       main_image_url: item.main_img_url || item.main_image_url, // 명세서: main_img_url, 하위 호환성 유지
       // selling_price가 없거나 0인 경우 확인
       selling_price: item.selling_price ?? null,
+      // dis_rate와 vat_info 명시적으로 보존 (RPC에서 반환하지 않을 수 있음)
+      dis_rate: item.dis_rate ?? null,
+      vat_info: item.vat_info ?? null,
     }));
 
     return cleanData<Treatment>(mappedData);

@@ -77,11 +77,7 @@ export default function RankingSection({
               key={tab.id}
               onClick={() => {
                 // GTM: 탐색 필터 클릭 이벤트 ([카테고리별, K-Beauty, 병원별, 일정 맞춤])
-                // "category"는 "ranking"으로 매핑
-                const filterType = tab.id === "category" ? "ranking" : tab.id;
-                trackExploreFilterClick(
-                  filterType as "ranking" | "kbeauty" | "hospital" | "schedule"
-                );
+                trackExploreFilterClick(tab.id);
                 setActiveTab(tab.id);
                 // 탭 필터 선택 시 맨 위로 스크롤
                 window.scrollTo({

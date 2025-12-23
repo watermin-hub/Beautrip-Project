@@ -48,15 +48,24 @@ export async function translateTreatments(
         // 번역된 데이터와 원본 데이터 병합
         // (번역되지 않은 필드는 원본 유지)
         // ⚠️ 중요: dis_rate, vat_info 등 가격 관련 필드는 원본 데이터에서 보존
+        // 번역된 데이터에서 가격 관련 필드를 제거하고 원본 필드로 덮어쓰기
+        const {
+          dis_rate: _translatedDisRate,
+          vat_info: _translatedVatInfo,
+          selling_price: _translatedSellingPrice,
+          original_price: _translatedOriginalPrice,
+          ...translatedWithoutPrice
+        } = translated;
+
         return {
           ...treatment, // 원본 데이터 (위치, 순서 등 유지)
-          ...translated, // 번역된 데이터로 덮어쓰기
+          ...translatedWithoutPrice, // 번역된 데이터로 덮어쓰기 (가격 필드 제외)
           treatment_id: treatment.treatment_id, // ID는 항상 동일
-          // 가격 관련 필드 보존 (번역 테이블에 없을 수 있음)
-          dis_rate: treatment.dis_rate ?? translated.dis_rate,
-          vat_info: treatment.vat_info ?? translated.vat_info,
-          selling_price: treatment.selling_price ?? translated.selling_price,
-          original_price: treatment.original_price ?? translated.original_price,
+          // 가격 관련 필드는 항상 원본에서 보존 (번역 테이블에 없을 수 있음)
+          dis_rate: treatment.dis_rate ?? _translatedDisRate,
+          vat_info: treatment.vat_info ?? _translatedVatInfo,
+          selling_price: treatment.selling_price ?? _translatedSellingPrice,
+          original_price: treatment.original_price ?? _translatedOriginalPrice,
         };
       } catch (error) {
         console.error(

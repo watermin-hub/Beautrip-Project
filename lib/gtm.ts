@@ -169,18 +169,18 @@ export function trackLoginSuccess(
  * 호출 위치: 탐색 페이지에서 필터 버튼 클릭 시 ([카테고리별, K-Beauty, 병원별, 일정 맞춤])
  * 목적: 사용자가 어떤 필터를 선택했는지 측정
  *
- * @param filterType 필터 타입 ("ranking" | "kbeauty" | "hospital" | "schedule")
- *   - "ranking": 카테고리별 (랭킹)
+ * @param filterType 필터 타입 ("category" | "kbeauty" | "hospital" | "schedule")
+ *   - "category": 카테고리별
  *   - "kbeauty": K-Beauty
  *   - "hospital": 병원별
  *   - "schedule": 일정 맞춤
  */
 export function trackExploreFilterClick(
-  filterType: "ranking" | "kbeauty" | "hospital" | "schedule"
+  filterType: "category" | "kbeauty" | "hospital" | "schedule"
 ) {
   const payload = {
     event: "explore_filter_click",
-    entry_source: filterType,
+    filter_type: filterType,
   };
 
   console.log("[GTM] trackExploreFilterClick 호출:", payload);
@@ -303,22 +303,38 @@ export function trackPdpClick(
 }
 
 /**
- * pdp_inquiry_click 이벤트 트래킹
+ * pdp_inquiry_click_start 이벤트 트래킹
+ *
+ * 호출 위치: 시술 PDP 페이지에서 문의 버튼 클릭 시 (드롭다운이 열릴 때)
+ * 목적: 사용자가 문의를 시작했음을 측정
+ *
+ * @param treatmentId 시술 ID (문자열로 변환)
+ */
+export function trackPdpInquiryClickStart(treatmentId: string | number) {
+  pushToDataLayer({
+    event: "pdp_inquiry_click_start",
+    entry_source: "treatment",
+    treatment_id: String(treatmentId),
+  });
+}
+
+/**
+ * pdp_inquiry_click_submit 이벤트 트래킹
  *
  * 호출 위치: 시술 PDP 페이지에서 문의 수단 클릭 시 (AI 채팅, 전화, 메일)
- * 목적: 어떤 문의 수단이 클릭되었는지 측정
+ * 목적: 어떤 문의 수단이 선택되었는지 측정
  *
  * @param inquiryType 문의 타입 ("ai_chat" | "phone" | "email")
  * @param treatmentId 시술 ID (문자열로 변환)
  */
-export function trackPdpInquiryClick(
+export function trackPdpInquiryClickSubmit(
   inquiryType: "ai_chat" | "phone" | "email",
   treatmentId: string | number
 ) {
   pushToDataLayer({
-    event: "pdp_inquiry_click",
+    event: "pdp_inquiry_click_submit",
     inquiry_type: inquiryType,
+    entry_source: "treatment",
     treatment_id: String(treatmentId),
-    entry_source: "pdp",
   });
 }

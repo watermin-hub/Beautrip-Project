@@ -129,7 +129,7 @@ export default function HomePage() {
   // 1번 배너 클릭 핸들러: 로그인 체크 후 후기 작성 페이지로 이동 또는 로그인 모달 열기
   const handleBanner1Click = () => {
     if (isLoggedIn) {
-      router.push("/community/write?entry_source=home");
+      router.push("/explore/write");
     } else {
       setShowLoginRequiredPopup(true);
     }
@@ -233,7 +233,7 @@ export default function HomePage() {
           <button
             onClick={() => {
               if (isLoggedIn) {
-                router.push("/community/write?entry_source=home");
+                router.push("/explore/write");
               } else {
                 setShowLoginRequiredPopup(true);
               }
@@ -265,7 +265,7 @@ export default function HomePage() {
           setIsLoggedIn(true);
           setShowLoginRequiredPopup(false);
           // 로그인 성공 후 후기 작성 페이지로 이동
-          router.push("/community/write?entry_source=home");
+          router.push("/explore/write");
         }}
       />
 

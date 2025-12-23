@@ -512,9 +512,7 @@ export default function HospitalDetailPage({
               {t("pdp.reviews")}
             </h3>
             <button
-              onClick={() =>
-                router.push("/community/write?entry_source=explore")
-              }
+              onClick={() => router.push("/explore/write")}
               className="text-primary-main text-sm font-medium"
             >
               {t("pdp.writeReview")}
