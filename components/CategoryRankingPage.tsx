@@ -387,8 +387,10 @@ export default function CategoryRankingPage({
 
         if (selectedMidCategory !== null) {
           // 소분류 랭킹 로드 (현재 언어로 로드)
+          // ✅ "#" 제거: UI에서 "#코기능교정" 형식으로 전달될 수 있지만, DB는 "코기능교정" 형식이어야 함
+          const cleanMidCategory = selectedMidCategory.replace(/^#/, "");
           const result = await getSmallCategoryRankings(
-            selectedMidCategory,
+            cleanMidCategory, // ✅ "#" 제거된 값 사용
             null, // p_category_large (대분류 필터 없음)
             20, // p_m (베이지안 가중치)
             2, // p_dedupe_limit_per_name
@@ -445,7 +447,15 @@ export default function CategoryRankingPage({
             setSmallCategoryRankings(smallGrouped);
             setMidCategoryRankings([]);
           } else {
-            setError(result.error || "소분류 랭킹을 불러올 수 없습니다.");
+            // 에러 메시지 개선: 백엔드 에러를 더 명확하게 표시
+            const errorMsg =
+              result.error || "소분류 랭킹을 불러올 수 없습니다.";
+            console.error("❌ [소분류 랭킹 조회 실패]:", {
+              error: errorMsg,
+              selectedMidCategory: cleanMidCategory,
+              language,
+            });
+            setError(errorMsg);
             setSmallCategoryRankings([]);
           }
         } else {
@@ -455,7 +465,11 @@ export default function CategoryRankingPage({
             selectedCategory,
             selectedMidCategory,
             language,
-            note: "p_category_large 기준으로 중분류별 랭킹 조회",
+            note:
+              language !== "KR"
+                ? "⚠️ 다른 언어에서는 백엔드 RPC 함수가 v_treatment_i18n 뷰를 사용하지 않도록 수정 필요"
+                : "✅ 한국어는 정상 작동",
+            rpcFunction: "rpc_mid_category_rankings_i18n",
           });
           const result = await getMidCategoryRankings(
             selectedCategory, // p_category_large (대분류 필터, null이면 전체)
@@ -475,11 +489,35 @@ export default function CategoryRankingPage({
             // 백엔드에서 이미 정렬되어 있음
             const midGrouped = result.data;
 
+            // 데이터 구조 확인 로그 (사용자 요청사항: category_mid_key, category_mid, treatment_id 등 확인)
             console.log(
               "✅ [CategoryRankingPage] 중분류 랭킹 데이터 로드 성공:",
               {
                 count: midGrouped.length,
-                firstItem: midGrouped[0],
+                firstItem: midGrouped[0]
+                  ? {
+                      category_mid_key: midGrouped[0].category_mid_key,
+                      category_mid: midGrouped[0].category_mid,
+                      category_rank: midGrouped[0].category_rank,
+                      treatment_count: midGrouped[0].treatment_count,
+                      total_reviews: midGrouped[0].total_reviews,
+                      average_rating: midGrouped[0].average_rating,
+                      // 첫 번째 시술 샘플
+                      firstTreatment: midGrouped[0].treatments?.[0]
+                        ? {
+                            treatment_id:
+                              midGrouped[0].treatments[0].treatment_id,
+                            treatment_name:
+                              midGrouped[0].treatments[0].treatment_name,
+                            hospital_name:
+                              midGrouped[0].treatments[0].hospital_name,
+                            category_mid:
+                              midGrouped[0].treatments[0].category_mid,
+                          }
+                        : null,
+                      treatmentsCount: midGrouped[0]?.treatments?.length || 0,
+                    }
+                  : null,
                 sampleTreatments: midGrouped[0]?.treatments?.length || 0,
               }
             );
@@ -488,9 +526,10 @@ export default function CategoryRankingPage({
             setSmallCategoryRankings([]);
 
             // 중분류 목록도 저장 (필터 유지용)
-            // category_mid_key가 있으면 우선 사용, 없으면 category_mid 사용 (백엔드 호환성)
+            // 백엔드와 동일하게: category_mid_key 우선 사용, 없으면 category_mid fallback
             const midCategorySet = new Set<string>();
             midGrouped.forEach((ranking) => {
+              // 백엔드 getMidCategoryRankings와 동일한 로직: category_mid_key || category_mid || "기타"
               const midCategory =
                 ranking.category_mid_key || ranking.category_mid;
               if (midCategory) {
@@ -511,15 +550,33 @@ export default function CategoryRankingPage({
             }
           } else {
             // 데이터가 없거나 에러 발생
-            const errorMsg =
-              result.error || "중분류 랭킹을 불러올 수 없습니다.";
-            console.warn("⚠️ [CategoryRankingPage] 중분류 랭킹 로드 실패:", {
+            // 에러 메시지 개선: 백엔드 에러를 더 명확하게 표시
+            let errorMsg = result.error || "중분류 랭킹을 불러올 수 없습니다.";
+            if (
+              result.error?.includes("v_treatment_i18n") ||
+              result.error?.includes("schema cache")
+            ) {
+              errorMsg =
+                language !== "KR"
+                  ? "백엔드 함수가 삭제된 v_treatment_i18n 뷰를 사용하고 있습니다. 백엔드 수정이 필요합니다."
+                  : errorMsg;
+            }
+            // 에러 상세 정보 로깅 (사용자 요청사항: error, error.message, code 포함)
+            console.error("❌ [CategoryRankingPage] 중분류 랭킹 로드 실패:", {
               success: result.success,
               hasData: !!result.data,
               dataLength: result.data?.length || 0,
-              error: result.error,
+              error: result.error, // 전체 에러 메시지
+              errorMessage: result.error, // 명시적으로 표시 (사용자 요청사항)
               selectedCategory,
               selectedMidCategory,
+              language,
+              note:
+                language !== "KR"
+                  ? "⚠️ 다른 언어에서는 백엔드 RPC 함수(rpc_mid_category_rankings_i18n)가 v_treatment_i18n 뷰를 사용하지 않도록 수정 필요"
+                  : "✅ 한국어는 정상 작동",
+              // 백엔드 디버깅용 추가 정보
+              rpcFunction: "rpc_mid_category_rankings_i18n",
             });
             setError(errorMsg);
             setMidCategoryRankings([]);

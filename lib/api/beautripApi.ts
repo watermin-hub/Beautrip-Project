@@ -5508,7 +5508,13 @@ export async function getMidCategoryRankings(
     console.log("🔍 [RPC 호출 파라미터]:", {
       function: "rpc_mid_category_rankings_i18n",
       params: rpcParams,
-      language: language,
+      // 명확한 필드 표시 (사용자 요청사항)
+      p_category_large: rpcParams.p_category_large,
+      p_lang: rpcParams.p_lang,
+      p_m: rpcParams.p_m,
+      p_dedupe_limit_per_name: rpcParams.p_dedupe_limit_per_name,
+      p_limit_per_category: rpcParams.p_limit_per_category,
+      language: language, // 프론트엔드 언어 코드
     });
 
     const { data, error } = await client.rpc(
