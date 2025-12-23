@@ -48,7 +48,7 @@ export default function CommunityHeader({
         </div>
         <div className="flex items-center gap-3 flex-shrink-0 ml-2">
           <button
-            onClick={() => router.push("/community/write")}
+            onClick={() => router.push("/community/write?entrySource=community")}
             className="p-2 hover:bg-gray-50 rounded-full transition-colors"
             aria-label="글 작성하기"
           >

@@ -16,7 +16,11 @@ import {
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackReviewStart, trackReviewSubmit } from "@/lib/gtm";
+import {
+  trackReviewStart,
+  trackReviewSubmit,
+  type EntrySource,
+} from "@/lib/gtm";
 
 interface ProcedureReviewFormProps {
   onBack: () => void;
@@ -93,11 +97,21 @@ export default function ProcedureReviewForm({
 
   // GTM 이벤트: review_start (후기 작성 화면 진입 완료 시점)
   useEffect(() => {
-    // entry_source는 대부분 "mypage" 또는 "community"에서 진입
-    // URL 경로를 확인하여 정확한 진입 경로 판단
-    const entrySource = window.location.pathname.includes("/mypage")
-      ? "mypage"
-      : "community";
+    const searchParams = new URLSearchParams(window.location.search);
+    const qsSource = searchParams.get("entrySource");
+
+    let fallbackByPath: EntrySource = "unknown";
+    const path = window.location.pathname;
+    if (path.includes("/mypage")) fallbackByPath = "mypage";
+    else if (path.includes("/explore")) fallbackByPath = "explore";
+    else if (path === "/" || path === "/home") fallbackByPath = "home";
+    else if (path.includes("/community")) fallbackByPath = "community";
+
+    const entrySource: EntrySource =
+      qsSource && ["home", "explore", "community", "mypage"].includes(qsSource)
+        ? (qsSource as EntrySource)
+        : fallbackByPath;
+
     trackReviewStart(entrySource);
   }, []);
 

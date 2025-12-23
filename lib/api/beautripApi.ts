@@ -5558,6 +5558,71 @@ async function convertCategoryMidToKorean(
   }
 }
 
+// 현재 언어의 category_small을 한국어 category_small로 변환
+export async function convertCategorySmallToKorean(
+  categorySmall: string,
+  currentLanguage: LanguageCode,
+  treatmentId?: number
+): Promise<string | null> {
+  if (currentLanguage === "KR") {
+    return categorySmall;
+  }
+
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return categorySmall;
+    }
+
+    // 방법 1: treatment_id가 있으면 treatment_id로 매칭
+    if (treatmentId) {
+      const { data: krData, error: krError } = await client
+        .from(TABLE_NAMES.TREATMENT_MASTER)
+        .select("category_small")
+        .eq("treatment_id", treatmentId)
+        .limit(1);
+
+      if (!krError && krData && krData.length > 0 && krData[0].category_small) {
+        return krData[0].category_small;
+      }
+    }
+
+    // 방법 2: category_i18n 테이블 사용 (있는 경우)
+    try {
+      const langCode =
+        currentLanguage === "EN"
+          ? "en"
+          : currentLanguage === "CN"
+          ? "zh-CN"
+          : currentLanguage === "JP"
+          ? "ja"
+          : "ko";
+      const { data: i18nData, error: i18nError } = await client
+        .from(TABLE_NAMES.CATEGORY_I18N)
+        .select("category_small_kr, category_small")
+        .eq("category_small", categorySmall)
+        .eq("lang", langCode)
+        .limit(1);
+
+      if (
+        !i18nError &&
+        i18nData &&
+        i18nData.length > 0 &&
+        i18nData[0].category_small_kr
+      ) {
+        return i18nData[0].category_small_kr;
+      }
+    } catch (e) {
+      console.warn("⚠️ category_i18n 테이블 조회 실패, fallback 사용:", e);
+    }
+
+    return categorySmall;
+  } catch (error) {
+    console.error("카테고리 소분류 변환 실패:", error);
+    return categorySmall;
+  }
+}
+
 // 한국어 category_mid key를 해당 언어의 category_mid 값으로 변환
 // 방법: treatment_id를 매개로 한국어 테이블과 해당 언어 테이블을 연결
 async function convertCategoryMidToLanguage(

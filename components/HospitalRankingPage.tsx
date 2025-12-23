@@ -177,7 +177,11 @@ export default function HospitalRankingPage() {
                     className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => {
                       if (hospitalId) {
-                        router.push(`/hospital/${hospitalId}`);
+                        const query =
+                          hospital.hospital_id_rd && hospital.platform
+                            ? `?platform=${hospital.platform}`
+                            : "";
+                        router.push(`/hospital/${hospitalId}${query}`);
                       }
                     }}
                   >

@@ -211,8 +211,9 @@ export function trackLanguageChange(country: string) {
 /**
  * ai_analysis_start 이벤트 트래킹
  *
- * 호출 위치: AI 분석 화면이 노출될 때 (카메라 모달 열릴 때)
+ * 호출 위치: AI 분석 버튼 클릭 시 (동의 모달 열기 전, 버튼 클릭 시점)
  * 목적: AI 분석 시작 여부를 측정
+ * 참고: 배너 no.2와 플로팅 버튼 둘 다 home에서 진입하므로 entry_source는 자동으로 "home"으로 설정됨
  */
 export function trackAIAnalysisStart() {
   pushToDataLayer({
@@ -244,12 +245,18 @@ export function trackHomeBannerClick(bannerId: string, bannerType?: string) {
  * 목적: 콘텐츠 PDP 조회 여부와 진입 경로를 측정
  *
  * @param contentType 콘텐츠 타입 ("guide" | "recovery_guide")
- * @param entrySource 진입 경로 ("home" | "community" | "banner" 등)
- * @param contentId 콘텐츠 ID (예: "top20", recovery guide의 ID 등)
+ * @param entrySource 진입 경로 ("banner" | "home" | "community")
+ *   - "banner": 홈의 배너 이미지로 진입
+ *   - "home": 홈의 가이드/회복가이드 클릭으로 진입
+ *   - "community": 커뮤니티의 가이드 탭에서 진입
+ * @param contentId 콘텐츠 ID
+ *   - "top20": TOP20 정보
+ *   - "travel-recommendation": 관광지 추천
+ *   - 회복가이드 글 ID: 회복 가이드 포스트 ID (예: "jaw-contour-surgery")
  */
 export function trackContentPdpView(
   contentType: "guide" | "recovery_guide",
-  entrySource: EntrySource,
+  entrySource: "banner" | "home" | "community",
   contentId: string | number
 ) {
   pushToDataLayer({
@@ -261,14 +268,16 @@ export function trackContentPdpView(
 }
 
 /**
- * pdp_click 이벤트 트래킹
+ * pdp_click 이벤트 트래킹 (시술 PDP 전용)
  *
- * 호출 위치: PDP 카드 클릭 시 (페이지 이동 직전)
- * 목적: 어떤 PDP가 클릭되었는지 측정
+ * 호출 위치: 시술 PDP 카드 클릭 시 (페이지 이동 직전)
+ * 목적: 어떤 시술 PDP가 클릭되었는지 측정
  *
  * @param entrySource 진입 경로 ("home" | "explore" | "schedule" | "mypage")
  */
-export function trackPdpClick(entrySource: EntrySource) {
+export function trackPdpClick(
+  entrySource: "home" | "explore" | "schedule" | "mypage"
+) {
   pushToDataLayer({
     event: "pdp_click",
     entry_source: entrySource,

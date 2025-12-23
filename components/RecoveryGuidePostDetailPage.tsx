@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { findRecoveryGuideById } from "@/lib/content/recoveryGuidePosts";
+import { findRecoveryGuideById, getAllRecoveryGuides } from "@/lib/content/recoveryGuidePosts";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiChevronLeft, FiCheck, FiAlertCircle, FiHeart, FiMessageCircle, FiEye } from "react-icons/fi";
 import type { RecoveryGuidePost } from "@/lib/content/recoveryGuidePosts";
@@ -15,6 +15,7 @@ import {
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
 import BottomNavigation from "./BottomNavigation";
+import { trackContentPdpView } from "@/lib/gtm";
 
 // 읽기 좋은 마크다운 렌더링 함수
 function renderMarkdown(content: string) {
@@ -470,6 +471,43 @@ export default function RecoveryGuidePostDetailPage({
       }
     };
     loadPost();
+  }, [postId, language]);
+
+  // GTM: 콘텐츠 PDP 뷰 이벤트
+  useEffect(() => {
+    if (!postId) return;
+    
+    const loadAndTrack = async () => {
+      // 진입 경로 확인: sessionStorage > referrer 순서로 확인
+      let entrySource: "banner" | "home" | "community" = "home"; // 기본값
+      
+      // 1. sessionStorage에 저장된 값이 있으면 사용 (클릭 시 저장됨)
+      const storedEntrySource = sessionStorage.getItem("content_entry_source");
+      if (storedEntrySource === "banner" || storedEntrySource === "home" || storedEntrySource === "community") {
+        entrySource = storedEntrySource;
+        sessionStorage.removeItem("content_entry_source"); // 사용 후 삭제
+      } else {
+        // 2. referrer 기반으로 판단
+        const referrer = document.referrer;
+        if (referrer.includes("/community")) {
+          entrySource = "community";
+        } else {
+          entrySource = "home";
+        }
+      }
+      
+      // 회복가이드 포스트 배열에서 인덱스 찾기 (1~18 형식으로 변환)
+      const allPosts = await getAllRecoveryGuides(language);
+      const postIndex = allPosts.findIndex((post) => post.id === postId);
+      const contentId = postIndex >= 0 
+        ? `recovery_guide_${String(postIndex + 1).padStart(2, "0")}` // recovery_guide_01 ~ recovery_guide_18
+        : postId; // 찾지 못하면 원본 postId 사용 (fallback)
+      
+      // content_type: "recovery_guide", content_id: "recovery_guide_01" ~ "recovery_guide_18"
+      trackContentPdpView("recovery_guide", entrySource, contentId);
+    };
+    
+    loadAndTrack();
   }, [postId, language]);
 
   const handleLikeClick = async () => {

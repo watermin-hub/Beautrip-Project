@@ -16,7 +16,11 @@ import {
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackReviewStart, trackReviewSubmit } from "@/lib/gtm";
+import {
+  trackReviewStart,
+  trackReviewSubmit,
+  type EntrySource,
+} from "@/lib/gtm";
 
 interface HospitalReviewFormProps {
   onBack: () => void;
@@ -80,11 +84,23 @@ export default function HospitalReviewForm({
 
   // GTM 이벤트: review_start (후기 작성 화면 진입 완료 시점)
   useEffect(() => {
-    // entry_source는 대부분 "mypage" 또는 "community"에서 진입
-    // URL 경로를 확인하여 정확한 진입 경로 판단
-    const entrySource = window.location.pathname.includes("/mypage") 
-      ? "mypage" 
-      : "community";
+    const searchParams = new URLSearchParams(window.location.search);
+    const qsSource = searchParams.get("entrySource");
+
+    const fallbackByPath = (() => {
+      const path = window.location.pathname;
+      if (path.includes("/mypage")) return "mypage";
+      if (path.includes("/explore")) return "explore";
+      if (path === "/" || path === "/home") return "home";
+      if (path.includes("/community")) return "community";
+      return "unknown";
+    })();
+
+    const entrySource: EntrySource =
+      qsSource && ["home", "explore", "community", "mypage"].includes(qsSource)
+        ? qsSource
+        : fallbackByPath;
+
     trackReviewStart(entrySource);
   }, []);
 

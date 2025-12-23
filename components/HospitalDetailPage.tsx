@@ -65,7 +65,10 @@ export default function HospitalDetailPage({
         setHospital(foundHospital);
 
         // 해당 병원의 시술 목록 조회 (treatment_master) - hospital_id_rd만으로 조회
-        const treatments = await loadTreatmentsByHospitalIdRd(hospitalIdRd);
+        const treatments = await loadTreatmentsByHospitalIdRd(
+          hospitalIdRd,
+          language
+        );
         setHospitalTreatments(treatments ?? []);
 
         // 찜 상태 로드 (hospital_id_rd 기준)
@@ -87,7 +90,7 @@ export default function HospitalDetailPage({
     };
 
     loadData();
-  }, [hospitalIdRd, favoriteKey]);
+  }, [hospitalIdRd, favoriteKey, language]);
 
   // ✅ 진료과 파싱 (기존 로직 유지)
   const departments: string[] = useMemo(() => {
@@ -152,16 +155,32 @@ export default function HospitalDetailPage({
       hospitalIdRd,
 
       // 번역 필드 또는 KR 원본 사용
-      title: hospital?.hospital_name_i18n || hospital?.hospital_name_kr || t("common.noHospitalName"),
-      clinic: hospital?.hospital_name_i18n || hospital?.hospital_name_kr || "",
-      location: hospital?.hospital_address_i18n || hospital?.hospital_address_kr || "",
+      title:
+        hospital?.hospital_name ||
+        hospital?.hospital_name_i18n ||
+        hospital?.hospital_name_kr ||
+        t("common.noHospitalName"),
+      clinic:
+        hospital?.hospital_name ||
+        hospital?.hospital_name_i18n ||
+        hospital?.hospital_name_kr ||
+        "",
+      location:
+        hospital?.hospital_address ||
+        hospital?.hospital_address_i18n ||
+        hospital?.hospital_address_kr ||
+        "",
       rating:
         hospital?.hospital_rating != null
           ? Number(hospital.hospital_rating).toFixed(1)
           : "0",
       reviewCount:
         hospital?.review_count != null ? String(hospital.review_count) : "0",
-      address: hospital?.hospital_address_i18n || hospital?.hospital_address_kr || "",
+      address:
+        hospital?.hospital_address ||
+        hospital?.hospital_address_i18n ||
+        hospital?.hospital_address_kr ||
+        "",
       phone: hospital?.hospital_phone_safe || "",
       languageSupport: hospital?.hospital_language_support || "",
     };
@@ -189,8 +208,16 @@ export default function HospitalDetailPage({
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        const hospitalName = hospital?.hospital_name_i18n || hospital?.hospital_name_kr || "병원";
-        const hospitalAddress = hospital?.hospital_address_i18n || hospital?.hospital_address_kr || "";
+        const hospitalName =
+          hospital?.hospital_name ||
+          hospital?.hospital_name_i18n ||
+          hospital?.hospital_name_kr ||
+          "병원";
+        const hospitalAddress =
+          hospital?.hospital_address ||
+          hospital?.hospital_address_i18n ||
+          hospital?.hospital_address_kr ||
+          "";
         await navigator.share({
           title: hospitalName || "병원 정보",
           text: `${hospitalName || "병원"} - ${hospitalAddress}`,
@@ -245,7 +272,9 @@ export default function HospitalDetailPage({
           >
             <FiChevronRight className="text-gray-700 text-xl rotate-180" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">{t("pdp.hospitalInfo")}</h1>
+          <h1 className="text-lg font-bold text-gray-900">
+            {t("pdp.hospitalInfo")}
+          </h1>
           <button
             onClick={handleShare}
             className="p-2 hover:bg-gray-50 rounded-full transition-colors"
@@ -261,7 +290,12 @@ export default function HospitalDetailPage({
           {hospital.hospital_img_url ? (
             <img
               src={hospital.hospital_img_url}
-              alt={hospital.hospital_name_i18n || hospital.hospital_name_kr || "병원 이미지"}
+              alt={
+                hospital.hospital_name ||
+                hospital.hospital_name_i18n ||
+                hospital.hospital_name_kr ||
+                "병원 이미지"
+              }
               className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -286,7 +320,10 @@ export default function HospitalDetailPage({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                {hospital.hospital_name_i18n || hospital.hospital_name_kr || t("common.noHospitalName")}
+                {hospital.hospital_name ||
+                  hospital.hospital_name_i18n ||
+                  hospital.hospital_name_kr ||
+                  t("common.noHospitalName")}
               </h2>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
@@ -295,7 +332,10 @@ export default function HospitalDetailPage({
                     {Number(rating).toFixed(1)}
                   </span>
                 </div>
-                <span className="text-gray-500">({reviewCount}{t("pdp.count")} {t("pdp.reviews")})</span>
+                <span className="text-gray-500">
+                  ({reviewCount}
+                  {t("pdp.count")} {t("pdp.reviews")})
+                </span>
               </div>
             </div>
 
@@ -320,14 +360,18 @@ export default function HospitalDetailPage({
             {t("pdp.hospitalInfo")}
           </h3>
           <div className="space-y-3">
-            {(hospital.hospital_address_i18n || hospital.hospital_address_kr) && (
+            {(hospital.hospital_address ||
+              hospital.hospital_address_i18n ||
+              hospital.hospital_address_kr) && (
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
                   <FiMapPin className="text-gray-400" />
                   <span className="font-medium">{t("label.address")}</span>
                 </div>
                 <p className="text-sm text-gray-500 pl-6">
-                  {hospital.hospital_address_i18n || hospital.hospital_address_kr}
+                  {hospital.hospital_address ||
+                    hospital.hospital_address_i18n ||
+                    hospital.hospital_address_kr}
                 </p>
               </div>
             )}
@@ -362,7 +406,9 @@ export default function HospitalDetailPage({
               <div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                   <FiGlobe className="text-gray-400" />
-                  <span className="font-medium">{t("pdp.languageSupport")}</span>
+                  <span className="font-medium">
+                    {t("pdp.languageSupport")}
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2 pl-6">
                   {languageSupports.map((lang, idx) => (
@@ -417,7 +463,8 @@ export default function HospitalDetailPage({
           <div className="px-4 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-900">
-                {t("pdp.providedProcedures")} ({hospitalTreatments.length}{t("pdp.count")})
+                {t("pdp.providedProcedures")} ({hospitalTreatments.length}
+                {t("pdp.count")})
               </h3>
 
               <button
@@ -461,9 +508,13 @@ export default function HospitalDetailPage({
         {/* 리뷰 섹션 (MVP: 별점/리뷰수만) */}
         <div className="px-4 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{t("pdp.reviews")}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {t("pdp.reviews")}
+            </h3>
             <button
-              onClick={() => router.push("/community/write")}
+              onClick={() =>
+                router.push("/community/write?entrySource=explore")
+              }
               className="text-primary-main text-sm font-medium"
             >
               {t("pdp.writeReview")}
@@ -480,7 +531,11 @@ export default function HospitalDetailPage({
               </div>
             </div>
             <div className="text-gray-600">
-              <span className="font-semibold">{reviewCount}{t("pdp.count")}</span> {t("pdp.reviews")}
+              <span className="font-semibold">
+                {reviewCount}
+                {t("pdp.count")}
+              </span>{" "}
+              {t("pdp.reviews")}
             </div>
           </div>
 
@@ -505,7 +560,7 @@ export default function HospitalDetailPage({
           </button>
 
           <button
-            onClick={() => router.push("/community/write")}
+            onClick={() => router.push("/community/write?entrySource=explore")}
             className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
           >
             <FiMessageCircle className="text-lg" />

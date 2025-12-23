@@ -10,7 +10,7 @@ import {
 } from "@/lib/content/recoveryGuidePosts";
 import { supabase } from "@/lib/supabase";
 import LoginRequiredPopup from "./LoginRequiredPopup";
-import { trackContentPdpView, trackPdpClick } from "@/lib/gtm";
+import { trackContentPdpView } from "@/lib/gtm";
 
 interface ContentItem {
   id: number | string;
@@ -200,23 +200,27 @@ export default function InformationalContentSection() {
                     return;
                   }
                   
-                  // GTM: PDP 클릭 이벤트 (진입 경로 확인)
+                  // GTM: Content PDP 클릭 이벤트 (커뮤니티-가이드용)
+                  // entry_source 구분: home (홈에서 클릭), community (커뮤니티 탭에서 클릭)
                   const entrySource = pathname === "/" || pathname === "/home" 
                     ? "home" 
                     : pathname?.includes("/community") 
                     ? "community" 
-                    : "unknown";
+                    : "home"; // 기본값은 home
                   
-                  trackPdpClick(entrySource);
+                  // 클릭 시점에 entry_source를 sessionStorage에 저장 (상세 페이지에서 사용)
+                  sessionStorage.setItem("content_entry_source", entrySource);
                   
-                  // 회복 가이드인 경우 상세 페이지로 이동
+                  // 컨텐츠 타입 및 ID 설정
+                  // 주의: 실제 뷰 이벤트는 상세 페이지에서 발생하므로 여기서는 저장만
                   if (content.category === recoveryGuideCategoryKey && content.slug) {
+                    // 회복 가이드인 경우 - content_id는 postId 그대로 사용
                     router.push(`/community/recovery-guide/${content.slug}`);
                   } else if (content.slug === "top20") {
-                    // TOP 20 정보 페이지로 이동
+                    // TOP 20 정보 페이지 - content_id: "top20"
                     router.push(`/community/info/top20`);
                   } else if (content.slug === "travel-recommendation") {
-                    // 여행지 추천 페이지로 이동
+                    // 여행지 추천 페이지 - content_id: "travel-recommendation"
                     router.push(`/community/info/travel-recommendation`);
                   } else {
                     // 다른 컨텐츠는 추후 구현

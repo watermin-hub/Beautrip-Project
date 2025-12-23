@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import BottomNavigation from "@/components/BottomNavigation";
 import PostList from "@/components/PostList";
 import ReviewList from "@/components/ReviewList";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function CommunityPostsContent() {
   const searchParams = useSearchParams();
@@ -55,13 +56,18 @@ function CommunityPostsContent() {
   );
 }
 
+function LoadingFallback() {
+  const { t } = useLanguage();
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="text-gray-500">{t("common.loading")}</div>
+    </div>
+  );
+}
+
 export default function CommunityPostsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-gray-500">로딩 중...</div>
-      </div>
-    }>
+    <Suspense fallback={<LoadingFallback />}>
       <CommunityPostsContent />
     </Suspense>
   );

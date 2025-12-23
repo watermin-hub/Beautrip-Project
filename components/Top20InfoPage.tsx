@@ -26,12 +26,23 @@ export default function Top20InfoPage() {
 
   // GTM: 콘텐츠 PDP 뷰 이벤트
   useEffect(() => {
-    // 진입 경로 확인 (referrer 또는 pathname 기반)
-    const entrySource = document.referrer.includes("/home") || document.referrer.includes("/") 
-      ? "home" 
-      : document.referrer.includes("/community") 
-      ? "community" 
-      : "unknown";
+    // 진입 경로 확인: 배너 > sessionStorage > referrer 순서로 확인
+    let entrySource: "banner" | "home" | "community" = "home"; // 기본값
+    
+    // 1. sessionStorage에 저장된 값이 있으면 사용 (배너 클릭 시 저장됨)
+    const storedEntrySource = sessionStorage.getItem("content_entry_source");
+    if (storedEntrySource === "banner") {
+      entrySource = "banner";
+      sessionStorage.removeItem("content_entry_source"); // 사용 후 삭제
+    } else {
+      // 2. referrer 기반으로 판단
+      const referrer = document.referrer;
+      if (referrer.includes("/community")) {
+        entrySource = "community";
+      } else {
+        entrySource = "home";
+      }
+    }
     
     // content_type: "guide", content_id: "top20"
     trackContentPdpView("guide", entrySource, "top20");

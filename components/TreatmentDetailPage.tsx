@@ -36,7 +36,11 @@ import BottomNavigation from "./BottomNavigation";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { trackAddToSchedule } from "@/lib/gtm";
-import { formatPrice, getCurrencyFromStorage, getCurrencyFromLanguage } from "@/lib/utils/currency";
+import {
+  formatPrice,
+  getCurrencyFromStorage,
+  getCurrencyFromLanguage,
+} from "@/lib/utils/currency";
 
 interface TreatmentDetailPageProps {
   treatmentId: number;
@@ -59,6 +63,15 @@ export default function TreatmentDetailPage({
   const [hospitalIdMap, setHospitalIdMap] = useState<Map<string, number>>(
     new Map()
   );
+  const [recoveryInfo, setRecoveryInfo] = useState<{
+    recoveryMin: number;
+    recoveryMax: number;
+    recoveryText: string | null;
+    procedureTimeMin: number;
+    procedureTimeMax: number;
+    recommendedStayDays: number;
+    recoveryGuides: Record<string, string | null>;
+  } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inquiryButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -153,6 +166,19 @@ export default function TreatmentDetailPage({
             }
           });
           setHospitalIdMap(idMap);
+        }
+
+        // ✅ category_treattime_recovery에서 시술 시간 및 회복 기간 정보 가져오기
+        // treatmentId와 language를 전달하여 한국어 category_mid로 변환 후 조회
+        if (treatment.category_mid) {
+          const recoveryInfoData = await getRecoveryInfoByCategoryMid(
+            treatment.category_mid,
+            language,
+            treatmentId
+          );
+          if (recoveryInfoData) {
+            setRecoveryInfo(recoveryInfoData);
+          }
         }
       } catch (error) {
         console.error("데이터 로드 실패:", error);
@@ -456,7 +482,7 @@ export default function TreatmentDetailPage({
   const thumbnailUrl = getThumbnailUrl(currentTreatment);
   const rating = currentTreatment.rating || 0;
   const reviewCount = currentTreatment.review_count || 0;
-  
+
   // 환율 반영된 가격 포맷팅
   const price = formatPrice(currentTreatment.selling_price, currency, t);
   const originalPrice = currentTreatment.original_price
@@ -575,14 +601,10 @@ export default function TreatmentDetailPage({
         <div className="px-4 py-4 border-b border-gray-100">
           <div className="flex items-baseline gap-2 mb-1">
             {price && price !== t("common.priceInquiry") && (
-              <span className="text-2xl font-bold text-gray-900">
-                {price}
-              </span>
+              <span className="text-2xl font-bold text-gray-900">{price}</span>
             )}
             {price === t("common.priceInquiry") && (
-              <span className="text-2xl font-bold text-gray-900">
-                {price}
-              </span>
+              <span className="text-2xl font-bold text-gray-900">{price}</span>
             )}
             {originalPrice && price && price !== t("common.priceInquiry") && (
               <span className="text-lg text-gray-400 line-through">
@@ -605,64 +627,103 @@ export default function TreatmentDetailPage({
           </h3>
           <div className="space-y-3">
             {/* 시술 시간 */}
-            {(surgeryTimeRange ||
-              procedureTimeMin !== null ||
-              procedureTimeMax !== null ||
-              surgeryTime !== null) && (
-              <div className="flex items-center gap-3">
-                <FiClock className="text-gray-400 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="text-sm text-gray-600">
-                    {t("pdp.procedureTime")}
-                  </span>
-                  <p className="text-sm font-medium text-gray-900">
-                    {surgeryTimeRange
-                      ? surgeryTimeRange
-                      : procedureTimeMin !== null && procedureTimeMax !== null
-                      ? `${procedureTimeMin}~${procedureTimeMax}분`
-                      : procedureTimeMin !== null
-                      ? `${procedureTimeMin}분 이상`
-                      : procedureTimeMax !== null
-                      ? `${procedureTimeMax}분 이하`
-                      : surgeryTime !== null && surgeryTime !== undefined
-                      ? surgeryTime > 0
-                        ? `${surgeryTime}분`
-                        : surgeryTime || t("pdp.noInfo")
-                      : t("pdp.noInfo")}
-                  </p>
-                </div>
+            {/* ✅ category_treattime_recovery에서 가져온 데이터 우선 사용 */}
+            <div className="flex items-center gap-3">
+              <FiClock className="text-gray-400 flex-shrink-0" />
+              <div className="flex-1">
+                <span className="text-sm text-gray-600">
+                  {t("pdp.procedureTime")}
+                </span>
+                <p className="text-sm font-medium text-gray-900">
+                  {recoveryInfo?.procedureTimeMin !== undefined &&
+                  recoveryInfo?.procedureTimeMax !== undefined
+                    ? recoveryInfo.procedureTimeMin ===
+                      recoveryInfo.procedureTimeMax
+                      ? `${recoveryInfo.procedureTimeMin}${t(
+                          "procedure.procedureTime"
+                        )}`
+                      : `${recoveryInfo.procedureTimeMin}~${
+                          recoveryInfo.procedureTimeMax
+                        }${t("procedure.procedureTime")}`
+                    : recoveryInfo?.procedureTimeMin !== undefined
+                    ? `${recoveryInfo.procedureTimeMin}${t(
+                        "procedure.procedureTime"
+                      )} ${t("common.above")}`
+                    : recoveryInfo?.procedureTimeMax !== undefined
+                    ? `${recoveryInfo.procedureTimeMax}${t(
+                        "procedure.procedureTime"
+                      )} ${t("common.below")}`
+                    : surgeryTimeRange
+                    ? surgeryTimeRange
+                    : procedureTimeMin !== null && procedureTimeMax !== null
+                    ? `${procedureTimeMin}~${procedureTimeMax}${t(
+                        "procedure.procedureTime"
+                      )}`
+                    : procedureTimeMin !== null
+                    ? `${procedureTimeMin}${t("procedure.procedureTime")} ${t(
+                        "common.above"
+                      )}`
+                    : procedureTimeMax !== null
+                    ? `${procedureTimeMax}${t("procedure.procedureTime")} ${t(
+                        "common.below"
+                      )}`
+                    : surgeryTime !== null && surgeryTime !== undefined
+                    ? surgeryTime > 0
+                      ? `${surgeryTime}${t("procedure.procedureTime")}`
+                      : surgeryTime || t("pdp.noInfo")
+                    : t("pdp.noInfo")}
+                </p>
               </div>
-            )}
+            </div>
 
             {/* 회복 기간 */}
-            {(downtimeRange ||
-              recoveryPeriodMin !== null ||
-              recoveryPeriodMax !== null ||
-              downtime !== null) && (
-              <div className="flex items-center gap-3">
-                <FiCalendar className="text-gray-400 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="text-sm text-gray-600">
-                    {t("pdp.recoveryPeriod")}
-                  </span>
-                  <p className="text-sm font-medium text-gray-900">
-                    {downtimeRange
-                      ? downtimeRange
-                      : recoveryPeriodMin !== null && recoveryPeriodMax !== null
-                      ? `${recoveryPeriodMin}~${recoveryPeriodMax}일`
-                      : recoveryPeriodMin !== null
-                      ? `${recoveryPeriodMin}일 이상`
-                      : recoveryPeriodMax !== null
-                      ? `${recoveryPeriodMax}일 이하`
-                      : downtime !== null && downtime !== undefined
-                      ? typeof downtime === "number" && downtime > 0
-                        ? `${downtime}일`
-                        : downtime || t("pdp.noInfo")
-                      : t("pdp.noInfo")}
-                  </p>
-                </div>
+            {/* ✅ category_treattime_recovery에서 가져온 데이터 우선 사용 */}
+            <div className="flex items-center gap-3">
+              <FiCalendar className="text-gray-400 flex-shrink-0" />
+              <div className="flex-1">
+                <span className="text-sm text-gray-600">
+                  {t("pdp.recoveryPeriod")}
+                </span>
+                <p className="text-sm font-medium text-gray-900">
+                  {recoveryInfo?.recoveryMin !== undefined &&
+                  recoveryInfo?.recoveryMax !== undefined
+                    ? recoveryInfo.recoveryMin === recoveryInfo.recoveryMax
+                      ? `${recoveryInfo.recoveryMin}${t(
+                          "procedure.recoveryDays"
+                        )}`
+                      : `${recoveryInfo.recoveryMin}~${
+                          recoveryInfo.recoveryMax
+                        }${t("procedure.recoveryDays")}`
+                    : recoveryInfo?.recoveryMin !== undefined
+                    ? `${recoveryInfo.recoveryMin}${t(
+                        "procedure.recoveryDays"
+                      )} ${t("common.above")}`
+                    : recoveryInfo?.recoveryMax !== undefined
+                    ? `${recoveryInfo.recoveryMax}${t(
+                        "procedure.recoveryDays"
+                      )} ${t("common.below")}`
+                    : downtimeRange
+                    ? downtimeRange
+                    : recoveryPeriodMin !== null && recoveryPeriodMax !== null
+                    ? `${recoveryPeriodMin}~${recoveryPeriodMax}${t(
+                        "procedure.recoveryDays"
+                      )}`
+                    : recoveryPeriodMin !== null
+                    ? `${recoveryPeriodMin}${t("procedure.recoveryDays")} ${t(
+                        "common.above"
+                      )}`
+                    : recoveryPeriodMax !== null
+                    ? `${recoveryPeriodMax}${t("procedure.recoveryDays")} ${t(
+                        "common.below"
+                      )}`
+                    : downtime !== null && downtime !== undefined
+                    ? typeof downtime === "number" && downtime > 0
+                      ? `${downtime}${t("procedure.recoveryDays")}`
+                      : downtime || t("pdp.noInfo")
+                    : t("pdp.noInfo")}
+                </p>
               </div>
-            )}
+            </div>
 
             {/* 권장 체류 일수 */}
             {recommendedStayDays !== null && recommendedStayDays > 0 && (

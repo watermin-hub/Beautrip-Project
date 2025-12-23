@@ -78,6 +78,8 @@ export default function PromotionBanner({
         onClick: () => {
           // GTM: 홈 배너 클릭 이벤트 (content: 1, 3, 4, 5, 7)
           trackHomeBannerClick("banner_04", "content");
+          // 배너에서 진입했음을 표시하기 위해 sessionStorage에 저장
+          sessionStorage.setItem("content_entry_source", "banner");
           // 4번 배너: 여행지 추천 페이지로 이동
           router.push("/community/info/travel-recommendation");
         },
@@ -97,7 +99,10 @@ export default function PromotionBanner({
       {
         id: 6,
         image: getBannerImageUrl(6),
-        // 클릭 없는 배너는 아무 동작 안 함 (none: 6, 8)
+        onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트 (none: 6, 8 - 클릭 이벤트만, 페이지 이동 없음)
+          trackHomeBannerClick("banner_06", "none");
+        },
       },
       {
         id: 7,
@@ -105,6 +110,8 @@ export default function PromotionBanner({
         onClick: () => {
           // GTM: 홈 배너 클릭 이벤트 (content: 1, 3, 4, 5, 7)
           trackHomeBannerClick("banner_07", "content");
+          // 배너에서 진입했음을 표시하기 위해 sessionStorage에 저장
+          sessionStorage.setItem("content_entry_source", "banner");
           // 7번 배너: TOP20 정보 페이지로 이동
           router.push("/community/info/top20");
         },
@@ -112,7 +119,10 @@ export default function PromotionBanner({
       {
         id: 8,
         image: getBannerImageUrl(8),
-        // 클릭 없는 배너는 아무 동작 안 함
+        onClick: () => {
+          // GTM: 홈 배너 클릭 이벤트 (none: 6, 8 - 클릭 이벤트만, 페이지 이동 없음)
+          trackHomeBannerClick("banner_08", "none");
+        },
       },
     ],
     [language, router, onBanner1Click, onBanner5Click]

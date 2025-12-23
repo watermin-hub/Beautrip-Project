@@ -68,6 +68,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.all": "전체",
     "common.readTime": "분",
     "common.views": "조회수",
+    "common.above": "이상",
+    "common.below": "이하",
     // Form validation messages
     "form.loginRequired": "로그인 후에만 사용할 수 있습니다.",
     "form.loginRequiredConcern": "로그인 후에만 고민글을 작성할 수 있습니다.",
@@ -768,6 +770,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.all": "All",
     "common.readTime": "min",
     "common.views": "Views",
+    "common.above": "or more",
+    "common.below": "or less",
     // Form validation messages
     "form.loginRequired": "Please log in to continue.",
     "form.loginRequiredConcern": "Please log in to write a concern post.",
@@ -1481,6 +1485,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.all": "すべて",
     "common.readTime": "分",
     "common.views": "閲覧数",
+    "common.above": "以上",
+    "common.below": "以下",
     // Form validation messages
     "form.loginRequired": "ログインして続行してください。",
     "form.loginRequiredConcern":
@@ -2191,6 +2197,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.all": "全部",
     "common.readTime": "分钟",
     "common.views": "浏览量",
+    "common.above": "以上",
+    "common.below": "以下",
     // Form validation messages
     "form.loginRequired": "请登录后继续。",
     "form.loginRequiredConcern": "请登录后发布咨询。",

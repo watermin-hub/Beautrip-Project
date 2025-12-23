@@ -367,9 +367,11 @@ export default function HospitalInfoPage() {
                     key={uniqueKey}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer"
                     onClick={() => {
-                      // 백엔드 가이드: (platform, hospital_id_rd) 조합으로 라우팅
-                      if (hospital.platform && hospital.hospital_id_rd) {
-                        router.push(`/hospital?platform=${hospital.platform}&hospital_id_rd=${hospital.hospital_id_rd}`);
+                      if (hospital.hospital_id_rd) {
+                        const query = hospital.platform
+                          ? `?platform=${hospital.platform}`
+                          : "";
+                        router.push(`/hospital/${hospital.hospital_id_rd}${query}`);
                       }
                     }}
                   >
@@ -476,7 +478,9 @@ export default function HospitalInfoPage() {
                   {t("explore.reviewCTA.hospitalDescription")}
                 </p>
                 <button
-                  onClick={() => router.push("/community/write")}
+                  onClick={() =>
+                    router.push("/community/write?entrySource=explore")
+                  }
                   className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
                 >
                   {t("explore.reviewCTA.button")}

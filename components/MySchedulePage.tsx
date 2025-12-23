@@ -603,7 +603,7 @@ function SavedSchedulesTab({
   const [selectedScheduleSelectedDate, setSelectedScheduleSelectedDate] =
     useState<string | null>(null);
 
-  // 저장된 일정 목록 로드
+  // 저장된 일정 목록 로드 (언어 변경 시 번역 반영)
   useEffect(() => {
     loadSavedSchedules();
 
@@ -619,14 +619,62 @@ function SavedSchedulesTab({
         handleSavedScheduleUpdate
       );
     };
-  }, []);
+  }, [language]);
+
+  // 저장된 일정의 시술명을 현재 언어로 번역
+  const translateSavedSchedules = async (
+    schedules: SavedSchedule[]
+  ): Promise<SavedSchedule[]> => {
+    try {
+      if (!language) return schedules;
+
+      const translated = await Promise.all(
+        schedules.map(async (schedule) => {
+          if (!schedule.treatment_ids || schedule.treatment_ids.length === 0) {
+            return schedule;
+          }
+
+          // treatment_id별로 최신 언어 시술명 로드
+          const translatedNames = await Promise.all(
+            schedule.treatment_ids.map(async (id, idx) => {
+              try {
+                const treatment = await loadTreatmentById(id, language);
+                if (treatment?.treatment_name) {
+                  return treatment.treatment_name;
+                }
+              } catch (error) {
+                console.error("Saved schedule translation failed:", error);
+              }
+              // 실패 시 기존 이름 fallback
+              return (
+                schedule.treatment_names?.[idx] ||
+                schedule.treatment_names?.[0] ||
+                ""
+              );
+            })
+          );
+
+          return {
+            ...schedule,
+            treatment_names: translatedNames,
+          };
+        })
+      );
+
+      return translated;
+    } catch (error) {
+      console.error("translateSavedSchedules 실패:", error);
+      return schedules;
+    }
+  };
 
   const loadSavedSchedules = async () => {
     setLoading(true);
     try {
       const result = await getSavedSchedules();
       if (result.success && result.schedules) {
-        setSavedSchedulesList(result.schedules);
+        const translated = await translateSavedSchedules(result.schedules);
+        setSavedSchedulesList(translated);
       }
     } catch (error) {
       console.error("저장된 일정 로드 실패:", error);
@@ -2350,23 +2398,36 @@ function RecoveryCardComponent({
 
       // categorySmall이 없고 treatmentId가 있으면 원본 시술 데이터에서 가져오기
       if (!categorySmall && rec.treatmentId) {
-        const { loadTreatmentsPaginated } = await import(
+        const { loadTreatmentById } = await import(
           "@/lib/api/beautripApi"
         );
-        // 전체를 가져오지 않고 특정 treatment_id만 찾기
-        const treatments = await loadTreatmentsPaginated(1, 1000, {
-          language: language,
-        });
-        const treatment =
-          treatments.data?.find((t) => t.treatment_id === rec.treatmentId) ??
-          null;
+        // 현재 언어로 시술 데이터 가져오기
+        const treatment = await loadTreatmentById(rec.treatmentId, language);
         if (treatment?.category_small) {
           categorySmall = treatment.category_small;
         }
       }
 
-      // categorySmall이 있으면 categorySmall로 찾기
-      if (categorySmall) {
+      // ✅ 다른 언어일 때 categorySmall을 한국어로 변환
+      let koreanCategorySmall = categorySmall;
+      if (categorySmall && language !== "KR" && rec.treatmentId) {
+        const { convertCategorySmallToKorean } = await import(
+          "@/lib/api/beautripApi"
+        );
+        const converted = await convertCategorySmallToKorean(
+          categorySmall,
+          language,
+          rec.treatmentId
+        );
+        if (converted) {
+          koreanCategorySmall = converted;
+        }
+      }
+
+      let foundGuideId: string | null = null;
+
+      // categorySmall이 있으면 categorySmall로 찾기 (한국어로 변환된 값 사용)
+      if (koreanCategorySmall) {
         const { findRecoveryGuideByCategorySmall } = await import(
           "@/lib/api/beautripApi"
         );
@@ -2376,18 +2437,17 @@ function RecoveryCardComponent({
             ? (localStorage.getItem("language") as string) || "KR"
             : "KR";
         const recoveryGuideId = await findRecoveryGuideByCategorySmall(
-          categorySmall,
+          koreanCategorySmall, // ✅ 한국어로 변환된 값 사용
           currentLanguage
         );
 
         if (recoveryGuideId) {
-          router.push(`/community/recovery-guide/${recoveryGuideId}`);
-          return;
+          foundGuideId = recoveryGuideId;
         }
       }
 
-      // categorySmall이 없거나 실패했고 categoryMid가 있으면 categoryMid로 category_small 찾기 시도
-      if (!categorySmall && rec.categoryMid) {
+      // categorySmall으로 못 찾았거나 없고 categoryMid가 있으면 category_small 찾기 시도
+      if (!foundGuideId && rec.categoryMid) {
         const { getCategorySmallByCategoryMid } = await import(
           "@/lib/api/beautripApi"
         );
@@ -2397,31 +2457,67 @@ function RecoveryCardComponent({
         if (foundCategorySmall) {
           categorySmall = foundCategorySmall;
 
-          // 찾은 categorySmall로 회복 가이드 찾기
+          // ✅ 다른 언어일 때 categorySmall을 한국어로 변환
+          let koreanCategorySmallForMid = categorySmall;
+          if (categorySmall && language !== "KR" && rec.treatmentId) {
+            const { convertCategorySmallToKorean } = await import(
+              "@/lib/api/beautripApi"
+            );
+            const converted = await convertCategorySmallToKorean(
+              categorySmall,
+              language,
+              rec.treatmentId
+            );
+            if (converted) {
+              koreanCategorySmallForMid = converted;
+            }
+          }
+
+          // 찾은 categorySmall로 회복 가이드 찾기 (한국어로 변환된 값 사용)
           const { findRecoveryGuideByCategorySmall } = await import(
             "@/lib/api/beautripApi"
           );
           const recoveryGuideId = await findRecoveryGuideByCategorySmall(
-            categorySmall,
+            koreanCategorySmallForMid, // ✅ 한국어로 변환된 값 사용
             language
           );
           if (recoveryGuideId) {
-            router.push(`/community/recovery-guide/${recoveryGuideId}`);
-            return;
+            foundGuideId = recoveryGuideId;
           }
         }
 
         // categoryMid로 직접 회복 가이드 찾기 시도 (fallback)
+        // ✅ 다른 언어일 때 categoryMid를 한국어로 변환
+        let koreanCategoryMid = rec.categoryMid;
+        if (rec.categoryMid && language !== "KR" && rec.treatmentId) {
+          const { convertCategoryMidToKorean } = await import(
+            "@/lib/api/beautripApi"
+          );
+          const converted = await convertCategoryMidToKorean(
+            rec.categoryMid,
+            language,
+            rec.treatmentId
+          );
+          if (converted) {
+            koreanCategoryMid = converted;
+          }
+        }
+
         const { findRecoveryGuideByCategoryMid } = await import(
           "@/lib/api/beautripApi"
         );
         const recoveryGuideIdByCategory = await findRecoveryGuideByCategoryMid(
-          rec.categoryMid
+          koreanCategoryMid // ✅ 한국어로 변환된 값 사용
         );
         if (recoveryGuideIdByCategory) {
-          router.push(`/community/recovery-guide/${recoveryGuideIdByCategory}`);
-          return;
+          foundGuideId = recoveryGuideIdByCategory;
         }
+      }
+
+      // 찾았으면 이동
+      if (foundGuideId) {
+        router.push(`/community/recovery-guide/${foundGuideId}`);
+        return;
       }
 
       // 모든 방법 실패
@@ -2434,7 +2530,14 @@ function RecoveryCardComponent({
       );
     } catch (error) {
       console.error("❌ 회복 가이드 찾기 실패:", error);
-      alert(t("alert.loadRecoveryGuideError"));
+      // 에러가 나더라도 사용자에게는 "없음" 안내만 보여주고 중단 (불필요한 에러 알림 제거)
+      alert(
+        `해당 시술에 대한 회복 가이드를 찾을 수 없습니다.\n시술명: ${
+          rec.procedureName
+        }\n소분류: ${rec.categorySmall || "없음"}\n중분류: ${
+          rec.categoryMid || "없음"
+        }`
+      );
     } finally {
       setIsNavigating(false);
     }
@@ -2575,9 +2678,11 @@ export default function MySchedulePage() {
 
   useEffect(() => {
     if (activeTab === "saved" && !hasTrackedSavedScheduleView.current) {
-      // 현재는 일정 페이지에서만 진입하므로 "schedule"로 설정
-      // 추후 마이페이지에서 진입하는 경우가 확인되면 동적으로 변경 필요
-      trackSavedScheduleView("schedule");
+      // URL 기준으로 entry_source 구분
+      const entrySource = typeof window !== "undefined" && window.location.pathname.includes("/mypage")
+        ? "mypage"
+        : "schedule";
+      trackSavedScheduleView(entrySource);
       hasTrackedSavedScheduleView.current = true;
     }
     // 탭이 변경되면 플래그 리셋 (다시 saved 탭으로 돌아올 때 재추적 가능하도록)

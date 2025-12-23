@@ -30,16 +30,16 @@ export default function HomePage() {
     const categories = getMainCategories(t);
     // 아이콘 추가
     const iconMap: Record<string, string> = {
-      "눈성형": "👀",
-      "리프팅": "✨",
-      "보톡스": "💉",
+      눈성형: "👀",
+      리프팅: "✨",
+      보톡스: "💉",
       "안면윤곽/양악": "😊",
-      "제모": "🧴",
-      "지방성형": "💪",
-      "코성형": "👃",
-      "피부": "🌟",
-      "필러": "💊",
-      "가슴성형": "💕",
+      제모: "🧴",
+      지방성형: "💪",
+      코성형: "👃",
+      피부: "🌟",
+      필러: "💊",
+      가슴성형: "💕",
     };
     return categories.map((cat) => ({
       ...cat,
@@ -141,10 +141,11 @@ export default function HomePage() {
   const scheduleData: TravelScheduleData | null = useMemo(() => {
     if (!schedule.start || !schedule.end) return null;
 
-      // selectedCategoryId가 null이면 "전체"로 설정
-      const categoryLabel = selectedCategoryId
-        ? MAIN_CATEGORIES.find((c) => c.id === selectedCategoryId)?.name || t("category.all")
-        : t("category.all");
+    // selectedCategoryId가 null이면 "전체"로 설정
+    const categoryLabel = selectedCategoryId
+      ? MAIN_CATEGORIES.find((c) => c.id === selectedCategoryId)?.name ||
+        t("category.all")
+      : t("category.all");
 
     return {
       travelPeriod: { start: schedule.start, end: schedule.end },
@@ -159,7 +160,7 @@ export default function HomePage() {
   // 1번 배너 클릭 핸들러: 로그인 체크 후 후기 작성 페이지로 이동 또는 로그인 모달 열기
   const handleBanner1Click = () => {
     if (isLoggedIn) {
-      router.push("/community/write");
+      router.push("/community/write?entrySource=home");
     } else {
       setShowLoginRequiredPopup(true);
     }
@@ -268,7 +269,7 @@ export default function HomePage() {
           <button
             onClick={() => {
               if (isLoggedIn) {
-                router.push("/community/write");
+                router.push("/community/write?entrySource=home");
               } else {
                 setShowLoginRequiredPopup(true);
               }
@@ -300,7 +301,7 @@ export default function HomePage() {
           setIsLoggedIn(true);
           setShowLoginRequiredPopup(false);
           // 로그인 성공 후 후기 작성 페이지로 이동
-          router.push("/community/write");
+          router.push("/community/write?entrySource=home");
         }}
       />
 

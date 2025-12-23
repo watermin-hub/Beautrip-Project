@@ -50,7 +50,7 @@ export default function TravelScheduleBar({
           if (period.start && period.end) {
             setSelectedStartDate(period.start);
             setSelectedEndDate(period.end);
-            // 초기 로드 시에만 부모 컴포넌트에 알림 (무한 루프 방지)
+            // 초기 로드 시 자동 전환을 막기 위해 부모 알림은 사용자가 다시 액션할 때만 수행
             if (shouldNotifyParent && onScheduleChange) {
               onScheduleChange(period.start, period.end);
             }
@@ -61,9 +61,9 @@ export default function TravelScheduleBar({
       }
     };
 
-    // 초기 로드 시에만 부모에게 알림
+    // 초기 로드: 입력값만 채우고 부모 콜백은 호출하지 않음(자동 화면 전환 방지)
     if (isInitialLoad.current) {
-      loadTravelPeriod(true);
+      loadTravelPeriod(false);
       isInitialLoad.current = false;
     } else {
       loadTravelPeriod(false);

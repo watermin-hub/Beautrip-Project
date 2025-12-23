@@ -39,11 +39,13 @@ export default function ExploreScrollPage() {
 
   const scrollToSection = (sectionId: string) => {
     // GTM: 탐색 필터 클릭 이벤트
-    // sectionId를 filter_type으로 매핑: "ranking" → "ranking", "procedure" → "kbeauty", "hospital" → "hospital"
+    // sectionId를 filter_type으로 매핑
+    // 요구사항: ranking / kbeauty / hospital / schedule
     const filterTypeMap: Record<string, string> = {
       ranking: "ranking",
       procedure: "kbeauty",
       hospital: "hospital",
+      schedule: "schedule",
     };
     const filterType = filterTypeMap[sectionId] || sectionId;
     trackExploreFilterClick(filterType);
@@ -212,7 +214,7 @@ export default function ExploreScrollPage() {
             {t("explore.reviewCTA.description")}
           </p>
           <button
-            onClick={() => router.push("/community/write")}
+            onClick={() => router.push("/community/write?entrySource=explore")}
             className="bg-primary-main hover:bg-[#2DB8A0] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             {t("explore.reviewCTA.button")}
