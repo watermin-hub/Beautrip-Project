@@ -321,7 +321,7 @@ export default function HospitalInfoPage() {
           <>
             {/* 그리드 레이아웃 (2열 4행) - 상세 정보 포함 */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              {hospitals.map((hospital: HospitalI18nRow) => {
+              {hospitals.map((hospital: HospitalI18nRow, index: number) => {
                 // 번역 필드 또는 KR 원본 사용
                 const hospitalName = hospital.hospital_name_i18n || hospital.hospital_name_kr || t("common.noHospitalName");
                 const isFavorite = favorites.has(hospitalName);
@@ -355,9 +355,16 @@ export default function HospitalInfoPage() {
                 // 번역 필드 또는 KR 원본 사용
                 const location = hospital.hospital_address_i18n || hospital.hospital_address_kr || "주소 정보 없음";
 
+                // 고유한 key 생성 (hospital_id_rd + platform 조합 또는 인덱스)
+                const uniqueKey = hospital.hospital_id_rd && hospital.platform
+                  ? `${hospital.platform}_${hospital.hospital_id_rd}`
+                  : hospital.hospital_id
+                  ? `hospital_${hospital.hospital_id}`
+                  : `hospital_${index}`;
+
                 return (
                   <div
-                    key={hospital.hospital_id || hospitalName}
+                    key={uniqueKey}
                     className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all cursor-pointer"
                     onClick={() => {
                       // 백엔드 가이드: (platform, hospital_id_rd) 조합으로 라우팅

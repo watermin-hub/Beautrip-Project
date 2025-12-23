@@ -29,7 +29,7 @@ import {
   getCurrencyFromStorage,
   getCurrencyFromLanguage,
 } from "@/lib/utils/currency";
-import { trackPdpClick } from "@/lib/gtm";
+import { trackPdpClick, trackAddToSchedule } from "@/lib/gtm";
 
 interface ProcedureListPageProps {
   activeSection?: string;
@@ -378,6 +378,11 @@ export default function ProcedureListPage({
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
+      
+      // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
+      // entry_source: "explore" (탐색 페이지에서 진입)
+      trackAddToSchedule("explore");
+      
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsScheduleModalOpen(false);
       setSelectedTreatment(null);

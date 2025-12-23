@@ -36,6 +36,7 @@ import BottomNavigation from "./BottomNavigation";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { trackAddToSchedule } from "@/lib/gtm";
+import { formatPrice, getCurrencyFromStorage, getCurrencyFromLanguage } from "@/lib/utils/currency";
 
 interface TreatmentDetailPageProps {
   treatmentId: number;
@@ -408,7 +409,7 @@ export default function TreatmentDetailPage({
       // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
       // entry_source: "pdp" (Product Detail Page)
       import("@/lib/gtm").then(({ trackAddToSchedule }) => {
-        trackAddToSchedule("pdp");
+        trackAddToSchedule("treatment");
       });
 
       alert(`${date}에 일정이 추가되었습니다!`);
@@ -421,6 +422,12 @@ export default function TreatmentDetailPage({
       }
     }
   };
+
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  // ⚠️ 중요: early return 전에 선언해야 hooks 순서가 일정함
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
 
   if (loading) {
     return (
@@ -449,11 +456,11 @@ export default function TreatmentDetailPage({
   const thumbnailUrl = getThumbnailUrl(currentTreatment);
   const rating = currentTreatment.rating || 0;
   const reviewCount = currentTreatment.review_count || 0;
-  const price = currentTreatment.selling_price
-    ? new Intl.NumberFormat("ko-KR").format(currentTreatment.selling_price)
-    : null;
+  
+  // 환율 반영된 가격 포맷팅
+  const price = formatPrice(currentTreatment.selling_price, currency, t);
   const originalPrice = currentTreatment.original_price
-    ? new Intl.NumberFormat("ko-KR").format(currentTreatment.original_price)
+    ? formatPrice(currentTreatment.original_price, currency, t)
     : null;
   const discountRate = currentTreatment.dis_rate
     ? `${currentTreatment.dis_rate}%`
@@ -567,20 +574,19 @@ export default function TreatmentDetailPage({
         {/* 가격 정보 */}
         <div className="px-4 py-4 border-b border-gray-100">
           <div className="flex items-baseline gap-2 mb-1">
-            {price && (
+            {price && price !== t("common.priceInquiry") && (
               <span className="text-2xl font-bold text-gray-900">
                 {price}
-                {t("pdp.currencyWon")}
               </span>
             )}
-            {!price && (
+            {price === t("common.priceInquiry") && (
               <span className="text-2xl font-bold text-gray-900">
-                {t("common.priceInquiry")}
+                {price}
               </span>
             )}
-            {originalPrice && price && (
+            {originalPrice && price && price !== t("common.priceInquiry") && (
               <span className="text-lg text-gray-400 line-through">
-                {originalPrice}원
+                {originalPrice}
               </span>
             )}
           </div>

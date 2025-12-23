@@ -99,6 +99,7 @@ export default function RankingSection({
             selectedMidCategory={selectedMidCategory}
             midCategoriesList={midCategoriesList}
             mainCategories={MAIN_CATEGORIES}
+            language={language}
             onCategoryChange={(categoryId) => {
               setSelectedCategory(categoryId);
               setSelectedMidCategory(null);

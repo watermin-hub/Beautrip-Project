@@ -176,7 +176,7 @@ export default function KBeautyRankingPage() {
       // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
       // entry_source: "ranking" (랭킹 페이지에서 진입)
       import("@/lib/gtm").then(({ trackAddToSchedule }) => {
-        trackAddToSchedule("ranking");
+        trackAddToSchedule("explore");
       });
       
       alert(`${date}에 일정이 추가되었습니다!`);

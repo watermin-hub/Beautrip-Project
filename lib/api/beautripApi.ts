@@ -5462,9 +5462,9 @@ async function getMidCategoryRankingsFromTreatmentMaster(
   }
 }
 
-// 중분류 랭킹 조회 (RPC 또는 treatment_master 직접 조회)
+// 중분류 랭킹 조회 (RPC - 중분류 단위 랭킹)
 export async function getMidCategoryRankings(
-  p_category_large: string | null = null,
+  p_category_large: string | null = null, // 선택: 대분류 필터 (null, '', '전체' 모두 허용)
   p_m: number = 20, // 베이지안 평균 신뢰 임계값
   p_dedupe_limit_per_name: number = 2, // 같은 시술명 최대 노출 개수
   p_limit_per_category: number = 20, // 각 중분류당 상위 N개 카드만 노출
@@ -5483,8 +5483,7 @@ export async function getMidCategoryRankings(
       };
     }
 
-    // 언어 코드 변환: 명세서에 따르면 'KR' | 'EN' | 'CN' | 'JP' 형식 (필수)
-    // KR도 명시적으로 전달해야 함 (명세서: p_lang text 필수)
+    // 언어 코드 변환: 'KR' | 'EN' | 'CN' | 'JP' 형식 (필수)
     const pLang: "KR" | "EN" | "CN" | "JP" = language || "KR";
 
     // p_category_large 처리: null, '', '전체' 모두 허용 (명세서)
@@ -5529,45 +5528,47 @@ export async function getMidCategoryRankings(
         errorStringified = `직렬화 오류: ${e}`;
       }
 
-      const errorDetails = {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        // 에러 객체의 모든 속성 확인
-        errorKeys: Object.keys(error || {}),
-        errorStringified: errorStringified,
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        errorIsNull: error === null,
-        errorIsUndefined: error === undefined,
-        errorTruthy: !!error,
-        // 에러 객체의 모든 속성 직접 확인
-        allErrorProperties: error ? Object.getOwnPropertyNames(error) : [],
-      };
-      console.error("❌ 중분류 랭킹 조회 실패:", errorDetails);
-      console.error("❌ 에러 객체 전체:", error);
-      console.error("❌ 에러 객체 타입:", typeof error);
-      console.error("❌ 에러 객체 키:", Object.keys(error || {}));
+      // 에러 메시지 추출 (Supabase 에러 형식)
+      const errorMessage =
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        error?.code ||
+        JSON.stringify(error) ||
+        "알 수 없는 오류";
+      const errorCode = error?.code;
+      const errorDetails = error?.details;
+      const errorHint = error?.hint;
 
-      // 에러 객체가 비어있거나 속성이 없는 경우
-      if (!error || Object.keys(error).length === 0) {
-        console.warn(
-          "⚠️ 에러 객체가 비어있습니다. RPC 함수가 존재하지 않거나 파라미터가 잘못되었을 수 있습니다."
-        );
-      }
+      // 상세 에러 로그 출력 (백엔드 전달용)
+      console.error("❌ [중분류 랭킹 조회 실패] 상세 정보:", {
+        message: errorMessage,
+        code: errorCode,
+        details: errorDetails,
+        hint: errorHint,
+        fullError: error,
+        errorStringified: JSON.stringify(error, null, 2),
+      });
 
-      // RPC 함수가 아직 준비되지 않은 경우를 위한 상세 에러 로그
-      if (error.message?.includes("function") || error.code === "42883") {
-        console.warn(
-          "⚠️ RPC 함수가 아직 생성되지 않았을 수 있습니다. 백엔드 담당자에게 확인하세요."
+      // RPC 함수가 아직 준비되지 않은 경우
+      if (errorMessage?.includes("function") || errorCode === "42883") {
+        console.error(
+          "🚨 [백엔드 확인 필요] RPC 함수가 존재하지 않거나 파라미터가 잘못되었습니다.",
+          "\n📋 백엔드에 전달할 내용:",
+          "\n  - 함수명: rpc_mid_category_rankings_i18n",
+          "\n  - 전달 파라미터:",
+          JSON.stringify(rpcParams, null, 2)
         );
+        return {
+          success: false,
+          error: "RPC 함수가 존재하지 않습니다. 백엔드 담당자에게 확인하세요.",
+        };
       }
 
       // timeout 에러인 경우 빈 배열 반환
       if (
-        error.message?.includes("timeout") ||
-        error.message?.includes("canceling statement")
+        errorMessage?.includes("timeout") ||
+        errorMessage?.includes("canceling statement")
       ) {
         console.warn(
           "rpc_mid_category_rankings_i18n timeout 발생, 빈 배열 반환"
@@ -5575,10 +5576,26 @@ export async function getMidCategoryRankings(
         return { success: true, data: [] };
       }
 
+      // 기타 에러 - 백엔드에 전달할 상세 정보 출력
+      console.error(
+        "🚨 [백엔드 확인 필요] 중분류 랭킹 조회 중 알 수 없는 에러 발생",
+        "\n📋 백엔드에 전달할 내용:",
+        "\n  - 함수명: rpc_mid_category_rankings_i18n",
+        "\n  - 에러 메시지:",
+        errorMessage,
+        "\n  - 에러 코드:",
+        errorCode,
+        "\n  - 에러 상세:",
+        errorDetails,
+        "\n  - 힌트:",
+        errorHint,
+        "\n  - 전달 파라미터:",
+        JSON.stringify(rpcParams, null, 2)
+      );
+
       return {
         success: false,
-        error:
-          error.message || error.code || "랭킹 데이터 조회에 실패했습니다.",
+        error: `랭킹 데이터 조회 실패: ${errorMessage}`,
       };
     }
 
@@ -5599,6 +5616,7 @@ export async function getMidCategoryRankings(
     }
 
     // 명세서: RPC는 평탄한 배열을 반환 (각 row가 하나의 시술)
+    // 쿼리에서 이미 `order by category_mid_key, rn_mid`로 정렬되어 있음
     // category_mid_key 기준으로 그룹화 필요
     // 필드명 매핑: main_img_url → main_image_url
     const mappedData = data.map((item: any) => ({
@@ -5609,18 +5627,25 @@ export async function getMidCategoryRankings(
     // 데이터 정리 (NaN 처리)
     const cleanedData = cleanData<any>(mappedData);
 
-    // category_mid_key 기준으로 그룹화
+    // category_mid_key 기준으로 그룹화 (순서 유지)
     const groupedByCategory = new Map<string, any>();
+    const categoryOrder: string[] = []; // 카테고리 순서 유지용
+
     cleanedData.forEach((item: any) => {
       const categoryKey = item.category_mid_key || item.category_mid || "기타";
+
       if (!groupedByCategory.has(categoryKey)) {
+        // 카테고리 순서 기록 (첫 등장 순서 유지)
+        categoryOrder.push(categoryKey);
+
         groupedByCategory.set(categoryKey, {
           category_mid: item.category_mid,
           category_mid_key: item.category_mid_key || item.category_mid,
           treatments: [],
         });
       }
-      // Treatment 객체로 변환
+
+      // Treatment 객체로 변환 (쿼리 반환 필드: category_mid_key, category_mid, treatment_id, treatment_name, hospital_id, hospital_name, rating, review_count, main_img_url)
       const treatment: Treatment = {
         treatment_id: item.treatment_id,
         treatment_name: item.treatment_name,
@@ -5631,29 +5656,32 @@ export async function getMidCategoryRankings(
         main_image_url: item.main_image_url,
         ...item,
       };
+
+      // 데이터가 내려온 순서대로 추가 (쿼리에서 이미 rn_mid로 정렬됨)
       groupedByCategory.get(categoryKey)!.treatments.push(treatment);
     });
 
-    // MidCategoryRanking 형태로 변환
-    const processedData: MidCategoryRanking[] = Array.from(
-      groupedByCategory.values()
-    ).map((group) => ({
-      category_mid: group.category_mid,
-      category_mid_key: group.category_mid_key,
-      category_rank: 0, // RPC에서 제공하지 않음
-      treatment_count: group.treatments.length,
-      total_reviews: group.treatments.reduce(
-        (sum: number, t: Treatment) => sum + (t.review_count || 0),
-        0
-      ),
-      average_rating:
-        group.treatments.reduce(
-          (sum: number, t: Treatment) => sum + (t.rating || 0),
+    // MidCategoryRanking 형태로 변환 (카테고리 순서 유지)
+    const processedData: MidCategoryRanking[] = categoryOrder.map((key) => {
+      const group = groupedByCategory.get(key)!;
+      return {
+        category_mid: group.category_mid,
+        category_mid_key: group.category_mid_key,
+        category_rank: 0, // RPC에서 제공하지 않음 (중분류 랭킹은 없음)
+        treatment_count: group.treatments.length,
+        total_reviews: group.treatments.reduce(
+          (sum: number, t: Treatment) => sum + (t.review_count || 0),
           0
-        ) / group.treatments.length || 0,
-      category_score: 0, // RPC에서 제공하지 않음
-      treatments: group.treatments,
-    }));
+        ),
+        average_rating:
+          group.treatments.reduce(
+            (sum: number, t: Treatment) => sum + (t.rating || 0),
+            0
+          ) / group.treatments.length || 0,
+        category_score: 0, // RPC에서 제공하지 않음
+        treatments: group.treatments, // 이미 정렬된 순서
+      };
+    });
 
     console.log(
       `✅ [중분류 랭킹] ${processedData.length}개 중분류, 총 ${cleanedData.length}개 시술 처리 완료`
@@ -5786,12 +5814,19 @@ export async function getSmallCategoryRankings(
     // 데이터 정리 (NaN 처리)
     const cleanedData = cleanData<any>(mappedData);
 
-    // category_small_key 기준으로 그룹화
+    // category_small_key 기준으로 그룹화 (순서 유지)
+    // 쿼리에서 이미 `order by sr.category_rank asc, c.treatment_rank asc`로 정렬되어 있음
     const groupedByCategory = new Map<string, any>();
+    const categoryOrder: string[] = []; // 카테고리 순서 유지용
+
     cleanedData.forEach((item: any) => {
       const categoryKey =
         item.category_small_key || item.category_small || "기타";
+
       if (!groupedByCategory.has(categoryKey)) {
+        // 카테고리 순서 기록 (첫 등장 순서 유지)
+        categoryOrder.push(categoryKey);
+
         groupedByCategory.set(categoryKey, {
           category_small_key: categoryKey,
           category_rank: item.category_rank || 0,
@@ -5802,7 +5837,8 @@ export async function getSmallCategoryRankings(
           treatments: [],
         });
       }
-      // Treatment 객체로 변환
+
+      // Treatment 객체로 변환 (쿼리 반환 필드 모두 포함)
       const treatment: Treatment = {
         treatment_id: item.treatment_id,
         treatment_name: item.treatment_name,
@@ -5817,28 +5853,26 @@ export async function getSmallCategoryRankings(
         dis_rate: item.dis_rate,
         vat_info: item.vat_info,
         main_image_url: item.main_image_url,
-        ...item,
+        ...item, // card_score, treatment_rank 등 추가 필드 포함
       };
+
+      // 데이터가 내려온 순서대로 추가 (쿼리에서 이미 category_rank, treatment_rank로 정렬됨)
       groupedByCategory.get(categoryKey)!.treatments.push(treatment);
     });
 
-    // SmallCategoryRanking 형태로 변환 (category_rank 기준 정렬)
-    const processedData: SmallCategoryRanking[] = Array.from(
-      groupedByCategory.values()
-    )
-      .sort((a, b) => a.category_rank - b.category_rank)
-      .map((group) => ({
+    // SmallCategoryRanking 형태로 변환 (카테고리 순서 유지)
+    const processedData: SmallCategoryRanking[] = categoryOrder.map((key) => {
+      const group = groupedByCategory.get(key)!;
+      return {
         category_small_key: group.category_small_key,
         category_rank: group.category_rank,
         category_score: group.category_score,
         average_rating: group.average_rating,
         total_reviews: group.total_reviews,
         treatment_count: group.treatment_count,
-        treatments: group.treatments.sort(
-          (a: Treatment, b: Treatment) =>
-            ((b as any).treatment_rank || 0) - ((a as any).treatment_rank || 0)
-        ), // treatment_rank 기준 정렬
-      }));
+        treatments: group.treatments, // 이미 정렬된 순서 (treatment_rank 기준)
+      };
+    });
 
     console.log(
       `✅ [소분류 랭킹] ${processedData.length}개 소분류, 총 ${cleanedData.length}개 시술 처리 완료`
@@ -6827,12 +6861,27 @@ export async function getHomeScheduleRecommendations(
     );
 
     if (error) {
-      console.error("rpc_home_schedule_recommendations 오류:", error);
+      // 에러 메시지 추출 (Supabase 에러 형식)
+      const errorMessage =
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        error?.code ||
+        "알 수 없는 오류";
+      const errorCode = error?.code;
+
+      console.error("rpc_home_schedule_recommendations 오류:", {
+        message: errorMessage,
+        code: errorCode,
+        details: error?.details,
+        hint: error?.hint,
+        fullError: error,
+      });
 
       // timeout 에러인 경우 빈 배열 반환 (쿼리 성능 문제일 수 있음)
       if (
-        error.message?.includes("timeout") ||
-        error.message?.includes("canceling statement")
+        errorMessage?.includes("timeout") ||
+        errorMessage?.includes("canceling statement")
       ) {
         console.warn(
           "rpc_home_schedule_recommendations timeout 발생, 빈 배열 반환"
@@ -6840,7 +6889,20 @@ export async function getHomeScheduleRecommendations(
         return [];
       }
 
-      throw new Error(`RPC 오류: ${error.message}`);
+      // RPC 함수가 아직 준비되지 않은 경우
+      if (errorMessage?.includes("function") || errorCode === "42883") {
+        console.warn(
+          "⚠️ rpc_home_schedule_recommendations 함수가 아직 생성되지 않았을 수 있습니다."
+        );
+        return [];
+      }
+
+      // 에러가 발생해도 빈 배열 반환 (앱이 계속 작동하도록)
+      console.warn(
+        "rpc_home_schedule_recommendations 오류로 인해 빈 배열 반환:",
+        errorMessage
+      );
+      return [];
     }
 
     if (!data || !Array.isArray(data)) {

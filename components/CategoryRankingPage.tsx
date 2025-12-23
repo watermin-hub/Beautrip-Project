@@ -26,36 +26,27 @@ import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
-import { trackExploreCategoryClick, trackExploreFilterClick } from "@/lib/gtm";
+import { trackExploreCategoryClick, trackExploreFilterClick, trackAddToSchedule } from "@/lib/gtm";
 import {
   formatPrice,
   getCurrencyFromStorage,
   getCurrencyFromLanguage,
 } from "@/lib/utils/currency";
 
-// 홈페이지와 동일한 대분류 카테고리 10개
-const MAIN_CATEGORIES = [
-  { id: null, name: "전체" },
-  { id: "눈성형", name: "눈성형" },
-  { id: "리프팅", name: "리프팅" },
-  { id: "보톡스", name: "보톡스" },
-  { id: "안면윤곽/양악", name: "안면윤곽/양악" },
-  { id: "제모", name: "제모" },
-  { id: "지방성형", name: "지방성형" },
-  { id: "코성형", name: "코성형" },
-  { id: "피부", name: "피부" },
-  { id: "필러", name: "필러" },
-  { id: "가슴성형", name: "가슴성형" },
+// 대분류 카테고리 ID와 번역 키 매핑
+export const getMainCategories = (t: (key: string) => string) => [
+  { id: null, name: t("category.all"), nameKey: "category.all" },
+  { id: "눈성형", name: t("category.eyes"), nameKey: "category.eyes" },
+  { id: "리프팅", name: t("category.lifting"), nameKey: "category.lifting" },
+  { id: "보톡스", name: t("category.botox"), nameKey: "category.botox" },
+  { id: "안면윤곽/양악", name: t("category.facial"), nameKey: "category.facial" },
+  { id: "제모", name: t("category.hairRemoval"), nameKey: "category.hairRemoval" },
+  { id: "지방성형", name: t("category.liposuction"), nameKey: "category.liposuction" },
+  { id: "코성형", name: t("category.nose"), nameKey: "category.nose" },
+  { id: "피부", name: t("category.skin"), nameKey: "category.skin" },
+  { id: "필러", name: t("category.filler"), nameKey: "category.filler" },
+  { id: "가슴성형", name: t("category.breast"), nameKey: "category.breast" },
 ];
-
-// 다른 파일에서 import할 수 있도록 export (t 파라미터는 호환성을 위해 유지)
-export const getMainCategories = (t?: (key: string) => string) => {
-  return MAIN_CATEGORIES.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    nameKey: cat.id || "category.all", // 호환성을 위해 nameKey 추가
-  }));
-};
 
 interface CategoryRankingPageProps {
   isVisible?: boolean;
@@ -92,6 +83,9 @@ export default function CategoryRankingPage({
   const currency = useMemo(() => {
     return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
   }, [language]);
+  
+  // 언어별 대분류 카테고리 목록
+  const MAIN_CATEGORIES = useMemo(() => getMainCategories(t), [t, language]);
 
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // 초기 로드 여부
@@ -439,16 +433,19 @@ export default function CategoryRankingPage({
             setSmallCategoryRankings([]);
           }
         } else {
-          // 중분류 랭킹 로드 (현재 언어로 로드)
+          // 중분류 랭킹 로드 (대분류 기준)
+          // p_category_large: null, '', '전체' 모두 허용 (전체 대상)
           console.log("🔍 [CategoryRankingPage] 중분류 랭킹 로드 시작:", {
             selectedCategory,
+            selectedMidCategory,
             language,
+            note: "p_category_large 기준으로 중분류별 랭킹 조회",
           });
           const result = await getMidCategoryRankings(
-            selectedCategory,
-            20,
-            2,
-            20,
+            selectedCategory, // p_category_large (대분류 필터, null이면 전체)
+            20, // p_m
+            2, // p_dedupe_limit_per_name
+            20, // p_limit_per_category (중분류별 시술 개수)
             language // ✅ 현재 언어로 로드
           );
           console.log("📊 [CategoryRankingPage] 중분류 랭킹 결과:", {
@@ -456,60 +453,17 @@ export default function CategoryRankingPage({
             dataLength: result.data?.length || 0,
             error: result.error,
           });
-          if (result.success && result.data) {
-            // RPC가 flat row로 반환하므로 category_mid로 그룹화
-            const rows = result.data as any[];
-            const grouped = new Map<string, any>();
-
-            for (const r of rows) {
-              const key = r.category_mid;
-              if (!key) continue;
-
-              if (!grouped.has(key)) {
-                // ✅ 백엔드 v2 RPC에서 집계 필드를 제공하므로 그대로 사용
-                grouped.set(key, {
-                  category_mid: r.category_mid,
-                  category_rank: r.category_rank,
-                  category_score: r.category_score,
-                  average_rating: r.average_rating,
-                  total_reviews: r.total_reviews,
-                  treatment_count: r.treatment_count,
-                  treatments: [],
-                });
-              }
-
-              // 시술 카드 객체로 push
-              // ✅ 백엔드 v2 RPC 반환 컬럼:
-              //    - 시술 단위: category_mid_key, category_mid, treatment_id, treatment_name,
-              //      hospital_id, hospital_name, rating, review_count, main_img_url
-              //    - 집계 필드: category_rank, category_score, average_rating, total_reviews, treatment_count
-              // ✅ getMidCategoryRankings에서 이미 main_img_url → main_image_url로 매핑됨
-              grouped.get(key).treatments.push({
-                treatment_id: r.treatment_id,
-                treatment_name: r.treatment_name,
-                hospital_id: r.hospital_id,
-                hospital_name: r.hospital_name,
-                category_large: r.category_large || selectedCategory || null, // RPC에서 반환되지 않을 수 있으므로 fallback
-                category_mid: r.category_mid,
-                category_small: r.category_small || null, // RPC에서 반환되지 않을 수 있음
-                rating: r.rating,
-                review_count: r.review_count,
-                selling_price: r.selling_price || null, // RPC에서 반환되지 않을 수 있음
-                dis_rate: r.dis_rate || null, // RPC에서 반환되지 않을 수 있음
-                vat_info: r.vat_info || null, // RPC에서 반환되지 않을 수 있음
-                main_image_url: r.main_image_url, // 이미 getMidCategoryRankings에서 매핑됨
-                card_score: r.card_score || null, // RPC에서 반환되지 않을 수 있음
-                treatment_rank: r.treatment_rank || null, // RPC에서 반환되지 않을 수 있음
-              });
-            }
-
-            // ✅ 백엔드 v2 RPC에서 이미 집계 필드를 제공하므로 계산 불필요
-            // 동일한 category_mid_key를 가진 row들은 집계 값이 모두 동일함 (백엔드 검증 완료)
-            // category_rank 기준으로 정렬 (백엔드에서 이미 정렬된 순서)
-            const midGrouped = Array.from(grouped.values()).sort(
-              (a, b) =>
-                (a.category_rank || 999999) - (b.category_rank || 999999)
-            );
+          if (result.success && result.data && result.data.length > 0) {
+            // ✅ getMidCategoryRankings에서 이미 category_mid_key 기준으로 그룹화되어 반환됨
+            // 반환 데이터는 MidCategoryRanking[] 형태 (중분류 단위)
+            // 백엔드에서 이미 정렬되어 있음
+            const midGrouped = result.data;
+            
+            console.log("✅ [CategoryRankingPage] 중분류 랭킹 데이터 로드 성공:", {
+              count: midGrouped.length,
+              firstItem: midGrouped[0],
+              sampleTreatments: midGrouped[0]?.treatments?.length || 0,
+            });
 
             setMidCategoryRankings(midGrouped);
             setSmallCategoryRankings([]);
@@ -517,8 +471,8 @@ export default function CategoryRankingPage({
             // 중분류 목록도 저장 (필터 유지용)
             const midCategorySet = new Set<string>();
             midGrouped.forEach((ranking) => {
-              if (ranking.category_mid) {
-                midCategorySet.add(ranking.category_mid);
+              if (ranking.category_mid || ranking.category_mid_key) {
+                midCategorySet.add(ranking.category_mid || ranking.category_mid_key);
               }
             });
             // 인코딩이 깨져서 "" 문자가 포함된 중분류는 필터링하여 표시하지 않음 (라인 95와 동일)
@@ -534,8 +488,19 @@ export default function CategoryRankingPage({
               onMidCategoriesListChange(sorted);
             }
           } else {
-            setError(result.error || "중분류 랭킹을 불러올 수 없습니다.");
+            // 데이터가 없거나 에러 발생
+            const errorMsg = result.error || "중분류 랭킹을 불러올 수 없습니다.";
+            console.warn("⚠️ [CategoryRankingPage] 중분류 랭킹 로드 실패:", {
+              success: result.success,
+              hasData: !!result.data,
+              dataLength: result.data?.length || 0,
+              error: result.error,
+              selectedCategory,
+              selectedMidCategory,
+            });
+            setError(errorMsg);
             setMidCategoryRankings([]);
+            setSmallCategoryRankings([]);
             if (!externalMidCategoriesList) {
               setMidCategoriesList([]);
             }
@@ -765,6 +730,11 @@ export default function CategoryRankingPage({
       const schedulesJson = JSON.stringify(schedules);
       localStorage.setItem("schedules", schedulesJson);
       window.dispatchEvent(new Event("scheduleAdded"));
+      
+      // GTM 이벤트: add_to_schedule (일정 추가 성공 후)
+      // entry_source: "explore" (탐색 페이지에서 진입)
+      trackAddToSchedule("explore");
+      
       alert(`${date}에 일정이 추가되었습니다!`);
       setIsAddToScheduleModalOpen(false);
       setSelectedTreatmentForSchedule(null);
@@ -1642,14 +1612,16 @@ export function CategoryFilterBar({
   midCategoriesList,
   onCategoryChange,
   onMidCategoryChange,
-  mainCategories = MAIN_CATEGORIES,
+  mainCategories,
+  language = "KR",
 }: {
   selectedCategory: string | null;
   selectedMidCategory: string | null;
   midCategoriesList: string[];
   onCategoryChange: (categoryId: string | null) => void;
   onMidCategoryChange: (midCategory: string | null) => void;
-  mainCategories?: Array<{ id: string | null; name: string; nameKey?: string }>;
+  mainCategories: Array<{ id: string | null; name: string; nameKey?: string }>;
+  language?: string;
 }) {
   return (
     <div className="bg-white">
@@ -1672,11 +1644,13 @@ export function CategoryFilterBar({
         </div>
 
         {/* 카테고리 버튼들 - 텍스트만 5개씩 2줄 그리드 */}
-        <div className="grid grid-cols-5 gap-x-4 gap-y-3">
+        <div className="grid grid-cols-5 gap-x-2 gap-y-3">
           {mainCategories
             .filter((cat) => cat.id !== null)
             .map((category) => {
               const isSelected = selectedCategory === category.id;
+              // 영어일 때는 3줄까지 허용, 다른 언어는 한 줄
+              const isEnglish = language === "EN";
               return (
                 <button
                   key={category.id || "all"}
@@ -1684,11 +1658,16 @@ export function CategoryFilterBar({
                     onCategoryChange(category.id);
                     onMidCategoryChange(null);
                   }}
-                  className={`text-sm font-medium transition-colors whitespace-nowrap ${
+                  className={`text-xs font-medium transition-colors ${
+                    isEnglish
+                      ? "line-clamp-3 break-words"
+                      : "truncate"
+                  } ${
                     isSelected
                       ? "text-primary-main font-bold"
                       : "text-gray-500 hover:text-gray-700"
                   }`}
+                  title={category.name}
                 >
                   {category.name}
                 </button>

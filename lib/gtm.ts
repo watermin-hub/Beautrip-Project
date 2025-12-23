@@ -21,9 +21,8 @@ export function pushToDataLayer(payload: Record<string, any>) {
  */
 export type EntrySource =
   | "home"
-  | "ranking"
-  | "pdp"
-  | "schedule"
+  | "explore"
+  | "treatment"
   | "community"
   | "banner"
   | "mypage"
