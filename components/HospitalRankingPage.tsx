@@ -33,7 +33,10 @@ export default function HospitalRankingPage() {
         // 필요한 만큼만 로드 (300개)
         // 랭킹 페이지는 플랫폼 우선순위 정렬 없이 원본 데이터 순서로 로드
         const [treatmentsResult, hospitalsResult] = await Promise.all([
-          loadTreatmentsPaginated(1, 300, { skipPlatformSort: true, language: language }),
+          loadTreatmentsPaginated(1, 300, {
+            skipPlatformSort: true,
+            language: language,
+          }),
           loadHospitalsPaginated(1, 1000, { language: language }),
         ]);
 
@@ -177,10 +180,9 @@ export default function HospitalRankingPage() {
                     className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                     onClick={() => {
                       if (hospitalId) {
-                        const query =
-                          hospital.hospital_id_rd && hospital.platform
-                            ? `?platform=${hospital.platform}`
-                            : "";
+                        const query = hospital.platform
+                          ? `?platform=${hospital.platform}`
+                          : "";
                         router.push(`/hospital/${hospitalId}${query}`);
                       }
                     }}
@@ -217,22 +219,22 @@ export default function HospitalRankingPage() {
                             <h3 className="text-base font-bold text-gray-900 line-clamp-2 leading-snug flex-1">
                               {hospital.hospital_name}
                             </h3>
-                          <button
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleFavoriteClick(hospital);
                               }}
-                            className="flex-shrink-0 ml-2 p-1.5 hover:bg-gray-50 rounded-full transition-colors"
-                          >
-                            <FiHeart
+                              className="flex-shrink-0 ml-2 p-1.5 hover:bg-gray-50 rounded-full transition-colors"
+                            >
+                              <FiHeart
                                 className={`text-base ${
-                                isFavorite
-                                  ? "text-red-500 fill-red-500"
-                                  : "text-gray-400"
-                              }`}
-                            />
-                          </button>
-                        </div>
+                                  isFavorite
+                                    ? "text-red-500 fill-red-500"
+                                    : "text-gray-400"
+                                }`}
+                              />
+                            </button>
+                          </div>
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex items-center gap-1">
                               <FiStar className="text-yellow-400 fill-yellow-400 text-xs" />
@@ -249,31 +251,31 @@ export default function HospitalRankingPage() {
                             )}
                           </div>
 
-                        {/* Categories */}
-                        {categoriesArr.length > 0 && (
+                          {/* Categories */}
+                          {categoriesArr.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mb-2">
                               {categoriesArr
                                 .slice(0, 3)
                                 .map((category, idx) => (
-                              <span
-                                key={idx}
+                                  <span
+                                    key={idx}
                                     className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-[10px] font-medium"
-                              >
-                                {category}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Procedures Count */}
-                          <div className="text-gray-600 text-xs">
-                          시술 {hospital.treatments.length}개
-                          {hospital.procedures.length > 0 && (
-                            <span className="ml-2 text-gray-500">
-                              • {hospital.procedures.slice(0, 2).join(", ")}
-                              {hospital.procedures.length > 2 && " 외"}
-                            </span>
+                                  >
+                                    {category}
+                                  </span>
+                                ))}
+                            </div>
                           )}
+
+                          {/* Procedures Count */}
+                          <div className="text-gray-600 text-xs">
+                            시술 {hospital.treatments.length}개
+                            {hospital.procedures.length > 0 && (
+                              <span className="ml-2 text-gray-500">
+                                • {hospital.procedures.slice(0, 2).join(", ")}
+                                {hospital.procedures.length > 2 && " 외"}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

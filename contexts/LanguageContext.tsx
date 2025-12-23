@@ -95,15 +95,18 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "form.hospitalSatisfactionLabel": "병원 만족도 (1~5)",
     "form.reviewContent": "후기 내용",
     "form.reviewContentPlaceholder": "후기 내용을 작성해주세요 (10자 이상)",
-    "form.loginRequiredProcedure": "로그인 후에만 시술 후기를 작성할 수 있습니다.",
+    "form.loginRequiredProcedure":
+      "로그인 후에만 시술 후기를 작성할 수 있습니다.",
     "form.selectGenderAge": "성별과 연령대를 선택해주세요.",
     "form.selectSatisfaction": "시술 만족도와 병원 만족도를 모두 선택해주세요.",
-    "form.procedureReviewUpdateSuccess": "시술후기가 성공적으로 수정되었습니다!",
+    "form.procedureReviewUpdateSuccess":
+      "시술후기가 성공적으로 수정되었습니다!",
     "form.procedureReviewWriteSuccess": "시술후기가 성공적으로 작성되었습니다!",
     "form.imageUploadError": "이미지 업로드에 실패했습니다: {message}",
     "form.procedureReviewUpdateFailed": "시술후기 수정에 실패했습니다: {error}",
     "form.procedureReviewWriteFailed": "시술후기 작성에 실패했습니다: {error}",
-    "form.procedureReviewWriteError": "시술후기 작성 중 오류가 발생했습니다: {message}",
+    "form.procedureReviewWriteError":
+      "시술후기 작성 중 오류가 발생했습니다: {message}",
     "form.concernCategory": "고민 카테고리",
     "form.selectConcernCategory": "고민 카테고리를 선택하세요",
 
@@ -202,7 +205,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "auth.loginError": "로그인 중 오류가 발생했습니다. 다시 시도해주세요.",
     "auth.loginFailed": "로그인에 실패했습니다.",
     "auth.signupSuccess": "회원가입 및 로그인이 완료되었습니다!",
-    "auth.signupEmailVerification": "회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요.",
+    "auth.signupEmailVerification":
+      "회원가입이 완료되었습니다! 이메일을 확인하여 계정을 활성화해주세요.",
     // Placeholders
     "placeholder.procedureName": "시술명/수술명을 입력해 주세요.",
     "placeholder.hospitalName": "병원명을 입력해 주세요.",
@@ -328,7 +332,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "시술",
     "schedule.travelPeriodLabel": "여행 기간:",
     "schedule.noSavedSchedules": "저장된 일정이 없습니다.",
-    "schedule.saveScheduleDescription": "일정을 저장하면 여기서 확인할 수 있습니다.",
+    "schedule.saveScheduleDescription":
+      "일정을 저장하면 여기서 확인할 수 있습니다.",
     "schedule.deleteAllConfirm":
       "저장된 일정 {count}개를 모두 삭제하시겠습니까?",
     "schedule.deleteAll": "모두 지우기",
@@ -344,18 +349,28 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.quote": "견적받기",
     "explore.reviewCTA.title": "리뷰를 작성하면",
     "explore.reviewCTA.description": "더 많은 시술 정보를 볼 수 있어요!",
-    "explore.reviewCTA.hospitalDescription": "더 많은 병원 정보를 볼 수 있어요!",
+    "explore.reviewCTA.hospitalDescription":
+      "더 많은 병원 정보를 볼 수 있어요!",
     "explore.reviewCTA.button": "리뷰 작성하기",
     // 중분류 설명 템플릿
-    "explore.categoryDescription.default": "{categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.",
-    "explore.categoryDescription.botox": "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.",
-    "explore.categoryDescription.filler": "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.",
-    "explore.categoryDescription.lifting": "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.",
-    "explore.categoryDescription.hairRemoval": "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.",
-    "explore.categoryDescription.surgery": "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.",
-    "explore.categoryDescription.correction": "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.",
-    "explore.categoryDescription.injection": "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.",
-    "explore.categoryDescription.laser": "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.",
+    "explore.categoryDescription.default":
+      "{categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.",
+    "explore.categoryDescription.botox":
+      "근육을 이완시켜 주름을 예방하고 개선하는 효과가 있어요. 이마, 눈가, 미간 등 주름이 생기기 쉬운 부위에 주사하여 자연스러운 표정을 유지할 수 있어요.",
+    "explore.categoryDescription.filler":
+      "볼륨을 채워주고 윤곽을 개선하여 자연스러운 미모를 연출합니다.",
+    "explore.categoryDescription.lifting":
+      "피부 탄력을 개선하고 처진 피부를 리프팅하여 더욱 젊어 보이게 해줍니다.",
+    "explore.categoryDescription.hairRemoval":
+      "불필요한 털을 제거하여 깔끔하고 매끄러운 피부를 만들어주는 시술이에요.",
+    "explore.categoryDescription.surgery":
+      "외모를 개선하고 더욱 아름다운 모습을 만들어주는 시술입니다.",
+    "explore.categoryDescription.correction":
+      "얼굴 윤곽이나 모양을 개선하여 더욱 균형 잡힌 외모를 만들어주는 시술이에요.",
+    "explore.categoryDescription.injection":
+      "주사 형태로 시행되는 시술로, 피부 개선과 외모 향상에 효과적이에요.",
+    "explore.categoryDescription.laser":
+      "레이저를 이용해 피부를 개선하고 외모를 향상시키는 시술입니다.",
 
     // Community
     "community.title": "커뮤니티",
@@ -463,6 +478,46 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "ranking.procedure.tuneFace": "튠페이스",
     "ranking.procedure.thermavel": "써마벨",
     "ranking.procedure.lifterra": "리프테라",
+
+    // AI Skin Analysis
+    "ai.button.ariaLabel": "AI 피부 분석 시작",
+    "ai.button.alt": "AI 피부 분석",
+    "ai.button.uploadError": "업로드 중 오류가 발생했습니다: {message}",
+    "ai.camera.title": "얼굴 촬영",
+    "ai.camera.instruction": "얼굴을 화면에 맞춰주세요",
+    "ai.camera.capture": "촬영",
+    "ai.camera.retake": "다시 촬영",
+    "ai.camera.uploading": "업로드 중...",
+    "ai.camera.confirm": "확인",
+    "ai.camera.capturedAlt": "촬영된 사진",
+    "ai.consent.title": "AI 피부 분석 테스트",
+    "ai.consent.duration": "테스트의 총 소요시간은 <strong>3분</strong>입니다.",
+    "ai.consent.description":
+      "여러분의 얼굴을 촬영한 후 AI 기능을 통해 분석을 시작합니다.<br />얼굴 사진 촬영에 동의하신다면 아래 '동의'를 클릭해 주세요.<br />세부 내용은 아래에서 확인하시기 바랍니다.",
+    "ai.consent.privacy":
+      "당사는 고객의 AI 피부 분석을 위한 내부 연구 목적으로 여러분의 얼굴 사진을 수집·분석합니다.<br /><br />촬영된 얼굴 사진은 AI 기능을 통해 특징 및 패턴을 분석하는 데 사용되며, 분석 과정에서 수집된 정보는 통계 및 알고리즘 개선에만 활용됩니다.<br /><br />수집된 개인정보는 연구 목적 달성 후 지체 없이 파기되며, 법령에 따라 보관이 필요한 경우 해당 기간 동안 안전하게 보관됩니다.<br /><br />해당 정보는 제3자에게 제공되지 않으며, 분석 업무 수행을 위해 필요한 경우에 한해 기술 협력업체에 위탁할 수 있습니다.<br /><br />개인정보 수집 및 이용에 동의하지 않으실 수 있으나, 동의하지 않을 경우 AI 분석 관련 서비스 참여가 제한될 수 있습니다.",
+    "ai.consent.confirmText":
+      "위 사항을 모두 확인했으며, 동의한다면 동의 버튼을 눌러주세요.",
+    "ai.consent.agree": "동의",
+    "ai.consent.disagree": "동의하지 않겠습니다",
+    "ai.result.title": "피부 분석 결과",
+    "ai.result.subtitle": "AI가 분석한 당신의 피부 상태입니다",
+    "ai.result.loading": "분석 결과를 불러오는 중...",
+    "ai.result.faceSection": "분석된 얼굴",
+    "ai.result.noImage": "이미지 없음",
+    "ai.result.faceAlt": "분석된 얼굴",
+    "ai.result.scoreSentence": "당신의 피부는 현재, {score}점 입니다.",
+    "ai.result.summarySection": "요약",
+    "ai.result.chartLabel": "차트",
+    "ai.result.recommendedIngredients": "나에게 맞는 추천 성분",
+    "ai.result.cautionIngredients": "주의해야 할 성분",
+    "ai.result.detailAnalysis": "세부 항목별 AI 분석 결과",
+    "ai.result.recommendedProcedures": "내 피부에 맞는 시술 추천",
+    "ai.result.proceduresComingSoon":
+      "추천 시술 정보는 곧 업데이트될 예정입니다",
+    "ai.result.categories.skin": "스킨 / 토너",
+    "ai.result.categories.lotion": "로션 / 에멀전",
+    "ai.result.categories.serum": "세럼 / 에센스",
 
     // Home Page
     "home.selectSchedule": "여행 일정을 선택해 주세요.",
@@ -597,7 +652,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "post.edit": "수정",
     "post.delete": "삭제",
     "post.deleteConfirm": "게시글 삭제",
-    "post.deleteConfirmMessage": "정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "post.deleteConfirmMessage":
+      "정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "post.deleted": "게시글이 삭제되었습니다.",
     "post.notFound": "게시글을 찾을 수 없습니다.",
     "community.section.recovery": "수술 회복 수다",
@@ -800,13 +856,19 @@ const translations: Record<LanguageCode, Record<string, string>> = {
       "Write your review (at least 10 characters)",
     "form.loginRequiredProcedure": "Please log in to write a procedure review.",
     "form.selectGenderAge": "Please select gender and age group.",
-    "form.selectSatisfaction": "Please select both procedure and hospital satisfaction.",
-    "form.procedureReviewUpdateSuccess": "Procedure review has been successfully updated!",
-    "form.procedureReviewWriteSuccess": "Procedure review has been successfully written!",
+    "form.selectSatisfaction":
+      "Please select both procedure and hospital satisfaction.",
+    "form.procedureReviewUpdateSuccess":
+      "Procedure review has been successfully updated!",
+    "form.procedureReviewWriteSuccess":
+      "Procedure review has been successfully written!",
     "form.imageUploadError": "Failed to upload image: {message}",
-    "form.procedureReviewUpdateFailed": "Failed to update procedure review: {error}",
-    "form.procedureReviewWriteFailed": "Failed to write procedure review: {error}",
-    "form.procedureReviewWriteError": "An error occurred while writing procedure review: {message}",
+    "form.procedureReviewUpdateFailed":
+      "Failed to update procedure review: {error}",
+    "form.procedureReviewWriteFailed":
+      "Failed to write procedure review: {error}",
+    "form.procedureReviewWriteError":
+      "An error occurred while writing procedure review: {message}",
     "form.concernCategory": "Concern Category",
     "form.selectConcernCategory": "Select concern category",
 
@@ -901,7 +963,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "auth.loginError": "An error occurred during login. Please try again.",
     "auth.loginFailed": "Login failed.",
     "auth.signupSuccess": "Sign up and login completed!",
-    "auth.signupEmailVerification": "Sign up completed! Please check your email to activate your account.",
+    "auth.signupEmailVerification":
+      "Sign up completed! Please check your email to activate your account.",
     // Placeholders
     "placeholder.procedureName": "Enter procedure/surgery name",
     "placeholder.hospitalName": "Enter hospital name",
@@ -1008,7 +1071,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "Procedure",
     "schedule.travelPeriodLabel": "Travel Period:",
     "schedule.noSavedSchedules": "No saved schedules.",
-    "schedule.saveScheduleDescription": "If you save a schedule, you can check it here.",
+    "schedule.saveScheduleDescription":
+      "If you save a schedule, you can check it here.",
     "schedule.deleteAllConfirm": "Delete all {count} saved schedules?",
     "schedule.deleteAll": "Clear All",
     "schedule.savedDate": "Saved Date",
@@ -1085,18 +1149,28 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.quote": "Get Quote",
     "explore.reviewCTA.title": "Write a review",
     "explore.reviewCTA.description": "to see more procedure information!",
-    "explore.reviewCTA.hospitalDescription": "to see more hospital information!",
+    "explore.reviewCTA.hospitalDescription":
+      "to see more hospital information!",
     "explore.reviewCTA.button": "Write Review",
     // 중분류 설명 템플릿
-    "explore.categoryDescription.default": "A procedure to improve skin and appearance through {categoryMid}.",
-    "explore.categoryDescription.botox": "Relaxes muscles to prevent and improve wrinkles. Can be injected into areas prone to wrinkles such as the forehead, around the eyes, and between the eyebrows to maintain natural expressions.",
-    "explore.categoryDescription.filler": "Adds volume and improves contours to create natural beauty.",
-    "explore.categoryDescription.lifting": "Improves skin elasticity and lifts sagging skin to make you look younger.",
-    "explore.categoryDescription.hairRemoval": "A procedure that removes unwanted hair to create clean and smooth skin.",
-    "explore.categoryDescription.surgery": "A procedure that improves appearance and creates a more beautiful look.",
-    "explore.categoryDescription.correction": "A procedure that improves facial contours or shape to create a more balanced appearance.",
-    "explore.categoryDescription.injection": "A procedure performed in injection form, effective for skin improvement and appearance enhancement.",
-    "explore.categoryDescription.laser": "A procedure that uses laser to improve skin and enhance appearance.",
+    "explore.categoryDescription.default":
+      "A procedure to improve skin and appearance through {categoryMid}.",
+    "explore.categoryDescription.botox":
+      "Relaxes muscles to prevent and improve wrinkles. Can be injected into areas prone to wrinkles such as the forehead, around the eyes, and between the eyebrows to maintain natural expressions.",
+    "explore.categoryDescription.filler":
+      "Adds volume and improves contours to create natural beauty.",
+    "explore.categoryDescription.lifting":
+      "Improves skin elasticity and lifts sagging skin to make you look younger.",
+    "explore.categoryDescription.hairRemoval":
+      "A procedure that removes unwanted hair to create clean and smooth skin.",
+    "explore.categoryDescription.surgery":
+      "A procedure that improves appearance and creates a more beautiful look.",
+    "explore.categoryDescription.correction":
+      "A procedure that improves facial contours or shape to create a more balanced appearance.",
+    "explore.categoryDescription.injection":
+      "A procedure performed in injection form, effective for skin improvement and appearance enhancement.",
+    "explore.categoryDescription.laser":
+      "A procedure that uses laser to improve skin and enhance appearance.",
 
     // Community
     "community.title": "Community",
@@ -1208,6 +1282,47 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "ranking.procedure.thermavel": "Thermavel",
     "ranking.procedure.lifterra": "Lifting Laser / Lifterra",
 
+    // AI Skin Analysis
+    "ai.button.ariaLabel": "Start AI Skin Analysis",
+    "ai.button.alt": "AI Skin Analysis",
+    "ai.button.uploadError": "An error occurred during upload: {message}",
+    "ai.camera.title": "Face Capture",
+    "ai.camera.instruction": "Please align your face with the screen",
+    "ai.camera.capture": "Capture",
+    "ai.camera.retake": "Retake",
+    "ai.camera.uploading": "Uploading...",
+    "ai.camera.confirm": "Confirm",
+    "ai.camera.capturedAlt": "Captured photo",
+    "ai.consent.title": "AI Skin Analysis Test",
+    "ai.consent.duration":
+      "The total test duration is <strong>3 minutes</strong>.",
+    "ai.consent.description":
+      "After capturing your face, we will start analysis through AI features.<br />If you agree to face photo capture, please click 'Agree' below.<br />Please check the details below.",
+    "ai.consent.privacy":
+      "We collect and analyze your face photos for internal research purposes for customer AI skin analysis.<br /><br />The captured face photos are used to analyze features and patterns through AI features, and the information collected during the analysis process is only used for statistics and algorithm improvement.<br /><br />The collected personal information will be destroyed without delay after achieving the research purpose, and will be safely stored for the required period if storage is required by law.<br /><br />This information is not provided to third parties, and may be entrusted to technical partners only when necessary to perform analysis work.<br /><br />You may not agree to the collection and use of personal information, but if you do not agree, participation in AI analysis-related services may be limited.",
+    "ai.consent.confirmText":
+      "If you have checked all the above items and agree, please press the agree button.",
+    "ai.consent.agree": "Agree",
+    "ai.consent.disagree": "I do not agree",
+    "ai.result.title": "Skin Analysis Results",
+    "ai.result.subtitle": "Your skin condition analyzed by AI",
+    "ai.result.loading": "Loading analysis results...",
+    "ai.result.faceSection": "Analyzed Face",
+    "ai.result.noImage": "No image",
+    "ai.result.faceAlt": "Analyzed face",
+    "ai.result.scoreSentence": "Your skin is currently {score} points.",
+    "ai.result.summarySection": "Summary",
+    "ai.result.chartLabel": "Chart",
+    "ai.result.recommendedIngredients": "Recommended Ingredients for Me",
+    "ai.result.cautionIngredients": "Ingredients to Be Cautious About",
+    "ai.result.detailAnalysis": "AI Analysis Results by Detail Item",
+    "ai.result.recommendedProcedures": "Procedure Recommendations for My Skin",
+    "ai.result.proceduresComingSoon":
+      "Recommended procedure information will be updated soon",
+    "ai.result.categories.skin": "Skin / Toner",
+    "ai.result.categories.lotion": "Lotion / Emulsion",
+    "ai.result.categories.serum": "Serum / Essence",
+
     // Home Page
     "home.selectSchedule": "Please select your travel schedule.",
     "home.selectScheduleFirst":
@@ -1311,7 +1426,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "post.edit": "Edit",
     "post.delete": "Delete",
     "post.deleteConfirm": "Delete Post",
-    "post.deleteConfirmMessage": "Are you sure you want to delete this post? This action cannot be undone.",
+    "post.deleteConfirmMessage":
+      "Are you sure you want to delete this post? This action cannot be undone.",
     "post.deleted": "Post deleted successfully.",
     "post.notFound": "Post not found.",
     "community.section.recovery": "Surgery Recovery Stories",
@@ -1473,7 +1589,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.retry": "再試行",
     "common.loginRequired": "ログインが必要です",
     "common.loginRequiredDesc": "ログインして続行してください",
-    "common.loginRequiredMoreInfo": "ログインして、美しくなる情報を学びましょう❤️",
+    "common.loginRequiredMoreInfo":
+      "ログインして、美しくなる情報を学びましょう❤️",
     "common.login": "ログイン",
     "common.priceInquiry": "価格お問い合わせ",
     "common.seeMore": "もっと見る",
@@ -1515,15 +1632,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "form.reviewContent": "レビュー内容",
     "form.reviewContentPlaceholder":
       "レビュー内容を書いてください（10文字以上）",
-    "form.loginRequiredProcedure": "ログイン後にのみ施術レビューを書くことができます。",
+    "form.loginRequiredProcedure":
+      "ログイン後にのみ施術レビューを書くことができます。",
     "form.selectGenderAge": "性別と年齢層を選択してください。",
-    "form.selectSatisfaction": "施術満足度と病院満足度の両方を選択してください。",
+    "form.selectSatisfaction":
+      "施術満足度と病院満足度の両方を選択してください。",
     "form.procedureReviewUpdateSuccess": "施術レビューが正常に更新されました！",
     "form.procedureReviewWriteSuccess": "施術レビューが正常に作成されました！",
     "form.imageUploadError": "画像のアップロードに失敗しました: {message}",
-    "form.procedureReviewUpdateFailed": "施術レビューの更新に失敗しました: {error}",
-    "form.procedureReviewWriteFailed": "施術レビューの作成に失敗しました: {error}",
-    "form.procedureReviewWriteError": "施術レビューの作成中にエラーが発生しました: {message}",
+    "form.procedureReviewUpdateFailed":
+      "施術レビューの更新に失敗しました: {error}",
+    "form.procedureReviewWriteFailed":
+      "施術レビューの作成に失敗しました: {error}",
+    "form.procedureReviewWriteError":
+      "施術レビューの作成中にエラーが発生しました: {message}",
     "form.concernCategory": "悩みカテゴリ",
     "form.selectConcernCategory": "悩みカテゴリを選択してください",
 
@@ -1625,7 +1747,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "auth.loginError": "ログイン中にエラーが発生しました。再度お試しください。",
     "auth.loginFailed": "ログインに失敗しました。",
     "auth.signupSuccess": "会員登録およびログインが完了しました！",
-    "auth.signupEmailVerification": "会員登録が完了しました！メールを確認してアカウントを有効化してください。",
+    "auth.signupEmailVerification":
+      "会員登録が完了しました！メールを確認してアカウントを有効化してください。",
     // Placeholders
     "placeholder.procedureName": "施術名/手術名を入力してください。",
     "placeholder.hospitalName": "病院名を入力してください。",
@@ -1754,7 +1877,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.procedure": "施術",
     "schedule.travelPeriodLabel": "旅行期間：",
     "schedule.noSavedSchedules": "保存されたスケジュールがありません。",
-    "schedule.saveScheduleDescription": "スケジュールを保存すると、ここで確認できます。",
+    "schedule.saveScheduleDescription":
+      "スケジュールを保存すると、ここで確認できます。",
     "schedule.deleteAllConfirm":
       "保存されたスケジュール{count}件をすべて削除しますか？",
     "schedule.deleteAll": "すべて削除",
@@ -1770,18 +1894,28 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.quote": "見積もり",
     "explore.reviewCTA.title": "レビューを書くと",
     "explore.reviewCTA.description": "より多くの施術情報を見ることができます！",
-    "explore.reviewCTA.hospitalDescription": "より多くの病院情報を見ることができます！",
+    "explore.reviewCTA.hospitalDescription":
+      "より多くの病院情報を見ることができます！",
     "explore.reviewCTA.button": "レビューを書く",
     // 中分類説明テンプレート
-    "explore.categoryDescription.default": "{categoryMid}を通じて肌と外見を改善できる施術です。",
-    "explore.categoryDescription.botox": "筋肉を弛緩させてしわを予防・改善する効果があります。額、目元、眉間などしわができやすい部位に注射して自然な表情を保つことができます。",
-    "explore.categoryDescription.filler": "ボリュームを補い、輪郭を改善して自然な美しさを演出します。",
-    "explore.categoryDescription.lifting": "肌の弾力を改善し、たるんだ肌をリフティングしてより若々しく見せます。",
-    "explore.categoryDescription.hairRemoval": "不要な毛を除去して清潔で滑らかな肌を作る施術です。",
-    "explore.categoryDescription.surgery": "外見を改善し、より美しい姿を作る施術です。",
-    "explore.categoryDescription.correction": "顔の輪郭や形を改善してよりバランスの取れた外見を作る施術です。",
-    "explore.categoryDescription.injection": "注射形式で行われる施術で、肌改善と外見向上に効果的です。",
-    "explore.categoryDescription.laser": "レーザーを利用して肌を改善し、外見を向上させる施術です。",
+    "explore.categoryDescription.default":
+      "{categoryMid}を通じて肌と外見を改善できる施術です。",
+    "explore.categoryDescription.botox":
+      "筋肉を弛緩させてしわを予防・改善する効果があります。額、目元、眉間などしわができやすい部位に注射して自然な表情を保つことができます。",
+    "explore.categoryDescription.filler":
+      "ボリュームを補い、輪郭を改善して自然な美しさを演出します。",
+    "explore.categoryDescription.lifting":
+      "肌の弾力を改善し、たるんだ肌をリフティングしてより若々しく見せます。",
+    "explore.categoryDescription.hairRemoval":
+      "不要な毛を除去して清潔で滑らかな肌を作る施術です。",
+    "explore.categoryDescription.surgery":
+      "外見を改善し、より美しい姿を作る施術です。",
+    "explore.categoryDescription.correction":
+      "顔の輪郭や形を改善してよりバランスの取れた外見を作る施術です。",
+    "explore.categoryDescription.injection":
+      "注射形式で行われる施術で、肌改善と外見向上に効果的です。",
+    "explore.categoryDescription.laser":
+      "レーザーを利用して肌を改善し、外見を向上させる施術です。",
 
     // Community
     "community.title": "コミュニティ",
@@ -1888,6 +2022,46 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "ranking.procedure.tuneFace": "チューンフェイス",
     "ranking.procedure.thermavel": "サーマベル",
     "ranking.procedure.lifterra": "リフテラ",
+
+    // AI Skin Analysis
+    "ai.button.ariaLabel": "AI肌分析開始",
+    "ai.button.alt": "AI肌分析",
+    "ai.button.uploadError": "アップロード中にエラーが発生しました: {message}",
+    "ai.camera.title": "顔撮影",
+    "ai.camera.instruction": "顔を画面に合わせてください",
+    "ai.camera.capture": "撮影",
+    "ai.camera.retake": "再撮影",
+    "ai.camera.uploading": "アップロード中...",
+    "ai.camera.confirm": "確認",
+    "ai.camera.capturedAlt": "撮影された写真",
+    "ai.consent.title": "AI肌分析テスト",
+    "ai.consent.duration": "テストの総所要時間は<strong>3分</strong>です。",
+    "ai.consent.description":
+      "顔を撮影した後、AI機能を通じて分析を開始します。<br />顔写真の撮影に同意される場合は、下の「同意」をクリックしてください。<br />詳細内容は下で確認してください。",
+    "ai.consent.privacy":
+      "当社は、お客様のAI肌分析のための内部研究目的で、お客様の顔写真を収集・分析します。<br /><br />撮影された顔写真は、AI機能を通じて特徴やパターンを分析するために使用され、分析過程で収集された情報は統計およびアルゴリズム改善にのみ活用されます。<br /><br />収集された個人情報は、研究目的達成後、遅滞なく破棄され、法令により保管が必要な場合は、該当期間中安全に保管されます。<br /><br />該当情報は第三者に提供されず、分析業務の実行に必要な場合に限り、技術協力会社に委託することができます。<br /><br />個人情報の収集および利用に同意されないことができますが、同意しない場合、AI分析関連サービスの参加が制限される場合があります。",
+    "ai.consent.confirmText":
+      "上記の事項をすべて確認し、同意する場合は、同意ボタンを押してください。",
+    "ai.consent.agree": "同意",
+    "ai.consent.disagree": "同意しません",
+    "ai.result.title": "肌分析結果",
+    "ai.result.subtitle": "AIが分析したあなたの肌状態です",
+    "ai.result.loading": "分析結果を読み込み中...",
+    "ai.result.faceSection": "分析された顔",
+    "ai.result.noImage": "画像なし",
+    "ai.result.faceAlt": "分析された顔",
+    "ai.result.scoreSentence": "あなたの肌は現在、{score}点です。",
+    "ai.result.summarySection": "要約",
+    "ai.result.chartLabel": "チャート",
+    "ai.result.recommendedIngredients": "私に合う推奨成分",
+    "ai.result.cautionIngredients": "注意すべき成分",
+    "ai.result.detailAnalysis": "詳細項目別AI分析結果",
+    "ai.result.recommendedProcedures": "私の肌に合う施術推奨",
+    "ai.result.proceduresComingSoon":
+      "推奨施術情報はまもなく更新される予定です",
+    "ai.result.categories.skin": "スキン / トナー",
+    "ai.result.categories.lotion": "ローション / エマルジョン",
+    "ai.result.categories.serum": "セラム / エッセンス",
 
     // Home Page
     "home.selectSchedule": "旅行日程を選択してください。",
@@ -2022,7 +2196,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "post.edit": "編集",
     "post.delete": "削除",
     "post.deleteConfirm": "投稿を削除",
-    "post.deleteConfirmMessage": "この投稿を削除してもよろしいですか？この操作は元に戻せません。",
+    "post.deleteConfirmMessage":
+      "この投稿を削除してもよろしいですか？この操作は元に戻せません。",
     "post.deleted": "投稿が削除されました。",
     "post.notFound": "投稿が見つかりません。",
     "community.section.recovery": "手術回復の話",
@@ -2466,14 +2641,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.reviewCTA.hospitalDescription": "可以看到更多医院信息！",
     "explore.reviewCTA.button": "写评论",
     // 中分类说明模板
-    "explore.categoryDescription.default": "通过{categoryMid}可以改善皮肤和外貌的疗程。",
-    "explore.categoryDescription.botox": "放松肌肉以预防和改善皱纹。可以注射到容易产生皱纹的部位，如额头、眼周、眉间等，以保持自然表情。",
+    "explore.categoryDescription.default":
+      "通过{categoryMid}可以改善皮肤和外貌的疗程。",
+    "explore.categoryDescription.botox":
+      "放松肌肉以预防和改善皱纹。可以注射到容易产生皱纹的部位，如额头、眼周、眉间等，以保持自然表情。",
     "explore.categoryDescription.filler": "填充体积并改善轮廓，营造自然美感。",
-    "explore.categoryDescription.lifting": "改善皮肤弹性，提升松弛皮肤，让您看起来更年轻。",
-    "explore.categoryDescription.hairRemoval": "去除不必要的毛发，打造干净光滑的皮肤。",
+    "explore.categoryDescription.lifting":
+      "改善皮肤弹性，提升松弛皮肤，让您看起来更年轻。",
+    "explore.categoryDescription.hairRemoval":
+      "去除不必要的毛发，打造干净光滑的皮肤。",
     "explore.categoryDescription.surgery": "改善外貌，打造更美丽的容貌。",
-    "explore.categoryDescription.correction": "改善面部轮廓或形状，打造更平衡的外貌。",
-    "explore.categoryDescription.injection": "以注射形式进行的疗程，对皮肤改善和外观提升有效。",
+    "explore.categoryDescription.correction":
+      "改善面部轮廓或形状，打造更平衡的外貌。",
+    "explore.categoryDescription.injection":
+      "以注射形式进行的疗程，对皮肤改善和外观提升有效。",
     "explore.categoryDescription.laser": "利用激光改善皮肤并提升外观的疗程。",
 
     // Community
@@ -2581,6 +2762,44 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "ranking.procedure.tuneFace": "调谐面部 / Tune Face",
     "ranking.procedure.thermavel": "热玛贝",
     "ranking.procedure.lifterra": "提拉激光",
+
+    // AI Skin Analysis
+    "ai.button.ariaLabel": "开始AI皮肤分析",
+    "ai.button.alt": "AI皮肤分析",
+    "ai.button.uploadError": "上传过程中发生错误: {message}",
+    "ai.camera.title": "面部拍摄",
+    "ai.camera.instruction": "请将面部对准屏幕",
+    "ai.camera.capture": "拍摄",
+    "ai.camera.retake": "重新拍摄",
+    "ai.camera.uploading": "上传中...",
+    "ai.camera.confirm": "确认",
+    "ai.camera.capturedAlt": "拍摄的照片",
+    "ai.consent.title": "AI皮肤分析测试",
+    "ai.consent.duration": "测试总耗时<strong>3分钟</strong>。",
+    "ai.consent.description":
+      "拍摄您的面部后，将通过AI功能开始分析。<br />如果您同意拍摄面部照片，请点击下方的“同意”。<br />详细信息请查看下方。",
+    "ai.consent.privacy":
+      "我们为客户的AI皮肤分析内部研究目的收集和分析您的面部照片。<br /><br />拍摄的面部照片用于通过AI功能分析特征和模式，分析过程中收集的信息仅用于统计和算法改进。<br /><br />收集的个人信息在研究目的达成后将立即销毁，根据法律需要保存的情况下，将在相应期间内安全保存。<br /><br />该信息不会提供给第三方，仅在执行分析工作所需的情况下，可委托给技术合作伙伴。<br /><br />您可以不同意个人信息的收集和使用，但如果不同意，可能会限制参与AI分析相关服务。",
+    "ai.consent.confirmText": "如果您已确认上述所有事项并同意，请按同意按钮。",
+    "ai.consent.agree": "同意",
+    "ai.consent.disagree": "我不同意",
+    "ai.result.title": "皮肤分析结果",
+    "ai.result.subtitle": "AI分析的您的皮肤状态",
+    "ai.result.loading": "正在加载分析结果...",
+    "ai.result.faceSection": "分析的面部",
+    "ai.result.noImage": "无图像",
+    "ai.result.faceAlt": "分析的面部",
+    "ai.result.scoreSentence": "您的皮肤目前是{score}分。",
+    "ai.result.summarySection": "摘要",
+    "ai.result.chartLabel": "图表",
+    "ai.result.recommendedIngredients": "适合我的推荐成分",
+    "ai.result.cautionIngredients": "需要注意的成分",
+    "ai.result.detailAnalysis": "详细项目AI分析结果",
+    "ai.result.recommendedProcedures": "适合我皮肤的推荐项目",
+    "ai.result.proceduresComingSoon": "推荐项目信息即将更新",
+    "ai.result.categories.skin": "爽肤水 / 化妆水",
+    "ai.result.categories.lotion": "乳液 / 乳霜",
+    "ai.result.categories.serum": "精华 / 精华液",
 
     // Home Page
     "home.selectSchedule": "请选择您的旅行日程。",
@@ -2866,36 +3085,43 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [language, isMounted]);
 
-    const setLanguage = (lang: LanguageCode) => {
-      setLanguageState(lang);
-      // GTM: 언어 변경 이벤트
-      if (typeof window !== "undefined") {
-        const { trackLanguageChange } = require("@/lib/gtm");
-        trackLanguageChange(lang);
-      }
-    };
+  const setLanguage = (lang: LanguageCode) => {
+    setLanguageState(lang);
+    // GTM: 언어 변경 이벤트
+    if (typeof window !== "undefined") {
+      const { trackLanguageChange } = require("@/lib/gtm");
+      trackLanguageChange(lang);
+    }
+  };
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     const langTranslations = translations[language];
     if (!langTranslations) {
-      console.error(`[Translation] Language "${language}" not found in translations`);
+      console.error(
+        `[Translation] Language "${language}" not found in translations`
+      );
       return key;
     }
     const translation = langTranslations[key];
     if (!translation) {
-      console.warn(`[Translation] Key "${key}" not found for language "${language}"`);
+      console.warn(
+        `[Translation] Key "${key}" not found for language "${language}"`
+      );
       return key;
     }
-    
+
     // 파라미터가 있으면 치환
     if (params) {
       let result = translation;
       for (const [paramKey, paramValue] of Object.entries(params)) {
-        result = result.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(paramValue));
+        result = result.replace(
+          new RegExp(`\\{${paramKey}\\}`, "g"),
+          String(paramValue)
+        );
       }
       return result;
     }
-    
+
     return translation;
   };
 

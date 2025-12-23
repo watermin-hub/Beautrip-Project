@@ -9,6 +9,7 @@ import {
 } from "@/lib/aiAnalysisTemplates";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AISkinAnalysisResultPageProps {
   imageUrl?: string;
@@ -18,6 +19,7 @@ export default function AISkinAnalysisResultPage({
   imageUrl,
 }: AISkinAnalysisResultPageProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [result, setResult] = useState<SkinAnalysisResult | null>(null);
   const [gaugeWidth, setGaugeWidth] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("스킨 / 토너");
@@ -80,13 +82,17 @@ export default function AISkinAnalysisResultPage({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-main mx-auto mb-4"></div>
-          <p className="text-gray-600">분석 결과를 불러오는 중...</p>
+          <p className="text-gray-600">{t("ai.result.loading")}</p>
         </div>
       </div>
     );
   }
 
-  const categories = ["스킨 / 토너", "로션 / 에멀전", "세럼 / 에센스"];
+  const categories = [
+    t("ai.result.categories.skin"),
+    t("ai.result.categories.lotion"),
+    t("ai.result.categories.serum"),
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -101,7 +107,9 @@ export default function AISkinAnalysisResultPage({
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">피부 분석 결과</h1>
+          <h1 className="text-lg font-bold text-gray-900">
+            {t("ai.result.title")}
+          </h1>
           <div className="w-10" /> {/* 공간 맞추기 */}
         </div>
       </div>
@@ -109,14 +117,14 @@ export default function AISkinAnalysisResultPage({
       <div className="max-w-md mx-auto bg-white">
         {/* 결과 헤더 */}
         <div className="text-center pt-16 pb-4 px-5">
-          <p className="text-xs text-gray-400">
-            AI가 분석한 당신의 피부 상태입니다
-          </p>
+          <p className="text-xs text-gray-400">{t("ai.result.subtitle")}</p>
         </div>
 
         {/* 분석된 얼굴 섹션 */}
         <div className="px-5 mb-3">
-          <h2 className="text-base font-semibold text-gray-900">분석된 얼굴</h2>
+          <h2 className="text-base font-semibold text-gray-900">
+            {t("ai.result.faceSection")}
+          </h2>
         </div>
 
         {/* 결과 이미지 */}
@@ -125,7 +133,7 @@ export default function AISkinAnalysisResultPage({
             <div className="relative w-[297px] h-[238px] mx-auto">
               <img
                 src={imageUrl}
-                alt="분석된 얼굴"
+                alt={t("ai.result.faceAlt")}
                 className="w-full h-full rounded-[10px] object-cover mx-auto face-image-soft"
                 onLoad={() => {
                   console.log("이미지 렌더링 성공:", imageUrl);
@@ -145,7 +153,7 @@ export default function AISkinAnalysisResultPage({
             </div>
           ) : (
             <div className="w-[297px] h-[238px] rounded-[10px] bg-gray-200 mx-auto flex items-center justify-center">
-              <p className="text-gray-400 text-sm">이미지 없음</p>
+              <p className="text-gray-400 text-sm">{t("ai.result.noImage")}</p>
             </div>
           )}
         </div>
@@ -153,11 +161,7 @@ export default function AISkinAnalysisResultPage({
         {/* 점수 섹션 */}
         <div className="bg-white py-8 mb-[13px]">
           <div className="text-center text-lg font-bold text-gray-900 mb-5 px-5">
-            당신의 피부는 현재,{" "}
-            <span style={{ color: result.colorScheme.primary }}>
-              {result.score}점
-            </span>{" "}
-            입니다.
+            {t("ai.result.scoreSentence", { score: result.score })}
           </div>
           <div className="w-[362px] h-[22px] bg-gray-200 rounded-[10px] mx-auto relative overflow-hidden">
             <div
@@ -173,7 +177,7 @@ export default function AISkinAnalysisResultPage({
         {/* 요약 섹션 */}
         <div className="bg-white py-5 mb-[13px]">
           <h2 className="text-lg font-bold text-gray-900 text-center mb-6">
-            요약
+            {t("ai.result.summarySection")}
           </h2>
           <div className="w-[250px] min-h-[193px] bg-white border border-gray-200 rounded-[10px] mx-auto mb-5 p-5 relative overflow-visible">
             <div className="w-[153px] h-[153px] relative mx-auto">
@@ -200,7 +204,9 @@ export default function AISkinAnalysisResultPage({
               {/* 차트 영역 (실제 차트 이미지가 있다면 여기에) */}
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[120px] h-[120px] z-20">
                 <div className="w-full h-full rounded-full border-2 border-gray-300 flex items-center justify-center">
-                  <div className="text-xs text-gray-400">차트</div>
+                  <div className="text-xs text-gray-400">
+                    {t("ai.result.chartLabel")}
+                  </div>
                 </div>
               </div>
 
@@ -234,10 +240,10 @@ export default function AISkinAnalysisResultPage({
         <div className="bg-white py-5 mb-[13px]">
           <div className="flex justify-between items-center px-5 mb-5">
             <h2 className="text-lg font-bold text-gray-900">
-              나에게 맞는 추천 성분
+              {t("ai.result.recommendedIngredients")}
             </h2>
             <button className="flex items-center gap-1 text-xs text-gray-600">
-              <span>더보기</span>
+              <span>{t("common.seeMore")}</span>
               <FiChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -270,10 +276,10 @@ export default function AISkinAnalysisResultPage({
         <div className="bg-white py-5 mb-[13px]">
           <div className="flex justify-between items-center px-5 mb-5">
             <h2 className="text-lg font-bold text-gray-900">
-              주의해야 할 성분
+              {t("ai.result.cautionIngredients")}
             </h2>
             <button className="flex items-center gap-1 text-xs text-gray-600">
-              <span>더보기</span>
+              <span>{t("common.seeMore")}</span>
               <FiChevronRight className="w-3 h-3" />
             </button>
           </div>
@@ -302,7 +308,7 @@ export default function AISkinAnalysisResultPage({
         {/* 세부 분석 섹션 */}
         <div className="bg-white py-5 mb-[13px]">
           <h2 className="text-lg font-bold text-gray-900 text-center mb-5">
-            세부 항목별 AI 분석 결과
+            {t("ai.result.detailAnalysis")}
           </h2>
           {result.detailAnalysis.map((item, idx) => (
             <div key={idx}>
@@ -333,7 +339,7 @@ export default function AISkinAnalysisResultPage({
         <div className="bg-white py-5 mb-[13px]">
           <div className="flex justify-between items-center px-5 mb-4">
             <h2 className="text-lg font-bold text-gray-900">
-              내 피부에 맞는 시술 추천
+              {t("ai.result.recommendedProcedures")}
             </h2>
             <div className="relative">
               <button
@@ -379,7 +385,7 @@ export default function AISkinAnalysisResultPage({
           </div>
           <div className="px-5">
             <div className="bg-gray-50 rounded-lg p-4 text-center text-sm text-gray-600">
-              추천 시술 정보는 곧 업데이트될 예정입니다
+              {t("ai.result.proceduresComingSoon")}
             </div>
           </div>
         </div>
@@ -464,6 +470,3 @@ export default function AISkinAnalysisResultPage({
     </div>
   );
 }
-
-
-

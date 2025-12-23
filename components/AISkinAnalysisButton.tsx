@@ -9,8 +9,10 @@ import { uploadFaceImageToStorage } from "@/lib/api/faceImageUpload";
 import { supabase } from "@/lib/supabase";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { trackAIAnalysisStart } from "@/lib/gtm";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AISkinAnalysisButton() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
@@ -49,7 +51,7 @@ export default function AISkinAnalysisButton() {
   const handleStartAnalysis = () => {
     // GTM: AI 분석 시작 이벤트 (버튼 클릭 시점, 동의 전)
     trackAIAnalysisStart();
-    
+
     // 로그인 체크
     if (!isLoggedIn || !userId) {
       setShowLoginRequiredPopup(true);
@@ -75,14 +77,17 @@ export default function AISkinAnalysisButton() {
 
       // 찍은 사진을 localStorage에 먼저 저장 (즉시 표시용)
       localStorage.setItem("capturedFaceImage", imageData);
-      
+
       // 최근 분석 결과 저장 (AI 리포트용)
       const recentAnalysis = {
         imageData,
         timestamp: Date.now(),
         userId,
       };
-      localStorage.setItem("lastAIAnalysisResult", JSON.stringify(recentAnalysis));
+      localStorage.setItem(
+        "lastAIAnalysisResult",
+        JSON.stringify(recentAnalysis)
+      );
 
       // Supabase Storage에 업로드
       const { filePath } = await uploadFaceImageToStorage(imageData);
@@ -96,7 +101,9 @@ export default function AISkinAnalysisButton() {
       // 업로드 실패 시에도 localStorage에 저장된 이미지로 결과 페이지 이동
       router.push("/ai-skin-analysis-result");
       alert(
-        `업로드 중 오류가 발생했습니다: ${error?.message ?? "알 수 없는 오류"}`
+        t("ai.button.uploadError", {
+          message: error?.message ?? t("common.error"),
+        })
       );
     } finally {
       setIsUploading(false);
@@ -120,7 +127,7 @@ export default function AISkinAnalysisButton() {
             border: "none",
             padding: 0,
           }}
-          aria-label="AI 피부 분석 시작"
+          aria-label={t("ai.button.ariaLabel")}
         >
           {!imageError ? (
             <img
@@ -129,7 +136,7 @@ export default function AISkinAnalysisButton() {
                   ? "/ai-skin-analysis-button-hover.png"
                   : "/ai-skin-analysis-button.png"
               }
-              alt="AI 피부 분석"
+              alt={t("ai.button.alt")}
               className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg"
               onError={() => setImageError(true)}
             />

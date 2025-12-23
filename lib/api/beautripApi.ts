@@ -2050,6 +2050,8 @@ export interface HospitalInfo {
   totalReviews: number;
   procedures: string[];
   categories: Set<string>;
+  hospital_id_rd?: number; // 옵셔널: 병원 상세 페이지 라우팅용
+  platform?: string; // 옵셔널: 병원 상세 페이지 라우팅용
 }
 
 // 시술 데이터에서 병원 정보 추출

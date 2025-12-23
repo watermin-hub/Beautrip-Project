@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { FiX, FiCamera } from "react-icons/fi";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AISkinAnalysisCameraModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export default function AISkinAnalysisCameraModal({
   onCapture,
   isUploading = false,
 }: AISkinAnalysisCameraModalProps) {
+  const { t } = useLanguage();
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isCaptured, setIsCaptured] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function AISkinAnalysisCameraModal({
       }
     } catch (err) {
       console.error("카메라 접근 오류:", err);
-      alert("카메라 접근에 실패했습니다. 브라우저 권한을 확인해주세요.");
+      alert(t("alert.cameraAccessFailed"));
     }
   };
 
@@ -109,7 +111,9 @@ export default function AISkinAnalysisCameraModal({
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
         <div className="w-10"></div>
-        <h2 className="text-lg font-bold text-gray-900">얼굴 촬영</h2>
+        <h2 className="text-lg font-bold text-gray-900">
+          {t("ai.camera.title")}
+        </h2>
         <button
           onClick={onClose}
           className="p-2 hover:bg-gray-50 rounded-full transition-colors"
@@ -121,7 +125,7 @@ export default function AISkinAnalysisCameraModal({
       {/* Content */}
       <div className="flex flex-col items-center px-4 py-8 min-h-[calc(100vh-60px)]">
         <p className="text-center text-lg font-semibold text-gray-900 mb-8">
-          얼굴을 화면에 맞춰주세요
+          {t("ai.camera.instruction")}
         </p>
 
         <div className="relative w-full max-w-[256px] aspect-[2/3] border-2 border-gray-400 rounded-full overflow-hidden bg-gray-100 mb-8">
@@ -135,7 +139,7 @@ export default function AISkinAnalysisCameraModal({
           ) : capturedImage ? (
             <img
               src={capturedImage}
-              alt="촬영된 사진"
+              alt={t("ai.camera.capturedAlt")}
               className="w-full h-full object-cover"
             />
           ) : null}
@@ -148,7 +152,7 @@ export default function AISkinAnalysisCameraModal({
             className="w-full max-w-[320px] bg-primary-main hover:bg-[#2DB8A0] text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
           >
             <FiCamera className="text-xl" />
-            촬영
+            {t("ai.camera.capture")}
           </button>
         ) : (
           <div className="w-full max-w-[320px] flex gap-3">
@@ -156,14 +160,14 @@ export default function AISkinAnalysisCameraModal({
               onClick={handleRetake}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold transition-colors"
             >
-              다시 촬영
+              {t("ai.camera.retake")}
             </button>
             <button
               onClick={handleConfirm}
               disabled={isUploading}
               className="flex-1 bg-primary-main hover:bg-[#2DB8A0] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isUploading ? "업로드 중..." : "확인"}
+              {isUploading ? t("ai.camera.uploading") : t("ai.camera.confirm")}
             </button>
           </div>
         )}
