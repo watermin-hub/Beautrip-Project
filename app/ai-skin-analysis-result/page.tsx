@@ -74,9 +74,11 @@ function AISkinAnalysisResultContent() {
         }
 
         // URL 파라미터가 없으면 localStorage에서 본인 사진 확인
+        console.log("🔍 URL 파라미터에 이미지 없음, localStorage 확인 시작");
         loadLocalImage(currentUserId);
 
         function loadLocalImage(userId: string | null) {
+          console.log("🔍 loadLocalImage 호출 - userId:", userId);
           // 먼저 최근 분석 결과 확인 (userId 일치 확인)
           const lastAnalysis = localStorage.getItem("lastAIAnalysisResult");
           if (lastAnalysis) {
@@ -97,12 +99,13 @@ function AISkinAnalysisResultContent() {
           // localStorage에서 직접 저장된 이미지 확인 (userId 확인 불가하므로 마지막 fallback)
           const localImage = localStorage.getItem("capturedFaceImage");
           if (localImage) {
-            console.log("localStorage에서 이미지 사용 (fallback)");
+            console.log("✅ localStorage에서 이미지 사용 (fallback):", localImage.substring(0, 50) + "...");
             setImageUrl(localImage);
             setLoading(false);
             return;
           }
 
+          console.log("⚠️ 이미지를 찾을 수 없음 - 이미지 없이 결과 표시");
           setLoading(false);
         }
       } catch (error) {

@@ -273,7 +273,7 @@ export default function HospitalInfoPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-6">
         <div className="text-center py-12">
-          <p className="text-gray-600">데이터를 불러오는 중...</p>
+          <p className="text-gray-600">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -284,7 +284,7 @@ export default function HospitalInfoPage() {
       <div className="min-h-screen bg-white px-4 py-6">
         <div className="text-center py-12">
           <p className="text-lg text-gray-700 mb-2">
-            데이터를 불러오는 중 오류가 발생했습니다.
+            {t("explore.loading.rankingError")}
           </p>
           <p className="text-sm text-gray-500 mb-4">{error}</p>
           <button

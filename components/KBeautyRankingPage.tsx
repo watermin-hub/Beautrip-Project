@@ -197,7 +197,7 @@ export default function KBeautyRankingPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-6">
         <div className="text-center py-12">
-          <p className="text-gray-600">데이터를 불러오는 중...</p>
+          <p className="text-gray-600">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -333,7 +333,7 @@ export default function KBeautyRankingPage() {
                             )}
                             {reviewCount > 0 && (
                             <span className="text-gray-500 text-[10px]">
-                                리뷰 {reviewCount}개
+                                {t("common.reviewCount", { count: reviewCount })}
                               </span>
                             )}
                           </div>

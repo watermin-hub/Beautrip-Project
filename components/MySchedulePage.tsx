@@ -22,6 +22,11 @@ import TravelScheduleCalendarModal from "./TravelScheduleCalendarModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTravelPeriod, formatDateWithDay } from "@/lib/utils/dateFormat";
 import {
+  formatPrice,
+  getCurrencyFromLanguage,
+  getCurrencyFromStorage,
+} from "@/lib/utils/currency";
+import {
   getRecoveryInfoByCategoryMid,
   getRecoveryInfoByCategorySmall,
   findRecoveryGuideByCategorySmall,
@@ -195,6 +200,10 @@ function SimilarProcedureRecommendation({
 }) {
   const { t, language } = useLanguage();
   const router = useRouter();
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
   const [similarTreatments, setSimilarTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(
@@ -204,6 +213,29 @@ function SimilarProcedureRecommendation({
   const [recoveryInfoMap, setRecoveryInfoMap] = useState<
     Record<number, number>
   >({});
+  const [translatedProcedureName, setTranslatedProcedureName] = useState<string>(currentProcedureName);
+
+  // currentProcedureName을 현재 언어로 변환
+  useEffect(() => {
+    const translateProcedureName = async () => {
+      if (currentProcedureId && language !== "KR") {
+        try {
+          const treatment = await loadTreatmentById(currentProcedureId, language);
+          if (treatment && treatment.treatment_name) {
+            setTranslatedProcedureName(treatment.treatment_name);
+          } else {
+            setTranslatedProcedureName(currentProcedureName);
+          }
+        } catch (error) {
+          console.error("시술명 번역 실패:", error);
+          setTranslatedProcedureName(currentProcedureName);
+        }
+      } else {
+        setTranslatedProcedureName(currentProcedureName);
+      }
+    };
+    translateProcedureName();
+  }, [currentProcedureId, currentProcedureName, language]);
 
   // 비슷한 시술 로드
   useEffect(() => {
@@ -215,11 +247,30 @@ function SimilarProcedureRecommendation({
 
       setLoading(true);
       try {
-        // 같은 소분류의 시술들을 로드
-        const trimmedCategorySmall = categorySmall.trim();
+        // ✅ categorySmall을 현재 언어로 변환 (저장된 일정의 categorySmall은 한국어일 수 있음)
+        let categorySmallToUse = categorySmall.trim();
+        
+        if (language !== "KR" && currentProcedureId) {
+          // 다른 언어일 때는 treatment_id를 통해 해당 언어의 categorySmall 가져오기
+          const { convertCategorySmallToLanguage } = await import(
+            "@/lib/api/beautripApi"
+          );
+          const converted = await convertCategorySmallToLanguage(
+            categorySmallToUse,
+            language,
+            currentProcedureId
+          );
+          if (converted) {
+            categorySmallToUse = converted;
+            console.log(
+              `✅ [연관 시술 추천] categorySmall 변환: "${categorySmall}" (KR) → "${categorySmallToUse}" (${language})`
+            );
+          }
+        }
 
+        // 같은 소분류의 시술들을 로드
         const result = await loadTreatmentsPaginated(1, 100, {
-          categorySmall: trimmedCategorySmall,
+          categorySmall: categorySmallToUse,
           language: language,
         });
 
@@ -244,7 +295,7 @@ function SimilarProcedureRecommendation({
           return cat.trim().toLowerCase();
         };
 
-        const normalizedCategorySmall = normalizeCategorySmall(categorySmall);
+        const normalizedCategorySmall = normalizeCategorySmall(categorySmallToUse);
 
         const filtered = result.data.filter((treatment) => {
           const treatmentCategorySmall = normalizeCategorySmall(
@@ -297,7 +348,7 @@ function SimilarProcedureRecommendation({
     };
 
     loadSimilarTreatments();
-  }, [categorySmall, currentProcedureId, currentProcedureName]);
+  }, [categorySmall, currentProcedureId, currentProcedureName, language]);
 
   // 중복 시술 체크 헬퍼 함수
   const isDuplicateProcedure = (
@@ -440,17 +491,18 @@ function SimilarProcedureRecommendation({
       <div className="mt-5 space-y-3">
         {/* 서브 타이틀: "~~~와(과) 비슷한 시술이에요" */}
         <p className="text-sm font-semibold text-gray-700">
-          {currentProcedureName}
-          {getWaOrGwa(currentProcedureName)} 비슷한 시술이에요
+          {t("schedule.similarProcedures", { name: translatedProcedureName })}
         </p>
 
         {/* 연관 시술 카드들 - HotConcernsSection과 동일한 형식 */}
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3">
           {similarTreatments.map((treatment) => {
             const thumbnailUrl = getThumbnailUrl(treatment);
-            const price = treatment.selling_price
-              ? `${Math.round(treatment.selling_price / 10000)}만원`
-              : t("common.priceInquiry");
+            const price = formatPrice(
+              treatment.selling_price,
+              currency,
+              t
+            );
             const rating = treatment.rating || 0;
             const reviewCount = treatment.review_count || 0;
             const discountRate = treatment.dis_rate
@@ -1841,7 +1893,7 @@ function SavedSchedulesTab({
                 ).some((proc) => proc.categorySmall) && (
                   <div className="mt-6 mb-4">
                     <h3 className="text-lg font-bold text-gray-900">
-                      연관 시술 추천
+                      {t("schedule.relatedProcedures")}
                     </h3>
                   </div>
                 )}
@@ -2888,7 +2940,13 @@ export default function MySchedulePage() {
           recoveryDays: s.recoveryDays || 0,
           recoveryText: s.recoveryText || null, // 회복 기간 텍스트
           recoveryGuides: s.recoveryGuides || undefined, // 회복 가이드 범위별 텍스트
-          procedureTime: s.procedureTime ? `${s.procedureTime}분` : undefined,
+          procedureTime: s.procedureTime
+            ? (() => {
+                // parseProcedureTime을 사용하여 숫자로 변환 (이미 "분"이 포함되어 있을 수 있음)
+                const timeInMinutes = parseProcedureTime(s.procedureTime);
+                return timeInMinutes > 0 ? `${timeInMinutes}${t("common.readTime")}` : s.procedureTime;
+              })()
+            : undefined,
           treatmentId: s.treatmentId || undefined, // 시술 ID 추가
         })
       );
@@ -4235,7 +4293,7 @@ export default function MySchedulePage() {
                 {selectedProcedures.some((proc) => proc.categorySmall) && (
                   <div className="mt-6 mb-4">
                     <h3 className="text-lg font-bold text-gray-900">
-                      연관 시술 추천
+                      {t("schedule.relatedProcedures")}
                     </h3>
                   </div>
                 )}

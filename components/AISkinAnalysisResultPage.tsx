@@ -21,6 +21,11 @@ export default function AISkinAnalysisResultPage({
   const router = useRouter();
   const { t } = useLanguage();
   const [result, setResult] = useState<SkinAnalysisResult | null>(null);
+  
+  // 디버깅: imageUrl 확인
+  useEffect(() => {
+    console.log("🔍 AISkinAnalysisResultPage - imageUrl:", imageUrl);
+  }, [imageUrl]);
   const [gaugeWidth, setGaugeWidth] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("스킨 / 토너");
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
@@ -30,14 +35,30 @@ export default function AISkinAnalysisResultPage({
 
   useEffect(() => {
     // 랜덤 결과 선택
-    const randomResult = getRandomAnalysisResult();
-    setResult(randomResult);
-    setGaugeWidth(0);
+    let randomResult: SkinAnalysisResult | null = null;
+    try {
+      randomResult = getRandomAnalysisResult();
+      console.log("✅ AI 분석 결과 생성 성공:", randomResult);
+      setResult(randomResult);
+      setGaugeWidth(0);
+    } catch (error) {
+      console.error("❌ AI 분석 결과 생성 실패:", error);
+      // 에러 발생 시 기본 결과라도 표시
+      try {
+        randomResult = getRandomAnalysisResult();
+        setResult(randomResult);
+        setGaugeWidth(0);
+      } catch (fallbackError) {
+        console.error("❌ Fallback 결과 생성도 실패:", fallbackError);
+      }
+    }
 
     // 게이지 애니메이션
-    setTimeout(() => {
-      setGaugeWidth(randomResult.score);
-    }, 300);
+    if (randomResult) {
+      setTimeout(() => {
+        setGaugeWidth(randomResult!.score);
+      }, 300);
+    }
 
     // 스크롤 애니메이션 설정
     setTimeout(() => {

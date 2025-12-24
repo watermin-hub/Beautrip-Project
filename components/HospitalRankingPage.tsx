@@ -15,7 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const ITEMS_PER_PAGE = 20;
 
 export default function HospitalRankingPage() {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [allTreatments, setAllTreatments] = useState<any[]>([]);
   const [hospitals, setHospitals] = useState<HospitalInfo[]>([]);
@@ -141,7 +141,7 @@ export default function HospitalRankingPage() {
     return (
       <div className="min-h-screen bg-white px-4 py-6">
         <div className="text-center py-12">
-          <p className="text-gray-600">데이터를 불러오는 중...</p>
+          <p className="text-gray-600">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -246,7 +246,7 @@ export default function HospitalRankingPage() {
                             </div>
                             {hospital.totalReviews > 0 && (
                               <span className="text-gray-500 text-[10px]">
-                                리뷰 {hospital.totalReviews}개
+                                {t("common.reviewCount", { count: hospital.totalReviews })}
                               </span>
                             )}
                           </div>

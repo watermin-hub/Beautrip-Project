@@ -829,7 +829,7 @@ export default function CategoryRankingPage({
     return (
       <div className="min-h-screen bg-white px-4 py-6">
         <div className="text-center py-12">
-          <p className="text-gray-600">랭킹 데이터를 불러오는 중...</p>
+          <p className="text-gray-600">{t("explore.loading.ranking")}</p>
         </div>
       </div>
     );
@@ -841,7 +841,7 @@ export default function CategoryRankingPage({
       <div className="min-h-screen bg-white px-4 py-6">
         <div className="text-center py-12">
           <p className="text-red-600 mb-2">
-            랭킹 데이터를 불러오는 중 오류가 발생했습니다.
+            {t("explore.loading.rankingError")}
           </p>
           <p className="text-sm text-gray-500 mb-4">{error}</p>
           <button
@@ -976,7 +976,7 @@ export default function CategoryRankingPage({
     }
 
     // 패턴 매칭 실패 시에도 기본 템플릿 대신 더 구체적인 설명
-    return `${categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.`;
+    return t("explore.procedure.description", { categoryMid });
   };
 
   return (
@@ -1372,9 +1372,10 @@ export default function CategoryRankingPage({
                     }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                   >
-                    더보기 (
-                    {smallCategoryRankings.length - visibleCategoriesCount}개
-                    더)
+                    {t("common.seeMoreWithCount", {
+                      count:
+                        smallCategoryRankings.length - visibleCategoriesCount,
+                    })}
                   </button>
                 </div>
               )}
@@ -1725,7 +1726,7 @@ export default function CategoryRankingPage({
                   }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                 >
-                  더보기
+                  {t("common.seeMore")}
                 </button>
               </div>
             )}

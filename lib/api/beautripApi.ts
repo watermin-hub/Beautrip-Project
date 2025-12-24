@@ -6089,6 +6089,111 @@ export async function convertCategorySmallToKorean(
   }
 }
 
+// 한국어 categorySmall을 해당 언어의 categorySmall로 변환
+// 방법: treatment_id를 매개로 한국어 테이블과 해당 언어 테이블을 연결
+export async function convertCategorySmallToLanguage(
+  koreanCategorySmall: string,
+  targetLanguage: LanguageCode,
+  treatmentId?: number
+): Promise<string | null> {
+  // KR이면 변환 불필요
+  if (targetLanguage === "KR") {
+    return koreanCategorySmall;
+  }
+
+  try {
+    const client = getSupabaseOrNull();
+    if (!client) {
+      return koreanCategorySmall; // fallback: 원본 반환
+    }
+
+    // 방법 1: treatment_id가 있으면 해당 언어 테이블에서 직접 가져오기
+    if (treatmentId) {
+      const targetTable = getTreatmentTableName(targetLanguage);
+      const { data: targetData, error: targetError } = await client
+        .from(targetTable)
+        .select("category_small")
+        .eq("treatment_id", treatmentId)
+        .limit(1);
+
+      if (
+        !targetError &&
+        targetData &&
+        targetData.length > 0 &&
+        targetData[0].category_small
+      ) {
+        return targetData[0].category_small;
+      }
+    }
+
+    // 방법 2: category_i18n 테이블 사용
+    try {
+      const langCode =
+        targetLanguage === "EN"
+          ? "en"
+          : targetLanguage === "CN"
+          ? "zh-CN"
+          : targetLanguage === "JP"
+          ? "ja"
+          : "ko";
+      const { data: i18nData, error: i18nError } = await client
+        .from(TABLE_NAMES.CATEGORY_I18N)
+        .select("category_small_kr, category_small")
+        .eq("category_small_kr", koreanCategorySmall)
+        .eq("lang", langCode)
+        .limit(1);
+
+      if (
+        !i18nError &&
+        i18nData &&
+        i18nData.length > 0 &&
+        i18nData[0].category_small
+      ) {
+        return i18nData[0].category_small;
+      }
+    } catch (e) {
+      console.warn("⚠️ category_i18n 테이블 조회 실패 (categorySmall):", e);
+    }
+
+    // 방법 3: 한국어 테이블에서 같은 category_small을 가진 시술의 treatment_id로 찾기
+    const { data: krData, error: krError } = await client
+      .from(TABLE_NAMES.TREATMENT_MASTER)
+      .select("treatment_id")
+      .eq("category_small", koreanCategorySmall)
+      .limit(100); // 샘플링
+
+    if (!krError && krData && krData.length > 0) {
+      const treatmentIds = krData
+        .map((row) => row.treatment_id)
+        .filter(Boolean);
+
+      if (treatmentIds.length > 0) {
+        const targetTable = getTreatmentTableName(targetLanguage);
+        const { data: targetData, error: targetError } = await client
+          .from(targetTable)
+          .select("category_small")
+          .in("treatment_id", treatmentIds)
+          .not("category_small", "is", null)
+          .limit(1);
+
+        if (
+          !targetError &&
+          targetData &&
+          targetData.length > 0 &&
+          targetData[0].category_small
+        ) {
+          return targetData[0].category_small;
+        }
+      }
+    }
+
+    return koreanCategorySmall; // fallback: 원본 반환
+  } catch (error) {
+    console.error("categorySmall 변환 실패:", error);
+    return koreanCategorySmall; // fallback: 원본 반환
+  }
+}
+
 // 한국어 category_mid key를 해당 언어의 category_mid 값으로 변환
 // 방법: treatment_id를 매개로 한국어 테이블과 해당 언어 테이블을 연결
 async function convertCategoryMidToLanguage(
@@ -7995,7 +8100,62 @@ export async function getHomeScheduleRecommendations(
     });
 
     // 명세서: 백엔드에서 내려온 순서를 그대로 사용 (첫 등장 순서 유지)
-    const result = categoryOrder.map((key) => groupedByCategory.get(key)!);
+    // 각 카테고리별로 평균 시술 시간/회복 시간 계산
+    const result = categoryOrder.map((key) => {
+      const category = groupedByCategory.get(key)!;
+      const treatments = category.treatments;
+
+      // 회복 기간 계산
+      const recoveryPeriods = treatments
+        .map((t) => parseRecoveryPeriod(t.downtime))
+        .filter((r) => r > 0);
+
+      let recoveryMin = 0;
+      let recoveryMax = 0;
+      let averageRecoveryPeriod = 0;
+
+      if (recoveryPeriods.length > 0) {
+        recoveryMin = Math.min(...recoveryPeriods);
+        recoveryMax = Math.max(...recoveryPeriods);
+        averageRecoveryPeriod =
+          recoveryPeriods.reduce((sum, r) => sum + r, 0) /
+          recoveryPeriods.length;
+      }
+
+      // 시술 시간 계산
+      const procedureTimes = treatments
+        .map((t) => parseProcedureTime(t.surgery_time))
+        .filter((t) => t > 0);
+
+      let procedureTimeMin = 0;
+      let procedureTimeMax = 0;
+      let averageProcedureTime = 0;
+
+      if (procedureTimes.length > 0) {
+        procedureTimeMin = Math.min(...procedureTimes);
+        procedureTimeMax = Math.max(...procedureTimes);
+        averageProcedureTime =
+          procedureTimes.reduce((sum, t) => sum + t, 0) / procedureTimes.length;
+      }
+
+      return {
+        ...category,
+        averageRecoveryPeriod:
+          averageRecoveryPeriod > 0
+            ? Math.round(averageRecoveryPeriod * 10) / 10
+            : undefined,
+        averageRecoveryPeriodMin: recoveryMin > 0 ? recoveryMin : undefined,
+        averageRecoveryPeriodMax: recoveryMax > 0 ? recoveryMax : undefined,
+        averageProcedureTime:
+          averageProcedureTime > 0
+            ? Math.round(averageProcedureTime)
+            : undefined,
+        averageProcedureTimeMin:
+          procedureTimeMin > 0 ? procedureTimeMin : undefined,
+        averageProcedureTimeMax:
+          procedureTimeMax > 0 ? procedureTimeMax : undefined,
+      };
+    });
 
     return result;
   } catch (error) {
