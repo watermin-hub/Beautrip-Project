@@ -106,11 +106,49 @@ export default function HospitalReviewForm({
     }
   }, [draftData, editData]);
 
-  // GTM 이벤트: review_start (로그인 상태에서만 호출, CommunityWriteModal의 handleLoginSuccess에서도 호출되므로 여기서는 제거)
-  // 모달 형식으로 열릴 때는 경로가 변경되지 않으므로, CommunityWriteModal에서 로그인 성공 후 호출하는 것이 더 정확함
-  // useEffect(() => {
-  //   // 이 부분은 CommunityWriteModal의 handleLoginSuccess에서 처리
-  // }, []);
+  // GTM 이벤트: review_start (페이지에서 열릴 때만 호출, 로그인 상태에서만, 모달은 CommunityWriteModal에서 처리)
+  useEffect(() => {
+    // 모달이 아닌 페이지에서 열릴 때만 호출 (onLoginRequired가 없으면 페이지)
+    if (!onLoginRequired) {
+      const checkAuthAndTrack = async () => {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        // 로그인 상태에서만 GTM 이벤트 발생
+        if (session?.user) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const qsSource =
+            searchParams.get("entry_source") || searchParams.get("entrySource");
+
+          const fallbackByPath: EntrySource = (() => {
+            const path = window.location.pathname;
+            if (path.includes("/mypage")) return "mypage";
+            if (path.includes("/explore")) return "explore";
+            if (path === "/" || path === "/home") return "home";
+            if (path.includes("/community")) return "community";
+            return "unknown";
+          })();
+
+          const entrySource: EntrySource =
+            qsSource &&
+            ["home", "explore", "community", "mypage"].includes(qsSource)
+              ? (qsSource as EntrySource)
+              : fallbackByPath;
+
+          console.log("[GTM] review_start 이벤트 트리거 (페이지):", {
+            entrySource,
+            qsSource,
+            fallbackByPath,
+            path: window.location.pathname,
+          });
+          trackReviewStart(entrySource);
+        }
+      };
+
+      checkAuthAndTrack();
+    }
+  }, [onLoginRequired]);
 
   // 한국어 완성형 글자 체크 (자음만 입력 방지)
   const hasCompleteCharacter = (text: string): boolean => {
@@ -276,7 +314,8 @@ export default function HospitalReviewForm({
 
     if (authError || !user) {
       // 비로그인 시 중간 저장하고 로그인 팝업 표시
-      const finalProcedureName = selectedProcedure || procedureSearchTerm.trim() || undefined;
+      const finalProcedureName =
+        selectedProcedure || procedureSearchTerm.trim() || undefined;
       const reviewData = {
         hospital_name: hospitalName,
         visit_date: visitDate,
@@ -289,7 +328,7 @@ export default function HospitalReviewForm({
         content,
         images,
       };
-      
+
       if (onLoginRequired) {
         onLoginRequired(reviewData);
         return;
@@ -337,9 +376,11 @@ export default function HospitalReviewForm({
         }
 
         // 기존 이미지와 새 이미지 합치기
-        const existingImageUrls = editData.images?.filter((img: string) => 
-          img && (img.startsWith("http") || img.startsWith("/"))
-        ) || [];
+        const existingImageUrls =
+          editData.images?.filter(
+            (img: string) =>
+              img && (img.startsWith("http") || img.startsWith("/"))
+          ) || [];
         const finalImageUrls = imageUrls || existingImageUrls;
 
         const result = await updateHospitalReview(editData.id, {
@@ -349,7 +390,8 @@ export default function HospitalReviewForm({
           visit_date: visitDate || undefined,
           overall_satisfaction:
             overallSatisfaction > 0 ? overallSatisfaction : undefined,
-          hospital_kindness: hospitalKindness > 0 ? hospitalKindness : undefined,
+          hospital_kindness:
+            hospitalKindness > 0 ? hospitalKindness : undefined,
           has_translation: hasTranslation ?? false,
           translation_satisfaction:
             hasTranslation && translationSatisfaction > 0
@@ -377,7 +419,8 @@ export default function HospitalReviewForm({
           visit_date: visitDate || undefined,
           overall_satisfaction:
             overallSatisfaction > 0 ? overallSatisfaction : undefined,
-          hospital_kindness: hospitalKindness > 0 ? hospitalKindness : undefined,
+          hospital_kindness:
+            hospitalKindness > 0 ? hospitalKindness : undefined,
           has_translation: hasTranslation ?? false,
           translation_satisfaction:
             hasTranslation && translationSatisfaction > 0
@@ -423,7 +466,7 @@ export default function HospitalReviewForm({
 
         // GTM 이벤트: review_submit (후기 저장 API 성공 응답 이후)
         trackReviewSubmit("hospital");
-        
+
         alert(t("form.saveSuccess"));
         onSubmit();
       }

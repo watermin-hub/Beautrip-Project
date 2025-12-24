@@ -192,6 +192,7 @@ export default function ReviewFilterModal({ isOpen, onClose }: ReviewFilterModal
             rating: selectedRating,
             distance: selectedDistance,
           }}
+          entrySource="community"
         />
       )}
     </>

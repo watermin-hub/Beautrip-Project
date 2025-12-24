@@ -1129,6 +1129,14 @@ export default function CategoryRankingPage({
                             onScroll={() =>
                               handleScroll(ranking.category_small_key)
                             }
+                            onClick={(e) => {
+                              // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
+                              const target = e.target as HTMLElement;
+                              // 버튼이나 버튼의 자식 요소를 클릭한 경우 이벤트 전파 방지
+                              if (target.closest("button")) {
+                                e.stopPropagation();
+                              }
+                            }}
                           >
                             {/* 디버깅: treatments 배열 확인 */}
                             {(() => {
@@ -1303,7 +1311,19 @@ export default function CategoryRankingPage({
                           {/* 우측 스크롤 버튼 */}
                           {scrollState.canScrollRight && (
                             <button
-                              onClick={handleScrollRight}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleScrollRight();
+                              }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
+                              onTouchStart={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                              }}
                               className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
                             >
                               <FiChevronRight className="text-gray-700 text-lg" />
@@ -1319,7 +1339,9 @@ export default function CategoryRankingPage({
               {smallCategoryRankings.length > visibleCategoriesCount && (
                 <div className="text-center pt-4">
                   <button
-                    onClick={async () => {
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
                       if (!isLoggedIn) {
                         // 더보기 동작을 저장하고 팝업 표시
                         setPendingAction(() => {
@@ -1468,6 +1490,14 @@ export default function CategoryRankingPage({
                         }}
                         className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
                         onScroll={() => handleScroll(ranking.category_mid)}
+                        onClick={(e) => {
+                          // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
+                          const target = e.target as HTMLElement;
+                          // 버튼이나 버튼의 자식 요소를 클릭한 경우 이벤트 전파 방지
+                          if (target.closest("button")) {
+                            e.stopPropagation();
+                          }
+                        }}
                       >
                         {shuffleByThumbnail(ranking.treatments || []).map(
                           (treatment) => {
@@ -1624,7 +1654,19 @@ export default function CategoryRankingPage({
                       {/* 우측 스크롤 버튼 */}
                       {scrollState.canScrollRight && (
                         <button
-                          onClick={handleScrollRight}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleScrollRight();
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
+                          onTouchStart={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }}
                           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
                         >
                           <FiChevronRight className="text-gray-700 text-lg" />
@@ -1639,7 +1681,9 @@ export default function CategoryRankingPage({
             {midCategoryRankings.length > visibleCategoriesCount && (
               <div className="text-center pt-4">
                 <button
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
                     if (!isLoggedIn) {
                       // 더보기 동작을 저장하고 팝업 표시
                       setPendingAction(() => {
@@ -1728,6 +1772,7 @@ export default function CategoryRankingPage({
       <CommunityWriteModal
         isOpen={showCommunityWriteModal}
         onClose={() => setShowCommunityWriteModal(false)}
+        entrySource="home"
       />
     </div>
   );

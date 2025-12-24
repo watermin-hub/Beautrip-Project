@@ -378,6 +378,14 @@ export default function HotConcernsSection() {
         <div 
           ref={scrollRef}
           className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+          onClick={(e) => {
+            // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
+            const target = e.target as HTMLElement;
+            // 버튼이나 버튼의 자식 요소를 클릭한 경우 이벤트 전파 방지
+            if (target.closest('button')) {
+              e.stopPropagation();
+            }
+          }}
         >
           {treatments.map((treatment) => {
           const isFavorite = favorites.has(treatment.treatment_id || 0);
@@ -526,7 +534,10 @@ export default function HotConcernsSection() {
         {/* 우측 더보기 버튼 */}
         {treatments.length > 0 && (
           <button
-            onClick={async () => {
+            onClick={async (e) => {
+              // 이벤트 전파 방지 (카드 스크롤 방지)
+              e.stopPropagation();
+              e.preventDefault();
               // 비로그인 시 바로 ReviewRequiredPopup 표시
               if (!isLoggedIn) {
                 // 스크롤 동작을 저장하고 팝업 표시
@@ -555,6 +566,14 @@ export default function HotConcernsSection() {
               if (scrollRef.current) {
                 scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
               }
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
             }}
             className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 shadow-lg rounded-full p-2.5 transition-all"
           >
@@ -664,6 +683,7 @@ export default function HotConcernsSection() {
       <CommunityWriteModal
         isOpen={showCommunityWriteModal}
         onClose={() => setShowCommunityWriteModal(false)}
+        entrySource="home"
       />
     </div>
   );

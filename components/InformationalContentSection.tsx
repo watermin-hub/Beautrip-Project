@@ -372,6 +372,7 @@ export default function InformationalContentSection() {
       <CommunityWriteModal
         isOpen={showCommunityWriteModal}
         onClose={() => setShowCommunityWriteModal(false)}
+        entrySource="community"
       />
     </div>
   );

@@ -18,6 +18,7 @@ export default function ReviewRequiredPopup({
   onClose,
   onWriteClick,
   onLoginSuccess,
+  entrySource,
 }: ReviewRequiredPopupProps) {
   const { t } = useLanguage();
   const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
@@ -78,6 +79,7 @@ export default function ReviewRequiredPopup({
             onLoginSuccess();
           }
         }}
+        entrySource={entrySource}
       />
     </>
   );

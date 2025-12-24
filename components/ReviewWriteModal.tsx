@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { FiX, FiImage, FiStar } from 'react-icons/fi'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { trackReviewStart, type EntrySource } from '@/lib/gtm'
 
 interface ReviewWriteModalProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface ReviewWriteModalProps {
     rating: string
     distance: string
   }
+  entrySource?: EntrySource // 이벤트 엔트리소스
 }
 
 interface ReviewData {
@@ -31,7 +33,7 @@ interface ReviewData {
   clinic?: string
 }
 
-export default function ReviewWriteModal({ isOpen, onClose, filterData }: ReviewWriteModalProps) {
+export default function ReviewWriteModal({ isOpen, onClose, filterData, entrySource = "community" }: ReviewWriteModalProps) {
   const { t } = useLanguage()
   const [content, setContent] = useState('')
   const [rating, setRating] = useState(0)
@@ -47,6 +49,13 @@ export default function ReviewWriteModal({ isOpen, onClose, filterData }: Review
       setRating(parseInt(filterData.rating))
     }
   }, [filterData])
+
+  // 모달이 열릴 때 GTM 이벤트 발생
+  useEffect(() => {
+    if (isOpen) {
+      trackReviewStart(entrySource);
+    }
+  }, [isOpen, entrySource])
 
   if (!isOpen) return null
 

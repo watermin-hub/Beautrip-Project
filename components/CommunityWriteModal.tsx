@@ -37,6 +37,7 @@ interface CommunityWriteModalProps {
     type: "procedure" | "hospital" | "concern";
     data: any;
   } | null;
+  entrySource?: EntrySource; // 이벤트 엔트리소스 (선택적, 없으면 pathname으로 자동 감지)
 }
 
 export default function CommunityWriteModal({
@@ -44,6 +45,7 @@ export default function CommunityWriteModal({
   onClose,
   onLoginSuccess: externalOnLoginSuccess,
   editData: externalEditData,
+  entrySource: externalEntrySource,
 }: CommunityWriteModalProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
@@ -120,6 +122,9 @@ export default function CommunityWriteModal({
           setIsLoggedIn(true);
           // 로그인 상태에서 모달이 열릴 때만 GTM 이벤트 발생 (비로그인 상태에서는 로그인 후 호출)
           const getEntrySource = (): EntrySource => {
+            // prop으로 전달된 entrySource가 있으면 우선 사용
+            if (externalEntrySource) return externalEntrySource;
+            // 없으면 pathname으로 자동 감지
             if (pathname === "/" || pathname === "/home") return "home";
             if (pathname?.includes("/explore")) return "explore";
             if (pathname?.includes("/community")) return "community";
@@ -216,6 +221,9 @@ export default function CommunityWriteModal({
     
     // GA4: review_start 이벤트 (로그인 성공 후)
     const getEntrySource = (): EntrySource => {
+      // prop으로 전달된 entrySource가 있으면 우선 사용
+      if (externalEntrySource) return externalEntrySource;
+      // 없으면 pathname으로 자동 감지
       if (pathname === "/" || pathname === "/home") return "home";
       if (pathname?.includes("/explore")) return "explore";
       if (pathname?.includes("/community")) return "community";

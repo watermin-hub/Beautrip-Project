@@ -1367,6 +1367,14 @@ export default function ProcedureRecommendation({
                 }}
                 className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
                 onScroll={() => handleScroll(categoryMidKey)}
+                onClick={(e) => {
+                  // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
+                  const target = e.target as HTMLElement;
+                  // 버튼이나 버튼의 자식 요소를 클릭한 경우 이벤트 전파 방지
+                  if (target.closest("button")) {
+                    e.stopPropagation();
+                  }
+                }}
               >
                 {rec.treatments
                   .slice(0, visibleTreatmentsCount[categoryMidKey] || 3)
@@ -1545,13 +1553,26 @@ export default function ProcedureRecommendation({
               {/* 우측 스크롤/더보기 버튼 */}
               {shouldShowRightButton && (
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    // 이벤트 전파 방지 (카드 스크롤 방지)
+                    e.stopPropagation();
+                    e.preventDefault();
                     // 더보기 가능하면 더보기 우선 실행, 그 외에는 스크롤
                     if (hasMoreTreatments) {
                       handleShowMore();
                     } else if (scrollState.canScrollRight) {
                       handleScrollRight();
                     }
+                  }}
+                  onMouseDown={(e) => {
+                    // 마우스 다운 시에도 이벤트 전파 방지 (스크롤 방지)
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                  onTouchStart={(e) => {
+                    // 터치 시작 시에도 이벤트 전파 방지 (스크롤 방지)
+                    e.stopPropagation();
+                    e.preventDefault();
                   }}
                   className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 shadow-lg rounded-full p-2.5 transition-all"
                 >
@@ -1684,6 +1705,7 @@ export default function ProcedureRecommendation({
       <CommunityWriteModal
         isOpen={showCommunityWriteModal}
         onClose={() => setShowCommunityWriteModal(false)}
+        entrySource="home"
       />
     </div>
   );

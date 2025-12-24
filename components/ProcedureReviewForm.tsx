@@ -20,6 +20,14 @@ import {
   trackReviewSubmit,
   type EntrySource,
 } from "@/lib/gtm";
+import {
+  getCurrencyFromLanguage,
+  getCurrencySymbol,
+  getCurrencyUnitText,
+  convertToKRWManwon,
+  convertFromKRWManwon,
+} from "@/lib/utils/currencyConverter";
+import { convertCategoryToKorean } from "@/lib/utils/categoryMapper";
 
 interface ProcedureReviewFormProps {
   onBack: () => void;
@@ -48,6 +56,11 @@ export default function ProcedureReviewForm({
     []
   );
   const [cost, setCost] = useState("");
+
+  // 화폐 관련
+  const currency = getCurrencyFromLanguage(language);
+  const currencySymbol = getCurrencySymbol(currency);
+  const currencyUnitText = getCurrencyUnitText(currency, language);
   const [procedureRating, setProcedureRating] = useState(0);
   const [hospitalRating, setHospitalRating] = useState(0);
   const [gender, setGender] = useState<"여" | "남" | "">("");
@@ -84,7 +97,9 @@ export default function ProcedureReviewForm({
       setProcedureName(editData.procedure_name || "");
       setProcedureSearchTerm(editData.procedure_name || "");
       setHospitalName(editData.hospital_name || "");
-      setCost(editData.cost ? String(editData.cost) : "");
+      // 원화 만원 단위를 사용자 화폐로 변환해서 표시
+      const costInUserCurrency = convertFromKRWManwon(editData.cost, currency);
+      setCost(costInUserCurrency);
       setProcedureRating(editData.procedure_rating || 0);
       setHospitalRating(editData.hospital_rating || 0);
       setGender(editData.gender || "");
@@ -96,7 +111,7 @@ export default function ProcedureReviewForm({
         setImages(editData.images);
       }
     }
-  }, [editData]);
+  }, [editData, currency]);
 
   // 중간 저장된 리뷰 불러오기
   useEffect(() => {
@@ -105,7 +120,9 @@ export default function ProcedureReviewForm({
       setProcedureName(draftData.procedure_name || "");
       setProcedureSearchTerm(draftData.procedure_name || "");
       setHospitalName(draftData.hospital_name || "");
-      setCost(draftData.cost ? String(draftData.cost) : "");
+      // 원화 만원 단위를 사용자 화폐로 변환해서 표시
+      const costInUserCurrency = convertFromKRWManwon(draftData.cost, currency);
+      setCost(costInUserCurrency);
       setProcedureRating(draftData.procedure_rating || 0);
       setHospitalRating(draftData.hospital_rating || 0);
       setGender(draftData.gender || "");
@@ -118,13 +135,49 @@ export default function ProcedureReviewForm({
       // 불러온 후 로컬 스토리지에서 삭제
       localStorage.removeItem("review_draft_procedure");
     }
-  }, [draftData, editData]);
+  }, [draftData, editData, currency]);
 
-  // GTM 이벤트: review_start (로그인 상태에서만 호출, CommunityWriteModal의 handleLoginSuccess에서도 호출되므로 여기서는 제거)
-  // 모달 형식으로 열릴 때는 경로가 변경되지 않으므로, CommunityWriteModal에서 로그인 성공 후 호출하는 것이 더 정확함
-  // useEffect(() => {
-  //   // 이 부분은 CommunityWriteModal의 handleLoginSuccess에서 처리
-  // }, []);
+  // GTM 이벤트: review_start (페이지에서 열릴 때만 호출, 로그인 상태에서만, 모달은 CommunityWriteModal에서 처리)
+  useEffect(() => {
+    // 모달이 아닌 페이지에서 열릴 때만 호출 (onLoginRequired가 없으면 페이지)
+    if (!onLoginRequired) {
+      const checkAuthAndTrack = async () => {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        // 로그인 상태에서만 GTM 이벤트 발생
+        if (session?.user) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const qsSource =
+            searchParams.get("entry_source") || searchParams.get("entrySource");
+
+          let fallbackByPath: EntrySource = "unknown";
+          const path = window.location.pathname;
+          if (path.includes("/mypage")) fallbackByPath = "mypage";
+          else if (path.includes("/explore")) fallbackByPath = "explore";
+          else if (path === "/" || path === "/home") fallbackByPath = "home";
+          else if (path.includes("/community")) fallbackByPath = "community";
+
+          const entrySource: EntrySource =
+            qsSource &&
+            ["home", "explore", "community", "mypage"].includes(qsSource)
+              ? (qsSource as EntrySource)
+              : fallbackByPath;
+
+          console.log("[GTM] review_start 이벤트 트리거 (페이지):", {
+            entrySource,
+            qsSource,
+            fallbackByPath,
+            path,
+          });
+          trackReviewStart(entrySource);
+        }
+      };
+
+      checkAuthAndTrack();
+    }
+  }, [onLoginRequired]);
 
   // 한국어 완성형 글자 체크 (자음만 입력 방지)
   const hasCompleteCharacter = (text: string): boolean => {
@@ -289,7 +342,7 @@ export default function ProcedureReviewForm({
         content,
         images,
       };
-      
+
       if (onLoginRequired) {
         onLoginRequired(reviewData);
         return;
@@ -354,11 +407,16 @@ export default function ProcedureReviewForm({
           ) || [];
         const finalImageUrls = imageUrls || existingImageUrls;
 
+        // 사용자 화폐를 원화 만원 단위로 변환
+        const costInKRWManwon = convertToKRWManwon(cost, currency);
+        // 번역된 카테고리를 한국어 원본값으로 변환 (CHECK 제약조건 위반 방지)
+        const koreanCategory = convertCategoryToKorean(category);
+
         const result = await updateProcedureReview(editData.id, {
-          category,
+          category: koreanCategory,
           procedure_name: finalProcedureName,
           hospital_name: hospitalName || undefined,
-          cost: cost ? parseInt(cost) : undefined,
+          cost: costInKRWManwon || undefined,
           procedure_rating: procedureRating,
           hospital_rating: hospitalRating,
           gender,
@@ -384,11 +442,16 @@ export default function ProcedureReviewForm({
       } else {
         // 작성 모드
         // 먼저 후기 저장 (이미지 없이)
+        // 사용자 화폐를 원화 만원 단위로 변환
+        const costInKRWManwon = convertToKRWManwon(cost, currency);
+        // 번역된 카테고리를 한국어 원본값으로 변환 (CHECK 제약조건 위반 방지)
+        const koreanCategory = convertCategoryToKorean(category);
+
         const result = await saveProcedureReview({
-          category,
+          category: koreanCategory,
           procedure_name: finalProcedureName,
           hospital_name: hospitalName || undefined,
-          cost: cost ? parseInt(cost) : undefined,
+          cost: costInKRWManwon || undefined,
           procedure_rating: procedureRating,
           hospital_rating: hospitalRating,
           gender,
@@ -670,16 +733,38 @@ export default function ProcedureReviewForm({
           {t("form.costOptional")}
         </label>
         <div className="flex items-center gap-2">
-          <span className="text-gray-700">₩</span>
+          <span className="text-gray-700 text-lg font-medium">
+            {currencySymbol}
+          </span>
           <input
             type="number"
             value={cost}
             onChange={(e) => setCost(e.target.value)}
-            placeholder={t("placeholder.surgeryCost")}
+            placeholder={
+              currency === "KRW"
+                ? t("placeholder.surgeryCost")
+                : language === "EN"
+                ? "e.g., 1000"
+                : language === "JP"
+                ? "例: 100000"
+                : "例如: 5000"
+            }
             className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
+            step={currency === "KRW" ? "1" : "0.01"}
           />
-          <span className="text-gray-700">{t("label.tenThousandWon")}</span>
+          <span className="text-gray-700 text-sm whitespace-nowrap">
+            {currencyUnitText}
+          </span>
         </div>
+        {currency !== "KRW" && cost && (
+          <p className="text-xs text-gray-500 mt-1">
+            ≈ {convertToKRWManwon(cost, currency) || 0}만원 (
+            {(
+              (convertToKRWManwon(cost, currency) || 0) * 10000
+            ).toLocaleString()}
+            원)
+          </p>
+        )}
       </div>
 
       {/* 병원명 (선택사항) */}

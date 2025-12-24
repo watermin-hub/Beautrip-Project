@@ -1,5 +1,6 @@
 // Beautrip API 관련 유틸리티 함수
 import { supabase } from "../supabase";
+import { logCrmEventToSheet } from "../crmLogger";
 
 // 언어 코드 타입
 export type LanguageCode = "KR" | "EN" | "JP" | "CN";
@@ -3232,6 +3233,31 @@ export async function saveProcedureReview(
       return { success: false, error: error.message };
     }
 
+    // CRM 로그: 후기 작성 이벤트를 스프레드시트에 기록
+    try {
+      // user_profiles에서 email, nickname 조회
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("login_id, nickname")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      // Supabase Auth에서도 email 가져오기 (fallback)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (profile || user?.email) {
+        await logCrmEventToSheet({
+          event_type: 'review',
+          email: profile?.login_id || user?.email || '',
+          nickname: profile?.nickname || user?.email?.split("@")[0] || '사용자',
+          content: data.content,
+        });
+      }
+    } catch (crmError) {
+      // CRM 전송 실패해도 후기 저장은 성공한 것으로 처리
+      console.error('CRM 로그 전송 실패:', crmError);
+    }
+
     return { success: true, id: insertedData?.id };
   } catch (error: any) {
     console.error("시술후기 저장 중 오류:", error);
@@ -3291,6 +3317,31 @@ export async function saveHospitalReview(
     if (error) {
       console.error("병원후기 저장 실패:", error);
       return { success: false, error: error.message };
+    }
+
+    // CRM 로그: 후기 작성 이벤트를 스프레드시트에 기록
+    try {
+      // user_profiles에서 email, nickname 조회
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("login_id, nickname")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      // Supabase Auth에서도 email 가져오기 (fallback)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (profile || user?.email) {
+        await logCrmEventToSheet({
+          event_type: 'review',
+          email: profile?.login_id || user?.email || '',
+          nickname: profile?.nickname || user?.email?.split("@")[0] || '사용자',
+          content: data.content,
+        });
+      }
+    } catch (crmError) {
+      // CRM 전송 실패해도 후기 저장은 성공한 것으로 처리
+      console.error('CRM 로그 전송 실패:', crmError);
     }
 
     return { success: true, id: insertedData?.id };

@@ -358,7 +358,17 @@ export default function CountryPainPointSection() {
             </div>
           ) : recommendedTreatments.length > 0 ? (
             <div className="relative">
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+              <div 
+                className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4"
+                onClick={(e) => {
+                  // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
+                  const target = e.target as HTMLElement;
+                  // 버튼이나 버튼의 자식 요소를 클릭한 경우 이벤트 전파 방지
+                  if (target.closest('button')) {
+                    e.stopPropagation();
+                  }
+                }}
+              >
                 {recommendedTreatments.map((treatment) => {
                 const isFavorite = favorites.has(treatment.treatment_id || 0);
                 const thumbnailUrl = getThumbnailUrl(treatment);
@@ -476,7 +486,10 @@ export default function CountryPainPointSection() {
               </div>
               {/* 더보기 버튼 */}
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  // 이벤트 전파 방지 (카드 스크롤 방지)
+                  e.stopPropagation();
+                  e.preventDefault();
                   // 비로그인 시 바로 ReviewRequiredPopup 표시
                   if (!isLoggedIn) {
                     // 더보기 동작을 저장하고 팝업 표시
@@ -500,6 +513,14 @@ export default function CountryPainPointSection() {
                   // 로그인 상태이고 리뷰를 작성한 경우 더보기 동작 실행
                   // (현재는 더보기 기능이 없으므로 리뷰 작성 모달만 표시)
                   setShowCommunityWriteModal(true);
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
                 }}
                 className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 shadow-lg rounded-full p-2.5 transition-all"
               >
@@ -592,6 +613,7 @@ export default function CountryPainPointSection() {
       <CommunityWriteModal
         isOpen={showCommunityWriteModal}
         onClose={() => setShowCommunityWriteModal(false)}
+        entrySource="home"
       />
     </div>
   );

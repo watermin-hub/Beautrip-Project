@@ -2376,7 +2376,7 @@ function RecoveryCardComponent({
   useEffect(() => {
     if (!recoveryText && rec.categoryMid && !loadingRecoveryText) {
       setLoadingRecoveryText(true);
-      getRecoveryInfoByCategoryMid(rec.categoryMid)
+      getRecoveryInfoByCategoryMid(rec.categoryMid, language) // ✅ 언어 전달
         .then((recoveryInfo) => {
           if (recoveryInfo?.recoveryText) {
             setRecoveryText(recoveryInfo.recoveryText);
@@ -2392,7 +2392,7 @@ function RecoveryCardComponent({
           setLoadingRecoveryText(false);
         });
     }
-  }, [rec.categoryMid, recoveryText, loadingRecoveryText]);
+  }, [rec.categoryMid, recoveryText, loadingRecoveryText, language]); // ✅ language 의존성 추가
 
   // 카드 클릭 핸들러 - 회복 가이드로 이동
   const handleCardClick = async () => {
@@ -2914,7 +2914,7 @@ export default function MySchedulePage() {
             s.categoryMid &&
             (s.recoveryDays === 0 || !s.recoveryText || !s.recoveryGuides)
           ) {
-            const info = await getRecoveryInfoByCategoryMid(s.categoryMid);
+            const info = await getRecoveryInfoByCategoryMid(s.categoryMid, language); // ✅ 언어 전달
             if (info) {
               return {
                 ...s,
@@ -2950,7 +2950,7 @@ export default function MySchedulePage() {
     return () => {
       cancelled = true;
     };
-  }, [savedSchedules]);
+  }, [savedSchedules, language]); // ✅ language 의존성 추가
 
   // 시술 날짜와 회복 기간 계산 (당일 포함)
   const procedureDates = useMemo(() => {

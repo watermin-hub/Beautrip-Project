@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import type { LanguageCode } from "@/contexts/LanguageContext";
+import { logCrmEventToSheet } from "@/lib/crmLogger";
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -200,6 +201,18 @@ export default function SignupModal({
           throw new Error("사용자 정보를 찾을 수 없습니다.");
         }
         throw new Error(`프로필 저장에 실패했습니다: ${profileError.message}`);
+      }
+
+      // 2-1. CRM 로그: 회원가입 이벤트를 스프레드시트에 기록
+      try {
+        await logCrmEventToSheet({
+          event_type: "signup",
+          email: email.trim(),
+          nickname: email.trim().split("@")[0], // 이메일 @ 앞부분을 nickname으로 사용
+        });
+      } catch (crmError) {
+        // CRM 전송 실패해도 회원가입은 성공한 것으로 처리
+        console.error("CRM 로그 전송 실패:", crmError);
       }
 
       // 3. 세션이 없으면 (이메일 인증 필요 시) 자동으로 로그인 시도
