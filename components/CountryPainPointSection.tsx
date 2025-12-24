@@ -164,7 +164,8 @@ export default function CountryPainPointSection() {
 
       // 1. keyword_monthly_trends의 keyword로 category_treattime_recovery의 keyword_kr 매칭
       // 2. 매칭된 항목의 category_mid (중분류) 찾기
-      const categoryMid = await getCategoryMidByKeyword(originalKeyword);
+      // ✅ 현재 언어를 전달하여 해당 언어 테이블에서 우선 검색
+      const categoryMid = await getCategoryMidByKeyword(originalKeyword, language);
 
       if (!categoryMid) {
         console.warn(

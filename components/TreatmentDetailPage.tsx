@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   FiHeart,
   FiStar,
@@ -55,6 +55,8 @@ export default function TreatmentDetailPage({
 }: TreatmentDetailPageProps) {
   const { t, language } = useLanguage();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -1013,11 +1015,33 @@ export default function TreatmentDetailPage({
               </div>
             </div>
             <button
-              onClick={() => {
-                // 후기 작성 모달 열기 (추후 구현)
-                alert(t("alert.reviewComingSoon"));
+              onClick={async () => {
+                // ✅ explore 경로인지 확인하여 entrySource 결정
+                const isFromExplore = pathname?.startsWith("/explore");
+                const entrySource = isFromExplore ? "explore" : "community";
+                
+                // ✅ 로그인 상태 확인
+                const { supabase } = await import("@/lib/supabase");
+                if (!supabase) {
+                  return;
+                }
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession();
+                
+                if (!session) {
+                  // 비로그인: 로그인 필요 팝업 표시
+                  setShowLoginRequiredPopup(true);
+                  return;
+                }
+                
+                // ✅ 로그인 상태: 후기 작성 페이지로 이동 (explore 파라미터 포함)
+                const writeUrl = isFromExplore 
+                  ? `/home/write?explore=true`
+                  : `/home/write`;
+                router.push(writeUrl);
               }}
-              className="text-primary-main text-sm font-medium"
+              className="text-primary-main text-sm font-medium hover:underline cursor-pointer"
             >
               {t("pdp.writeReview")}
             </button>

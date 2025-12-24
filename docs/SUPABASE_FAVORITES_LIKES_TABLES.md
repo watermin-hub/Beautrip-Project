@@ -64,7 +64,7 @@ CREATE TRIGGER update_procedure_favorites_updated_at
 | `id`         | `uuid`      | PRIMARY KEY, DEFAULT uuid_generate_v4() | 고유 ID                                                   |
 | `user_id`    | `uuid`      | NOT NULL, REFERENCES auth.users(id)     | 사용자 ID (Supabase Auth)                                 |
 | `post_id`    | `uuid`      | NOT NULL                                | 글 ID                                                     |
-| `post_type`  | `text`      | NOT NULL, CHECK                         | 글 타입 (procedure_review, hospital_review, concern_post) |
+| `post_type`  | `text`      | NOT NULL, CHECK                         | 글 타입 (procedure_review, hospital_review, concern_post, guide) |
 | `created_at` | `timestamp` | DEFAULT now()                           | 생성일시                                                  |
 | `updated_at` | `timestamp` | DEFAULT now()                           | 수정일시                                                  |
 
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS post_likes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   post_id UUID NOT NULL,
-  post_type TEXT NOT NULL CHECK (post_type IN ('procedure_review', 'hospital_review', 'concern_post')),
+  post_type TEXT NOT NULL CHECK (post_type IN ('procedure_review', 'hospital_review', 'concern_post', 'guide')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   UNIQUE(user_id, post_id, post_type) -- 같은 사용자가 같은 글을 중복 좋아요 방지

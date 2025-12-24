@@ -34,6 +34,12 @@ export default function TravelScheduleCalendarModal({
     selectedEndDate || null
   );
 
+  // ✅ selectedStartDate와 selectedEndDate가 변경되면 tempStartDate와 tempEndDate도 업데이트
+  useEffect(() => {
+    setTempStartDate(selectedStartDate || null);
+    setTempEndDate(selectedEndDate || null);
+  }, [selectedStartDate, selectedEndDate]);
+
   // 모달 상태 변경 알림 (렌더링 후 실행) - hooks는 항상 같은 순서로 실행되어야 함
   useEffect(() => {
     if (!isOpen) return;

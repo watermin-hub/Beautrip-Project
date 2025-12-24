@@ -200,7 +200,7 @@ CREATE TRIGGER update_concern_posts_updated_at
 CREATE TABLE public.community_comments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   post_id UUID NOT NULL,
-  post_type TEXT NOT NULL CHECK (post_type IN ('procedure', 'hospital', 'concern')),
+  post_type TEXT NOT NULL CHECK (post_type IN ('procedure', 'hospital', 'concern', 'guide')),
   user_id UUID NOT NULL,  -- ✅ Supabase Auth의 auth.users.id (UUID)
   content TEXT NOT NULL,
   parent_comment_id UUID,
@@ -282,7 +282,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS public.community_comments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   post_id UUID NOT NULL,
-  post_type TEXT NOT NULL CHECK (post_type IN ('procedure', 'hospital', 'concern')),
+  post_type TEXT NOT NULL CHECK (post_type IN ('procedure', 'hospital', 'concern', 'guide')),
   user_id UUID NOT NULL,  -- ✅ Supabase Auth의 auth.users.id (UUID)
   content TEXT NOT NULL,
   parent_comment_id UUID,

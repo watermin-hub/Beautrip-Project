@@ -724,7 +724,7 @@ export async function loadTreatmentsPaginated(
       // 일반 정렬: 서버에서 페이지네이션
       // 일관된 순서 보장을 위해 treatment_id로 정렬 (언어별 테이블에서 동일한 순서)
       query = query.order("treatment_id", { ascending: true });
-      
+
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
@@ -954,10 +954,10 @@ export async function getRecoveryInfoByCategoryMid(
     // ✅ 새로운 테이블 구조: 현재 언어에 맞는 테이블 사용
     // language가 없으면 기본값 KR 사용
     const currentLanguage = language || "KR";
-    
+
     // 캐시 키에 언어 포함 (언어별로 캐시 분리)
     const cacheKey = `${currentLanguage}:${categoryMidTrimmed}`;
-    
+
     // 캐시 (중복 호출/로그 스팸 방지) - 언어별로 캐시 분리
     // ❗ null(매칭 실패)은 캐시하지 않고, 성공한 값만 캐시합니다.
     if (recoveryInfoCache.has(cacheKey)) {
@@ -1324,26 +1324,68 @@ export async function getRecoveryInfoByCategorySmall(
     // 2) 정규화된 정확 일치
     if (!matched) {
       matched = normalizedRecoveryData.find(
-        (item) => item._normalized && item._normalized === normalizedCategorySmall
+        (item) =>
+          item._normalized && item._normalized === normalizedCategorySmall
       );
     }
 
-    // 3) 부분 일치 (fallback)
-    if (!matched) {
-      matched = normalizedRecoveryData.find(
+    // 3) 부분 일치 (fallback) - 단, 너무 짧은 키워드(1-2자)나 너무 일반적인 키워드는 부분 일치 제외
+    // 부분 일치는 최소 3자 이상이고, 한쪽이 다른 쪽의 50% 이상 포함하는 경우만 허용
+    if (!matched && categorySmallTrimmed.length >= 3) {
+      const matchedItems = normalizedRecoveryData.filter(
         (item) =>
           item._normalized &&
           (item._normalized.includes(normalizedCategorySmall) ||
             normalizedCategorySmall.includes(item._normalized))
       );
+
+      // 부분 일치 중에서 가장 유사한 항목 선택 (더 긴 키워드가 더 정확할 가능성 높음)
+      if (matchedItems.length > 0) {
+        // 정확도 계산: 매칭된 부분의 비율이 높을수록 우선
+        const scored = matchedItems.map((item) => {
+          const matchRatio =
+            item._normalized!.length / normalizedCategorySmall.length;
+          const reverseRatio =
+            normalizedCategorySmall.length / item._normalized!.length;
+          const score = Math.min(matchRatio, reverseRatio); // 비율이 1에 가까울수록 높은 점수
+          return { item, score };
+        });
+
+        // 점수가 0.5 이상인 것만 선택 (50% 이상 일치)
+        const validMatches = scored.filter((s) => s.score >= 0.5);
+        if (validMatches.length > 0) {
+          // 가장 높은 점수 선택
+          matched = validMatches.sort((a, b) => b.score - a.score)[0].item;
+          console.log(
+            `✅ [category_small 부분 일치] "${categorySmallTrimmed}" → "${
+              matched._small
+            }" (점수: ${validMatches[0].score.toFixed(2)})`
+          );
+        }
+      }
     }
 
     if (!matched) {
       console.warn(
-        `⚠️ [category_small 매칭 실패] "${categorySmallTrimmed}"`
+        `⚠️ [category_small 매칭 실패] "${categorySmallTrimmed}" (${currentLanguage} 테이블)`
       );
+      // 디버깅: 비슷한 항목들 출력 (최대 5개)
+      const similarItems = normalizedRecoveryData
+        .filter((item) => item._normalized && item._normalized.length > 0)
+        .slice(0, 5)
+        .map((item) => item._small);
+      console.warn(`📋 사용 가능한 category_small 샘플:`, similarItems);
       return null;
     }
+
+    // 매칭 성공 로그
+    console.log(
+      `✅ [category_small 매칭 성공] "${categorySmallTrimmed}" → "${
+        matched._small
+      }" (${currentLanguage} 테이블, category_mid: ${
+        matched.category_mid || matched.중분류 || "N/A"
+      })`
+    );
 
     // 데이터 추출
     const recoveryMin =
@@ -2123,27 +2165,54 @@ export async function loadKeywordMonthlyTrends(filters?: {
 }
 
 // keyword_kr로 category_mid 찾기
+// ✅ 모든 언어별 테이블에서 keyword_kr 컬럼으로 검색 시도
 export async function getCategoryMidByKeyword(
-  keyword: string
+  keyword: string,
+  language?: LanguageCode
 ): Promise<string | null> {
   try {
     if (!keyword) return null;
 
-    // ✅ keyword_kr은 한국어 테이블에만 있으므로 KR 테이블 사용
-    const recoveryData = await loadCategoryTreatTimeRecovery("KR");
     const keywordTrimmed = keyword.trim();
 
-    // keyword_kr 컬럼과 정확히 일치하는 항목 찾기
-    const matched = recoveryData.find((item) => {
-      const keywordKr = (item.keyword_kr || "").trim();
-      return keywordKr === keywordTrimmed;
-    });
+    // ✅ 언어별 테이블 우선 검색 (현재 언어의 테이블에서 먼저 시도)
+    const languagesToCheck: LanguageCode[] = language
+      ? [language, "KR"] // 현재 언어 우선, 없으면 KR fallback
+      : ["KR", "EN", "CN", "JP"]; // 언어가 지정되지 않으면 모든 테이블 확인
 
-    if (matched) {
-      // ✅ 새로운 테이블 구조: category_mid 우선, 레거시 필드 fallback
-      return matched.category_mid || matched.중분류 || null;
+    for (const lang of languagesToCheck) {
+      try {
+        const recoveryData = await loadCategoryTreatTimeRecovery(lang);
+
+        // keyword_kr 컬럼과 정확히 일치하는 항목 찾기
+        const matched = recoveryData.find((item) => {
+          const keywordKr = (item.keyword_kr || "").trim();
+          return keywordKr === keywordTrimmed;
+        });
+
+        if (matched) {
+          // ✅ 새로운 테이블 구조: category_mid 우선, 레거시 필드 fallback
+          const categoryMid = matched.category_mid || matched.중분류 || null;
+          if (categoryMid) {
+            console.log(
+              `✅ [키워드 매칭] "${keywordTrimmed}" → category_mid: "${categoryMid}" (${lang} 테이블에서 발견)`
+            );
+            return categoryMid;
+          }
+        }
+      } catch (error) {
+        // 특정 언어 테이블 로드 실패 시 다음 언어로 계속 시도
+        console.warn(
+          `[getCategoryMidByKeyword] ${lang} 테이블 검색 실패:`,
+          error
+        );
+        continue;
+      }
     }
 
+    console.warn(
+      `⚠️ [키워드 매칭 실패] "${keywordTrimmed}": 모든 언어 테이블에서 찾을 수 없음`
+    );
     return null;
   } catch (error) {
     console.error("키워드로 category_mid 찾기 실패:", error);
@@ -2255,8 +2324,8 @@ export async function getPopularKeywordsByCountry(
     }> = [];
 
     for (const [krKeyword, data] of keywordMap.entries()) {
-      // category_mid가 있는지 확인
-      const categoryMid = await getCategoryMidByKeyword(krKeyword);
+      // category_mid가 있는지 확인 (현재 언어 전달하여 해당 언어 테이블에서 우선 검색)
+      const categoryMid = await getCategoryMidByKeyword(krKeyword, language);
       if (categoryMid) {
         keywordsWithCategoryMid.push(data);
       }
@@ -3381,19 +3450,21 @@ export async function saveProcedureReview(
         .maybeSingle();
 
       // Supabase Auth에서도 email 가져오기 (fallback)
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (profile || user?.email) {
         await logCrmEventToSheet({
-          event_type: 'review',
-          email: profile?.login_id || user?.email || '',
-          nickname: profile?.nickname || user?.email?.split("@")[0] || '사용자',
+          event_type: "review",
+          email: profile?.login_id || user?.email || "",
+          nickname: profile?.nickname || user?.email?.split("@")[0] || "사용자",
           content: data.content,
         });
       }
     } catch (crmError) {
       // CRM 전송 실패해도 후기 저장은 성공한 것으로 처리
-      console.error('CRM 로그 전송 실패:', crmError);
+      console.error("CRM 로그 전송 실패:", crmError);
     }
 
     return { success: true, id: insertedData?.id };
@@ -3467,19 +3538,21 @@ export async function saveHospitalReview(
         .maybeSingle();
 
       // Supabase Auth에서도 email 가져오기 (fallback)
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (profile || user?.email) {
         await logCrmEventToSheet({
-          event_type: 'review',
-          email: profile?.login_id || user?.email || '',
-          nickname: profile?.nickname || user?.email?.split("@")[0] || '사용자',
+          event_type: "review",
+          email: profile?.login_id || user?.email || "",
+          nickname: profile?.nickname || user?.email?.split("@")[0] || "사용자",
           content: data.content,
         });
       }
     } catch (crmError) {
       // CRM 전송 실패해도 후기 저장은 성공한 것으로 처리
-      console.error('CRM 로그 전송 실패:', crmError);
+      console.error("CRM 로그 전송 실패:", crmError);
     }
 
     return { success: true, id: insertedData?.id };
@@ -4301,9 +4374,7 @@ export async function loadMyHospitalReviews(
 }
 
 // 사용자가 리뷰를 하나라도 작성했는지 확인
-export async function hasUserWrittenReview(
-  userId: string
-): Promise<boolean> {
+export async function hasUserWrittenReview(userId: string): Promise<boolean> {
   try {
     // 세 가지 테이블에서 각각 하나라도 있는지 확인 (limit 1로 최적화)
     const [procedureResult, hospitalResult, concernResult] = await Promise.all([
@@ -5589,7 +5660,15 @@ export async function getPostLikeCount(
       .eq("post_type", postType);
 
     if (error) {
-      console.error("글 좋아요 개수 조회 실패:", error);
+      console.error("글 좋아요 개수 조회 실패:", {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        postId,
+        postType,
+      });
       return 0;
     }
 
@@ -7267,7 +7346,15 @@ export async function loadComments(
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("댓글 조회 실패:", error);
+      console.error("댓글 조회 실패:", {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        postId,
+        postType,
+      });
       return [];
     }
 
@@ -7451,7 +7538,15 @@ export async function getCommentCount(
       .eq("post_type", postType);
 
     if (error) {
-      console.error("댓글 수 조회 실패:", error);
+      console.error("댓글 수 조회 실패:", {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        postId,
+        postType,
+      });
       return 0;
     }
 
@@ -7593,14 +7688,14 @@ export async function getHomeHotTreatments(
     if (error) {
       // 에러 정보 상세 로깅 (안전한 방식으로)
       const errorInfo: Record<string, any> = {};
-      
+
       // 에러 객체의 각 속성을 안전하게 추출
       try {
         if (error.message) errorInfo.message = error.message;
         if (error.code) errorInfo.code = error.code;
         if (error.details) errorInfo.details = error.details;
         if (error.hint) errorInfo.hint = error.hint;
-        
+
         // error 객체 자체가 직렬화 가능한지 확인
         try {
           JSON.stringify(error);
@@ -7614,7 +7709,7 @@ export async function getHomeHotTreatments(
         errorInfo.parsingError = "Failed to parse error object";
         errorInfo.errorString = String(error);
       }
-      
+
       console.error("rpc_home_hot_treatments 오류:", errorInfo);
 
       // 함수가 없는 경우 빈 배열 반환

@@ -60,6 +60,51 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const procedureRecommendationRef = useRef<HTMLDivElement>(null);
 
+  // ✅ 초기 로드 시 localStorage에서 여행 기간 로드 (TravelScheduleBar와 동기화)
+  useEffect(() => {
+    const loadTravelPeriod = () => {
+      if (typeof window === "undefined") return;
+      
+      const travelPeriod = localStorage.getItem("travelPeriod");
+      if (travelPeriod) {
+        try {
+          const period = JSON.parse(travelPeriod);
+          if (period.start && period.end) {
+            setSchedule({ start: period.start, end: period.end });
+          }
+        } catch (e) {
+          console.error("Failed to parse travelPeriod:", e);
+        }
+      }
+    };
+
+    loadTravelPeriod();
+
+    // travelPeriodUpdated 이벤트 리스너 (다른 페이지에서 일정 변경 시 동기화)
+    const handleTravelPeriodUpdate = () => {
+      const travelPeriod = localStorage.getItem("travelPeriod");
+      if (travelPeriod) {
+        try {
+          const period = JSON.parse(travelPeriod);
+          if (period.start && period.end) {
+            setSchedule({ start: period.start, end: period.end });
+          } else {
+            setSchedule({ start: null, end: null });
+          }
+        } catch (e) {
+          console.error("Failed to parse travelPeriod:", e);
+        }
+      } else {
+        setSchedule({ start: null, end: null });
+      }
+    };
+
+    window.addEventListener("travelPeriodUpdated", handleTravelPeriodUpdate);
+    return () => {
+      window.removeEventListener("travelPeriodUpdated", handleTravelPeriodUpdate);
+    };
+  }, []);
+
   // 로그인 상태 확인
   useEffect(() => {
     const checkAuth = async () => {
