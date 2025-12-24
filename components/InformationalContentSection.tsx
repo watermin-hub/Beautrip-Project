@@ -84,7 +84,7 @@ export default function InformationalContentSection() {
       } = await supabase.auth.getSession();
       const loggedIn = !!session?.user;
       setIsLoggedIn(loggedIn);
-      
+
       // 로그인 상태일 때 리뷰 작성 이력 확인
       if (loggedIn && session?.user) {
         const hasReview = await hasUserWrittenReview(session.user.id);
@@ -170,23 +170,29 @@ export default function InformationalContentSection() {
   return (
     <div className="mb-6">
       {/* 카테고리 필터 - sticky로 헤더 아래 고정 */}
-      <div className={`sticky z-30 bg-white -mx-4 px-4`} style={{ top: stickyTop }}>
+      <div
+        className={`sticky z-30 bg-white -mx-4 px-4`}
+        style={{ top: stickyTop }}
+      >
         <div className="py-2 bg-white">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => handleCategoryChange(category)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === category
-                  ? "bg-primary-main text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-              style={{ backgroundColor: selectedCategory === category ? undefined : '#f3f4f6' }}
-            >
-              {category}
-            </button>
-          ))}
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategoryChange(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === category
+                    ? "bg-primary-main text-white shadow-sm"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                style={{
+                  backgroundColor:
+                    selectedCategory === category ? undefined : "#f3f4f6",
+                }}
+              >
+                {category}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -205,32 +211,35 @@ export default function InformationalContentSection() {
           </div>
         ) : (
           displayedContents.map((content) => {
-            const isRecoveryGuide = content.category === recoveryGuideCategoryKey;
+            const isRecoveryGuide =
+              content.category === recoveryGuideCategoryKey;
             return (
               <button
                 key={content.id}
                 onClick={() => {
                   // 회복가이드만 로그인 체크 및 팝업 표시
                   // top20과 travel-recommendation은 로그인 없이 바로 접근 가능
-                  const isRecoveryGuide = content.category === recoveryGuideCategoryKey;
-                  
+                  const isRecoveryGuide =
+                    content.category === recoveryGuideCategoryKey;
+
                   // 회복가이드인 경우: 비로그인 또는 리뷰 미작성 시 ReviewRequiredPopup 표시
                   if (isRecoveryGuide && (!isLoggedIn || !hasWrittenReview)) {
                     setShowReviewRequiredPopup(true);
                     return;
                   }
-                  
+
                   // GTM: Content PDP 클릭 이벤트 (커뮤니티-가이드용)
                   // entry_source 구분: home (홈에서 클릭), community (커뮤니티 탭에서 클릭)
-                  const entrySource = pathname === "/" || pathname === "/home" 
-                    ? "home" 
-                    : pathname?.includes("/community") 
-                    ? "community" 
-                    : "home"; // 기본값은 home
-                  
+                  const entrySource =
+                    pathname === "/" || pathname === "/home"
+                      ? "home"
+                      : pathname?.includes("/community")
+                      ? "community"
+                      : "home"; // 기본값은 home
+
                   // 클릭 시점에 entry_source를 sessionStorage에 저장 (상세 페이지에서 사용)
                   sessionStorage.setItem("content_entry_source", entrySource);
-                  
+
                   // 컨텐츠 타입 및 ID 설정
                   // 주의: 실제 뷰 이벤트는 상세 페이지에서 발생하므로 여기서는 저장만
                   if (isRecoveryGuide && content.slug) {
@@ -301,7 +310,9 @@ export default function InformationalContentSection() {
                             const readTime = content.readTime || "";
                             // readTime이 이미 단위를 포함하는지 확인 (분, min, 分, 分钟)
                             const hasUnit = /[가-힣a-zA-Z分钟]+/.test(readTime);
-                            return hasUnit ? readTime : `${readTime}${t("common.readTime")}`;
+                            return hasUnit
+                              ? readTime
+                              : `${readTime}${t("common.readTime")}`;
                           })()}
                         </span>
                       )}
@@ -320,7 +331,9 @@ export default function InformationalContentSection() {
                     </p>
                     {content.views !== undefined && (
                       <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
-                        <span>{t("common.views")} {content.views.toLocaleString()}</span>
+                        <span>
+                          {t("common.views")} {content.views.toLocaleString()}
+                        </span>
                       </div>
                     )}
                   </div>

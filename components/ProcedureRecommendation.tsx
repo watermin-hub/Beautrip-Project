@@ -32,6 +32,7 @@ import {
   parseRecoveryPeriod,
   parseProcedureTime,
   getRecoveryInfoByCategoryMid,
+  getRecoveryInfoByCategorySmall,
   toggleProcedureFavorite,
   getFavoriteStatus,
   hasUserWrittenReview,
@@ -434,6 +435,16 @@ export default function ProcedureRecommendation({
     HomeScheduleRecommendation[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [recoveryInfoCache, setRecoveryInfoCache] = useState<
+    Map<
+      string,
+      {
+        procedureTimeMin: number;
+        recoveryMax: number;
+        recommendedStayDays: number;
+      }
+    >
+  >(new Map());
   const [scrollPositions, setScrollPositions] = useState<
     Record<
       string,
@@ -882,6 +893,53 @@ export default function ProcedureRecommendation({
 
   // 날짜 포맷팅은 utils/dateFormat.ts의 formatDateWithDay 사용
 
+  // ✅ category_small 기준 recovery 정보 미리 로드
+  useEffect(() => {
+    const loadRecoveryInfo = async () => {
+      if (recommendations.length === 0) return;
+
+      const cache = new Map<
+        string,
+        {
+          procedureTimeMin: number;
+          recoveryMax: number;
+          recommendedStayDays: number;
+        }
+      >();
+
+      // 모든 treatment의 category_small 수집
+      const categorySmalls = new Set<string>();
+      recommendations.forEach((rec) => {
+        rec.treatments.forEach((treatment) => {
+          if (treatment.category_small) {
+            categorySmalls.add(treatment.category_small);
+          }
+        });
+      });
+
+      // 각 category_small에 대한 recovery 정보 로드
+      await Promise.all(
+        Array.from(categorySmalls).map(async (categorySmall) => {
+          const recoveryInfo = await getRecoveryInfoByCategorySmall(
+            categorySmall,
+            language
+          );
+          if (recoveryInfo) {
+            cache.set(categorySmall, {
+              procedureTimeMin: recoveryInfo.procedureTimeMin,
+              recoveryMax: recoveryInfo.recoveryMax,
+              recommendedStayDays: recoveryInfo.recommendedStayDays,
+            });
+          }
+        })
+      );
+
+      setRecoveryInfoCache(cache);
+    };
+
+    loadRecoveryInfo();
+  }, [recommendations, language]);
+
   // 필터링된 추천 데이터
   const filteredRecommendations = useMemo(() => {
     let filtered = recommendations;
@@ -891,18 +949,30 @@ export default function ProcedureRecommendation({
       filtered = filtered
         .map((rec) => {
           const filteredTreatments = rec.treatments.filter((treatment) => {
-            const procedureTime = parseProcedureTime(treatment.surgery_time);
+            // ✅ category_small 기준으로 category_treattime_recovery에서 시술시간 가져오기
+            let procedureTime = 0;
+            if (treatment.category_small) {
+              const cached = recoveryInfoCache.get(treatment.category_small);
+              if (cached) {
+                procedureTime = cached.procedureTimeMin || 0;
+              }
+            }
+            // fallback: treatment.surgery_time 사용
+            if (procedureTime === 0) {
+              procedureTime = parseProcedureTime(treatment.surgery_time);
+            }
+
             switch (filter.duration) {
-              case "same-day":
-                return procedureTime <= 30; // 30분 이하
-              case "half-day":
-                return procedureTime > 30 && procedureTime <= 120; // 30분~2시간
-              case "1-day":
-                return procedureTime > 120 && procedureTime <= 480; // 2시간~8시간
-              case "2-3-days":
-                return procedureTime > 480; // 8시간 이상
-              case "surgery":
-                return procedureTime >= 60; // 1시간 이상 (수술 포함)
+              case "under-30":
+                return procedureTime > 0 && procedureTime <= 30; // 30분 이하
+              case "30-60":
+                return procedureTime > 30 && procedureTime <= 60; // 30분~60분
+              case "60-90":
+                return procedureTime > 60 && procedureTime <= 90; // 60분~90분
+              case "90-120":
+                return procedureTime > 90 && procedureTime <= 120; // 90분~120분
+              case "over-120":
+                return procedureTime > 120; // 120분 이상
               default:
                 return true;
             }
@@ -916,7 +986,23 @@ export default function ProcedureRecommendation({
       filtered = filtered
         .map((rec) => {
           const filteredTreatments = rec.treatments.filter((treatment) => {
-            const recoveryPeriod = parseRecoveryPeriod(treatment.downtime);
+            // ✅ category_small 기준으로 category_treattime_recovery에서 회복기간 가져오기
+            let recoveryPeriod = 0;
+            if (treatment.category_small) {
+              const cached = recoveryInfoCache.get(treatment.category_small);
+              if (cached) {
+                // 권장체류일수가 있으면 우선 사용, 없으면 회복기간_max 사용
+                recoveryPeriod =
+                  cached.recommendedStayDays > 0
+                    ? cached.recommendedStayDays
+                    : cached.recoveryMax;
+              }
+            }
+            // fallback: treatment.downtime 사용
+            if (recoveryPeriod === 0) {
+              recoveryPeriod = parseRecoveryPeriod(treatment.downtime);
+            }
+
             switch (filter.recovery) {
               case "same-day":
                 return recoveryPeriod === 0 || recoveryPeriod <= 1;
@@ -959,7 +1045,7 @@ export default function ProcedureRecommendation({
     }
 
     return filtered;
-  }, [recommendations, filter]);
+  }, [recommendations, filter, recoveryInfoCache]);
 
   const handleFilterApply = (newFilter: ProcedureFilter) => {
     setFilter(newFilter);

@@ -23,6 +23,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTravelPeriod, formatDateWithDay } from "@/lib/utils/dateFormat";
 import {
   getRecoveryInfoByCategoryMid,
+  getRecoveryInfoByCategorySmall,
   findRecoveryGuideByCategorySmall,
   loadTreatmentsPaginated,
   loadTreatmentById,
@@ -351,18 +352,33 @@ function SimilarProcedureRecommendation({
     let recoveryText: string | null = null;
     let recoveryGuides: Record<string, string | null> | undefined = undefined;
 
-    // ✅ 언어 변경 시 회복기간 가이드 연결: category_i18n → category_toggle_map 경로 사용
-    if (selectedTreatment.category_mid) {
-      const recoveryInfo = await getRecoveryInfoByCategoryMid(
+    // ✅ category_small 기준으로 회복기간 가이드 가져오기 (없으면 category_mid로 fallback)
+    let recoveryInfo = null;
+    
+    // category_small이 있으면 우선 사용
+    if (selectedTreatment.category_small) {
+      const { getRecoveryInfoByCategorySmall } = await import(
+        "@/lib/api/beautripApi"
+      );
+      recoveryInfo = await getRecoveryInfoByCategorySmall(
+        selectedTreatment.category_small,
+        language
+      );
+    }
+    
+    // category_small로 못 찾았거나 없으면 category_mid로 fallback
+    if (!recoveryInfo && selectedTreatment.category_mid) {
+      recoveryInfo = await getRecoveryInfoByCategoryMid(
         selectedTreatment.category_mid,
         language, // 현재 언어 전달
         selectedTreatment.treatment_id // treatment_id 전달 (category_i18n 매칭용)
       );
-      if (recoveryInfo) {
-        recoveryDays = recoveryInfo.recoveryMax;
-        recoveryText = recoveryInfo.recoveryText;
-        recoveryGuides = recoveryInfo.recoveryGuides;
-      }
+    }
+    
+    if (recoveryInfo) {
+      recoveryDays = recoveryInfo.recoveryMax;
+      recoveryText = recoveryInfo.recoveryText;
+      recoveryGuides = recoveryInfo.recoveryGuides;
     }
 
     // recoveryInfo가 없으면 기존 downtime 사용 (fallback)
@@ -2372,26 +2388,66 @@ function RecoveryCardComponent({
   }, [rec.treatmentId, language]);
 
   // 언어가 변경되면 recoveryGuides와 recoveryText를 다시 로드
-  // 초기값을 사용하지 않고 항상 현재 언어로 로드
+  // ✅ category_small 기준으로 가져오기 (없으면 category_mid로 fallback)
   useEffect(() => {
-    if (rec.categoryMid) {
+    const loadRecoveryInfo = async () => {
+      // category_small이 있으면 우선 사용
+      let recoveryInfo = null;
+      
+      if (rec.categorySmall) {
+        recoveryInfo = await getRecoveryInfoByCategorySmall(
+          rec.categorySmall,
+          language
+        );
+      }
+      
+      // category_small로 못 찾았거나 없으면 category_mid로 fallback
+      if (!recoveryInfo && rec.categoryMid) {
+        recoveryInfo = await getRecoveryInfoByCategoryMid(
+          rec.categoryMid,
+          language
+        );
+      }
+      
+      // treatmentId가 있고 category_small이 없으면 시술 데이터에서 가져오기
+      if (!recoveryInfo && rec.treatmentId && !rec.categorySmall) {
+        try {
+          const treatment = await loadTreatmentById(rec.treatmentId, language);
+          if (treatment?.category_small) {
+            recoveryInfo = await getRecoveryInfoByCategorySmall(
+              treatment.category_small,
+              language
+            );
+          }
+          // category_small로 못 찾았고 category_mid가 있으면 fallback
+          if (!recoveryInfo && treatment?.category_mid) {
+            recoveryInfo = await getRecoveryInfoByCategoryMid(
+              treatment.category_mid,
+              language
+            );
+          }
+        } catch (error) {
+          console.error("시술 데이터 로드 실패:", error);
+        }
+      }
+
+      if (recoveryInfo?.recoveryText) {
+        setRecoveryText(recoveryInfo.recoveryText);
+      }
+      if (recoveryInfo?.recoveryGuides) {
+        setRecoveryGuides(recoveryInfo.recoveryGuides);
+        // rec 객체도 업데이트 (localStorage 저장용)
+        rec.recoveryGuides = recoveryInfo.recoveryGuides;
+      }
+    };
+
+    if (rec.categorySmall || rec.categoryMid || rec.treatmentId) {
       setLoadingRecoveryText(true);
       // 언어 변경 시 즉시 초기화 (이전 언어 데이터 제거)
       setRecoveryText(null);
       setRecoveryGuides(undefined);
       
-      getRecoveryInfoByCategoryMid(rec.categoryMid, language) // ✅ 언어 전달
-        .then((recoveryInfo) => {
-          if (recoveryInfo?.recoveryText) {
-            setRecoveryText(recoveryInfo.recoveryText);
-          }
-          // 언어 변경 시 recoveryGuides도 state로 업데이트
-          if (recoveryInfo?.recoveryGuides) {
-            setRecoveryGuides(recoveryInfo.recoveryGuides);
-            // rec 객체도 업데이트 (localStorage 저장용)
-            rec.recoveryGuides = recoveryInfo.recoveryGuides;
-          }
-        })
+      loadRecoveryInfo()
         .catch((error) => {
           // 회복 기간 정보 로드 실패 시 무시
           console.error("회복 기간 정보 로드 실패:", error);
@@ -2400,11 +2456,11 @@ function RecoveryCardComponent({
           setLoadingRecoveryText(false);
         });
     } else {
-      // categoryMid가 없으면 초기화
+      // categorySmall, categoryMid, treatmentId 모두 없으면 초기화
       setRecoveryText(null);
       setRecoveryGuides(undefined);
     }
-  }, [rec.categoryMid, language]); // ✅ language 변경 시에도 업데이트
+  }, [rec.categorySmall, rec.categoryMid, rec.treatmentId, language]); // ✅ categorySmall 추가
 
   // 카드 클릭 핸들러 - 회복 가이드로 이동
   const handleCardClick = async () => {
@@ -2909,11 +2965,11 @@ export default function MySchedulePage() {
     }
   }, [savedSchedules]);
 
-  // 저장된 일정에 회복정보가 비어있을 때 category_mid로 보강 (권장체류일수/회복가이드)
+  // 저장된 일정에 회복정보가 비어있을 때 category_small로 보강 (없으면 category_mid로 fallback)
   useEffect(() => {
     const needsUpdate = savedSchedules.some(
       (s) =>
-        s.categoryMid &&
+        (s.categorySmall || s.categoryMid) &&
         (s.recoveryDays === 0 || !s.recoveryText || !s.recoveryGuides)
     );
     if (!needsUpdate) return;
@@ -2923,10 +2979,19 @@ export default function MySchedulePage() {
       const updated = await Promise.all(
         savedSchedules.map(async (s) => {
           if (
-            s.categoryMid &&
+            (s.categorySmall || s.categoryMid) &&
             (s.recoveryDays === 0 || !s.recoveryText || !s.recoveryGuides)
           ) {
-            const info = await getRecoveryInfoByCategoryMid(s.categoryMid, language); // ✅ 언어 전달
+            // ✅ category_small이 있으면 우선 사용
+            let info = null;
+            if (s.categorySmall) {
+              info = await getRecoveryInfoByCategorySmall(s.categorySmall, language);
+            }
+            // category_small로 못 찾았거나 없으면 category_mid로 fallback
+            if (!info && s.categoryMid) {
+              info = await getRecoveryInfoByCategoryMid(s.categoryMid, language);
+            }
+            
             if (info) {
               return {
                 ...s,

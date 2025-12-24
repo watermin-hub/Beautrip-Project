@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiTrendingUp, FiHeart, FiStar, FiCalendar, FiChevronRight, FiChevronLeft } from "react-icons/fi";
@@ -45,7 +45,7 @@ export default function HotConcernsSection() {
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
   // 로그인 성공 후 실행할 동작 저장
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null) as MutableRefObject<HTMLDivElement | null>;
   // 스크롤 상태 관리
   const [scrollPosition, setScrollPosition] = useState({
     left: 0,

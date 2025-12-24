@@ -951,16 +951,19 @@ export async function getRecoveryInfoByCategoryMid(
       return null;
     }
 
-    // 캐시 (중복 호출/로그 스팸 방지) - trim된 키 사용
-    // ❗ null(매칭 실패)은 캐시하지 않고, 성공한 값만 캐시합니다.
-    if (recoveryInfoCache.has(categoryMidTrimmed)) {
-      const cached = recoveryInfoCache.get(categoryMidTrimmed);
-      if (cached) return cached;
-    }
-
     // ✅ 새로운 테이블 구조: 현재 언어에 맞는 테이블 사용
     // language가 없으면 기본값 KR 사용
     const currentLanguage = language || "KR";
+    
+    // 캐시 키에 언어 포함 (언어별로 캐시 분리)
+    const cacheKey = `${currentLanguage}:${categoryMidTrimmed}`;
+    
+    // 캐시 (중복 호출/로그 스팸 방지) - 언어별로 캐시 분리
+    // ❗ null(매칭 실패)은 캐시하지 않고, 성공한 값만 캐시합니다.
+    if (recoveryInfoCache.has(cacheKey)) {
+      const cached = recoveryInfoCache.get(cacheKey);
+      if (cached) return cached;
+    }
     const recoveryData = await loadCategoryTreatTimeRecovery(currentLanguage);
 
     // 키/샘플 확인 (디버깅용)
@@ -1249,12 +1252,147 @@ export async function getRecoveryInfoByCategoryMid(
     };
 
     // 캐시 & 로그 기록 (성공한 경우에만 캐시)
-    recoveryInfoCache.set(categoryMidTrimmed, result);
+    // 언어별로 캐시 분리
+    recoveryInfoCache.set(cacheKey, result);
     recoveryLogPrinted.add(categoryMidTrimmed);
 
     return result;
   } catch (error) {
     console.error("회복 기간 정보 로드 실패:", error);
+    return null;
+  }
+}
+
+// category_small로 회복 기간 정보 가져오기 (소분류 컬럼과 매칭)
+export async function getRecoveryInfoByCategorySmall(
+  categorySmall: string,
+  language?: LanguageCode
+): Promise<{
+  recoveryMin: number;
+  recoveryMax: number;
+  recoveryText: string | null;
+  procedureTimeMin: number;
+  procedureTimeMax: number;
+  recommendedStayDays: number;
+  recoveryGuides: Record<string, string | null>;
+} | null> {
+  try {
+    if (!categorySmall) return null;
+
+    const categorySmallTrimmed = categorySmall.trim();
+    if (!categorySmallTrimmed) return null;
+
+    // ✅ 새로운 테이블 구조: 현재 언어에 맞는 테이블 사용
+    const currentLanguage = language || "KR";
+    const recoveryData = await loadCategoryTreatTimeRecovery(currentLanguage);
+
+    // ✅ category_small 필드 찾기
+    const getSmall = (item: any) =>
+      String(
+        item["category_small"] ??
+          item.category_small ??
+          item["소분류"] ??
+          item.소분류 ??
+          item["소분류_리스트"] ??
+          item.소분류_리스트 ??
+          ""
+      );
+
+    // 정규화 함수
+    const normalize = (str: string) =>
+      str
+        .normalize("NFC")
+        .replace(/[\u200B-\u200D\uFEFF]/g, "")
+        .replace(/\s+/g, "")
+        .toLowerCase();
+
+    const normalizedCategorySmall = normalize(categorySmallTrimmed);
+    const normalizedRecoveryData = recoveryData.map((item: any) => {
+      const small = getSmall(item).trim();
+      return {
+        ...item,
+        _small: small,
+        _normalized: normalize(small),
+      };
+    });
+
+    // 1) 원본 문자열 정확 일치
+    let matched = normalizedRecoveryData.find(
+      (item) => item._small === categorySmallTrimmed
+    );
+
+    // 2) 정규화된 정확 일치
+    if (!matched) {
+      matched = normalizedRecoveryData.find(
+        (item) => item._normalized && item._normalized === normalizedCategorySmall
+      );
+    }
+
+    // 3) 부분 일치 (fallback)
+    if (!matched) {
+      matched = normalizedRecoveryData.find(
+        (item) =>
+          item._normalized &&
+          (item._normalized.includes(normalizedCategorySmall) ||
+            normalizedCategorySmall.includes(item._normalized))
+      );
+    }
+
+    if (!matched) {
+      console.warn(
+        `⚠️ [category_small 매칭 실패] "${categorySmallTrimmed}"`
+      );
+      return null;
+    }
+
+    // 데이터 추출
+    const recoveryMin =
+      matched["회복기간_min(일)"] ??
+      matched["회복기간_min"] ??
+      matched.회복기간_min ??
+      0;
+    const recoveryMax =
+      matched["회복기간_max(일)"] ??
+      matched["회복기간_max"] ??
+      matched.회복기간_max ??
+      0;
+    const procedureTimeMin =
+      matched["시술시간_min(분)"] ??
+      matched["시술시간_min"] ??
+      matched.시술시간_min ??
+      0;
+    const procedureTimeMax =
+      matched["시술시간_max(분)"] ??
+      matched["시술시간_max"] ??
+      matched.시술시간_max ??
+      0;
+    const recommendedStayDays =
+      matched["권장체류일수(일)"] ??
+      matched["권장체류일수"] ??
+      matched.권장체류일수 ??
+      0;
+
+    // 회복 가이드 텍스트 추출
+    const recoveryGuides: Record<string, string | null> = {};
+    const guideKeys = ["1~3", "4~7", "8~14", "15~21"];
+    guideKeys.forEach((key) => {
+      recoveryGuides[key] =
+        matched[key] ?? matched[`${key}일`] ?? matched[`${key}일 회복`] ?? null;
+    });
+
+    const recoveryText = recoveryGuides["1~3"] || recoveryGuides["4~7"] || null;
+
+    return {
+      recoveryMin,
+      recoveryMax,
+      recoveryText,
+      procedureTimeMin,
+      procedureTimeMax,
+      recommendedStayDays,
+      recoveryGuides,
+    };
+  } catch (error) {
+    console.error("회복 기간 정보 로드 실패 (category_small):", error);
     return null;
   }
 }

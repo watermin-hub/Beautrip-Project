@@ -28,11 +28,11 @@ export default function ProcedureFilterModal({
 
   const DURATION_OPTIONS = useMemo(
     () => [
-      { value: "same-day", label: t("procedure.filterDuration.sameDay") },
-      { value: "half-day", label: t("procedure.filterDuration.halfDay") },
-      { value: "1-day", label: t("procedure.filterDuration.1Day") },
-      { value: "2-3-days", label: t("procedure.filterDuration.2-3Days") },
-      { value: "surgery", label: t("procedure.filterDuration.surgery") },
+      { value: "under-30", label: t("procedure.filterDuration.under30") },
+      { value: "30-60", label: t("procedure.filterDuration.30-60") },
+      { value: "60-90", label: t("procedure.filterDuration.60-90") },
+      { value: "90-120", label: t("procedure.filterDuration.90-120") },
+      { value: "over-120", label: t("procedure.filterDuration.over120") },
     ],
     [t]
   );
