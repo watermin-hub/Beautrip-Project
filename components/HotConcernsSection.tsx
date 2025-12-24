@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiTrendingUp, FiHeart, FiStar, FiCalendar } from "react-icons/fi";
+import { FiTrendingUp, FiHeart, FiStar, FiCalendar, FiChevronRight } from "react-icons/fi";
 import {
   getHomeHotTreatments,
   getThumbnailUrl,
@@ -12,6 +12,7 @@ import {
   getRecoveryInfoByCategoryMid,
   toggleProcedureFavorite,
   getFavoriteStatus,
+  hasUserWrittenReview,
   type Treatment,
 } from "@/lib/api/beautripApi";
 import {
@@ -21,6 +22,9 @@ import {
 } from "@/lib/utils/currency";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import ReviewRequiredPopup from "./ReviewRequiredPopup";
+import CommunityWriteModal from "./CommunityWriteModal";
+import { supabase } from "@/lib/supabase";
 import { trackAddToSchedule, trackPdpClick } from "@/lib/gtm";
 
 export default function HotConcernsSection() {
@@ -35,11 +39,36 @@ export default function HotConcernsSection() {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
+  const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasWrittenReview, setHasWrittenReview] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
   const currency = useMemo(() => {
     return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
   }, [language]);
+
+  // 로그인 상태 확인 및 리뷰 작성 이력 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+      
+      // 로그인 상태일 때 리뷰 작성 이력 확인
+      if (loggedIn && session?.user) {
+        const hasReview = await hasUserWrittenReview(session.user.id);
+        setHasWrittenReview(hasReview);
+      } else {
+        setHasWrittenReview(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   // ✅ 초기 로드: 현재 언어로 로드 (처음부터 다른 언어로 시작해도 작동)
   const [initialLanguageLoaded, setInitialLanguageLoaded] = useState<
@@ -343,8 +372,12 @@ export default function HotConcernsSection() {
       </div>
 
       {/* 카드 슬라이드 */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3">
-        {treatments.map((treatment) => {
+      <div className="relative -mx-4 px-3">
+        <div 
+          ref={scrollRef}
+          className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+        >
+          {treatments.map((treatment) => {
           const isFavorite = favorites.has(treatment.treatment_id || 0);
           const thumbnailUrl = getThumbnailUrl(treatment);
 
@@ -486,6 +519,34 @@ export default function HotConcernsSection() {
             </div>
           );
         })}
+        </div>
+
+        {/* 우측 더보기 버튼 */}
+        {treatments.length > 0 && (
+          <button
+            onClick={async () => {
+              // 비로그인 시 바로 ReviewRequiredPopup 표시
+              if (!isLoggedIn) {
+                setShowReviewRequiredPopup(true);
+                return;
+              }
+              
+              // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
+              if (!hasWrittenReview) {
+                setShowReviewRequiredPopup(true);
+                return;
+              }
+              
+              // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
+              if (scrollRef.current) {
+                scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
+              }
+            }}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 shadow-lg rounded-full p-2.5 transition-all"
+          >
+            <FiChevronRight className="text-gray-700 text-xl" />
+          </button>
+        )}
       </div>
 
       {/* 일정 추가 모달 */}
@@ -554,6 +615,21 @@ export default function HotConcernsSection() {
         onLoginSuccess={() => {
           setShowLoginRequiredPopup(false);
         }}
+      />
+
+      {/* 후기 작성 필요 팝업 */}
+      <ReviewRequiredPopup
+        isOpen={showReviewRequiredPopup}
+        onClose={() => setShowReviewRequiredPopup(false)}
+        onWriteClick={() => {
+          setShowCommunityWriteModal(true);
+        }}
+      />
+
+      {/* 커뮤니티 글 작성 모달 */}
+      <CommunityWriteModal
+        isOpen={showCommunityWriteModal}
+        onClose={() => setShowCommunityWriteModal(false)}
       />
     </div>
   );

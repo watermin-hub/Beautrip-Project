@@ -23,6 +23,9 @@ import {
 import ProcedureFilterModal, { ProcedureFilter } from "./ProcedureFilterModal";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import ReviewRequiredPopup from "./ReviewRequiredPopup";
+import CommunityWriteModal from "./CommunityWriteModal";
+import { supabase } from "@/lib/supabase";
 import {
   getHomeScheduleRecommendations,
   getThumbnailUrl,
@@ -31,6 +34,7 @@ import {
   getRecoveryInfoByCategoryMid,
   toggleProcedureFavorite,
   getFavoriteStatus,
+  hasUserWrittenReview,
   type Treatment,
   type HomeScheduleRecommendation,
 } from "@/lib/api/beautripApi";
@@ -443,6 +447,10 @@ export default function ProcedureRecommendation({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
+  const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // 중분류 카테고리 표시 개수 (초기 5개)
   const [visibleCategoriesCount, setVisibleCategoriesCount] = useState(5);
@@ -631,6 +639,26 @@ export default function ProcedureRecommendation({
     // ⚠️ language는 제외: 언어 변경은 번역 로직에서 처리
     fetchInitialData();
   }, [scheduleData, selectedCategoryId, mainCategories]); // language 제외: 번역 로직에서 처리
+
+  // 로그인 상태 확인 및 리뷰 작성 이력 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+
+      // 로그인 상태일 때 리뷰 작성 이력 확인
+      if (loggedIn && session?.user) {
+        const hasReview = await hasUserWrittenReview(session.user.id);
+        setHasWrittenReview(hasReview);
+      } else {
+        setHasWrittenReview(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   // 초기 로드 완료 시 언어 저장 (일정/카테고리 변경 시에만 업데이트)
   useEffect(() => {
@@ -1188,7 +1216,20 @@ export default function ProcedureRecommendation({
           }
         };
 
-        const handleScrollRight = () => {
+        const handleScrollRight = async () => {
+          // 비로그인 시 바로 ReviewRequiredPopup 표시
+          if (!isLoggedIn) {
+            setShowReviewRequiredPopup(true);
+            return;
+          }
+
+          // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
+          if (!hasWrittenReview) {
+            setShowReviewRequiredPopup(true);
+            return;
+          }
+
+          // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
           const element = scrollRefs.current[categoryMidKey];
           if (element) {
             element.scrollBy({ left: 300, behavior: "smooth" });
@@ -1196,7 +1237,20 @@ export default function ProcedureRecommendation({
         };
 
         // 더보기 기능 (10개 카드 추가)
-        const handleShowMore = () => {
+        const handleShowMore = async () => {
+          // 비로그인 시 바로 ReviewRequiredPopup 표시
+          if (!isLoggedIn) {
+            setShowReviewRequiredPopup(true);
+            return;
+          }
+
+          // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
+          if (!hasWrittenReview) {
+            setShowReviewRequiredPopup(true);
+            return;
+          }
+
+          // 로그인 상태이고 리뷰를 작성한 경우 더보기 실행
           setVisibleTreatmentsCount((prev) => ({
             ...prev,
             [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
@@ -1556,6 +1610,21 @@ export default function ProcedureRecommendation({
         onLoginSuccess={() => {
           setShowLoginRequiredPopup(false);
         }}
+      />
+
+      {/* 후기 작성 필요 팝업 */}
+      <ReviewRequiredPopup
+        isOpen={showReviewRequiredPopup}
+        onClose={() => setShowReviewRequiredPopup(false)}
+        onWriteClick={() => {
+          setShowCommunityWriteModal(true);
+        }}
+      />
+
+      {/* 커뮤니티 글 작성 모달 */}
+      <CommunityWriteModal
+        isOpen={showCommunityWriteModal}
+        onClose={() => setShowCommunityWriteModal(false)}
       />
     </div>
   );

@@ -50,6 +50,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.submit": "제출",
     "common.complete": "완료",
     "common.writeComplete": "작성완료",
+    "common.write": "후기 남기러 가기",
+    "common.reviewRequired": "📝 시술 후기 작성이 필요합니다",
+    "common.reviewRequiredMoreInfo":
+      "소중한 후기를 남겨 주시면\nBeautrip의 모든 정보를 볼 수 있습니다!🍀",
     "common.loading": "로딩 중...",
     "common.error": "오류가 발생했습니다",
     "common.noData": "데이터가 없습니다",
@@ -812,6 +816,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.submit": "Submit",
     "common.complete": "Complete",
     "common.writeComplete": "Complete",
+    "common.write": "Write a Review",
+    "common.reviewRequired": "📝 Procedure Review Required",
+    "common.reviewRequiredMoreInfo":
+      "Leave your valuable review\nand access all information on Beautrip!🍀",
     "common.loading": "Loading...",
     "common.error": "An error occurred",
     "common.noData": "No data available",
@@ -1591,6 +1599,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.submit": "送信",
     "common.complete": "完了",
     "common.writeComplete": "完了",
+    "common.write": "レビューを書く",
+    "common.reviewRequired": "📝 施術レビューの作成が必要です",
+    "common.reviewRequiredMoreInfo":
+      "貴重なレビューを残していただければ\nBeautripのすべての情報をご覧いただけます！🍀",
     "common.loading": "読み込み中...",
     "common.error": "エラーが発生しました",
     "common.noData": "データがありません",
@@ -2366,6 +2378,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "common.submit": "提交",
     "common.complete": "完成",
     "common.writeComplete": "完成",
+    "common.write": "写评论",
+    "common.reviewRequired": "📝 需要写手术评论",
+    "common.reviewRequiredMoreInfo":
+      "留下您宝贵的评论\n即可访问Beautrip的所有信息！🍀",
     "common.loading": "加载中...",
     "common.error": "发生错误",
     "common.noData": "暂无数据",

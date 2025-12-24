@@ -24,6 +24,9 @@ import {
 import { supabase } from "@/lib/supabase";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
 import { useLanguage } from "@/contexts/LanguageContext";
+import LoginModal from "./LoginModal";
+import { trackReviewStart, type EntrySource } from "@/lib/gtm";
+import { usePathname } from "next/navigation";
 
 interface CommunityWriteModalProps {
   isOpen: boolean;
@@ -40,6 +43,9 @@ export default function CommunityWriteModal({
   editData: externalEditData,
 }: CommunityWriteModalProps) {
   const { t } = useLanguage();
+  const pathname = usePathname();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const writeOptions = [
     {
@@ -94,12 +100,44 @@ export default function CommunityWriteModal({
     }
   }, [externalEditData]);
 
+  // 로그인 상태 확인 및 GA4 이벤트
+  useEffect(() => {
+    if (isOpen) {
+      const checkAuth = async () => {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session?.user) {
+          setIsLoggedIn(true);
+
+          // GA4: review_start 이벤트 (로그인 체크 후, 실제로 모달이 열렸을 때)
+          const getEntrySource = (): EntrySource => {
+            if (pathname === "/" || pathname === "/home") return "home";
+            if (pathname?.includes("/explore")) return "explore";
+            if (pathname?.includes("/community")) return "community";
+            if (pathname?.includes("/mypage")) return "mypage";
+            return "unknown";
+          };
+
+          trackReviewStart(getEntrySource());
+        } else {
+          setIsLoggedIn(false);
+          // 비로그인 시 로그인 모달 표시
+          setShowLoginModal(true);
+        }
+      };
+
+      checkAuth();
+    }
+  }, [isOpen, pathname]);
+
   // 내 글 로드
   useEffect(() => {
-    if (showMyPosts && isOpen) {
+    if (showMyPosts && isOpen && isLoggedIn) {
       loadMyPosts();
     }
-  }, [showMyPosts, isOpen]);
+  }, [showMyPosts, isOpen, isLoggedIn]);
 
   const loadMyPosts = async () => {
     try {
@@ -156,7 +194,35 @@ export default function CommunityWriteModal({
     );
   };
 
-  if (!isOpen) return null;
+  // 로그인 모달이 열려있으면 CommunityWriteModal은 숨김
+  if (!isOpen || showLoginModal) {
+    return (
+      <>
+        {showLoginModal && (
+          <LoginModal
+            isOpen={showLoginModal}
+            onClose={() => {
+              setShowLoginModal(false);
+              onClose(); // 로그인 모달 닫으면 CommunityWriteModal도 닫기
+            }}
+            onLoginSuccess={() => {
+              setShowLoginModal(false);
+              setIsLoggedIn(true);
+              // 로그인 성공 후 GA4 이벤트 발생
+              const getEntrySource = (): EntrySource => {
+                if (pathname === "/" || pathname === "/home") return "home";
+                if (pathname?.includes("/explore")) return "explore";
+                if (pathname?.includes("/community")) return "community";
+                if (pathname?.includes("/mypage")) return "mypage";
+                return "unknown";
+              };
+              trackReviewStart(getEntrySource());
+            }}
+          />
+        )}
+      </>
+    );
+  }
 
   const handleOptionClick = (optionId: string) => {
     setSelectedOption(optionId);

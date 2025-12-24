@@ -4107,6 +4107,45 @@ export async function loadMyHospitalReviews(
   }
 }
 
+// 사용자가 리뷰를 하나라도 작성했는지 확인
+export async function hasUserWrittenReview(
+  userId: string
+): Promise<boolean> {
+  try {
+    // 세 가지 테이블에서 각각 하나라도 있는지 확인 (limit 1로 최적화)
+    const [procedureResult, hospitalResult, concernResult] = await Promise.all([
+      supabase
+        .from("procedure_reviews")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("hospital_reviews")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("concern_posts")
+        .select("id")
+        .eq("user_id", userId)
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    // 하나라도 있으면 true (data가 null이 아니고 error가 없으면)
+    return (
+      (procedureResult.data !== null && !procedureResult.error) ||
+      (hospitalResult.data !== null && !hospitalResult.error) ||
+      (concernResult.data !== null && !concernResult.error)
+    );
+  } catch (error) {
+    console.error("리뷰 작성 이력 확인 실패:", error);
+    return false; // 에러 시 false 반환 (안전하게 팝업 표시)
+  }
+}
+
 // 사용자가 작성한 고민글 가져오기
 export async function loadMyConcernPosts(
   userId: string

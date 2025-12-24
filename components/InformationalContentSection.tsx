@@ -10,6 +10,9 @@ import {
 } from "@/lib/content/recoveryGuidePosts";
 import { supabase } from "@/lib/supabase";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import ReviewRequiredPopup from "./ReviewRequiredPopup";
+import CommunityWriteModal from "./CommunityWriteModal";
+import { hasUserWrittenReview } from "@/lib/api/beautripApi";
 import { trackContentPdpView } from "@/lib/gtm";
 
 interface ContentItem {
@@ -63,19 +66,32 @@ export default function InformationalContentSection() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
+  const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
 
-  // 로그인 상태 확인
+  // 로그인 상태 확인 및 리뷰 작성 이력 확인
   useEffect(() => {
     const checkAuth = async () => {
       if (!supabase) {
         setIsLoggedIn(false);
+        setHasWrittenReview(false);
         return;
       }
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+      
+      // 로그인 상태일 때 리뷰 작성 이력 확인
+      if (loggedIn && session?.user) {
+        const hasReview = await hasUserWrittenReview(session.user.id);
+        setHasWrittenReview(hasReview);
+      } else {
+        setHasWrittenReview(false);
+      }
     };
     checkAuth();
   }, []);
@@ -194,9 +210,13 @@ export default function InformationalContentSection() {
               <button
                 key={content.id}
                 onClick={() => {
-                  // 로그인 체크
-                  if (!isLoggedIn) {
-                    setShowLoginRequiredPopup(true);
+                  // 회복가이드만 로그인 체크 및 팝업 표시
+                  // top20과 travel-recommendation은 로그인 없이 바로 접근 가능
+                  const isRecoveryGuide = content.category === recoveryGuideCategoryKey;
+                  
+                  // 회복가이드인 경우: 비로그인 또는 리뷰 미작성 시 ReviewRequiredPopup 표시
+                  if (isRecoveryGuide && (!isLoggedIn || !hasWrittenReview)) {
+                    setShowReviewRequiredPopup(true);
                     return;
                   }
                   
@@ -213,14 +233,14 @@ export default function InformationalContentSection() {
                   
                   // 컨텐츠 타입 및 ID 설정
                   // 주의: 실제 뷰 이벤트는 상세 페이지에서 발생하므로 여기서는 저장만
-                  if (content.category === recoveryGuideCategoryKey && content.slug) {
+                  if (isRecoveryGuide && content.slug) {
                     // 회복 가이드인 경우 - content_id는 postId 그대로 사용
                     router.push(`/community/recovery-guide/${content.slug}`);
                   } else if (content.slug === "top20") {
-                    // TOP 20 정보 페이지 - content_id: "top20"
+                    // TOP 20 정보 페이지 - content_id: "top20" (로그인 없이 접근 가능)
                     router.push(`/community/info/top20`);
                   } else if (content.slug === "travel-recommendation") {
-                    // 여행지 추천 페이지 - content_id: "travel-recommendation"
+                    // 여행지 추천 페이지 - content_id: "travel-recommendation" (로그인 없이 접근 가능)
                     router.push(`/community/info/travel-recommendation`);
                   } else {
                     // 다른 컨텐츠는 추후 구현
@@ -337,6 +357,21 @@ export default function InformationalContentSection() {
           setIsLoggedIn(true);
           setShowLoginRequiredPopup(false);
         }}
+      />
+
+      {/* 후기 작성 필요 팝업 */}
+      <ReviewRequiredPopup
+        isOpen={showReviewRequiredPopup}
+        onClose={() => setShowReviewRequiredPopup(false)}
+        onWriteClick={() => {
+          setShowCommunityWriteModal(true);
+        }}
+      />
+
+      {/* 커뮤니티 글 작성 모달 */}
+      <CommunityWriteModal
+        isOpen={showCommunityWriteModal}
+        onClose={() => setShowCommunityWriteModal(false)}
       />
     </div>
   );

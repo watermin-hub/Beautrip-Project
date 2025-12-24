@@ -21,9 +21,12 @@ import {
   getFavoriteStatus,
   MidCategoryRanking,
   SmallCategoryRanking,
+  hasUserWrittenReview,
 } from "@/lib/api/beautripApi";
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import ReviewRequiredPopup from "./ReviewRequiredPopup";
+import CommunityWriteModal from "./CommunityWriteModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/lib/supabase";
 import {
@@ -132,8 +135,10 @@ export default function CategoryRankingPage({
   const [selectedTreatmentForSchedule, setSelectedTreatmentForSchedule] =
     useState<Treatment | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
+  const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
   // 스크롤 버튼 클릭 횟수 추적 (카테고리별)
   const [scrollButtonClickCount, setScrollButtonClickCount] = useState<
     Record<string, number>
@@ -154,21 +159,24 @@ export default function CategoryRankingPage({
   // 로그인 상태 확인
   useEffect(() => {
     const checkAuth = async () => {
-      // localStorage 먼저 확인
-      const savedIsLoggedIn = localStorage.getItem("isLoggedIn");
-      if (savedIsLoggedIn === "true") {
-        setIsLoggedIn(true);
-        return;
-      }
-
-      // Supabase 세션 확인
+      // Supabase 세션 확인 (localStorage는 참고용으로만 사용)
       if (supabase) {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-        setIsLoggedIn(!!session);
+        const loggedIn = !!session?.user;
+        setIsLoggedIn(loggedIn);
+
+        // 로그인 상태일 때 리뷰 작성 이력 확인
+        if (loggedIn && session?.user) {
+          const hasReview = await hasUserWrittenReview(session.user.id);
+          setHasWrittenReview(hasReview);
+        } else {
+          setHasWrittenReview(false);
+        }
       } else {
         setIsLoggedIn(false);
+        setHasWrittenReview(false);
       }
     };
 
@@ -662,7 +670,7 @@ export default function CategoryRankingPage({
         result.error?.includes("로그인이 필요") ||
         result.error?.includes("로그인")
       ) {
-        setIsInfoModalOpen(true);
+        setShowLoginRequiredPopup(true);
       } else {
         console.error("찜하기 처리 실패:", result.error);
       }
@@ -1021,37 +1029,24 @@ export default function CategoryRankingPage({
                     }
                   };
 
-                  const handleScrollRight = () => {
+                  const handleScrollRight = async () => {
+                    // 비로그인 시 바로 ReviewRequiredPopup 표시
                     if (!isLoggedIn) {
-                      const key = ranking.category_small_key;
-                      const currentCount = scrollButtonClickCount[key] || 0;
-                      const newCount = currentCount + 1;
-                      setScrollButtonClickCount((prev) => ({
-                        ...prev,
-                        [key]: newCount,
-                      }));
+                      setShowReviewRequiredPopup(true);
+                      return; // 스크롤 실행하지 않음
+                    }
 
-                      if (newCount >= 2) {
-                        setIsInfoModalOpen(true);
-                        // 카운트 리셋
-                        setScrollButtonClickCount((prev) => ({
-                          ...prev,
-                          [key]: 0,
-                        }));
-                      } else {
-                        // 스크롤은 정상적으로 실행
-                        const element =
-                          scrollRefs.current[ranking.category_small_key];
-                        if (element) {
-                          element.scrollBy({ left: 300, behavior: "smooth" });
-                        }
-                      }
-                    } else {
-                      const element =
-                        scrollRefs.current[ranking.category_small_key];
-                      if (element) {
-                        element.scrollBy({ left: 300, behavior: "smooth" });
-                      }
+                    // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
+                    if (!hasWrittenReview) {
+                      setShowReviewRequiredPopup(true);
+                      return; // 스크롤 실행하지 않음
+                    }
+
+                    // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
+                    const element =
+                      scrollRefs.current[ranking.category_small_key];
+                    if (element) {
+                      element.scrollBy({ left: 300, behavior: "smooth" });
                     }
                   };
 
@@ -1306,9 +1301,11 @@ export default function CategoryRankingPage({
               {smallCategoryRankings.length > visibleCategoriesCount && (
                 <div className="text-center pt-4">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!isLoggedIn) {
-                        setIsInfoModalOpen(true);
+                        setShowReviewRequiredPopup(true);
+                      } else if (!hasWrittenReview) {
+                        setShowReviewRequiredPopup(true);
                       } else {
                         setVisibleCategoriesCount((prev) => prev + 5);
                       }
@@ -1357,35 +1354,23 @@ export default function CategoryRankingPage({
                   }
                 };
 
-                const handleScrollRight = () => {
+                const handleScrollRight = async () => {
+                  // 비로그인 시 바로 ReviewRequiredPopup 표시
                   if (!isLoggedIn) {
-                    const key = ranking.category_mid;
-                    const currentCount = scrollButtonClickCount[key] || 0;
-                    const newCount = currentCount + 1;
-                    setScrollButtonClickCount((prev) => ({
-                      ...prev,
-                      [key]: newCount,
-                    }));
+                    setShowReviewRequiredPopup(true);
+                    return; // 스크롤 실행하지 않음
+                  }
 
-                    if (newCount >= 2) {
-                      setIsInfoModalOpen(true);
-                      // 카운트 리셋
-                      setScrollButtonClickCount((prev) => ({
-                        ...prev,
-                        [key]: 0,
-                      }));
-                    } else {
-                      // 스크롤은 정상적으로 실행
-                      const element = scrollRefs.current[ranking.category_mid];
-                      if (element) {
-                        element.scrollBy({ left: 300, behavior: "smooth" });
-                      }
-                    }
-                  } else {
-                    const element = scrollRefs.current[ranking.category_mid];
-                    if (element) {
-                      element.scrollBy({ left: 300, behavior: "smooth" });
-                    }
+                  // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
+                  if (!hasWrittenReview) {
+                    setShowReviewRequiredPopup(true);
+                    return; // 스크롤 실행하지 않음
+                  }
+
+                  // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
+                  const element = scrollRefs.current[ranking.category_mid];
+                  if (element) {
+                    element.scrollBy({ left: 300, behavior: "smooth" });
                   }
                 };
 
@@ -1614,9 +1599,11 @@ export default function CategoryRankingPage({
             {midCategoryRankings.length > visibleCategoriesCount && (
               <div className="text-center pt-4">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (!isLoggedIn) {
-                      setIsInfoModalOpen(true);
+                      setShowReviewRequiredPopup(true);
+                    } else if (!hasWrittenReview) {
+                      setShowReviewRequiredPopup(true);
                     } else {
                       setVisibleCategoriesCount((prev) => prev + 5);
                     }
@@ -1648,45 +1635,6 @@ export default function CategoryRankingPage({
         />
       )}
 
-      {/* 안내 팝업 모달 */}
-      {isInfoModalOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/60 z-[100]"
-            onClick={() => setIsInfoModalOpen(false)}
-          />
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
-              <div className="text-center">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">
-                  {t("common.loginRequired")}
-                </h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  {t("common.loginRequiredMoreInfo")}
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setIsInfoModalOpen(false)}
-                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    {t("common.cancel")}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsInfoModalOpen(false);
-                      setShowLoginRequiredPopup(true);
-                    }}
-                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors"
-                  >
-                    {t("common.login")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
       {/* 로그인 필요 팝업 */}
       <LoginRequiredPopup
         isOpen={showLoginRequiredPopup}
@@ -1697,6 +1645,21 @@ export default function CategoryRankingPage({
           // 로그인 성공 후 더보기 기능 자동 실행
           setVisibleCategoriesCount((prev) => prev + 5);
         }}
+      />
+
+      {/* 후기 작성 필요 팝업 */}
+      <ReviewRequiredPopup
+        isOpen={showReviewRequiredPopup}
+        onClose={() => setShowReviewRequiredPopup(false)}
+        onWriteClick={() => {
+          setShowCommunityWriteModal(true);
+        }}
+      />
+
+      {/* 커뮤니티 글 작성 모달 */}
+      <CommunityWriteModal
+        isOpen={showCommunityWriteModal}
+        onClose={() => setShowCommunityWriteModal(false)}
       />
     </div>
   );
