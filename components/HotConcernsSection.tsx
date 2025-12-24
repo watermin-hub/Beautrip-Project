@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiTrendingUp, FiHeart, FiStar, FiCalendar, FiChevronRight } from "react-icons/fi";
+import { FiTrendingUp, FiHeart, FiStar, FiCalendar, FiChevronRight, FiChevronLeft } from "react-icons/fi";
 import {
   getHomeHotTreatments,
   getThumbnailUrl,
@@ -46,6 +46,15 @@ export default function HotConcernsSection() {
   // 로그인 성공 후 실행할 동작 저장
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // 스크롤 상태 관리
+  const [scrollPosition, setScrollPosition] = useState({
+    left: 0,
+    canScrollLeft: false,
+    canScrollRight: false,
+  });
+  // 표시할 카드 개수 (최대 3개)
+  const MAX_VISIBLE_CARDS = 3;
+  const visibleTreatments = treatments.slice(0, MAX_VISIBLE_CARDS);
 
   // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
   const currency = useMemo(() => {
@@ -70,6 +79,23 @@ export default function HotConcernsSection() {
       }
     };
     checkAuth();
+
+    // 인증 상태 변경 감지
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+      
+      if (loggedIn && session?.user) {
+        const hasReview = await hasUserWrittenReview(session.user.id);
+        setHasWrittenReview(hasReview);
+      } else {
+        setHasWrittenReview(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // ✅ 초기 로드: 현재 언어로 로드 (처음부터 다른 언어로 시작해도 작동)
@@ -161,6 +187,44 @@ export default function HotConcernsSection() {
 
     loadFavorites();
   }, [treatments]);
+
+  // 초기 스크롤 상태 확인
+  useEffect(() => {
+    if (visibleTreatments.length > 0 && scrollRef.current) {
+      const timer = setTimeout(() => {
+        const element = scrollRef.current;
+        if (!element) return;
+
+        const MAX_VISIBLE_CARDS = 3;
+        const children = Array.from(element.children) as HTMLElement[];
+        const cardElements = children.filter(
+          (child) =>
+            child.classList.contains("flex-shrink-0") &&
+            child.classList.contains("w-[150px]")
+        );
+        
+        let maxScrollWidth = element.scrollWidth - element.clientWidth;
+        if (cardElements.length >= MAX_VISIBLE_CARDS) {
+          const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
+          if (thirdCard) {
+            const thirdCardRight = thirdCard.offsetLeft + thirdCard.offsetWidth;
+            maxScrollWidth = thirdCardRight - element.clientWidth;
+          }
+        }
+
+        const scrollLeft = element.scrollLeft;
+        const canScrollLeft = scrollLeft > 0;
+        const canScrollRight = scrollLeft < maxScrollWidth - 1;
+        
+        setScrollPosition({
+          left: scrollLeft,
+          canScrollLeft,
+          canScrollRight,
+        });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [visibleTreatments]);
 
   const handleFavoriteClick = async (
     treatment: Treatment,
@@ -254,7 +318,8 @@ export default function HotConcernsSection() {
       selectedTreatment.category_mid_key || selectedTreatment.category_mid;
     if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        categoryMidForRecovery
+        categoryMidForRecovery,
+        language
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
@@ -375,9 +440,136 @@ export default function HotConcernsSection() {
 
       {/* 카드 슬라이드 */}
       <div className="relative -mx-4 px-3">
+        {/* 좌측 스크롤 버튼 */}
+        {scrollPosition.canScrollLeft && (
+          <button
+            onClick={() => {
+              if (scrollRef.current) {
+                scrollRef.current.scrollBy({ left: -300, behavior: "smooth" });
+              }
+            }}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
+          >
+            <FiChevronLeft className="text-gray-700 text-lg" />
+          </button>
+        )}
+
         <div 
-          ref={scrollRef}
+          ref={(el) => {
+            scrollRef.current = el;
+            
+            // 스크롤 제한을 위한 이벤트 리스너 (모바일 터치 스크롤 방지)
+            if (el) {
+              const limitScroll = () => {
+                const MAX_VISIBLE_CARDS = 3;
+                const children = Array.from(el.children) as HTMLElement[];
+                const cardElements = children.filter(
+                  (child) =>
+                    child.classList.contains("flex-shrink-0") &&
+                    child.classList.contains("w-[150px]")
+                );
+                
+                let maxScrollWidth = el.scrollWidth - el.clientWidth;
+                if (cardElements.length >= MAX_VISIBLE_CARDS) {
+                  const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
+                  if (thirdCard) {
+                    const thirdCardRight = thirdCard.offsetLeft + thirdCard.offsetWidth;
+                    maxScrollWidth = thirdCardRight - el.clientWidth;
+                  }
+                }
+
+                if (el.scrollLeft > maxScrollWidth) {
+                  el.scrollLeft = maxScrollWidth;
+                }
+
+                // 스크롤 상태 업데이트
+                const scrollLeft = el.scrollLeft;
+                const canScrollLeft = scrollLeft > 0;
+                const canScrollRight = scrollLeft < maxScrollWidth - 1;
+                
+                setScrollPosition({
+                  left: scrollLeft,
+                  canScrollLeft,
+                  canScrollRight,
+                });
+              };
+
+              const handleTouchMove = (e: TouchEvent) => {
+                limitScroll();
+                const MAX_VISIBLE_CARDS = 3;
+                const children = Array.from(el.children) as HTMLElement[];
+                const cardElements = children.filter(
+                  (child) =>
+                    child.classList.contains("flex-shrink-0") &&
+                    child.classList.contains("w-[150px]")
+                );
+                if (cardElements.length >= MAX_VISIBLE_CARDS) {
+                  const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
+                  if (thirdCard) {
+                    const thirdCardRight = thirdCard.offsetLeft + thirdCard.offsetWidth;
+                    const maxScrollWidth = thirdCardRight - el.clientWidth;
+                    if (el.scrollLeft > maxScrollWidth) {
+                      e.preventDefault();
+                    }
+                  }
+                }
+              };
+
+              el.addEventListener("touchmove", handleTouchMove, { passive: false });
+              el.addEventListener("scroll", limitScroll, { passive: true });
+
+              (el as any)._scrollLimitHandler = limitScroll;
+              (el as any)._touchMoveHandler = handleTouchMove;
+
+              setTimeout(limitScroll, 100);
+            }
+            
+            // cleanup 함수 반환
+            return () => {
+              if (el) {
+                if ((el as any)._scrollLimitHandler) {
+                  el.removeEventListener("scroll", (el as any)._scrollLimitHandler);
+                }
+                if ((el as any)._touchMoveHandler) {
+                  el.removeEventListener("touchmove", (el as any)._touchMoveHandler);
+                }
+              }
+            };
+          }}
           className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+          onScroll={(e) => {
+            const element = e.currentTarget;
+            const MAX_VISIBLE_CARDS = 3;
+            const children = Array.from(element.children) as HTMLElement[];
+            const cardElements = children.filter(
+              (child) =>
+                child.classList.contains("flex-shrink-0") &&
+                child.classList.contains("w-[150px]")
+            );
+            
+            let maxScrollWidth = element.scrollWidth - element.clientWidth;
+            if (cardElements.length >= MAX_VISIBLE_CARDS) {
+              const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
+              if (thirdCard) {
+                const thirdCardRight = thirdCard.offsetLeft + thirdCard.offsetWidth;
+                maxScrollWidth = thirdCardRight - element.clientWidth;
+              }
+            }
+
+            if (element.scrollLeft > maxScrollWidth) {
+              element.scrollLeft = maxScrollWidth;
+            }
+
+            const scrollLeft = element.scrollLeft;
+            const canScrollLeft = scrollLeft > 0;
+            const canScrollRight = scrollLeft < maxScrollWidth - 1;
+            
+            setScrollPosition({
+              left: scrollLeft,
+              canScrollLeft,
+              canScrollRight,
+            });
+          }}
           onClick={(e) => {
             // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
             const target = e.target as HTMLElement;
@@ -387,7 +579,7 @@ export default function HotConcernsSection() {
             }
           }}
         >
-          {treatments.map((treatment) => {
+          {visibleTreatments.map((treatment) => {
           const isFavorite = favorites.has(treatment.treatment_id || 0);
           const thumbnailUrl = getThumbnailUrl(treatment);
 
@@ -531,40 +723,60 @@ export default function HotConcernsSection() {
         })}
         </div>
 
-        {/* 우측 더보기 버튼 */}
+        {/* 우측 더보기 버튼 
+          - 비로그인 또는 후기 미작성: 항상 표시 (클릭 시 팝업)
+          - 후기 작성한 사용자: 스크롤 가능할 때만 표시 (클릭 시 스크롤, 팝업 없음)
+        */}
         {treatments.length > 0 && (
+          (!isLoggedIn || !hasWrittenReview) || 
+          (isLoggedIn && hasWrittenReview && scrollPosition.canScrollRight)
+        ) && (
           <button
             onClick={async (e) => {
               // 이벤트 전파 방지 (카드 스크롤 방지)
               e.stopPropagation();
               e.preventDefault();
-              // 비로그인 시 바로 ReviewRequiredPopup 표시
-              if (!isLoggedIn) {
-                // 스크롤 동작을 저장하고 팝업 표시
-                setPendingAction(() => {
-                  if (scrollRef.current) {
-                    scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
-                  }
-                });
-                setShowReviewRequiredPopup(true);
-                return;
+              
+              // 후기 작성 이력 다시 확인 (최신 상태 확인)
+              let currentHasWrittenReview = hasWrittenReview;
+              if (isLoggedIn) {
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession();
+                if (session?.user) {
+                  currentHasWrittenReview = await hasUserWrittenReview(session.user.id);
+                  setHasWrittenReview(currentHasWrittenReview);
+                }
               }
               
-              // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
-              if (!hasWrittenReview) {
-                // 스크롤 동작을 저장하고 팝업 표시
-                setPendingAction(() => {
-                  if (scrollRef.current) {
-                    scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
-                  }
-                });
+              // 비로그인 또는 후기 미작성: 팝업만 표시
+              if (!isLoggedIn || !currentHasWrittenReview) {
+                setPendingAction(null); // 스크롤 동작 저장하지 않음 (3개 제한이므로)
                 setShowReviewRequiredPopup(true);
-                return;
+                return; // 여기서 함수 종료 - 다른 동작 실행 안 함
               }
               
-              // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
-              if (scrollRef.current) {
-                scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
+              // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행 (3개 제한 내에서만)
+              if (scrollRef.current && scrollPosition.canScrollRight) {
+                const MAX_VISIBLE_CARDS = 3;
+                const children = Array.from(scrollRef.current.children) as HTMLElement[];
+                const cardElements = children.filter(
+                  (child) =>
+                    child.classList.contains("flex-shrink-0") &&
+                    child.classList.contains("w-[150px]")
+                );
+                
+                let maxScrollWidth = scrollRef.current.scrollWidth - scrollRef.current.clientWidth;
+                if (cardElements.length >= MAX_VISIBLE_CARDS) {
+                  const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
+                  if (thirdCard) {
+                    const thirdCardRight = thirdCard.offsetLeft + thirdCard.offsetWidth;
+                    maxScrollWidth = thirdCardRight - scrollRef.current.clientWidth;
+                  }
+                }
+                
+                const newScrollLeft = Math.min(scrollRef.current.scrollLeft + 300, maxScrollWidth);
+                scrollRef.current.scrollTo({ left: newScrollLeft, behavior: "smooth" });
               }
             }}
             onMouseDown={(e) => {
@@ -670,9 +882,9 @@ export default function HotConcernsSection() {
             setHasWrittenReview(hasReview);
             setIsLoggedIn(true);
             
-            // 리뷰를 작성했으면 저장된 동작 실행
-            if (hasReview && pendingAction) {
-              pendingAction();
+            // 리뷰를 작성했으면 팝업 닫기 (동작 저장하지 않음, 3개 제한이므로)
+            if (hasReview) {
+              setShowReviewRequiredPopup(false);
               setPendingAction(null);
             }
           }
@@ -682,7 +894,22 @@ export default function HotConcernsSection() {
       {/* 커뮤니티 글 작성 모달 */}
       <CommunityWriteModal
         isOpen={showCommunityWriteModal}
-        onClose={() => setShowCommunityWriteModal(false)}
+        onClose={async () => {
+          setShowCommunityWriteModal(false);
+          // 리뷰 작성 후 상태 업데이트
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user) {
+            const hasReview = await hasUserWrittenReview(session.user.id);
+            setHasWrittenReview(hasReview);
+            // 후기 작성 완료 후 저장된 동작 실행
+            if (hasReview && pendingAction) {
+              pendingAction();
+              setPendingAction(null);
+            }
+          }
+        }}
         entrySource="home"
       />
     </div>

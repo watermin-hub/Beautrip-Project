@@ -2292,9 +2292,8 @@ function RecoveryCardComponent({
 }) {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const [recoveryText, setRecoveryText] = useState<string | null>(
-    rec.recoveryText || null
-  );
+  const [recoveryText, setRecoveryText] = useState<string | null>(null);
+  const [recoveryGuides, setRecoveryGuides] = useState<Record<string, string | null> | undefined>(undefined);
   const [loadingRecoveryText, setLoadingRecoveryText] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   // 번역된 시술 정보
@@ -2306,10 +2305,10 @@ function RecoveryCardComponent({
 
   // 회복일차 범위별 텍스트 선택
   const getGuideForDay = (day?: number) => {
-    if (!rec.recoveryGuides) return null;
+    if (!recoveryGuides) return null;
     if (!day || day < 1) return null;
 
-    const guides = rec.recoveryGuides;
+    const guides = recoveryGuides;
 
     // 기본 구간: 1~3, 4~7, 8~14, 15~21
     // 일부 카테고리는 특정 구간 텍스트만 있는 경우가 있어
@@ -2372,27 +2371,40 @@ function RecoveryCardComponent({
     }
   }, [rec.treatmentId, language]);
 
-  // recoveryText가 없고 categoryMid가 있으면 동적으로 가져오기
+  // 언어가 변경되면 recoveryGuides와 recoveryText를 다시 로드
+  // 초기값을 사용하지 않고 항상 현재 언어로 로드
   useEffect(() => {
-    if (!recoveryText && rec.categoryMid && !loadingRecoveryText) {
+    if (rec.categoryMid) {
       setLoadingRecoveryText(true);
+      // 언어 변경 시 즉시 초기화 (이전 언어 데이터 제거)
+      setRecoveryText(null);
+      setRecoveryGuides(undefined);
+      
       getRecoveryInfoByCategoryMid(rec.categoryMid, language) // ✅ 언어 전달
         .then((recoveryInfo) => {
           if (recoveryInfo?.recoveryText) {
             setRecoveryText(recoveryInfo.recoveryText);
           }
-          if (recoveryInfo?.recoveryGuides && !rec.recoveryGuides) {
+          // 언어 변경 시 recoveryGuides도 state로 업데이트
+          if (recoveryInfo?.recoveryGuides) {
+            setRecoveryGuides(recoveryInfo.recoveryGuides);
+            // rec 객체도 업데이트 (localStorage 저장용)
             rec.recoveryGuides = recoveryInfo.recoveryGuides;
           }
         })
         .catch((error) => {
           // 회복 기간 정보 로드 실패 시 무시
+          console.error("회복 기간 정보 로드 실패:", error);
         })
         .finally(() => {
           setLoadingRecoveryText(false);
         });
+    } else {
+      // categoryMid가 없으면 초기화
+      setRecoveryText(null);
+      setRecoveryGuides(undefined);
     }
-  }, [rec.categoryMid, recoveryText, loadingRecoveryText, language]); // ✅ language 의존성 추가
+  }, [rec.categoryMid, language]); // ✅ language 변경 시에도 업데이트
 
   // 카드 클릭 핸들러 - 회복 가이드로 이동
   const handleCardClick = async () => {
@@ -2647,7 +2659,7 @@ function RecoveryCardComponent({
                   isOutsideTravel ? "text-red-800" : "text-yellow-800"
                 }`}
               >
-                회복 가이드
+                {t("home.recoveryGuideTitle")}
               </p>
               <p className="text-gray-700 leading-relaxed">
                 {(getGuideForDay(rec.recoveryDayIndex) || recoveryText || "")

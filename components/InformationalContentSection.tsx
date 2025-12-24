@@ -297,7 +297,12 @@ export default function InformationalContentSection() {
                       </span>
                       {content.readTime && (
                         <span className="text-[10px] text-gray-500 font-medium">
-                          {content.readTime}{t("common.readTime")}
+                          {(() => {
+                            const readTime = content.readTime || "";
+                            // readTime이 이미 단위를 포함하는지 확인 (분, min, 分, 分钟)
+                            const hasUnit = /[가-힣a-zA-Z分钟]+/.test(readTime);
+                            return hasUnit ? readTime : `${readTime}${t("common.readTime")}`;
+                          })()}
                         </span>
                       )}
                     </div>

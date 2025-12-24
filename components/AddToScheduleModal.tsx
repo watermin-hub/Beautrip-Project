@@ -24,7 +24,7 @@ export default function AddToScheduleModal({
   selectedEndDate,
   categoryMid,
 }: AddToScheduleModalProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -66,7 +66,7 @@ export default function AddToScheduleModal({
     const loadRecoveryInfo = async () => {
       if (categoryMid) {
         try {
-          const recoveryInfo = await getRecoveryInfoByCategoryMid(categoryMid);
+          const recoveryInfo = await getRecoveryInfoByCategoryMid(categoryMid, language);
           if (recoveryInfo) {
             // 권장체류일수가 있으면 그것을 사용, 없으면 recoveryMax 사용
             const days =

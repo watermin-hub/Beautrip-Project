@@ -7453,15 +7453,31 @@ export async function getHomeHotTreatments(
     });
 
     if (error) {
-      // 에러 정보 상세 로깅
-      console.error("rpc_home_hot_treatments 오류:", {
-        error,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-        fullError: JSON.stringify(error, null, 2),
-      });
+      // 에러 정보 상세 로깅 (안전한 방식으로)
+      const errorInfo: Record<string, any> = {};
+      
+      // 에러 객체의 각 속성을 안전하게 추출
+      try {
+        if (error.message) errorInfo.message = error.message;
+        if (error.code) errorInfo.code = error.code;
+        if (error.details) errorInfo.details = error.details;
+        if (error.hint) errorInfo.hint = error.hint;
+        
+        // error 객체 자체가 직렬화 가능한지 확인
+        try {
+          JSON.stringify(error);
+          errorInfo.fullError = error;
+        } catch (e) {
+          // 순환 참조 등으로 직렬화 불가능한 경우
+          errorInfo.fullError = "Error object cannot be serialized";
+          errorInfo.errorString = String(error);
+        }
+      } catch (e) {
+        errorInfo.parsingError = "Failed to parse error object";
+        errorInfo.errorString = String(error);
+      }
+      
+      console.error("rpc_home_hot_treatments 오류:", errorInfo);
 
       // 함수가 없는 경우 빈 배열 반환
       if (
@@ -7626,16 +7642,31 @@ export async function getHomeScheduleRecommendations(
         error?.details ||
         error?.hint ||
         error?.code ||
+        String(error) ||
         "알 수 없는 오류";
       const errorCode = error?.code;
 
-      console.error("rpc_home_schedule_recommendations 오류:", {
+      // 에러 객체를 안전하게 직렬화
+      const errorDetails = {
         message: errorMessage,
         code: errorCode,
         details: error?.details,
         hint: error?.hint,
-        fullError: error,
-      });
+        // 에러 객체의 모든 속성을 안전하게 추출
+        ...(typeof error === "object" && error !== null
+          ? Object.fromEntries(
+              Object.entries(error).map(([key, value]) => [
+                key,
+                typeof value === "object" && value !== null
+                  ? JSON.stringify(value)
+                  : value,
+              ])
+            )
+          : {}),
+      };
+
+      console.error("rpc_home_schedule_recommendations 오류:", errorDetails);
+      console.error("전체 에러 객체:", error);
 
       // timeout 에러인 경우 빈 배열 반환 (쿼리 성능 문제일 수 있음)
       if (

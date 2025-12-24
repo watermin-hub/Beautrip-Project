@@ -738,7 +738,8 @@ export default function CategoryRankingPage({
 
     if (selectedTreatmentForSchedule.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        selectedTreatmentForSchedule.category_mid
+        selectedTreatmentForSchedule.category_mid,
+        language
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax;
@@ -1342,21 +1343,32 @@ export default function CategoryRankingPage({
                     onClick={async (e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      if (!isLoggedIn) {
-                        // 더보기 동작을 저장하고 팝업 표시
-                        setPendingAction(() => {
-                          setVisibleCategoriesCount((prev) => prev + 5);
-                        });
-                        setShowReviewRequiredPopup(true);
-                      } else if (!hasWrittenReview) {
-                        // 더보기 동작을 저장하고 팝업 표시
-                        setPendingAction(() => {
-                          setVisibleCategoriesCount((prev) => prev + 5);
-                        });
-                        setShowReviewRequiredPopup(true);
-                      } else {
-                        setVisibleCategoriesCount((prev) => prev + 5);
+
+                      // 후기 작성 이력 다시 확인 (최신 상태 확인)
+                      let currentHasWrittenReview = hasWrittenReview;
+                      if (isLoggedIn) {
+                        const {
+                          data: { session },
+                        } = await supabase.auth.getSession();
+                        if (session?.user) {
+                          currentHasWrittenReview = await hasUserWrittenReview(
+                            session.user.id
+                          );
+                          setHasWrittenReview(currentHasWrittenReview);
+                        }
                       }
+
+                      // 비로그인 또는 후기 미작성: 팝업만 표시
+                      if (!isLoggedIn || !currentHasWrittenReview) {
+                        setPendingAction(() => {
+                          setVisibleCategoriesCount((prev) => prev + 5);
+                        });
+                        setShowReviewRequiredPopup(true);
+                        return; // 여기서 함수 종료 - 다른 동작 실행 안 함
+                      }
+
+                      // 후기 작성한 사용자: 팝업 없이 동작만 실행
+                      setVisibleCategoriesCount((prev) => prev + 5);
                     }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                   >
@@ -1684,21 +1696,32 @@ export default function CategoryRankingPage({
                   onClick={async (e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    if (!isLoggedIn) {
-                      // 더보기 동작을 저장하고 팝업 표시
-                      setPendingAction(() => {
-                        setVisibleCategoriesCount((prev) => prev + 5);
-                      });
-                      setShowReviewRequiredPopup(true);
-                    } else if (!hasWrittenReview) {
-                      // 더보기 동작을 저장하고 팝업 표시
-                      setPendingAction(() => {
-                        setVisibleCategoriesCount((prev) => prev + 5);
-                      });
-                      setShowReviewRequiredPopup(true);
-                    } else {
-                      setVisibleCategoriesCount((prev) => prev + 5);
+
+                    // 후기 작성 이력 다시 확인 (최신 상태 확인)
+                    let currentHasWrittenReview = hasWrittenReview;
+                    if (isLoggedIn) {
+                      const {
+                        data: { session },
+                      } = await supabase.auth.getSession();
+                      if (session?.user) {
+                        currentHasWrittenReview = await hasUserWrittenReview(
+                          session.user.id
+                        );
+                        setHasWrittenReview(currentHasWrittenReview);
+                      }
                     }
+
+                    // 비로그인 또는 후기 미작성: 팝업만 표시
+                    if (!isLoggedIn || !currentHasWrittenReview) {
+                      setPendingAction(() => {
+                        setVisibleCategoriesCount((prev) => prev + 5);
+                      });
+                      setShowReviewRequiredPopup(true);
+                      return; // 여기서 함수 종료 - 다른 동작 실행 안 함
+                    }
+
+                    // 후기 작성한 사용자: 팝업 없이 동작만 실행
+                    setVisibleCategoriesCount((prev) => prev + 5);
                   }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                 >

@@ -108,7 +108,8 @@ export default function KBeautyRankingPage() {
 
     if (selectedTreatment.category_mid) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        selectedTreatment.category_mid
+        selectedTreatment.category_mid,
+        language
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax;

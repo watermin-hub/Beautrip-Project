@@ -490,24 +490,24 @@ export default function CountryPainPointSection() {
                   // 이벤트 전파 방지 (카드 스크롤 방지)
                   e.stopPropagation();
                   e.preventDefault();
-                  // 비로그인 시 바로 ReviewRequiredPopup 표시
-                  if (!isLoggedIn) {
-                    // 더보기 동작을 저장하고 팝업 표시
-                    setPendingAction(() => {
-                      // 스크롤 동작 (더보기 기능이 필요하면 여기에 추가)
-                    });
-                    setShowReviewRequiredPopup(true);
-                    return;
+                  
+                  // 후기 작성 이력 다시 확인 (최신 상태 확인)
+                  let currentHasWrittenReview = hasWrittenReview;
+                  if (isLoggedIn) {
+                    const {
+                      data: { session },
+                    } = await supabase.auth.getSession();
+                    if (session?.user) {
+                      currentHasWrittenReview = await hasUserWrittenReview(session.user.id);
+                      setHasWrittenReview(currentHasWrittenReview);
+                    }
                   }
-
-                  // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
-                  if (!hasWrittenReview) {
-                    // 더보기 동작을 저장하고 팝업 표시
-                    setPendingAction(() => {
-                      // 스크롤 동작 (더보기 기능이 필요하면 여기에 추가)
-                    });
+                  
+                  // 비로그인 또는 후기 미작성: 팝업만 표시
+                  if (!isLoggedIn || !currentHasWrittenReview) {
+                    setPendingAction(null); // 더보기 동작 없음
                     setShowReviewRequiredPopup(true);
-                    return;
+                    return; // 여기서 함수 종료 - 다른 동작 실행 안 함
                   }
 
                   // 로그인 상태이고 리뷰를 작성한 경우 더보기 동작 실행

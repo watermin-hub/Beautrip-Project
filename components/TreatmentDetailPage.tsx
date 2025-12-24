@@ -384,7 +384,8 @@ export default function TreatmentDetailPage({
       currentTreatment.category_mid;
     if (categoryMidForRecovery) {
       const recoveryInfo = await getRecoveryInfoByCategoryMid(
-        categoryMidForRecovery
+        categoryMidForRecovery,
+        language
       );
       if (recoveryInfo) {
         recoveryDays = recoveryInfo.recoveryMax; // 회복기간_max 기준
