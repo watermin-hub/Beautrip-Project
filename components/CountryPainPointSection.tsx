@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { FiHeart, FiStar, FiX } from "react-icons/fi";
+import { FiHeart, FiStar, FiX, FiChevronRight } from "react-icons/fi";
 import {
   loadTreatmentsPaginated,
   getThumbnailUrl,
@@ -11,10 +11,14 @@ import {
   getPopularKeywordsByCountry,
   getCategoryMidByKeyword,
   toggleProcedureFavorite,
+  hasUserWrittenReview,
   type Treatment,
   type PopularKeyword,
 } from "@/lib/api/beautripApi";
 import LoginRequiredPopup from "./LoginRequiredPopup";
+import ReviewRequiredPopup from "./ReviewRequiredPopup";
+import CommunityWriteModal from "./CommunityWriteModal";
+import { supabase } from "@/lib/supabase";
 import { trackPdpClick } from "@/lib/gtm";
 
 // 고민 키워드와 시술 매핑 (fallback용)
@@ -41,6 +45,12 @@ export default function CountryPainPointSection() {
   const [keywordsLoading, setKeywordsLoading] = useState(true);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
+  const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [hasWrittenReview, setHasWrittenReview] = useState(false);
+  // 로그인 성공 후 실행할 동작 저장
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   // 번역된 키워드 -> 한국어 키워드 매핑
   const [keywordMap, setKeywordMap] = useState<Map<string, string>>(new Map());
 
@@ -115,6 +125,26 @@ export default function CountryPainPointSection() {
       .filter((f: any) => f.type === "procedure")
       .map((f: any) => f.id);
     setFavorites(new Set(procedureFavorites));
+  }, []);
+
+  // 로그인 상태 확인 및 리뷰 작성 이력 확인
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+
+      // 로그인 상태일 때 리뷰 작성 이력 확인
+      if (loggedIn && session?.user) {
+        const hasReview = await hasUserWrittenReview(session.user.id);
+        setHasWrittenReview(hasReview);
+      } else {
+        setHasWrittenReview(false);
+      }
+    };
+    checkAuth();
   }, []);
 
   const handleConcernClick = async (concern: string) => {
@@ -327,8 +357,9 @@ export default function CountryPainPointSection() {
               ))}
             </div>
           ) : recommendedTreatments.length > 0 ? (
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
-              {recommendedTreatments.map((treatment) => {
+            <div className="relative">
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+                {recommendedTreatments.map((treatment) => {
                 const isFavorite = favorites.has(treatment.treatment_id || 0);
                 const thumbnailUrl = getThumbnailUrl(treatment);
                 const price = treatment.selling_price
@@ -442,6 +473,38 @@ export default function CountryPainPointSection() {
                   </div>
                 );
               })}
+              </div>
+              {/* 더보기 버튼 */}
+              <button
+                onClick={async () => {
+                  // 비로그인 시 바로 ReviewRequiredPopup 표시
+                  if (!isLoggedIn) {
+                    // 더보기 동작을 저장하고 팝업 표시
+                    setPendingAction(() => {
+                      // 스크롤 동작 (더보기 기능이 필요하면 여기에 추가)
+                    });
+                    setShowReviewRequiredPopup(true);
+                    return;
+                  }
+
+                  // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
+                  if (!hasWrittenReview) {
+                    // 더보기 동작을 저장하고 팝업 표시
+                    setPendingAction(() => {
+                      // 스크롤 동작 (더보기 기능이 필요하면 여기에 추가)
+                    });
+                    setShowReviewRequiredPopup(true);
+                    return;
+                  }
+
+                  // 로그인 상태이고 리뷰를 작성한 경우 더보기 동작 실행
+                  // (현재는 더보기 기능이 없으므로 리뷰 작성 모달만 표시)
+                  setShowCommunityWriteModal(true);
+                }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-50 shadow-lg rounded-full p-2.5 transition-all"
+              >
+                <FiChevronRight className="text-gray-700 text-xl" />
+              </button>
             </div>
           ) : (
             <p className="text-center text-gray-500 text-sm py-4">
@@ -494,6 +557,41 @@ export default function CountryPainPointSection() {
         onLoginSuccess={() => {
           setShowLoginRequiredPopup(false);
         }}
+      />
+
+      {/* 후기 작성 필요 팝업 */}
+      <ReviewRequiredPopup
+        isOpen={showReviewRequiredPopup}
+        onClose={() => {
+          setShowReviewRequiredPopup(false);
+          setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
+        }}
+        onWriteClick={() => {
+          setShowCommunityWriteModal(true);
+        }}
+        onLoginSuccess={async () => {
+          // 로그인 성공 후 리뷰 작성 이력 다시 확인
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user) {
+            const hasReview = await hasUserWrittenReview(session.user.id);
+            setHasWrittenReview(hasReview);
+            setIsLoggedIn(true);
+            
+            // 리뷰를 작성했으면 저장된 동작 실행
+            if (hasReview && pendingAction) {
+              pendingAction();
+              setPendingAction(null);
+            }
+          }
+        }}
+      />
+
+      {/* 커뮤니티 글 작성 모달 */}
+      <CommunityWriteModal
+        isOpen={showCommunityWriteModal}
+        onClose={() => setShowCommunityWriteModal(false)}
       />
     </div>
   );

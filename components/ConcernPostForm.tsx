@@ -12,12 +12,16 @@ import { trackReviewSubmit } from "@/lib/gtm";
 interface ConcernPostFormProps {
   onBack: () => void;
   onSubmit: () => void;
+  onLoginRequired?: (data: any) => void; // 로그인 필요 시 콜백
+  draftData?: any; // 중간 저장된 리뷰 데이터
   editData?: any; // 수정할 데이터 (선택적)
 }
 
 export default function ConcernPostForm({
   onBack,
   onSubmit,
+  onLoginRequired,
+  draftData,
   editData,
 }: ConcernPostFormProps) {
   const { t } = useLanguage();
@@ -41,6 +45,22 @@ export default function ConcernPostForm({
       }
     }
   }, [editData]);
+
+  // 중간 저장된 리뷰 불러오기
+  useEffect(() => {
+    if (draftData && !editData) {
+      setTitle(draftData.title || "");
+      setConcernCategory(draftData.concern_category || "");
+      setContent(draftData.content || "");
+      if (draftData.image_paths && Array.isArray(draftData.image_paths)) {
+        setImages(draftData.image_paths);
+      } else if (draftData.images && Array.isArray(draftData.images)) {
+        setImages(draftData.images);
+      }
+      // 불러온 후 로컬 스토리지에서 삭제
+      localStorage.removeItem("review_draft_concern");
+    }
+  }, [draftData, editData]);
 
   // 커뮤니티 - 고민상담소 카테고리 (번역 지원)
   const concernCategories = [
@@ -80,8 +100,21 @@ export default function ConcernPostForm({
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      alert(t("form.loginRequiredConcern"));
-      return;
+      // 비로그인 시 중간 저장하고 로그인 팝업 표시
+      const reviewData = {
+        title,
+        concern_category: concernCategory,
+        content,
+        images,
+      };
+      
+      if (onLoginRequired) {
+        onLoginRequired(reviewData);
+        return;
+      } else {
+        alert(t("form.loginRequiredConcern"));
+        return;
+      }
     }
 
     // 필수 항목 검증

@@ -202,6 +202,7 @@ export interface Treatment {
   treatment_id?: number;
   treatment_name?: string;
   hospital_name?: string;
+  hospital_address?: string | null; // 병원 주소 (언어별로 번역됨)
   category_large?: string;
   category_mid?: string; // 중분류
   category_small?: string; // 소분류
@@ -720,6 +721,9 @@ export async function loadTreatmentsPaginated(
       return { data: paginatedData, total, hasMore };
     } else {
       // 일반 정렬: 서버에서 페이지네이션
+      // 일관된 순서 보장을 위해 treatment_id로 정렬 (언어별 테이블에서 동일한 순서)
+      query = query.order("treatment_id", { ascending: true });
+      
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 

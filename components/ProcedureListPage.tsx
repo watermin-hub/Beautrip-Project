@@ -8,6 +8,7 @@ import {
   FiMessageCircle,
   FiStar,
   FiCalendar,
+  FiChevronDown,
 } from "react-icons/fi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,6 +21,7 @@ import {
   getRecoveryInfoByCategoryMid,
   toggleProcedureFavorite,
   getFavoriteStatus,
+  getCategoryLargeList,
   Treatment,
 } from "@/lib/api/beautripApi";
 import AutocompleteInput from "./AutocompleteInput";
@@ -77,6 +79,7 @@ export default function ProcedureListPage({
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [isSearchExecuted, setIsSearchExecuted] = useState(false); // 검색 실행 여부
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
   // URL 쿼리 파라미터에서 검색어 읽기
   useEffect(() => {
@@ -86,19 +89,17 @@ export default function ProcedureListPage({
     }
   }, [searchParams]);
 
-  // 대분류 카테고리 10개 (정적 목록 - 번역 지원)
-  const largeCategories = [
-    { key: "category.eyes", value: "눈성형" },
-    { key: "category.lifting", value: "리프팅" },
-    { key: "category.botox", value: "보톡스" },
-    { key: "category.facial", value: "안면윤곽/양악" },
-    { key: "category.hairRemoval", value: "제모" },
-    { key: "category.liposuction", value: "지방성형" },
-    { key: "category.nose", value: "코성형" },
-    { key: "category.skin", value: "피부" },
-    { key: "category.filler", value: "필러" },
-    { key: "category.breast", value: "가슴성형" },
-  ];
+  // 대분류 카테고리 목록 (데이터베이스에서 동적으로 로드)
+  const [largeCategories, setLargeCategories] = useState<string[]>([]);
+  
+  // 언어별 카테고리 목록 로드
+  useEffect(() => {
+    const loadCategories = async () => {
+      const categories = await getCategoryLargeList(language);
+      setLargeCategories(categories);
+    };
+    loadCategories();
+  }, [language]);
 
   const midCategories = useMemo(() => {
     if (!categoryLarge) return [];
@@ -128,7 +129,7 @@ export default function ProcedureListPage({
         return;
       }
 
-      const result = await getTreatmentAutocomplete(searchTerm, 10);
+      const result = await getTreatmentAutocomplete(searchTerm, 10, language);
       const allSuggestions = [
         ...result.treatmentNames,
         ...result.hospitalNames,
@@ -158,11 +159,13 @@ export default function ProcedureListPage({
       }
       setError(null);
 
+      // 정렬 옵션이 "default"일 때만 랜덤 정렬 사용
+      // 그 외에는 클라이언트에서 정렬할 예정이므로 일관된 순서로 가져와야 함
       const result = await loadTreatmentsPaginated(page, pageSize, {
         searchTerm: searchTerm || undefined,
         categoryLarge: categoryLarge || undefined,
         categoryMid: categoryMid || undefined,
-        randomOrder: true, // 랜덤 정렬
+        randomOrder: sortBy === "default", // 정렬 옵션이 기본값일 때만 랜덤 정렬
         language: language,
       });
 
@@ -260,13 +263,18 @@ export default function ProcedureListPage({
     let sorted = [...treatments];
 
     if (sortBy === "price-low") {
-      sorted.sort((a, b) => (a.selling_price || 0) - (b.selling_price || 0));
+      sorted.sort((a, b) => Number(a.selling_price || 0) - Number(b.selling_price || 0));
     } else if (sortBy === "price-high") {
-      sorted.sort((a, b) => (b.selling_price || 0) - (a.selling_price || 0));
+      sorted.sort((a, b) => Number(b.selling_price || 0) - Number(a.selling_price || 0));
     } else if (sortBy === "rating") {
-      sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      sorted.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
     } else if (sortBy === "review") {
-      sorted.sort((a, b) => (b.review_count || 0) - (a.review_count || 0));
+      // 리뷰 많은순: review_count를 숫자로 변환하여 내림차순 정렬
+      sorted.sort((a, b) => {
+        const countA = Number(a.review_count || 0);
+        const countB = Number(b.review_count || 0);
+        return countB - countA; // 내림차순 (큰 수가 먼저)
+      });
     }
 
     return sorted;
@@ -481,25 +489,75 @@ export default function ProcedureListPage({
             onEnter={handleSearchEnter}
           />
           <div className="flex gap-2">
-            <select
-              value={categoryLarge}
-              onChange={(e) => setCategoryLarge(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main"
-            >
-              <option value="">{t("home.category.all")}</option>
-              {largeCategories.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {t(category.key)}
-                </option>
-              ))}
-            </select>
+            {/* 커스텀 카테고리 드롭다운 */}
+            <div className="flex-1 relative">
+              <button
+                type="button"
+                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main text-left flex items-center justify-between bg-white min-w-0"
+              >
+                <span className="truncate flex-1 min-w-0" title={categoryLarge || t("home.category.all")}>
+                  {categoryLarge || t("home.category.all")}
+                </span>
+                <FiChevronDown
+                  className={`text-gray-500 text-sm flex-shrink-0 ml-2 transition-transform ${
+                    isCategoryDropdownOpen ? "transform rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isCategoryDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsCategoryDropdownOpen(false)}
+                  />
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-60 overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategoryLarge("");
+                        setIsCategoryDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                        !categoryLarge
+                          ? "bg-primary-main/5 text-primary-main font-medium"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      <span className="line-clamp-1">{t("home.category.all")}</span>
+                    </button>
+                    {largeCategories.map((category) => {
+                      const isSelected = categoryLarge === category;
+                      return (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={() => {
+                            setCategoryLarge(category);
+                            setIsCategoryDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                            isSelected
+                              ? "bg-primary-main/5 text-primary-main font-medium"
+                              : "text-gray-900"
+                          }`}
+                          title={category}
+                        >
+                          <span className="line-clamp-1">{category}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
             <select
               value={categoryMid}
               onChange={(e) => setCategoryMid(e.target.value)}
               disabled={!categoryLarge}
               className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main disabled:bg-gray-100 disabled:text-gray-400"
             >
-              <option value="">중분류</option>
+              <option value="">{t("label.midCategory")}</option>
               {midCategories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -509,13 +567,13 @@ export default function ProcedureListPage({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main"
+              className="w-[140px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-main"
             >
               <option value="default">{t("label.sort")}</option>
-              <option value="price-low">가격 낮은순</option>
-              <option value="price-high">가격 높은순</option>
-              <option value="rating">평점 높은순</option>
-              <option value="review">리뷰 많은순</option>
+              <option value="price-low">{t("label.sortBy.priceLow")}</option>
+              <option value="price-high">{t("label.sortBy.priceHigh")}</option>
+              <option value="rating">{t("label.sortBy.rating")}</option>
+              <option value="review">{t("label.sortBy.review")}</option>
             </select>
           </div>
         </div>
@@ -549,7 +607,24 @@ export default function ProcedureListPage({
                   : "";
                 const rating = treatment.rating || 0;
                 const reviewCount = treatment.review_count || 0;
-                const location = "서울"; // 데이터에 위치 값이 없어 기본값 처리
+                
+                // hospital_address에서 지역명 추출 (첫 번째 단어 추출, 예: "서울특별시 강남구..." → "서울")
+                const extractLocation = (address?: string | null): string => {
+                  if (!address) return "";
+                  // 주소를 공백이나 쉼표로 분리하여 첫 번째 부분 추출
+                  const parts = address.trim().split(/[,\s]/);
+                  if (parts.length === 0) return "";
+                  const firstPart = parts[0];
+                  // "서울특별시" → "서울", "서울시" → "서울" 같은 변환
+                  if (firstPart.includes("서울")) return "서울";
+                  if (firstPart.includes("Seoul") || firstPart.includes("ソウル") || firstPart.includes("首尔")) {
+                    // 영어/일본어/중국어 번역된 주소인 경우
+                    return language === "EN" ? "Seoul" : language === "JP" ? "ソウル" : language === "CN" ? "首尔" : "서울";
+                  }
+                  // 첫 번째 단어 반환 (예: "부산", "대구" 등)
+                  return firstPart;
+                };
+                const location = extractLocation(treatment.hospital_address);
 
                 return (
                   <div
@@ -581,7 +656,7 @@ export default function ProcedureListPage({
                       )}
                       {/* 번역 뱃지 */}
                       <div className="absolute bottom-2 left-2 bg-blue-500 text-white px-1.5 py-0.5 rounded text-[9px] font-semibold z-10">
-                        통역
+                        {t("label.translation")}
                       </div>
                       {/* 찜 버튼 - 썸네일 우측 상단 */}
                       <button
@@ -610,7 +685,7 @@ export default function ProcedureListPage({
 
                       {/* 병원명 */}
                       <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                        {treatment.hospital_name} · {location}
+                        {treatment.hospital_name}{location ? ` · ${location}` : ""}
                       </p>
 
                       {/* 평점 */}

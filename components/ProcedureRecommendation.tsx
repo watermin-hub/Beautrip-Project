@@ -450,6 +450,8 @@ export default function ProcedureRecommendation({
   const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
   const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // 로그인 성공 후 실행할 동작 저장
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
   const scrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   // 중분류 카테고리 표시 개수 (초기 5개)
@@ -1095,6 +1097,8 @@ export default function ProcedureRecommendation({
               .filter((category) => category.id !== null) // "전체" 항목 제외
               .map((category) => {
                 const isActive = selectedCategoryId === category.id;
+                // 영어일 때는 2줄까지 허용, 다른 언어는 한 줄
+                const isEnglish = language === "EN";
                 return (
                   <button
                     key={category.id}
@@ -1104,11 +1108,18 @@ export default function ProcedureRecommendation({
                         ? "bg-primary-main/10 text-primary-main font-bold border border-primary-main shadow-[0_0_0_1px_rgba(45,184,160,0.3)]"
                         : "bg-white text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-gray-100"
                     }`}
+                    title={category.name}
                   >
                     <span className="text-lg leading-none">
                       {category.icon}
                     </span>
-                    <span className="leading-tight whitespace-nowrap">
+                    <span
+                      className={`leading-tight text-center ${
+                        isEnglish
+                          ? "line-clamp-2 break-words"
+                          : "line-clamp-1 truncate"
+                      }`}
+                    >
                       {category.name}
                     </span>
                   </button>
@@ -1219,12 +1230,26 @@ export default function ProcedureRecommendation({
         const handleScrollRight = async () => {
           // 비로그인 시 바로 ReviewRequiredPopup 표시
           if (!isLoggedIn) {
+            // 스크롤 동작을 저장하고 팝업 표시
+            setPendingAction(() => {
+              const element = scrollRefs.current[categoryMidKey];
+              if (element) {
+                element.scrollBy({ left: 300, behavior: "smooth" });
+              }
+            });
             setShowReviewRequiredPopup(true);
             return;
           }
 
           // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
           if (!hasWrittenReview) {
+            // 스크롤 동작을 저장하고 팝업 표시
+            setPendingAction(() => {
+              const element = scrollRefs.current[categoryMidKey];
+              if (element) {
+                element.scrollBy({ left: 300, behavior: "smooth" });
+              }
+            });
             setShowReviewRequiredPopup(true);
             return;
           }
@@ -1240,12 +1265,26 @@ export default function ProcedureRecommendation({
         const handleShowMore = async () => {
           // 비로그인 시 바로 ReviewRequiredPopup 표시
           if (!isLoggedIn) {
+            // 더보기 동작을 저장하고 팝업 표시
+            setPendingAction(() => {
+              setVisibleTreatmentsCount((prev) => ({
+                ...prev,
+                [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
+              }));
+            });
             setShowReviewRequiredPopup(true);
             return;
           }
 
           // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
           if (!hasWrittenReview) {
+            // 더보기 동작을 저장하고 팝업 표시
+            setPendingAction(() => {
+              setVisibleTreatmentsCount((prev) => ({
+                ...prev,
+                [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
+              }));
+            });
             setShowReviewRequiredPopup(true);
             return;
           }
@@ -1615,9 +1654,29 @@ export default function ProcedureRecommendation({
       {/* 후기 작성 필요 팝업 */}
       <ReviewRequiredPopup
         isOpen={showReviewRequiredPopup}
-        onClose={() => setShowReviewRequiredPopup(false)}
+        onClose={() => {
+          setShowReviewRequiredPopup(false);
+          setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
+        }}
         onWriteClick={() => {
           setShowCommunityWriteModal(true);
+        }}
+        onLoginSuccess={async () => {
+          // 로그인 성공 후 리뷰 작성 이력 다시 확인
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user) {
+            const hasReview = await hasUserWrittenReview(session.user.id);
+            setHasWrittenReview(hasReview);
+            setIsLoggedIn(true);
+
+            // 리뷰를 작성했으면 저장된 동작 실행
+            if (hasReview && pendingAction) {
+              pendingAction();
+              setPendingAction(null);
+            }
+          }
         }}
       />
 

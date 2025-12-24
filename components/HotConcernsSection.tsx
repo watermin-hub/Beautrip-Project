@@ -43,6 +43,8 @@ export default function HotConcernsSection() {
   const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [hasWrittenReview, setHasWrittenReview] = useState(false);
+  // 로그인 성공 후 실행할 동작 저장
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
@@ -527,12 +529,24 @@ export default function HotConcernsSection() {
             onClick={async () => {
               // 비로그인 시 바로 ReviewRequiredPopup 표시
               if (!isLoggedIn) {
+                // 스크롤 동작을 저장하고 팝업 표시
+                setPendingAction(() => {
+                  if (scrollRef.current) {
+                    scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
+                  }
+                });
                 setShowReviewRequiredPopup(true);
                 return;
               }
               
               // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
               if (!hasWrittenReview) {
+                // 스크롤 동작을 저장하고 팝업 표시
+                setPendingAction(() => {
+                  if (scrollRef.current) {
+                    scrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
+                  }
+                });
                 setShowReviewRequiredPopup(true);
                 return;
               }
@@ -620,9 +634,29 @@ export default function HotConcernsSection() {
       {/* 후기 작성 필요 팝업 */}
       <ReviewRequiredPopup
         isOpen={showReviewRequiredPopup}
-        onClose={() => setShowReviewRequiredPopup(false)}
+        onClose={() => {
+          setShowReviewRequiredPopup(false);
+          setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
+        }}
         onWriteClick={() => {
           setShowCommunityWriteModal(true);
+        }}
+        onLoginSuccess={async () => {
+          // 로그인 성공 후 리뷰 작성 이력 다시 확인
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user) {
+            const hasReview = await hasUserWrittenReview(session.user.id);
+            setHasWrittenReview(hasReview);
+            setIsLoggedIn(true);
+            
+            // 리뷰를 작성했으면 저장된 동작 실행
+            if (hasReview && pendingAction) {
+              pendingAction();
+              setPendingAction(null);
+            }
+          }
         }}
       />
 

@@ -97,7 +97,7 @@ const categories = [
 ];
 
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("지역");
@@ -128,7 +128,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         return;
       }
 
-      const result = await getTreatmentAutocomplete(searchQuery, 10);
+      const result = await getTreatmentAutocomplete(searchQuery, 10, language);
       const allSuggestions = [
         ...result.treatmentNames,
         ...result.hospitalNames,

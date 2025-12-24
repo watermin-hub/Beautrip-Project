@@ -11,7 +11,6 @@ import {
   getTreatmentAutocomplete,
   getTreatmentTableName,
   getCategoryLargeList,
-  getCurrentLanguageForDb,
 } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadReviewImages } from "@/lib/api/imageUpload";
@@ -25,12 +24,16 @@ import {
 interface ProcedureReviewFormProps {
   onBack: () => void;
   onSubmit: () => void;
+  onLoginRequired?: (data: any) => void; // 로그인 필요 시 콜백
+  draftData?: any; // 중간 저장된 리뷰 데이터
   editData?: any; // 수정할 데이터 (선택적)
 }
 
 export default function ProcedureReviewForm({
   onBack,
   onSubmit,
+  onLoginRequired,
+  draftData,
   editData,
 }: ProcedureReviewFormProps) {
   const { t, language } = useLanguage();
@@ -95,33 +98,33 @@ export default function ProcedureReviewForm({
     }
   }, [editData]);
 
-  // GTM 이벤트: review_start (후기 작성 화면 진입 완료 시점)
+  // 중간 저장된 리뷰 불러오기
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    // entry_source 또는 entrySource 둘 다 체크 (우선순위: entry_source > entrySource)
-    const qsSource =
-      searchParams.get("entry_source") || searchParams.get("entrySource");
+    if (draftData && !editData) {
+      setCategory(draftData.category || "");
+      setProcedureName(draftData.procedure_name || "");
+      setProcedureSearchTerm(draftData.procedure_name || "");
+      setHospitalName(draftData.hospital_name || "");
+      setCost(draftData.cost ? String(draftData.cost) : "");
+      setProcedureRating(draftData.procedure_rating || 0);
+      setHospitalRating(draftData.hospital_rating || 0);
+      setGender(draftData.gender || "");
+      setAgeGroup(draftData.age_group || "");
+      setSurgeryDate(draftData.surgery_date || "");
+      setContent(draftData.content || "");
+      if (draftData.images && Array.isArray(draftData.images)) {
+        setImages(draftData.images);
+      }
+      // 불러온 후 로컬 스토리지에서 삭제
+      localStorage.removeItem("review_draft_procedure");
+    }
+  }, [draftData, editData]);
 
-    let fallbackByPath: EntrySource = "unknown";
-    const path = window.location.pathname;
-    if (path.includes("/mypage")) fallbackByPath = "mypage";
-    else if (path.includes("/explore")) fallbackByPath = "explore";
-    else if (path === "/" || path === "/home") fallbackByPath = "home";
-    else if (path.includes("/community")) fallbackByPath = "community";
-
-    const entrySource: EntrySource =
-      qsSource && ["home", "explore", "community", "mypage"].includes(qsSource)
-        ? (qsSource as EntrySource)
-        : fallbackByPath;
-
-    console.log("[GTM] review_start 이벤트 트리거:", {
-      entrySource,
-      qsSource,
-      fallbackByPath,
-      path,
-    });
-    trackReviewStart(entrySource);
-  }, []);
+  // GTM 이벤트: review_start (로그인 상태에서만 호출, CommunityWriteModal의 handleLoginSuccess에서도 호출되므로 여기서는 제거)
+  // 모달 형식으로 열릴 때는 경로가 변경되지 않으므로, CommunityWriteModal에서 로그인 성공 후 호출하는 것이 더 정확함
+  // useEffect(() => {
+  //   // 이 부분은 CommunityWriteModal의 handleLoginSuccess에서 처리
+  // }, []);
 
   // 한국어 완성형 글자 체크 (자음만 입력 방지)
   const hasCompleteCharacter = (text: string): boolean => {
@@ -149,18 +152,13 @@ export default function ProcedureReviewForm({
         // 카테고리가 선택되었으면 해당 카테고리의 시술 데이터를 로드해서 category_small 추출
         if (category) {
           // category_small 검색을 위해 직접 Supabase 쿼리 사용
-          const treatmentTable = getTreatmentTableName();
-          const dbLang = getCurrentLanguageForDb(language);
+          // 언어별 테이블을 사용하므로 lang 필터 불필요
+          const treatmentTable = getTreatmentTableName(language);
           let query = supabase
             .from(treatmentTable)
             .select("category_small")
             .eq("category_large", category)
             .not("category_small", "is", null);
-
-          // lang 필터 추가 (한국어가 아닌 경우만)
-          if (dbLang) {
-            query = query.eq("lang", dbLang);
-          }
 
           const { data, error } = await query.limit(1000);
 
@@ -212,7 +210,8 @@ export default function ProcedureReviewForm({
           // 카테고리가 선택되지 않았으면 기존 함수 사용
           const result = await getTreatmentAutocomplete(
             procedureSearchTerm,
-            10
+            10,
+            language
           );
 
           setProcedureSuggestions(result.treatmentNames);
@@ -276,8 +275,28 @@ export default function ProcedureReviewForm({
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      alert(t("form.loginRequiredProcedure"));
-      return;
+      // 비로그인 시 중간 저장하고 로그인 팝업 표시
+      const reviewData = {
+        category,
+        procedure_name: procedureName || procedureSearchTerm.trim(),
+        hospital_name: hospitalName,
+        cost: cost ? parseInt(cost) : undefined,
+        procedure_rating: procedureRating,
+        hospital_rating: hospitalRating,
+        gender,
+        age_group: ageGroup,
+        surgery_date: surgeryDate,
+        content,
+        images,
+      };
+      
+      if (onLoginRequired) {
+        onLoginRequired(reviewData);
+        return;
+      } else {
+        alert(t("form.loginRequiredProcedure"));
+        return;
+      }
     }
 
     // 필수 항목 검증
@@ -490,7 +509,8 @@ export default function ProcedureReviewForm({
             setShowProcedureSuggestions(false); // 자동완성 닫기
             setProcedureSuggestions([]); // 자동완성 목록 초기화
           }}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-main truncate"
+          title={category || t("form.selectCategoryPlaceholder")}
         >
           <option value="">{t("form.selectCategoryPlaceholder")}</option>
           {categories.map((cat) => (

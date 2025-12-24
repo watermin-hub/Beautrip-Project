@@ -25,12 +25,14 @@ import { supabase } from "@/lib/supabase";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
 import { useLanguage } from "@/contexts/LanguageContext";
 import LoginModal from "./LoginModal";
+import LoginRequiredPopup from "./LoginRequiredPopup";
 import { trackReviewStart, type EntrySource } from "@/lib/gtm";
 import { usePathname } from "next/navigation";
 
 interface CommunityWriteModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess?: () => void; // 로그인 성공 후 콜백
   editData?: {
     type: "procedure" | "hospital" | "concern";
     data: any;
@@ -40,11 +42,17 @@ interface CommunityWriteModalProps {
 export default function CommunityWriteModal({
   isOpen,
   onClose,
+  onLoginSuccess: externalOnLoginSuccess,
   editData: externalEditData,
 }: CommunityWriteModalProps) {
   const { t } = useLanguage();
   const pathname = usePathname();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
+  const [pendingReviewData, setPendingReviewData] = useState<{
+    type: "procedure" | "hospital" | "concern";
+    data: any;
+  } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const writeOptions = [
@@ -100,7 +108,7 @@ export default function CommunityWriteModal({
     }
   }, [externalEditData]);
 
-  // 로그인 상태 확인 및 GA4 이벤트
+  // 로그인 상태 확인 (초기 로그인 모달 표시하지 않음)
   useEffect(() => {
     if (isOpen) {
       const checkAuth = async () => {
@@ -110,8 +118,7 @@ export default function CommunityWriteModal({
 
         if (session?.user) {
           setIsLoggedIn(true);
-
-          // GA4: review_start 이벤트 (로그인 체크 후, 실제로 모달이 열렸을 때)
+          // 로그인 상태에서 모달이 열릴 때만 GTM 이벤트 발생 (비로그인 상태에서는 로그인 후 호출)
           const getEntrySource = (): EntrySource => {
             if (pathname === "/" || pathname === "/home") return "home";
             if (pathname?.includes("/explore")) return "explore";
@@ -119,12 +126,10 @@ export default function CommunityWriteModal({
             if (pathname?.includes("/mypage")) return "mypage";
             return "unknown";
           };
-
           trackReviewStart(getEntrySource());
         } else {
           setIsLoggedIn(false);
-          // 비로그인 시 로그인 모달 표시
-          setShowLoginModal(true);
+          // 초기 로그인 모달 표시하지 않음 (작성 완료 버튼 클릭 시에만 표시)
         }
       };
 
@@ -194,34 +199,55 @@ export default function CommunityWriteModal({
     );
   };
 
-  // 로그인 모달이 열려있으면 CommunityWriteModal은 숨김
-  if (!isOpen || showLoginModal) {
-    return (
-      <>
-        {showLoginModal && (
-          <LoginModal
-            isOpen={showLoginModal}
-            onClose={() => {
-              setShowLoginModal(false);
-              onClose(); // 로그인 모달 닫으면 CommunityWriteModal도 닫기
-            }}
-            onLoginSuccess={() => {
-              setShowLoginModal(false);
-              setIsLoggedIn(true);
-              // 로그인 성공 후 GA4 이벤트 발생
-              const getEntrySource = (): EntrySource => {
-                if (pathname === "/" || pathname === "/home") return "home";
-                if (pathname?.includes("/explore")) return "explore";
-                if (pathname?.includes("/community")) return "community";
-                if (pathname?.includes("/mypage")) return "mypage";
-                return "unknown";
-              };
-              trackReviewStart(getEntrySource());
-            }}
-          />
-        )}
-      </>
-    );
+  // 로그인 필요 팝업 핸들러
+  const handleLoginRequired = (reviewType: "procedure" | "hospital" | "concern", reviewData: any) => {
+    // 중간 저장
+    const draftKey = `review_draft_${reviewType}`;
+    localStorage.setItem(draftKey, JSON.stringify(reviewData));
+    
+    setPendingReviewData({ type: reviewType, data: reviewData });
+    setShowLoginRequiredPopup(true);
+  };
+
+  // 로그인 성공 후 중간 저장된 리뷰 불러오기
+  const handleLoginSuccess = async () => {
+    setShowLoginRequiredPopup(false);
+    setIsLoggedIn(true);
+    
+    // GA4: review_start 이벤트 (로그인 성공 후)
+    const getEntrySource = (): EntrySource => {
+      if (pathname === "/" || pathname === "/home") return "home";
+      if (pathname?.includes("/explore")) return "explore";
+      if (pathname?.includes("/community")) return "community";
+      if (pathname?.includes("/mypage")) return "mypage";
+      return "unknown";
+    };
+    trackReviewStart(getEntrySource());
+    
+    // 중간 저장된 리뷰 불러오기
+    if (pendingReviewData) {
+      const draftKey = `review_draft_${pendingReviewData.type}`;
+      const savedDraft = localStorage.getItem(draftKey);
+      
+      if (savedDraft) {
+        try {
+          const draftData = JSON.parse(savedDraft);
+          // 중간 저장된 리뷰 데이터 업데이트 (폼 컴포넌트에서 useEffect로 감지하여 자동으로 불러오기)
+          setPendingReviewData({ ...pendingReviewData, data: draftData });
+        } catch (error) {
+          console.error("중간 저장된 리뷰 불러오기 실패:", error);
+        }
+      }
+    }
+    
+    // 외부에서 전달된 onLoginSuccess 콜백 실행
+    if (externalOnLoginSuccess) {
+      externalOnLoginSuccess();
+    }
+  };
+
+  if (!isOpen) {
+    return null;
   }
 
   const handleOptionClick = (optionId: string) => {
@@ -550,6 +576,8 @@ export default function CommunityWriteModal({
                 <ProcedureReviewForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
+                  onLoginRequired={(data) => handleLoginRequired("procedure", data)}
+                  draftData={pendingReviewData?.type === "procedure" ? pendingReviewData.data : undefined}
                   editData={
                     editingPost?.type === "procedure"
                       ? editingPost.data
@@ -561,6 +589,8 @@ export default function CommunityWriteModal({
                 <HospitalReviewForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
+                  onLoginRequired={(data) => handleLoginRequired("hospital", data)}
+                  draftData={pendingReviewData?.type === "hospital" ? pendingReviewData.data : undefined}
                   editData={
                     editingPost?.type === "hospital"
                       ? editingPost.data
@@ -572,6 +602,8 @@ export default function CommunityWriteModal({
                 <ConcernPostForm
                   onBack={handleBack}
                   onSubmit={handleSubmit}
+                  onLoginRequired={(data) => handleLoginRequired("concern", data)}
+                  draftData={pendingReviewData?.type === "concern" ? pendingReviewData.data : undefined}
                   editData={
                     editingPost?.type === "concern"
                       ? editingPost.data
@@ -583,6 +615,16 @@ export default function CommunityWriteModal({
           )}
         </div>
       </div>
+
+      {/* 로그인 필요 팝업 */}
+      <LoginRequiredPopup
+        isOpen={showLoginRequiredPopup}
+        onClose={() => {
+          setShowLoginRequiredPopup(false);
+          setPendingReviewData(null);
+        }}
+        onLoginSuccess={handleLoginSuccess}
+      />
     </>
   );
 }

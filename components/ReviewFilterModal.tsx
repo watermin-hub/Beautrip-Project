@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 import ReviewWriteModal from './ReviewWriteModal'
+import { getCategoryLargeList } from '@/lib/api/beautripApi'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface ReviewFilterModalProps {
   isOpen: boolean
@@ -10,11 +12,22 @@ interface ReviewFilterModalProps {
 }
 
 export default function ReviewFilterModal({ isOpen, onClose }: ReviewFilterModalProps) {
+  const { language } = useLanguage()
   const [selectedGender, setSelectedGender] = useState<string>('All')
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [selectedRating, setSelectedRating] = useState<string>('All')
   const [selectedDistance, setSelectedDistance] = useState<string>('All')
   const [showWriteModal, setShowWriteModal] = useState(false)
+  const [categories, setCategories] = useState<string[]>([])
+
+  // 언어별 카테고리 목록 로드
+  useEffect(() => {
+    const loadCategories = async () => {
+      const categoryList = await getCategoryLargeList(language)
+      setCategories(categoryList)
+    }
+    loadCategories()
+  }, [language])
 
   if (!isOpen) return null
 
@@ -35,7 +48,6 @@ export default function ReviewFilterModal({ isOpen, onClose }: ReviewFilterModal
   }
 
   const genders = ['All', 'Male', 'Female', 'Others']
-  const categories = ['All', '눈성형', '코성형', '리프팅', '피부', '보톡스/필러']
   const ratings = ['All', '5', '4', '3', '2', '1']
   const distances = ['All', '1 Km', '1-3 Km', '3-5 Km', '5 Km 이상']
 
@@ -83,6 +95,16 @@ export default function ReviewFilterModal({ isOpen, onClose }: ReviewFilterModal
             <div>
               <label className="text-sm font-semibold text-gray-900 mb-3 block">시술 카테고리</label>
               <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedCategory === 'All'
+                      ? 'bg-primary-main text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  전체
+                </button>
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -92,8 +114,9 @@ export default function ReviewFilterModal({ isOpen, onClose }: ReviewFilterModal
                         ? 'bg-primary-main text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
+                    title={category}
                   >
-                    {category}
+                    <span className="line-clamp-1">{category}</span>
                   </button>
                 ))}
               </div>

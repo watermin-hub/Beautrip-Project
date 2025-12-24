@@ -139,6 +139,8 @@ export default function CategoryRankingPage({
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [showReviewRequiredPopup, setShowReviewRequiredPopup] = useState(false);
   const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
+  // 로그인 성공 후 실행할 동작 저장
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   // 스크롤 버튼 클릭 횟수 추적 (카테고리별)
   const [scrollButtonClickCount, setScrollButtonClickCount] = useState<
     Record<string, number>
@@ -1032,12 +1034,28 @@ export default function CategoryRankingPage({
                   const handleScrollRight = async () => {
                     // 비로그인 시 바로 ReviewRequiredPopup 표시
                     if (!isLoggedIn) {
+                      // 스크롤 동작을 저장하고 팝업 표시
+                      setPendingAction(() => {
+                        const element =
+                          scrollRefs.current[ranking.category_small_key];
+                        if (element) {
+                          element.scrollBy({ left: 300, behavior: "smooth" });
+                        }
+                      });
                       setShowReviewRequiredPopup(true);
                       return; // 스크롤 실행하지 않음
                     }
 
                     // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
                     if (!hasWrittenReview) {
+                      // 스크롤 동작을 저장하고 팝업 표시
+                      setPendingAction(() => {
+                        const element =
+                          scrollRefs.current[ranking.category_small_key];
+                        if (element) {
+                          element.scrollBy({ left: 300, behavior: "smooth" });
+                        }
+                      });
                       setShowReviewRequiredPopup(true);
                       return; // 스크롤 실행하지 않음
                     }
@@ -1303,8 +1321,16 @@ export default function CategoryRankingPage({
                   <button
                     onClick={async () => {
                       if (!isLoggedIn) {
+                        // 더보기 동작을 저장하고 팝업 표시
+                        setPendingAction(() => {
+                          setVisibleCategoriesCount((prev) => prev + 5);
+                        });
                         setShowReviewRequiredPopup(true);
                       } else if (!hasWrittenReview) {
+                        // 더보기 동작을 저장하고 팝업 표시
+                        setPendingAction(() => {
+                          setVisibleCategoriesCount((prev) => prev + 5);
+                        });
                         setShowReviewRequiredPopup(true);
                       } else {
                         setVisibleCategoriesCount((prev) => prev + 5);
@@ -1357,12 +1383,26 @@ export default function CategoryRankingPage({
                 const handleScrollRight = async () => {
                   // 비로그인 시 바로 ReviewRequiredPopup 표시
                   if (!isLoggedIn) {
+                    // 스크롤 동작을 저장하고 팝업 표시
+                    setPendingAction(() => {
+                      const element = scrollRefs.current[ranking.category_mid];
+                      if (element) {
+                        element.scrollBy({ left: 300, behavior: "smooth" });
+                      }
+                    });
                     setShowReviewRequiredPopup(true);
                     return; // 스크롤 실행하지 않음
                   }
 
                   // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
                   if (!hasWrittenReview) {
+                    // 스크롤 동작을 저장하고 팝업 표시
+                    setPendingAction(() => {
+                      const element = scrollRefs.current[ranking.category_mid];
+                      if (element) {
+                        element.scrollBy({ left: 300, behavior: "smooth" });
+                      }
+                    });
                     setShowReviewRequiredPopup(true);
                     return; // 스크롤 실행하지 않음
                   }
@@ -1601,8 +1641,16 @@ export default function CategoryRankingPage({
                 <button
                   onClick={async () => {
                     if (!isLoggedIn) {
+                      // 더보기 동작을 저장하고 팝업 표시
+                      setPendingAction(() => {
+                        setVisibleCategoriesCount((prev) => prev + 5);
+                      });
                       setShowReviewRequiredPopup(true);
                     } else if (!hasWrittenReview) {
+                      // 더보기 동작을 저장하고 팝업 표시
+                      setPendingAction(() => {
+                        setVisibleCategoriesCount((prev) => prev + 5);
+                      });
                       setShowReviewRequiredPopup(true);
                     } else {
                       setVisibleCategoriesCount((prev) => prev + 5);
@@ -1650,9 +1698,29 @@ export default function CategoryRankingPage({
       {/* 후기 작성 필요 팝업 */}
       <ReviewRequiredPopup
         isOpen={showReviewRequiredPopup}
-        onClose={() => setShowReviewRequiredPopup(false)}
+        onClose={() => {
+          setShowReviewRequiredPopup(false);
+          setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
+        }}
         onWriteClick={() => {
           setShowCommunityWriteModal(true);
+        }}
+        onLoginSuccess={async () => {
+          // 로그인 성공 후 리뷰 작성 이력 다시 확인
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.user) {
+            const hasReview = await hasUserWrittenReview(session.user.id);
+            setHasWrittenReview(hasReview);
+            setIsLoggedIn(true);
+
+            // 리뷰를 작성했으면 저장된 동작 실행
+            if (hasReview && pendingAction) {
+              pendingAction();
+              setPendingAction(null);
+            }
+          }
         }}
       />
 

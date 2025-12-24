@@ -3,11 +3,13 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useState } from "react";
 import type { EntrySource } from "@/lib/gtm";
+import CommunityWriteModal from "./CommunityWriteModal";
 
 interface ReviewRequiredPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onWriteClick?: () => void; // 글쓰기 버튼 클릭 시 콜백
+  onWriteClick?: () => void; // 글쓰기 버튼 클릭 시 콜백 (선택사항, 없으면 CommunityWriteModal 열기)
+  onLoginSuccess?: () => void; // 로그인 성공 후 원래 동작 실행 콜백
   entrySource?: EntrySource; // GA4 이벤트용 진입 경로 (선택사항)
 }
 
@@ -15,12 +17,17 @@ export default function ReviewRequiredPopup({
   isOpen,
   onClose,
   onWriteClick,
+  onLoginSuccess,
 }: ReviewRequiredPopupProps) {
   const { t } = useLanguage();
+  const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
 
   const handleWriteClick = () => {
     if (onWriteClick) {
       onWriteClick();
+    } else {
+      // onWriteClick이 없으면 기본적으로 CommunityWriteModal 열기
+      setShowCommunityWriteModal(true);
     }
     onClose();
   };
@@ -59,6 +66,19 @@ export default function ReviewRequiredPopup({
           </div>
         </div>
       </div>
+
+      {/* 커뮤니티 글 작성 모달 */}
+      <CommunityWriteModal
+        isOpen={showCommunityWriteModal}
+        onClose={() => setShowCommunityWriteModal(false)}
+        onLoginSuccess={() => {
+          setShowCommunityWriteModal(false);
+          // 로그인 성공 후 원래 동작 실행
+          if (onLoginSuccess) {
+            onLoginSuccess();
+          }
+        }}
+      />
     </>
   );
 }

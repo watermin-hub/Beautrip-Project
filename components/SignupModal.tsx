@@ -69,6 +69,30 @@ export default function SignupModal({
     setIsLoading(true);
 
     try {
+      // ✅ Supabase 클라이언트 초기화 확인
+      console.log("🔍 Supabase 클라이언트 확인:", {
+        supabase_exists: !!supabase,
+        auth_exists: !!supabase.auth,
+        environment_vars: {
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL ? "설정됨" : "없음",
+          key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "설정됨" : "없음",
+        },
+      });
+
+      // 디버깅: preferred_language 값 확인
+      console.log("preferred_language 보내는 값:", selectedLanguage);
+      console.log("raw metadata:", {
+        preferred_language: selectedLanguage,
+      });
+
+      // ✅ 네트워크 요청 시작 로그
+      console.log("📤 회원가입 요청 시작:", {
+        email: email.trim(),
+        has_password: !!password,
+        preferred_language: selectedLanguage,
+        timestamp: new Date().toISOString(),
+      });
+
       // 1. Supabase Auth로 회원가입 (이메일 인증 없이 바로 세션 생성)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -77,13 +101,32 @@ export default function SignupModal({
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             login_id: email.trim(), // 이메일을 login_id로도 저장
+            preferred_language: selectedLanguage, // 선호 언어 저장 (KR, EN, JP, CN)
           },
           // 이메일 인증 없이 바로 로그인되도록 설정
         },
       });
 
+      // ✅ Auth 응답 확인
+      console.log("📥 Auth 응답:", {
+        has_user: !!authData?.user,
+        has_session: !!authData?.session,
+        has_error: !!authError,
+        error: authError
+          ? {
+              message: authError.message,
+              status: authError.status,
+              name: authError.name,
+            }
+          : null,
+      });
+
       if (authError) {
-        console.error("Auth 오류:", authError);
+        console.error("❌ Auth 오류:", authError);
+        console.error(
+          "❌ Auth 오류 전체 객체:",
+          JSON.stringify(authError, null, 2)
+        );
         // 더 친절한 에러 메시지 제공
         if (authError.message.includes("already registered")) {
           throw new Error("이미 등록된 이메일입니다.");
@@ -99,6 +142,14 @@ export default function SignupModal({
         throw new Error("회원가입에 실패했습니다.");
       }
 
+      // ✅ Auth 성공 후 user 객체 확인
+      console.log("✅ Auth 사용자 생성 성공:", {
+        id: authData.user.id,
+        email: authData.user.email,
+        raw_user_meta_data: authData.user.user_metadata,
+        session_exists: !!authData.session,
+      });
+
       // 2. user_profiles 테이블에 프로필 정보 저장
       // nickname: 이메일의 @ 앞부분 (트리거가 있으면 자동 채워지지만, 명시적으로 설정)
       // timezone과 locale 자동 감지
@@ -106,27 +157,42 @@ export default function SignupModal({
       const locale =
         navigator.language || (selectedLanguage === "KR" ? "ko-KR" : "en-US");
 
-      const { error: profileError } = await supabase
+      const profileData = {
+        user_id: authData.user.id, // Supabase Auth의 UUID
+        provider: "local",
+        login_id: email.trim(),
+        nickname: email.trim().split("@")[0], // ✅ nickname 추가
+        preferred_language: selectedLanguage, // 선택한 언어 저장
+        timezone: timezone, // ✅ timezone 추가
+        locale: locale, // ✅ locale 추가
+      };
+
+      // ✅ 프로필 저장 전 확인
+      console.log("프로필 저장 시도:", profileData);
+
+      const { data: profileResult, error: profileError } = await supabase
         .from("user_profiles")
-        .upsert(
-          {
-            user_id: authData.user.id, // Supabase Auth의 UUID
-            provider: "local",
-            login_id: email.trim(),
-            nickname: email.trim().split("@")[0], // ✅ nickname 추가
-            preferred_language: selectedLanguage, // 선택한 언어 저장
-            timezone: timezone, // ✅ timezone 추가
-            locale: locale, // ✅ locale 추가
-          },
-          {
-            onConflict: "user_id",
-          }
-        );
+        .upsert(profileData, {
+          onConflict: "user_id",
+        });
+
+      // ✅ 프로필 저장 결과 확인
+      console.log("프로필 저장 결과:", {
+        data: profileResult,
+        error: profileError,
+        error_code: profileError?.code,
+        error_message: profileError?.message,
+        error_details: profileError?.details,
+        error_hint: profileError?.hint,
+      });
 
       if (profileError) {
         // 프로필 저장 실패 시 Auth 사용자도 삭제해야 할 수 있지만,
         // 일단 에러만 표시 (실제로는 트랜잭션 처리 필요)
-        console.error("프로필 저장 실패:", profileError);
+        console.error(
+          "프로필 저장 실패 - 전체 에러 객체:",
+          JSON.stringify(profileError, null, 2)
+        );
         // 더 자세한 에러 메시지 제공
         if (profileError.code === "23505") {
           throw new Error("이미 존재하는 사용자입니다.");
@@ -208,12 +274,19 @@ export default function SignupModal({
       }
     } catch (err: any) {
       console.error("회원가입 오류:", err);
+      // ✅ 전체 에러 객체 출력
+      console.error("전체 에러 객체:", JSON.stringify(err, null, 2));
+      console.error("에러 코드:", err.code);
+      console.error("에러 메시지:", err.message);
       // 더 자세한 에러 정보 로깅
       if (err.details) {
         console.error("에러 상세:", err.details);
       }
       if (err.hint) {
         console.error("에러 힌트:", err.hint);
+      }
+      if (err.error_description) {
+        console.error("에러 설명:", err.error_description);
       }
       // 사용자에게 보여줄 에러 메시지
       const errorMessage =

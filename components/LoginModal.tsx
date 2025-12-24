@@ -160,6 +160,7 @@ export default function LoginModal({
       const profileData: any = {
         user_id: user.id,
         provider: provider,
+        login_id: email, // ✅ login_id 추가 (이메일 값)
         display_name: displayName,
         nickname: displayName || (email ? email.split("@")[0] : null), // ✅ nickname 추가 (display_name 우선, 없으면 이메일 앞부분)
         avatar_url:
