@@ -563,6 +563,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "category.all": "전체",
     "home.recoveryGuideTitle": "회복 가이드",
     "home.recoveryGuideEmpty": "회복 가이드 글이 준비 중입니다.",
+    "home.recommendedProcedures": "추천 시술",
     "calendar.title": "여행 일정 선택",
     "calendar.startDate": "시작일",
     "calendar.endDate": "종료일",
@@ -1152,6 +1153,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.writeError": "An error occurred while writing comment.",
     "comment.writeFailed": "Failed to write comment.",
     "home.recoveryGuideEmpty": "Recovery guide articles are being prepared.",
+    "home.recommendedProcedures": "Recommended Procedures",
 
     // Favorites
     "favorites.title": "Favorites",
@@ -2157,6 +2159,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.writeFailed": "コメントの作成に失敗しました。",
     "home.recoveryGuideTitle": "回復ガイド",
     "home.recoveryGuideEmpty": "回復ガイドの記事を準備中です。",
+    "home.recommendedProcedures": "推奨施術",
     "calendar.title": "旅行日程を選択",
     "calendar.startDate": "開始日",
     "calendar.endDate": "終了日",
@@ -2913,6 +2916,7 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "comment.writeFailed": "评论发布失败。",
     "home.recoveryGuideTitle": "恢复指南",
     "home.recoveryGuideEmpty": "恢复指南文章正在准备中。",
+    "home.recommendedProcedures": "推荐项目",
     "calendar.title": "选择旅行日程",
     "calendar.startDate": "开始日期",
     "calendar.endDate": "结束日期",

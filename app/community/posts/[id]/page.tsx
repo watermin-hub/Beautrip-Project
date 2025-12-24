@@ -22,10 +22,24 @@ import {
 } from "@/lib/api/beautripApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatTimeAgo } from "@/lib/utils/timeFormat";
-import { translateText, type LanguageCode, detectLanguage, mapDeepLLangToLanguageCode } from "@/lib/utils/translation";
+import {
+  translateText,
+  type LanguageCode,
+  detectLanguage,
+  mapDeepLLangToLanguageCode,
+} from "@/lib/utils/translation";
 import { maskNickname } from "@/lib/utils/nicknameMask";
 import Image from "next/image";
-import { FiHeart, FiMessageCircle, FiEye, FiArrowLeft, FiGlobe, FiEdit2, FiTrash2, FiMoreVertical } from "react-icons/fi";
+import {
+  FiHeart,
+  FiMessageCircle,
+  FiEye,
+  FiArrowLeft,
+  FiGlobe,
+  FiEdit2,
+  FiTrash2,
+  FiMoreVertical,
+} from "react-icons/fi";
 import { supabase } from "@/lib/supabase";
 import CommunityWriteModal from "@/components/CommunityWriteModal";
 import LoginRequiredPopup from "@/components/LoginRequiredPopup";
@@ -55,7 +69,9 @@ function PostDetailContent() {
   const [likeCount, setLikeCount] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
-  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(
+    null
+  );
   const [isTranslating, setIsTranslating] = useState(false);
   const [isTranslated, setIsTranslated] = useState(false);
   const [isAuthor, setIsAuthor] = useState(false);
@@ -101,27 +117,52 @@ function PostDetailContent() {
     if (!postId || !postType) return;
 
     const handleLikeUpdate = (event: CustomEvent) => {
-      const { postId: updatedPostId, postType: updatedPostType, isLiked: updatedIsLiked, likeCount: updatedLikeCount } = event.detail;
-      
+      const {
+        postId: updatedPostId,
+        postType: updatedPostType,
+        isLiked: updatedIsLiked,
+        likeCount: updatedLikeCount,
+      } = event.detail;
+
       // postType에 따라 post_type 매핑
-      const postTypeMap: Record<string, "treatment_review" | "hospital_review" | "concern_post" | "guide"> = {
+      const postTypeMap: Record<
+        string,
+        "treatment_review" | "hospital_review" | "concern_post" | "guide"
+      > = {
         procedure: "treatment_review",
         hospital: "hospital_review",
         concern: "concern_post",
       };
-      const mappedPostType = (postTypeMap[postType] || postType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
-      const mappedUpdatedPostType = (updatedPostType || mappedPostType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
-      
+      const mappedPostType = (postTypeMap[postType] || postType) as
+        | "treatment_review"
+        | "hospital_review"
+        | "concern_post"
+        | "guide";
+      const mappedUpdatedPostType = (updatedPostType || mappedPostType) as
+        | "treatment_review"
+        | "hospital_review"
+        | "concern_post"
+        | "guide";
+
       // 현재 게시글과 일치하는 경우에만 업데이트
-      if (updatedPostId === postId && mappedUpdatedPostType === mappedPostType) {
+      if (
+        updatedPostId === postId &&
+        mappedUpdatedPostType === mappedPostType
+      ) {
         setIsLiked(updatedIsLiked);
         setLikeCount(updatedLikeCount);
       }
     };
 
-    window.addEventListener("postLikeUpdated", handleLikeUpdate as EventListener);
+    window.addEventListener(
+      "postLikeUpdated",
+      handleLikeUpdate as EventListener
+    );
     return () => {
-      window.removeEventListener("postLikeUpdated", handleLikeUpdate as EventListener);
+      window.removeEventListener(
+        "postLikeUpdated",
+        handleLikeUpdate as EventListener
+      );
     };
   }, [postId, postType]);
 
@@ -138,7 +179,7 @@ function PostDetailContent() {
       } else if (postType === "hospital") {
         const reviews = await loadHospitalReviews(100);
         postData = reviews.find((r: any) => r.id === postId);
-      } else       if (postType === "concern") {
+      } else if (postType === "concern") {
         const posts = await loadConcernPosts(100);
         const foundPost = posts.find((p: any) => p.id === postId);
         if (foundPost) {
@@ -153,14 +194,21 @@ function PostDetailContent() {
 
       if (postData) {
         setPost(postData);
-        
+
         // postType에 따라 post_type 매핑
-        const postTypeMap: Record<string, "treatment_review" | "hospital_review" | "concern_post" | "guide"> = {
+        const postTypeMap: Record<
+          string,
+          "treatment_review" | "hospital_review" | "concern_post" | "guide"
+        > = {
           procedure: "treatment_review",
           hospital: "hospital_review",
           concern: "concern_post",
         };
-        const mappedPostType = (postTypeMap[postType] || postType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
+        const mappedPostType = (postTypeMap[postType] || postType) as
+          | "treatment_review"
+          | "hospital_review"
+          | "concern_post"
+          | "guide";
 
         // 좋아요 상태, 댓글 수, 조회수 증가, 조회수를 병렬로 처리
         const [liked, likeCnt, count, views] = await Promise.all([
@@ -210,28 +258,37 @@ function PostDetailContent() {
 
     try {
       // postType에 따라 post_type 매핑
-      const postTypeMap: Record<string, "treatment_review" | "hospital_review" | "concern_post" | "guide"> = {
+      const postTypeMap: Record<
+        string,
+        "treatment_review" | "hospital_review" | "concern_post" | "guide"
+      > = {
         procedure: "treatment_review",
         hospital: "hospital_review",
         concern: "concern_post",
       };
-      const mappedPostType = (postTypeMap[postType] || postType) as "treatment_review" | "hospital_review" | "concern_post" | "guide";
+      const mappedPostType = (postTypeMap[postType] || postType) as
+        | "treatment_review"
+        | "hospital_review"
+        | "concern_post"
+        | "guide";
 
       const result = await togglePostLike(postId, mappedPostType);
       if (result.success) {
         setIsLiked(result.isLiked);
         const newCount = await getPostLikeCount(postId, mappedPostType);
         setLikeCount(newCount);
-        
+
         // PostList에 좋아요 변경 알림 (커스텀 이벤트)
-        window.dispatchEvent(new CustomEvent("postLikeUpdated", {
-          detail: {
-            postId,
-            postType: mappedPostType,
-            isLiked: result.isLiked,
-            likeCount: newCount,
-          },
-        }));
+        window.dispatchEvent(
+          new CustomEvent("postLikeUpdated", {
+            detail: {
+              postId,
+              postType: mappedPostType,
+              isLiked: result.isLiked,
+              likeCount: newCount,
+            },
+          })
+        );
       } else {
         if (result.error?.includes("로그인이 필요")) {
           setShowLoginRequiredPopup(true);
@@ -264,17 +321,21 @@ function PostDetailContent() {
       }
 
       // 제목과 내용을 번역 (자동 언어 감지 사용)
-      const translationPromises: Promise<{ text: string; detectedSourceLang?: string }>[] = [];
-      
+      const translationPromises: Promise<{
+        text: string;
+        detectedSourceLang?: string;
+      }>[] = [];
+
       if (postType === "concern" && post.title) {
         translationPromises.push(translateText(post.title, targetLang, null));
       } else {
         translationPromises.push(Promise.resolve({ text: "" }));
       }
-      
+
       translationPromises.push(translateText(contentText, targetLang, null));
 
-      const [translatedTitleResult, translatedContentResult] = await Promise.all(translationPromises);
+      const [translatedTitleResult, translatedContentResult] =
+        await Promise.all(translationPromises);
 
       if (postType === "concern" && post.title) {
         setTranslatedTitle(translatedTitleResult.text);
@@ -383,20 +444,52 @@ function PostDetailContent() {
       "병원 선택": "concernCategory.hospitalSelection",
       "가격 문의": "concernCategory.priceInquiry",
       "회복 기간": "concernCategory.recoveryPeriod",
-      "부작용": "concernCategory.sideEffect",
-      "기타": "concernCategory.other",
+      부작용: "concernCategory.sideEffect",
+      기타: "concernCategory.other",
     };
     return categoryMap[category] || category;
   };
 
+  // 카테고리를 현재 언어로 변환
   const getCategoryDisplayName = (): string => {
     if (!post.category) return "";
-    const translationKey = getCategoryTranslationKey(post.category);
-    // 번역 키인 경우 번역값 반환, 아닌 경우 원본 반환
-    if (translationKey.startsWith("concernCategory.")) {
-      return t(translationKey);
+
+    // 고민글 카테고리는 번역 키 사용
+    if (postType === "concern") {
+      const translationKey = getCategoryTranslationKey(post.category);
+      if (translationKey.startsWith("concernCategory.")) {
+        return t(translationKey);
+      }
+      return post.category;
     }
-    return post.category;
+
+    // 시술/병원 후기 카테고리는 CATEGORY_MAP의 역매핑 사용
+    // CATEGORY_MAP: { "영어": "한국어", "일본어": "한국어", ... }
+    // 역매핑: 한국어 → 현재 언어
+    const { CATEGORY_MAP } = require("@/lib/utils/categoryMapper");
+
+    // 현재 언어에 맞는 카테고리 찾기
+    if (language === "KR") {
+      return post.category;
+    }
+
+    // 한국어 카테고리를 현재 언어로 변환
+    const koreanCategory = post.category;
+
+    // 현재 언어에 맞는 카테고리 찾기
+    const languagePatterns: Record<LanguageCode, RegExp> = {
+      EN: /^[A-Z]/,
+      JP: /[\u3040-\u309F\u30A0-\u30FF]/,
+      CN: /[\u4e00-\u9fff]/,
+      KR: /.*/,
+    };
+
+    const pattern = languagePatterns[language];
+    const translatedCategory = Object.keys(CATEGORY_MAP).find(
+      (key) => CATEGORY_MAP[key] === koreanCategory && pattern.test(key)
+    );
+
+    return translatedCategory || post.category;
   };
 
   return (
@@ -420,33 +513,56 @@ function PostDetailContent() {
             >
               <FiArrowLeft className="text-gray-700 text-xl" />
             </button>
-            <h1 className="text-lg font-bold text-gray-900">{t("post.title")}</h1>
+            <h1 className="text-lg font-bold text-gray-900">
+              {t("post.title")}
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             {/* 번역 버튼 */}
-            {post && (() => {
-              const contentText = post.content || "";
-              const titleText = postType === "concern" && post.title ? post.title : "";
-              const detectedSourceLang = detectLanguage(contentText || titleText);
-              const targetLang = language as LanguageCode;
-              const needsTranslation = detectedSourceLang && detectedSourceLang !== targetLang;
-              
-              return needsTranslation ? (
-                <button
-                  onClick={isTranslated ? handleShowOriginal : handleTranslate}
-                  disabled={isTranslating}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    isTranslated
-                      ? "bg-primary-main text-white hover:bg-primary-main/90"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  <FiGlobe className="text-base" />
-                  <span>{isTranslating ? t("post.translating") : isTranslated ? t("post.showOriginal") : t("post.translate")}</span>
-                </button>
-              ) : null;
-            })()}
-            
+            {post &&
+              (() => {
+                const contentText = post.content || "";
+                const titleText =
+                  postType === "concern" && post.title ? post.title : "";
+                const textToDetect = contentText || titleText;
+                const detectedSourceLang = textToDetect
+                  ? detectLanguage(textToDetect)
+                  : null;
+                const targetLang = language as LanguageCode;
+
+                // 번역이 필요한 경우:
+                // 1. 원본 언어가 감지되었고
+                // 2. 원본 언어와 현재 언어가 다르고
+                // 3. 원본 언어가 null이 아닐 때
+                const needsTranslation =
+                  detectedSourceLang !== null &&
+                  detectedSourceLang !== targetLang &&
+                  textToDetect.length > 0;
+
+                return needsTranslation ? (
+                  <button
+                    onClick={
+                      isTranslated ? handleShowOriginal : handleTranslate
+                    }
+                    disabled={isTranslating}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isTranslated
+                        ? "bg-primary-main text-white hover:bg-primary-main/90"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <FiGlobe className="text-base" />
+                    <span>
+                      {isTranslating
+                        ? t("post.translating")
+                        : isTranslated
+                        ? t("post.showOriginal")
+                        : t("post.translate")}
+                    </span>
+                  </button>
+                ) : null;
+              })()}
+
             {/* 수정/삭제 메뉴 (작성자만) */}
             {isAuthor && (
               <div className="relative">
@@ -519,7 +635,9 @@ function PostDetailContent() {
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs text-gray-500">
-                {post.timestamp || (post.created_at ? formatTimeAgo(post.created_at, t) : "")}
+                {post.created_at
+                  ? formatTimeAgo(post.created_at, t)
+                  : post.timestamp || ""}
               </span>
               {post.edited && (
                 <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -537,10 +655,147 @@ function PostDetailContent() {
           </h2>
         )}
 
+        {/* 시술 후기 상세 정보 (procedure 타입인 경우) */}
+        {postType === "procedure" && (
+          <div className="bg-gradient-to-br from-primary-light/10 to-primary-main/5 rounded-xl p-4 mb-6 border border-primary-main/20">
+            <div className="grid grid-cols-2 gap-3">
+              {/* 시술명 */}
+              {post.procedure_name && (
+                <div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.procedureName")}
+                  </span>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {post.procedure_name}
+                  </p>
+                </div>
+              )}
+
+              {/* 병원명 */}
+              {post.hospital_name && (
+                <div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.hospitalName")}
+                  </span>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {post.hospital_name}
+                  </p>
+                </div>
+              )}
+
+              {/* 성별 */}
+              {post.gender && (
+                <div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.gender")}
+                  </span>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {post.gender === "여" ? t("label.female") : t("label.male")}
+                  </p>
+                </div>
+              )}
+
+              {/* 연령대 */}
+              {post.age_group && (
+                <div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.ageGroup")}
+                  </span>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {post.age_group}
+                  </p>
+                </div>
+              )}
+
+              {/* 시술 만족도 */}
+              {post.procedure_rating && (
+                <div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.procedureRating")}
+                  </span>
+                  <div className="flex items-center gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`text-lg ${
+                          star <= post.procedure_rating
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                    <span className="text-sm font-semibold text-gray-900 ml-1">
+                      {post.procedure_rating}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* 병원 만족도 */}
+              {post.hospital_rating && (
+                <div>
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.hospitalRating")}
+                  </span>
+                  <div className="flex items-center gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`text-lg ${
+                          star <= post.hospital_rating
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                    <span className="text-sm font-semibold text-gray-900 ml-1">
+                      {post.hospital_rating}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* 비용 */}
+              {post.cost && (
+                <div className="col-span-2">
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.cost")}
+                  </span>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {post.cost}만원
+                  </p>
+                </div>
+              )}
+
+              {/* 시술 날짜 */}
+              {post.surgery_date && (
+                <div className="col-span-2">
+                  <span className="text-xs text-gray-500 font-medium">
+                    {t("form.surgeryDate")}
+                  </span>
+                  <p className="text-sm font-semibold text-gray-900 mt-1">
+                    {new Date(post.surgery_date).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 게시글 내용 */}
         <div className="mb-6">
           <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-            {isTranslated && translatedContent ? translatedContent : post.content}
+            {isTranslated && translatedContent
+              ? translatedContent
+              : post.content}
           </p>
           {isTranslated && (
             <button
@@ -585,11 +840,23 @@ function PostDetailContent() {
         {/* 번역 버튼 - 본문 하단 (이미지 아래) */}
         {(() => {
           const contentText = post.content || "";
-          const titleText = postType === "concern" && post.title ? post.title : "";
-          const detectedSourceLang = detectLanguage(contentText || titleText);
+          const titleText =
+            postType === "concern" && post.title ? post.title : "";
+          const textToDetect = contentText || titleText;
+          const detectedSourceLang = textToDetect
+            ? detectLanguage(textToDetect)
+            : null;
           const targetLang = language as LanguageCode;
-          const needsTranslation = detectedSourceLang && detectedSourceLang !== targetLang;
-          
+
+          // 번역이 필요한 경우:
+          // 1. 원본 언어가 감지되었고
+          // 2. 원본 언어와 현재 언어가 다르고
+          // 3. 원본 언어가 null이 아닐 때
+          const needsTranslation =
+            detectedSourceLang !== null &&
+            detectedSourceLang !== targetLang &&
+            textToDetect.length > 0;
+
           return needsTranslation ? (
             <div className="mb-6">
               <button
@@ -602,7 +869,13 @@ function PostDetailContent() {
                 } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <FiGlobe className="text-sm" />
-                <span>{isTranslating ? t("post.translating") : isTranslated ? t("post.showOriginal") : t("post.translate")}</span>
+                <span>
+                  {isTranslating
+                    ? t("post.translating")
+                    : isTranslated
+                    ? t("post.showOriginal")
+                    : t("post.translate")}
+                </span>
               </button>
             </div>
           ) : null;
@@ -629,7 +902,7 @@ function PostDetailContent() {
           <h3 className="text-lg font-bold text-gray-900 mb-4">
             {t("comment.title")} ({commentCount})
           </h3>
-          
+
           {/* 댓글 작성 폼 */}
           <div className="mb-6">
             <CommentForm
@@ -680,8 +953,12 @@ function PostDetailContent() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">{t("post.deleteConfirm")}</h3>
-            <p className="text-gray-600 mb-6">{t("post.deleteConfirmMessage")}</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              {t("post.deleteConfirm")}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {t("post.deleteConfirmMessage")}
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
@@ -710,4 +987,3 @@ export default function PostDetailPage() {
     </Suspense>
   );
 }
-

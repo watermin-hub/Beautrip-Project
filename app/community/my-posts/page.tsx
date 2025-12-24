@@ -39,6 +39,15 @@ interface UnifiedPost {
   images?: string[];
   timestamp: string;
   created_at: string;
+  // 시술 후기 상세 정보
+  procedure_name?: string;
+  hospital_name?: string;
+  gender?: "여" | "남";
+  age_group?: string;
+  procedure_rating?: number;
+  hospital_rating?: number;
+  cost?: number;
+  surgery_date?: string;
 }
 
 const formatTimeAgo = (dateString?: string): string => {
@@ -106,6 +115,15 @@ export default function MyPostsPage() {
             images: review.images,
             timestamp: formatTimeAgo(review.created_at),
             created_at: review.created_at || "",
+            // 시술 후기 상세 정보 추가
+            procedure_name: review.procedure_name,
+            hospital_name: review.hospital_name,
+            gender: review.gender,
+            age_group: review.age_group,
+            procedure_rating: review.procedure_rating,
+            hospital_rating: review.hospital_rating,
+            cost: review.cost,
+            surgery_date: review.surgery_date,
           })),
           ...hospitalReviews.map((review: HospitalReviewData) => ({
             id: review.id!,
@@ -319,6 +337,90 @@ export default function MyPostsPage() {
                   </h3>
                 )}
 
+                {/* 시술 후기 상세 정보 (procedure 타입인 경우) */}
+                {post.type === "procedure" && (
+                  <div className="bg-gradient-to-br from-primary-light/10 to-primary-main/5 rounded-lg p-3 mb-3 border border-primary-main/20">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {post.procedure_name && (
+                        <div>
+                          <span className="text-gray-500">{t("form.procedureName")}</span>
+                          <p className="font-semibold text-gray-900 mt-0.5 truncate">{post.procedure_name}</p>
+                        </div>
+                      )}
+                      {post.hospital_name && (
+                        <div>
+                          <span className="text-gray-500">{t("form.hospitalName")}</span>
+                          <p className="font-semibold text-gray-900 mt-0.5 truncate">{post.hospital_name}</p>
+                        </div>
+                      )}
+                      {post.gender && (
+                        <div>
+                          <span className="text-gray-500">{t("form.gender")}</span>
+                          <p className="font-semibold text-gray-900 mt-0.5">
+                            {post.gender === "여" ? t("label.female") : t("label.male")}
+                          </p>
+                        </div>
+                      )}
+                      {post.age_group && (
+                        <div>
+                          <span className="text-gray-500">{t("form.ageGroup")}</span>
+                          <p className="font-semibold text-gray-900 mt-0.5">{post.age_group}</p>
+                        </div>
+                      )}
+                      {post.procedure_rating && (
+                        <div>
+                          <span className="text-gray-500">{t("form.procedureRating")}</span>
+                          <div className="flex items-center gap-0.5 mt-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={`text-xs ${
+                                  star <= post.procedure_rating!
+                                    ? "text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span className="text-xs font-semibold text-gray-900 ml-1">
+                              {post.procedure_rating}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {post.hospital_rating && (
+                        <div>
+                          <span className="text-gray-500">{t("form.hospitalRating")}</span>
+                          <div className="flex items-center gap-0.5 mt-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span
+                                key={star}
+                                className={`text-xs ${
+                                  star <= post.hospital_rating!
+                                    ? "text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span className="text-xs font-semibold text-gray-900 ml-1">
+                              {post.hospital_rating}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {post.cost && (
+                        <div className="col-span-2">
+                          <span className="text-gray-500">{t("form.cost")}</span>
+                          <p className="font-semibold text-gray-900 mt-0.5">{post.cost}만원</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Content */}
                 <p className="text-gray-800 text-sm mb-3 leading-relaxed line-clamp-3">
                   {post.content}
@@ -419,6 +521,15 @@ export default function MyPostsPage() {
                     images: review.images,
                     timestamp: formatTimeAgo(review.created_at),
                     created_at: review.created_at || "",
+                    // 시술 후기 상세 정보 추가
+                    procedure_name: review.procedure_name,
+                    hospital_name: review.hospital_name,
+                    gender: review.gender,
+                    age_group: review.age_group,
+                    procedure_rating: review.procedure_rating,
+                    hospital_rating: review.hospital_rating,
+                    cost: review.cost,
+                    surgery_date: review.surgery_date,
                   })),
                   ...hospitalReviews.map((review: HospitalReviewData) => ({
                     id: review.id!,

@@ -415,6 +415,20 @@ export async function getCategoryLargeList(
       uniqueCategories
     );
 
+    // 영어 카테고리 매핑 확인을 위한 로깅
+    if (language === "EN") {
+      console.log(
+        "[getCategoryLargeList] 영어 카테고리 목록 (매핑 확인용):",
+        uniqueCategories
+      );
+      const { CATEGORY_MAP } = await import("@/lib/utils/categoryMapper");
+      uniqueCategories.forEach((cat) => {
+        const mapped =
+          CATEGORY_MAP[cat] || CATEGORY_MAP[cat.toLowerCase()] || "매핑 없음";
+        console.log(`  - "${cat}" → "${mapped}"`);
+      });
+    }
+
     // 카테고리가 5개 미만이면 기본 카테고리 사용 (데이터 부족으로 판단)
     if (uniqueCategories.length < 5) {
       console.warn(
@@ -1624,6 +1638,8 @@ export async function loadTreatmentById(
 }
 
 // 같은 시술명의 다른 옵션들 로드 (PDP 페이지용)
+// ✅ 언어 무관하게 같은 시술을 찾기 위해 한국어 테이블에서 treatment_id 목록을 먼저 찾고,
+//    그 다음 현재 언어 테이블에서 해당 treatment_id들로 검색
 export async function loadRelatedTreatments(
   treatmentName: string,
   excludeId?: number,
@@ -1633,18 +1649,52 @@ export async function loadRelatedTreatments(
     const client = getSupabaseOrNull();
     if (!client) return [];
 
-    const treatmentTable = getTreatmentTableName(language);
-    // lang 필터 제거: 테이블이 이미 언어별로 분리되어 있음
-    let query = client
-      .from(treatmentTable)
-      .select("*")
+    // 1. 한국어 테이블에서 같은 treatment_name을 가진 treatment_id 목록 찾기
+    const { data: krData, error: krError } = await client
+      .from("treatment_master")
+      .select("treatment_id")
       .eq("treatment_name", treatmentName);
 
-    if (excludeId) {
-      query = query.neq("treatment_id", excludeId);
+    if (krError) {
+      console.warn("한국어 테이블에서 treatment_id 조회 실패:", krError);
+      // fallback: 현재 언어 테이블에서 직접 검색
+      const treatmentTable = getTreatmentTableName(language);
+      let query = client
+        .from(treatmentTable)
+        .select("*")
+        .eq("treatment_name", treatmentName);
+
+      if (excludeId) {
+        query = query.neq("treatment_id", excludeId);
+      }
+
+      const { data, error } = await query.limit(50);
+      if (error) {
+        throw new Error(`Supabase 오류: ${error.message}`);
+      }
+      return data ? cleanData<Treatment>(data) : [];
     }
 
-    const { data, error } = await query.limit(50);
+    if (!krData || krData.length === 0) {
+      return [];
+    }
+
+    // 2. 찾은 treatment_id 목록 추출 (excludeId 제외)
+    const treatmentIds = krData
+      .map((row) => row.treatment_id)
+      .filter((id) => id !== excludeId);
+
+    if (treatmentIds.length === 0) {
+      return [];
+    }
+
+    // 3. 현재 언어 테이블에서 해당 treatment_id들로 검색
+    const treatmentTable = getTreatmentTableName(language);
+    const { data, error } = await client
+      .from(treatmentTable)
+      .select("*")
+      .in("treatment_id", treatmentIds)
+      .limit(50);
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
@@ -2184,10 +2234,25 @@ export async function getCategoryMidByKeyword(
       try {
         const recoveryData = await loadCategoryTreatTimeRecovery(lang);
 
-        // keyword_kr 컬럼과 정확히 일치하는 항목 찾기
+        // ✅ 언어별 키워드 컬럼 확인 (keyword_kr, keyword_en, keyword_cn, keyword_jp)
         const matched = recoveryData.find((item) => {
-          const keywordKr = (item.keyword_kr || "").trim();
-          return keywordKr === keywordTrimmed;
+          // 현재 언어에 맞는 키워드 컬럼 확인
+          let keywordToCheck = "";
+          if (language === "KR" || !language) {
+            keywordToCheck = (item.keyword_kr || "").trim();
+          } else if (language === "EN") {
+            keywordToCheck = (item.keyword_en || "").trim();
+          } else if (language === "CN") {
+            keywordToCheck = (item.keyword_cn || "").trim();
+          } else if (language === "JP") {
+            keywordToCheck = (item.keyword_jp || "").trim();
+          }
+
+          // 현재 언어 키워드와 일치하거나, keyword_kr과도 일치하는지 확인
+          return (
+            keywordToCheck === keywordTrimmed ||
+            (item.keyword_kr || "").trim() === keywordTrimmed
+          );
         });
 
         if (matched) {
@@ -2324,8 +2389,8 @@ export async function getPopularKeywordsByCountry(
     }> = [];
 
     for (const [krKeyword, data] of keywordMap.entries()) {
-      // category_mid가 있는지 확인 (현재 언어 전달하여 해당 언어 테이블에서 우선 검색)
-      const categoryMid = await getCategoryMidByKeyword(krKeyword, language);
+      // ✅ 항상 한국어 키워드로 category_mid 찾기 (언어 무관하게)
+      const categoryMid = await getCategoryMidByKeyword(krKeyword, "KR");
       if (categoryMid) {
         keywordsWithCategoryMid.push(data);
       }
@@ -3414,9 +3479,49 @@ export async function saveProcedureReview(
       };
     }
 
+    // category 값 검증 및 로깅
+    console.log("=== procedure_reviews insert payload ===");
+    console.log("원본 category:", data.category);
+    console.log("category 타입:", typeof data.category);
+    console.log("category 길이:", data.category?.length);
+    console.log("category JSON:", JSON.stringify(data.category));
+
+    // category가 null이거나 undefined인지 확인
+    if (!data.category || data.category.trim() === "") {
+      console.error("❌ category가 비어있음!");
+      return {
+        success: false,
+        error: "카테고리를 선택해주세요.",
+      };
+    }
+
+    // category 유효성 검증 (DB CHECK 제약조건과 일치하는지 확인)
+    const { isValidCategory } = await import("@/lib/utils/categoryMapper");
+    const trimmedCategory = data.category.trim();
+
+    if (!isValidCategory(trimmedCategory)) {
+      console.error("❌ category가 DB 제약조건과 맞지 않음:", trimmedCategory);
+      console.log("허용된 카테고리:", [
+        "눈성형",
+        "안면윤곽/양악",
+        "필러",
+        "보톡스",
+        "리프팅",
+        "제모",
+        "피부",
+        "가슴성형",
+        "지방성형",
+        "코성형",
+      ]);
+      return {
+        success: false,
+        error: `유효하지 않은 카테고리입니다: ${trimmedCategory}`,
+      };
+    }
+
     const reviewData = {
       user_id: userId, // ✅ 작성자 ID (UUID)
-      category: data.category,
+      category: trimmedCategory, // 공백 제거 및 검증된 값
       procedure_name: data.procedure_name,
       hospital_name: data.hospital_name || null,
       cost: data.cost || null, // 비필수 항목 (NULL 허용)
@@ -3428,6 +3533,13 @@ export async function saveProcedureReview(
       content: data.content,
       images: data.images && data.images.length > 0 ? data.images : null,
     };
+
+    console.log("insert할 reviewData:", {
+      ...reviewData,
+      content: reviewData.content.substring(0, 50) + "...", // 내용은 일부만
+    });
+    console.log("category 최종값:", reviewData.category);
+    console.log("========================================");
 
     const { data: insertedData, error } = await supabase
       .from("procedure_reviews")
@@ -7944,8 +8056,8 @@ export async function getHomeScheduleRecommendations(
   categoryLarge: string | null,
   language?: LanguageCode,
   options?: {
-    limitCategories?: number; // 카테고리 개수 (기본: 5)
-    limitPerCategory?: number; // 카테고리당 시술 개수 (기본: 10)
+    limitCategories?: number; // 카테고리 개수 (기본: 5, 권장: 3)
+    limitPerCategory?: number; // 카테고리당 시술 개수 (기본: 5, 권장: 5)
   }
 ): Promise<HomeScheduleRecommendation[]> {
   try {
@@ -7961,6 +8073,14 @@ export async function getHomeScheduleRecommendations(
     const pCategoryLarge =
       categoryLarge === "전체" || !categoryLarge ? null : categoryLarge;
 
+    // ✅ 백엔드 스펙에 맞춤: 기본값 5, 권장값 3/5
+    // 타임아웃 방지를 위해 권장값 사용
+    const limitCategories = options?.limitCategories ?? 3; // 기본값 3 (백엔드 권장값)
+    const limitPerCategory = options?.limitPerCategory ?? 5; // 기본값 5 (백엔드 권장값)
+
+    // 성능 모니터링: 요청 시작 시간 기록
+    const startTime = performance.now();
+
     const { data, error } = await client.rpc(
       "rpc_home_schedule_recommendations",
       {
@@ -7968,10 +8088,23 @@ export async function getHomeScheduleRecommendations(
         p_trip_end: tripEnd,
         p_category_large: pCategoryLarge,
         p_lang: pLang,
-        p_limit_categories: options?.limitCategories ?? 5,
-        p_limit_per_category: options?.limitPerCategory ?? 10,
+        p_limit_categories: limitCategories,
+        p_limit_per_category: limitPerCategory,
       }
     );
+
+    // 성능 모니터링: 응답 시간 로깅 (개발 환경에서만)
+    const responseTime = performance.now() - startTime;
+    if (
+      process.env.NODE_ENV === "development" ||
+      typeof window !== "undefined"
+    ) {
+      console.log(
+        `[일정 기반 추천] 응답 시간: ${responseTime.toFixed(
+          2
+        )}ms, 카테고리: ${limitCategories}, 카테고리당: ${limitPerCategory}`
+      );
+    }
 
     if (error) {
       // 에러 메시지 추출 (Supabase 에러 형식)
@@ -7984,7 +8117,7 @@ export async function getHomeScheduleRecommendations(
         "알 수 없는 오류";
       const errorCode = error?.code;
 
-      // 에러 객체를 안전하게 직렬화
+      // 에러 객체를 안전하게 직렬화 (Supabase 에러 객체는 직렬화가 어려울 수 있음)
       const errorDetails = {
         message: errorMessage,
         code: errorCode,
@@ -8003,16 +8136,126 @@ export async function getHomeScheduleRecommendations(
           : {}),
       };
 
-      console.error("rpc_home_schedule_recommendations 오류:", errorDetails);
-      console.error("전체 에러 객체:", error);
+      // 에러 정보를 더 명확하게 로깅
+      console.error("rpc_home_schedule_recommendations 오류:", {
+        message: errorMessage,
+        code: errorCode,
+        details: error?.details,
+        hint: error?.hint,
+        errorString: String(error),
+        errorType: typeof error,
+        errorKeys: error && typeof error === "object" ? Object.keys(error) : [],
+        fullErrorDetails: errorDetails,
+      });
 
-      // timeout 에러인 경우 빈 배열 반환 (쿼리 성능 문제일 수 있음)
+      // 원본 에러 객체도 로깅 (디버깅용)
+      console.error("전체 에러 객체 (원본):", error);
+
+      // timeout 에러인 경우 더 작은 limit으로 재시도
       if (
         errorMessage?.includes("timeout") ||
-        errorMessage?.includes("canceling statement")
+        errorMessage?.includes("canceling statement") ||
+        errorCode === "57014"
       ) {
         console.warn(
-          "rpc_home_schedule_recommendations timeout 발생, 빈 배열 반환"
+          "rpc_home_schedule_recommendations timeout 발생, 더 작은 limit으로 재시도..."
+        );
+
+        // 재시도: limit을 더 줄임
+        try {
+          const retryLimitCategories = Math.max(limitCategories - 1, 1);
+          const retryLimitPerCategory = Math.max(limitPerCategory - 2, 2);
+
+          const { data: retryData, error: retryError } = await client.rpc(
+            "rpc_home_schedule_recommendations",
+            {
+              p_trip_start: tripStart,
+              p_trip_end: tripEnd,
+              p_category_large: pCategoryLarge,
+              p_lang: pLang,
+              p_limit_categories: retryLimitCategories,
+              p_limit_per_category: retryLimitPerCategory,
+            }
+          );
+
+          if (!retryError && retryData) {
+            console.log(
+              `✅ 재시도 성공: ${retryLimitCategories}개 카테고리, 카테고리당 ${retryLimitPerCategory}개`
+            );
+            // 재시도 성공 시 데이터 처리 로직으로 진행
+            // 아래의 data 처리 로직을 재사용하기 위해 data에 할당
+            const processedData = retryData;
+            if (!processedData || !Array.isArray(processedData)) {
+              return [];
+            }
+            // ... (아래 그룹화 로직으로 계속)
+            const groupedByCategory = new Map<
+              string,
+              HomeScheduleRecommendation
+            >();
+            const categoryOrder: string[] = [];
+
+            processedData.forEach((row: any) => {
+              const categoryKey =
+                row.category_mid_key || row.category_mid || "기타";
+              const categoryMid = row.category_mid || "기타";
+              const categoryLarge = row.category_large || "";
+
+              if (!groupedByCategory.has(categoryKey)) {
+                categoryOrder.push(categoryKey);
+                groupedByCategory.set(categoryKey, {
+                  categoryMid: categoryMid,
+                  category_mid: categoryMid,
+                  category_mid_key: row.category_mid_key || categoryKey,
+                  category_large: categoryLarge,
+                  treatments: [],
+                  averageRecoveryPeriod: undefined,
+                  averageRecoveryPeriodMin: undefined,
+                  averageRecoveryPeriodMax: undefined,
+                  averageProcedureTime: undefined,
+                  averageProcedureTimeMin: undefined,
+                  averageProcedureTimeMax: undefined,
+                  treatment_rank: undefined,
+                });
+              }
+
+              const treatment: Treatment = {
+                treatment_id: row.treatment_id,
+                treatment_name: row.treatment_name,
+                hospital_name: row.hospital_name,
+                category_large: row.category_large,
+                category_mid: row.category_mid,
+                category_small: row.category_small,
+                selling_price: row.selling_price,
+                original_price: row.original_price,
+                dis_rate: row.dis_rate,
+                rating: row.rating,
+                review_count: row.review_count,
+                main_image_url: row.main_img_url || row.main_image_url,
+                event_url: row.event_url,
+                vat_info: row.vat_info,
+                treatment_hashtags: row.treatment_hashtags,
+                surgery_time: row.surgery_time,
+                downtime: row.downtime,
+                platform: row.platform,
+                ...row,
+              };
+
+              groupedByCategory.get(categoryKey)!.treatments.push(treatment);
+            });
+
+            const result = categoryOrder.map(
+              (key) => groupedByCategory.get(key)!
+            );
+            return result;
+          }
+        } catch (retryError) {
+          console.warn("재시도도 실패:", retryError);
+        }
+
+        // 재시도 실패 시 빈 배열 반환
+        console.warn(
+          "rpc_home_schedule_recommendations timeout으로 인해 빈 배열 반환"
         );
         return [];
       }
@@ -8100,62 +8343,7 @@ export async function getHomeScheduleRecommendations(
     });
 
     // 명세서: 백엔드에서 내려온 순서를 그대로 사용 (첫 등장 순서 유지)
-    // 각 카테고리별로 평균 시술 시간/회복 시간 계산
-    const result = categoryOrder.map((key) => {
-      const category = groupedByCategory.get(key)!;
-      const treatments = category.treatments;
-
-      // 회복 기간 계산
-      const recoveryPeriods = treatments
-        .map((t) => parseRecoveryPeriod(t.downtime))
-        .filter((r) => r > 0);
-
-      let recoveryMin = 0;
-      let recoveryMax = 0;
-      let averageRecoveryPeriod = 0;
-
-      if (recoveryPeriods.length > 0) {
-        recoveryMin = Math.min(...recoveryPeriods);
-        recoveryMax = Math.max(...recoveryPeriods);
-        averageRecoveryPeriod =
-          recoveryPeriods.reduce((sum, r) => sum + r, 0) /
-          recoveryPeriods.length;
-      }
-
-      // 시술 시간 계산
-      const procedureTimes = treatments
-        .map((t) => parseProcedureTime(t.surgery_time))
-        .filter((t) => t > 0);
-
-      let procedureTimeMin = 0;
-      let procedureTimeMax = 0;
-      let averageProcedureTime = 0;
-
-      if (procedureTimes.length > 0) {
-        procedureTimeMin = Math.min(...procedureTimes);
-        procedureTimeMax = Math.max(...procedureTimes);
-        averageProcedureTime =
-          procedureTimes.reduce((sum, t) => sum + t, 0) / procedureTimes.length;
-      }
-
-      return {
-        ...category,
-        averageRecoveryPeriod:
-          averageRecoveryPeriod > 0
-            ? Math.round(averageRecoveryPeriod * 10) / 10
-            : undefined,
-        averageRecoveryPeriodMin: recoveryMin > 0 ? recoveryMin : undefined,
-        averageRecoveryPeriodMax: recoveryMax > 0 ? recoveryMax : undefined,
-        averageProcedureTime:
-          averageProcedureTime > 0
-            ? Math.round(averageProcedureTime)
-            : undefined,
-        averageProcedureTimeMin:
-          procedureTimeMin > 0 ? procedureTimeMin : undefined,
-        averageProcedureTimeMax:
-          procedureTimeMax > 0 ? procedureTimeMax : undefined,
-      };
-    });
+    const result = categoryOrder.map((key) => groupedByCategory.get(key)!);
 
     return result;
   } catch (error) {

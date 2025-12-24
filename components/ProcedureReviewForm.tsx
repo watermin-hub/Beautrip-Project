@@ -447,6 +447,11 @@ export default function ProcedureReviewForm({
         // 번역된 카테고리를 한국어 원본값으로 변환 (CHECK 제약조건 위반 방지)
         const koreanCategory = convertCategoryToKorean(category);
 
+        console.log("=== [ProcedureReviewForm] category 변환 ===");
+        console.log("원본 category (선택된 값):", category);
+        console.log("변환된 koreanCategory:", koreanCategory);
+        console.log("==========================================");
+
         const result = await saveProcedureReview({
           category: koreanCategory,
           procedure_name: finalProcedureName,

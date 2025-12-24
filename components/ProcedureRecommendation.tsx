@@ -603,14 +603,15 @@ export default function ProcedureRecommendation({
             isCategoryChanged: isCategoryOnlyChanged,
           });
 
+          // ✅ 백엔드 스펙에 맞춤: 권장값 사용 (카테고리 3, 카테고리당 5)
           const scheduleRecs = await getHomeScheduleRecommendations(
             scheduleData.travelPeriod.start,
             scheduleData.travelPeriod.end,
             categoryToUse,
             language, // ✅ 현재 언어로 로드
             {
-              limitCategories: 5,
-              limitPerCategory: 10,
+              limitCategories: 3, // 백엔드 권장값
+              limitPerCategory: 5, // 백엔드 권장값
             }
           );
 

@@ -63,8 +63,35 @@ export function convertCategoryToKorean(
     return translatedCategory;
   }
 
-  // 매핑에 있으면 변환, 없으면 원본 그대로 (이미 한국어일 수 있음)
-  return CATEGORY_MAP[translatedCategory] || translatedCategory;
+  // 공백 제거 및 정규화
+  const normalized = translatedCategory.trim();
+  
+  // 매핑에 있으면 변환
+  if (CATEGORY_MAP[normalized]) {
+    return CATEGORY_MAP[normalized];
+  }
+
+  // 대소문자 구분 없이 매핑 시도 (영어 카테고리의 경우)
+  const lowerKey = Object.keys(CATEGORY_MAP).find(
+    key => key.toLowerCase() === normalized.toLowerCase()
+  );
+  if (lowerKey) {
+    console.log(`[convertCategoryToKorean] 대소문자 구분 없이 매핑 성공: "${normalized}" → "${CATEGORY_MAP[lowerKey]}"`);
+    return CATEGORY_MAP[lowerKey];
+  }
+  
+  // 추가: 공백 제거 후 매핑 시도 (예: "Eye Surgery" vs "EyeSurgery")
+  const noSpaceKey = Object.keys(CATEGORY_MAP).find(
+    key => key.replace(/\s+/g, "").toLowerCase() === normalized.replace(/\s+/g, "").toLowerCase()
+  );
+  if (noSpaceKey) {
+    console.log(`[convertCategoryToKorean] 공백 제거 후 매핑 성공: "${normalized}" → "${CATEGORY_MAP[noSpaceKey]}"`);
+    return CATEGORY_MAP[noSpaceKey];
+  }
+
+  // 매핑에 없으면 원본 그대로 반환 (이미 한국어일 수 있음)
+  // 하지만 유효성 검증 후 DB 제약조건에 맞지 않으면 에러 발생 가능
+  return normalized;
 }
 
 /**

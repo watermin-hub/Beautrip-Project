@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FiHeart, FiStar, FiX, FiChevronRight } from "react-icons/fi";
@@ -10,11 +10,17 @@ import {
   calculateRecommendationScore,
   getPopularKeywordsByCountry,
   getCategoryMidByKeyword,
+  getTreatmentTableName,
   toggleProcedureFavorite,
   hasUserWrittenReview,
   type Treatment,
   type PopularKeyword,
 } from "@/lib/api/beautripApi";
+import {
+  formatPrice,
+  getCurrencyFromStorage,
+  getCurrencyFromLanguage,
+} from "@/lib/utils/currency";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import ReviewRequiredPopup from "./ReviewRequiredPopup";
 import CommunityWriteModal from "./CommunityWriteModal";
@@ -34,6 +40,10 @@ const CONCERN_KEYWORDS: Record<string, string[]> = {
 export default function CountryPainPointSection() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  // 통화 설정 (언어에 따라 자동 설정, 또는 localStorage에서 가져오기)
+  const currency = useMemo(() => {
+    return getCurrencyFromLanguage(language) || getCurrencyFromStorage();
+  }, [language]);
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [selectedConcern, setSelectedConcern] = useState<string | null>(null);
   const [recommendedTreatments, setRecommendedTreatments] = useState<
@@ -162,68 +172,90 @@ export default function CountryPainPointSection() {
       // 번역된 키워드인 경우 한국어 키워드로 변환
       const originalKeyword = keywordMap.get(concern) || concern;
 
-      // 1. keyword_monthly_trends의 keyword로 category_treattime_recovery의 keyword_kr 매칭
-      // 2. 매칭된 항목의 category_mid (중분류) 찾기
-      // ✅ 현재 언어를 전달하여 해당 언어 테이블에서 우선 검색
-      const categoryMid = await getCategoryMidByKeyword(originalKeyword, language);
+      // ✅ 간단한 해결책: 한국어 키워드로 category_mid 찾기 (언어 무관하게)
+      // 1. 한국어 테이블에서 category_mid 찾기
+      const categoryMid = await getCategoryMidByKeyword(originalKeyword, "KR");
 
       if (!categoryMid) {
         console.warn(
           `키워드 "${originalKeyword}"에 해당하는 category_mid를 찾을 수 없습니다.`
         );
-        // fallback: 기존 로직 사용
-        const result = await loadTreatmentsPaginated(1, 100, {
-          language: language,
-        });
-        const allTreatments = result.data;
-        const keywords = CONCERN_KEYWORDS[originalKeyword] || [originalKeyword];
+        setRecommendedTreatments([]);
+        return;
+      }
 
-        const filtered = allTreatments.filter((treatment) => {
-          const name = (treatment.treatment_name || "").toLowerCase();
-          const hashtags = (treatment.treatment_hashtags || "").toLowerCase();
-          const categoryLarge = (treatment.category_large || "").toLowerCase();
-          const treatmentCategoryMid = (
-            treatment.category_mid || ""
-          ).toLowerCase();
+      // 2. 한국어 테이블에서 해당 category_mid의 treatment_id 목록 가져오기
+      const krResult = await loadTreatmentsPaginated(1, 200, {
+        categoryMid: categoryMid,
+        language: "KR", // 한국어 테이블에서 가져오기
+      });
 
-          return keywords.some((keyword) => {
-            const keywordLower = keyword.toLowerCase();
-            return (
-              name.includes(keywordLower) ||
-              hashtags.includes(keywordLower) ||
-              categoryLarge.includes(keywordLower) ||
-              treatmentCategoryMid.includes(keywordLower)
-            );
-          });
-        });
+      if (!krResult.data || krResult.data.length === 0) {
+        console.warn(`category_mid "${categoryMid}"에 해당하는 시술이 없습니다.`);
+        setRecommendedTreatments([]);
+        return;
+      }
 
-        const sorted = filtered
+      // 3. treatment_id 목록 추출
+      const treatmentIds = krResult.data
+        .map((t) => t.treatment_id)
+        .filter((id): id is number => id !== undefined && id !== null);
+
+      if (treatmentIds.length === 0) {
+        setRecommendedTreatments([]);
+        return;
+      }
+
+      // 4. 현재 언어 테이블에서 해당 treatment_id들로 시술 가져오기
+      const { supabase: client } = await import("@/lib/supabase");
+      if (!client) {
+        setRecommendedTreatments([]);
+        return;
+      }
+
+      const treatmentTable = getTreatmentTableName(language);
+
+      const { data: treatmentsData, error } = await client
+        .from(treatmentTable)
+        .select("*")
+        .in("treatment_id", treatmentIds)
+        .limit(200);
+
+      if (error) {
+        console.error("시술 데이터 로드 실패:", error);
+        // fallback: 한국어 데이터 사용
+        const sorted = krResult.data
           .map((treatment) => ({
             ...treatment,
             recommendationScore: calculateRecommendationScore(treatment),
           }))
           .sort((a, b) => b.recommendationScore - a.recommendationScore)
           .slice(0, 10);
-
         setRecommendedTreatments(sorted);
         return;
       }
 
-      // 3. category_mid로 시술 필터링
-      const result = await loadTreatmentsPaginated(1, 200, {
-        categoryMid: categoryMid,
-        language: language,
-      });
-      const filteredTreatments = result.data;
+      if (!treatmentsData || treatmentsData.length === 0) {
+        // fallback: 한국어 데이터 사용
+        const sorted = krResult.data
+          .map((treatment) => ({
+            ...treatment,
+            recommendationScore: calculateRecommendationScore(treatment),
+          }))
+          .sort((a, b) => b.recommendationScore - a.recommendationScore)
+          .slice(0, 10);
+        setRecommendedTreatments(sorted);
+        return;
+      }
 
-      // 4. 추천 점수로 정렬하고 상위 10개 선택
-      const sorted = filteredTreatments
-        .map((treatment) => ({
+      // 5. 추천 점수로 정렬하고 상위 10개 선택
+      const sorted = treatmentsData
+        .map((treatment: any) => ({
           ...treatment,
-          recommendationScore: calculateRecommendationScore(treatment),
+          recommendationScore: calculateRecommendationScore(treatment as Treatment),
         }))
         .sort((a, b) => b.recommendationScore - a.recommendationScore)
-        .slice(0, 10);
+        .slice(0, 10) as Treatment[];
 
       setRecommendedTreatments(sorted);
     } catch (error) {
@@ -334,7 +366,7 @@ export default function CountryPainPointSection() {
         <div className="mt-4 p-4 bg-gray-50 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-base font-bold text-gray-900">
-              #{selectedConcern} 추천 시술
+              #{selectedConcern} {t("home.recommendedProcedures") || "추천 시술"}
             </h4>
             <button
               onClick={() => {
@@ -373,9 +405,8 @@ export default function CountryPainPointSection() {
                 {recommendedTreatments.map((treatment) => {
                 const isFavorite = favorites.has(treatment.treatment_id || 0);
                 const thumbnailUrl = getThumbnailUrl(treatment);
-                const price = treatment.selling_price
-                  ? `${Math.round(treatment.selling_price / 10000)}만원`
-                  : t("common.priceInquiry");
+                // ✅ 환전된 가격 표시
+                const price = formatPrice(treatment.selling_price, currency, t);
                 const rating = treatment.rating || 0;
                 const reviewCount = treatment.review_count || 0;
                 const discountRate = treatment.dis_rate
