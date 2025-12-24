@@ -7,7 +7,7 @@ import { saveConcernPost, updateConcernPost } from "@/lib/api/beautripApi";
 import { supabase } from "@/lib/supabase";
 import { uploadConcernImages } from "@/lib/api/imageUpload";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { trackReviewSubmit } from "@/lib/gtm";
+import { trackReviewSubmit, trackReviewStart, type EntrySource } from "@/lib/gtm";
 
 interface ConcernPostFormProps {
   onBack: () => void;
@@ -61,6 +61,50 @@ export default function ConcernPostForm({
       localStorage.removeItem("review_draft_concern");
     }
   }, [draftData, editData]);
+
+  // GTM 이벤트: review_start (페이지에서 열릴 때만 호출, 로그인 상태에서만, 모달은 CommunityWriteModal에서 처리)
+  useEffect(() => {
+    // 모달이 아닌 페이지에서 열릴 때만 호출 (onLoginRequired가 없으면 페이지)
+    if (!onLoginRequired) {
+      const checkAuthAndTrack = async () => {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        // 로그인 상태에서만 GTM 이벤트 발생
+        if (session?.user) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const qsSource =
+            searchParams.get("entry_source") || searchParams.get("entrySource");
+
+          const fallbackByPath: EntrySource = (() => {
+            const path = window.location.pathname;
+            if (path.includes("/mypage")) return "mypage";
+            if (path.includes("/explore")) return "explore";
+            if (path === "/" || path === "/home" || path.startsWith("/home/write")) return "home";
+            if (path.includes("/community")) return "community";
+            return "unknown";
+          })();
+
+          const entrySource: EntrySource =
+            qsSource &&
+            ["home", "explore", "community", "mypage"].includes(qsSource)
+              ? (qsSource as EntrySource)
+              : fallbackByPath;
+
+          console.log("[GTM] review_start 이벤트 트리거 (고민글 페이지):", {
+            entrySource,
+            qsSource,
+            fallbackByPath,
+            path: window.location.pathname,
+          });
+          trackReviewStart(entrySource);
+        }
+      };
+
+      checkAuthAndTrack();
+    }
+  }, [onLoginRequired]);
 
   // 커뮤니티 - 고민상담소 카테고리 (번역 지원)
   const concernCategories = [

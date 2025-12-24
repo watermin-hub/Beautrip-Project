@@ -110,7 +110,7 @@ export default function CommunityWriteModal({
     }
   }, [externalEditData]);
 
-  // 로그인 상태 확인 (초기 로그인 모달 표시하지 않음)
+  // 로그인 상태 확인 및 중간 저장된 리뷰 복원
   useEffect(() => {
     if (isOpen) {
       const checkAuth = async () => {
@@ -120,18 +120,62 @@ export default function CommunityWriteModal({
 
         if (session?.user) {
           setIsLoggedIn(true);
+          
           // 로그인 상태에서 모달이 열릴 때만 GTM 이벤트 발생 (비로그인 상태에서는 로그인 후 호출)
           const getEntrySource = (): EntrySource => {
             // prop으로 전달된 entrySource가 있으면 우선 사용
             if (externalEntrySource) return externalEntrySource;
             // 없으면 pathname으로 자동 감지
-            if (pathname === "/" || pathname === "/home") return "home";
+            if (pathname === "/" || pathname === "/home" || pathname?.startsWith("/home/write")) return "home";
             if (pathname?.includes("/explore")) return "explore";
             if (pathname?.includes("/community")) return "community";
             if (pathname?.includes("/mypage")) return "mypage";
             return "unknown";
           };
           trackReviewStart(getEntrySource());
+          
+          // 로그인 후 중간 저장된 리뷰가 있으면 자동으로 불러오기
+          const checkDraft = () => {
+            const draftKeys = [
+              "review_draft_procedure",
+              "review_draft_hospital",
+              "review_draft_concern",
+            ];
+            
+            for (const draftKey of draftKeys) {
+              const savedDraft = localStorage.getItem(draftKey);
+              if (savedDraft) {
+                try {
+                  const draftData = JSON.parse(savedDraft);
+                  const reviewType = draftKey.includes("procedure")
+                    ? "procedure"
+                    : draftKey.includes("hospital")
+                    ? "hospital"
+                    : "concern";
+                  
+                  // 중간 저장된 리뷰 데이터 설정
+                  setPendingReviewData({ type: reviewType, data: draftData });
+                  
+                  // 해당 리뷰 타입으로 폼 선택
+                  if (reviewType === "procedure") {
+                    setSelectedOption("procedure-review");
+                  } else if (reviewType === "hospital") {
+                    setSelectedOption("hospital-review");
+                  } else {
+                    setSelectedOption("concern-post");
+                  }
+                  
+                  console.log("✅ 중간 저장된 리뷰 복원:", reviewType);
+                  break; // 첫 번째로 찾은 리뷰만 복원
+                } catch (error) {
+                  console.error("중간 저장된 리뷰 불러오기 실패:", error);
+                }
+              }
+            }
+          };
+          
+          // 약간의 딜레이 후 중간 저장된 리뷰 확인 (모달이 완전히 열린 후)
+          setTimeout(checkDraft, 100);
         } else {
           setIsLoggedIn(false);
           // 초기 로그인 모달 표시하지 않음 (작성 완료 버튼 클릭 시에만 표시)
@@ -140,7 +184,7 @@ export default function CommunityWriteModal({
 
       checkAuth();
     }
-  }, [isOpen, pathname]);
+  }, [isOpen, pathname, externalEntrySource]);
 
   // 내 글 로드
   useEffect(() => {

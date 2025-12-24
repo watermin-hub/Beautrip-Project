@@ -219,14 +219,24 @@ function AuthCallbackContent() {
         const loginMethod = user.app_metadata?.provider === "google" ? "google" : "local";
         trackLoginSuccess(loginMethod, user.id);
         
-        console.log("🔗 마이페이지로 리다이렉트 중...");
+        // 원래 페이지로 돌아가기 (리뷰 모달에서 로그인한 경우 복원)
+        const returnTo = localStorage.getItem("auth_returnTo");
+        const redirectPath = returnTo || "/mypage"; // 없으면 기본값으로 마이페이지
+        
+        // 사용한 returnTo 정보 삭제
+        if (returnTo) {
+          localStorage.removeItem("auth_returnTo");
+          console.log("🔗 원래 페이지로 리다이렉트:", redirectPath);
+        } else {
+          console.log("🔗 마이페이지로 리다이렉트 (기본값)");
+        }
 
-        // 세션이 성공적으로 생성되었으면 마이페이지로 리다이렉트
+        // 세션이 성공적으로 생성되었으면 원래 페이지 또는 마이페이지로 리다이렉트
         if (isMounted) {
           // 약간의 딜레이를 두어 모든 저장 작업이 완료되도록 함
           setTimeout(() => {
             // router.replace 사용 (뒤로가기 방지 및 히스토리에 콜백 페이지 남기지 않음)
-            router.replace("/mypage");
+            router.replace(redirectPath);
           }, 200);
         }
       } catch (err: any) {

@@ -14,17 +14,32 @@ export const CATEGORY_MAP: Record<string, string> = {
   "필러": "필러",
   "가슴성형": "가슴성형",
 
-  // 영어
+  // 영어 (다양한 대소문자 변형 포함)
   "Eye Surgery": "눈성형",
+  "Eye surgery": "눈성형",
+  "eye surgery": "눈성형",
   "Lifting": "리프팅",
+  "lifting": "리프팅",
   "Botox": "보톡스",
+  "botox": "보톡스",
   "Facial Contour / Orthognathic": "안면윤곽/양악",
+  "Facial contour / orthognathic": "안면윤곽/양악",
+  "facial contour / orthognathic": "안면윤곽/양악",
   "Hair Removal": "제모",
+  "Hair removal": "제모",
+  "hair removal": "제모",
   "Liposuction": "지방성형",
+  "liposuction": "지방성형",
   "Nose Surgery": "코성형",
+  "Nose surgery": "코성형",
+  "nose surgery": "코성형",
   "Skin": "피부",
+  "skin": "피부",
   "Filler": "필러",
+  "filler": "필러",
   "Breast Surgery": "가슴성형",
+  "Breast surgery": "가슴성형",
+  "breast surgery": "가슴성형",
 
   // 일본어
   "目の整形": "눈성형",
@@ -91,6 +106,17 @@ export function convertCategoryToKorean(
 
   // 매핑에 없으면 원본 그대로 반환 (이미 한국어일 수 있음)
   // 하지만 유효성 검증 후 DB 제약조건에 맞지 않으면 에러 발생 가능
+  
+  // 한국어 카테고리 목록에 포함되어 있으면 그대로 반환
+  if (KOREAN_CATEGORIES.includes(normalized as any)) {
+    return normalized;
+  }
+  
+  // 매핑에 없고 한국어도 아니면 경고 로그 출력
+  console.warn(
+    `[convertCategoryToKorean] 매핑 실패: "${normalized}" → 한국어 변환 불가. DB 제약조건 위반 가능성 있음.`
+  );
+  
   return normalized;
 }
 

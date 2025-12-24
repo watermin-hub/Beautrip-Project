@@ -393,6 +393,15 @@ export default function LoginModal({
 
     try {
       if (provider === "google") {
+        // 원래 페이지 정보 저장 (리뷰 모달에서 로그인한 경우 복원하기 위해)
+        const currentPath = window.location.pathname;
+        const currentSearch = window.location.search;
+        const returnTo = currentPath + currentSearch;
+        
+        // localStorage에 원래 페이지 정보 저장
+        localStorage.setItem("auth_returnTo", returnTo);
+        console.log("🔗 [Google OAuth] 원래 페이지 저장:", returnTo);
+        
         // 리다이렉트 URL 설정 (window.location.origin 사용으로 포트 변경에도 안전)
         const redirectUrl = `${window.location.origin}/auth/callback`;
         console.log("🔗 [Google OAuth] 리다이렉트 URL:", redirectUrl);

@@ -215,3 +215,5 @@ for (const r of rows) {
 
 집계 계산 로직 제거 가능! 🎉
 
+
+

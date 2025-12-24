@@ -2111,6 +2111,7 @@ export default function ProcedureRecommendation({
             }
           }
         }}
+        entrySource="home"
       />
 
       {/* 커뮤니티 글 작성 모달 */}

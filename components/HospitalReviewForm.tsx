@@ -20,6 +20,7 @@ import {
   trackReviewSubmit,
   type EntrySource,
 } from "@/lib/gtm";
+import { convertCategoryToKorean } from "@/lib/utils/categoryMapper";
 
 interface HospitalReviewFormProps {
   onBack: () => void;
@@ -125,7 +126,7 @@ export default function HospitalReviewForm({
             const path = window.location.pathname;
             if (path.includes("/mypage")) return "mypage";
             if (path.includes("/explore")) return "explore";
-            if (path === "/" || path === "/home") return "home";
+            if (path === "/" || path === "/home" || path.startsWith("/home/write")) return "home";
             if (path.includes("/community")) return "community";
             return "unknown";
           })();
@@ -383,9 +384,31 @@ export default function HospitalReviewForm({
           ) || [];
         const finalImageUrls = imageUrls || existingImageUrls;
 
+        // 언어별 카테고리를 한국어로 변환 (DB CHECK 제약조건에 한국어만 허용)
+        const koreanCategoryLarge = convertCategoryToKorean(categoryLarge);
+
+        console.log("=== [HospitalReviewForm] category_large 변환 (수정 모드) ===");
+        console.log("원본 category_large (선택된 값):", categoryLarge);
+        console.log("변환된 koreanCategoryLarge:", koreanCategoryLarge);
+        console.log("==========================================");
+
+        // 변환 실패 시 에러 메시지
+        if (!koreanCategoryLarge || koreanCategoryLarge === categoryLarge) {
+          const { isValidCategory } = await import("@/lib/utils/categoryMapper");
+          if (!isValidCategory(koreanCategoryLarge)) {
+            console.error(
+              `[HospitalReviewForm] 카테고리 변환 실패 또는 유효하지 않은 값: "${categoryLarge}" → "${koreanCategoryLarge}"`
+            );
+            alert(
+              `${t("form.saveFailed")}: 카테고리 변환 실패. 선택한 카테고리를 다시 확인해주세요.`
+            );
+            return;
+          }
+        }
+
         const result = await updateHospitalReview(editData.id, {
           hospital_name: hospitalName,
-          category_large: categoryLarge,
+          category_large: koreanCategoryLarge,
           procedure_name: finalProcedureName,
           visit_date: visitDate || undefined,
           overall_satisfaction:
@@ -411,10 +434,32 @@ export default function HospitalReviewForm({
         onSubmit();
       } else {
         // 작성 모드
+        // 언어별 카테고리를 한국어로 변환 (DB CHECK 제약조건에 한국어만 허용)
+        const koreanCategoryLarge = convertCategoryToKorean(categoryLarge);
+
+        console.log("=== [HospitalReviewForm] category_large 변환 (작성 모드) ===");
+        console.log("원본 category_large (선택된 값):", categoryLarge);
+        console.log("변환된 koreanCategoryLarge:", koreanCategoryLarge);
+        console.log("==========================================");
+
+        // 변환 실패 시 에러 메시지
+        if (!koreanCategoryLarge || koreanCategoryLarge === categoryLarge) {
+          const { isValidCategory } = await import("@/lib/utils/categoryMapper");
+          if (!isValidCategory(koreanCategoryLarge)) {
+            console.error(
+              `[HospitalReviewForm] 카테고리 변환 실패 또는 유효하지 않은 값: "${categoryLarge}" → "${koreanCategoryLarge}"`
+            );
+            alert(
+              `${t("form.saveFailed")}: 카테고리 변환 실패. 선택한 카테고리를 다시 확인해주세요.`
+            );
+            return;
+          }
+        }
+
         // 먼저 후기 저장 (이미지 없이)
         const result = await saveHospitalReview({
           hospital_name: hospitalName,
-          category_large: categoryLarge,
+          category_large: koreanCategoryLarge,
           procedure_name: finalProcedureName,
           visit_date: visitDate || undefined,
           overall_satisfaction:

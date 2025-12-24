@@ -34,3 +34,7 @@ firebase-debug.log
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Large files
+*.zip
+1222.zip

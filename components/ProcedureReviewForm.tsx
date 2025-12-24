@@ -156,7 +156,7 @@ export default function ProcedureReviewForm({
           const path = window.location.pathname;
           if (path.includes("/mypage")) fallbackByPath = "mypage";
           else if (path.includes("/explore")) fallbackByPath = "explore";
-          else if (path === "/" || path === "/home") fallbackByPath = "home";
+          else if (path === "/" || path === "/home" || path.startsWith("/home/write")) fallbackByPath = "home";
           else if (path.includes("/community")) fallbackByPath = "community";
 
           const entrySource: EntrySource =

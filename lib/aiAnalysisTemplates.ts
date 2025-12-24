@@ -435,3 +435,5 @@ export function getRandomAnalysisResult(): SkinAnalysisResult {
 
 
 
+
+
