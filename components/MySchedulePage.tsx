@@ -45,7 +45,11 @@ import {
 import AddToScheduleModal from "./AddToScheduleModal";
 import LoginRequiredPopup from "./LoginRequiredPopup";
 import { supabase } from "@/lib/supabase";
-import { trackScheduleSaveClick, trackSavedScheduleView, trackPdpClick } from "@/lib/gtm";
+import {
+  trackScheduleSaveClick,
+  trackSavedScheduleView,
+  trackPdpClick,
+} from "@/lib/gtm";
 
 /**
  * 받침 유무에 따라 "와" 또는 "과"를 반환하는 함수
@@ -213,14 +217,18 @@ function SimilarProcedureRecommendation({
   const [recoveryInfoMap, setRecoveryInfoMap] = useState<
     Record<number, number>
   >({});
-  const [translatedProcedureName, setTranslatedProcedureName] = useState<string>(currentProcedureName);
+  const [translatedProcedureName, setTranslatedProcedureName] =
+    useState<string>(currentProcedureName);
 
   // currentProcedureName을 현재 언어로 변환
   useEffect(() => {
     const translateProcedureName = async () => {
       if (currentProcedureId && language !== "KR") {
         try {
-          const treatment = await loadTreatmentById(currentProcedureId, language);
+          const treatment = await loadTreatmentById(
+            currentProcedureId,
+            language
+          );
           if (treatment && treatment.treatment_name) {
             setTranslatedProcedureName(treatment.treatment_name);
           } else {
@@ -249,7 +257,7 @@ function SimilarProcedureRecommendation({
       try {
         // ✅ categorySmall을 현재 언어로 변환 (저장된 일정의 categorySmall은 한국어일 수 있음)
         let categorySmallToUse = categorySmall.trim();
-        
+
         if (language !== "KR" && currentProcedureId) {
           // 다른 언어일 때는 treatment_id를 통해 해당 언어의 categorySmall 가져오기
           const { convertCategorySmallToLanguage } = await import(
@@ -295,7 +303,8 @@ function SimilarProcedureRecommendation({
           return cat.trim().toLowerCase();
         };
 
-        const normalizedCategorySmall = normalizeCategorySmall(categorySmallToUse);
+        const normalizedCategorySmall =
+          normalizeCategorySmall(categorySmallToUse);
 
         const filtered = result.data.filter((treatment) => {
           const treatmentCategorySmall = normalizeCategorySmall(
@@ -405,7 +414,7 @@ function SimilarProcedureRecommendation({
 
     // ✅ category_small 기준으로 회복기간 가이드 가져오기 (없으면 category_mid로 fallback)
     let recoveryInfo = null;
-    
+
     // category_small이 있으면 우선 사용
     if (selectedTreatment.category_small) {
       const { getRecoveryInfoByCategorySmall } = await import(
@@ -416,7 +425,7 @@ function SimilarProcedureRecommendation({
         language
       );
     }
-    
+
     // category_small로 못 찾았거나 없으면 category_mid로 fallback
     if (!recoveryInfo && selectedTreatment.category_mid) {
       recoveryInfo = await getRecoveryInfoByCategoryMid(
@@ -425,7 +434,7 @@ function SimilarProcedureRecommendation({
         selectedTreatment.treatment_id // treatment_id 전달 (category_i18n 매칭용)
       );
     }
-    
+
     if (recoveryInfo) {
       recoveryDays = recoveryInfo.recoveryMax;
       recoveryText = recoveryInfo.recoveryText;
@@ -498,11 +507,7 @@ function SimilarProcedureRecommendation({
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3">
           {similarTreatments.map((treatment) => {
             const thumbnailUrl = getThumbnailUrl(treatment);
-            const price = formatPrice(
-              treatment.selling_price,
-              currency,
-              t
-            );
+            const price = formatPrice(treatment.selling_price, currency, t);
             const rating = treatment.rating || 0;
             const reviewCount = treatment.review_count || 0;
             const discountRate = treatment.dis_rate
@@ -629,7 +634,11 @@ function SimilarProcedureRecommendation({
           }
           selectedStartDate={travelPeriod?.start || null}
           selectedEndDate={travelPeriod?.end || null}
-          categoryMid={selectedTreatment.category_mid_key || selectedTreatment.category_mid || null}
+          categoryMid={
+            selectedTreatment.category_mid_key ||
+            selectedTreatment.category_mid ||
+            null
+          }
         />
       )}
     </>
@@ -652,12 +661,12 @@ function SavedSchedulesTab({
   monthNames: string[];
   dayNames: string[];
 }) {
+  const { t, language } = useLanguage();
   // 각 시술의 날짜 수정 상태 관리
   const [editingDates, setEditingDates] = useState<{ [key: number]: boolean }>(
     {}
   );
   const [newDates, setNewDates] = useState<{ [key: number]: string }>({});
-  const { t, language } = useLanguage();
   const router = useRouter();
   const [savedSchedulesList, setSavedSchedulesList] = useState<SavedSchedule[]>(
     []
@@ -1744,7 +1753,7 @@ function SavedSchedulesTab({
                       <button
                         onClick={handleDelete}
                         className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm hover:bg-primary-light/20 transition-colors z-10"
-                        title="삭제"
+                        title={t("common.delete")}
                       >
                         <FiX className="text-primary-main text-sm" />
                       </button>
@@ -1795,12 +1804,15 @@ function SavedSchedulesTab({
                               ) : (
                                 <div className="flex items-center gap-2">
                                   <span>
-                                    {formatDateWithDay(proc.procedureDate)}
+                                    {formatDateWithDay(
+                                      proc.procedureDate,
+                                      language
+                                    )}
                                   </span>
                                   <button
                                     onClick={handleEditDate}
                                     className="p-1 hover:bg-primary-light/20 rounded transition-colors"
-                                    title="날짜 수정"
+                                    title={t("schedule.editDate")}
                                   >
                                     <FiEdit2 className="text-primary-main text-xs" />
                                   </button>
@@ -1874,7 +1886,7 @@ function SavedSchedulesTab({
                       JSON.stringify(updatedSchedules)
                     );
                     window.dispatchEvent(new Event("scheduleAdded"));
-                    alert("일정이 삭제되었습니다.");
+                    alert(t("schedule.scheduleDeleted"));
                   };
 
                   return (
@@ -1930,7 +1942,7 @@ function SavedSchedulesTab({
               <div className="mt-6 text-center py-8">
                 <FiCalendar className="text-gray-300 text-4xl mx-auto mb-2" />
                 <p className="text-gray-500 text-sm">
-                  선택한 날짜에 일정이 없습니다.
+                  {t("schedule.noScheduleForDate")}
                 </p>
               </div>
             )}
@@ -2111,7 +2123,7 @@ function SavedSchedulesTab({
                         schedule.id && handleDeleteSavedSchedule(schedule.id);
                       }}
                       className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                      title="삭제"
+                      title={t("common.delete")}
                     >
                       <FiX className="text-gray-500 text-lg" />
                     </button>
@@ -2234,7 +2246,10 @@ function ProcedureCardComponent({
             setTranslatedTreatment({
               procedureName: treatment.treatment_name || proc.procedureName,
               hospital: treatment.hospital_name || proc.hospital,
-              category: treatment.category_mid || treatment.category_large || proc.category,
+              category:
+                treatment.category_mid ||
+                treatment.category_large ||
+                proc.category,
             });
           }
         })
@@ -2256,7 +2271,7 @@ function ProcedureCardComponent({
           onDelete(proc.id);
         }}
         className="absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm hover:bg-primary-light/20 transition-colors z-10"
-        title="삭제"
+        title={t("common.delete")}
       >
         <FiX className="text-primary-main text-sm" />
       </button>
@@ -2273,7 +2288,10 @@ function ProcedureCardComponent({
             </div>
             <div className="flex items-center gap-1">
               <FiTag className="text-primary-main" />
-              <span>{translatedTreatment?.category || proc.category}</span>
+              <span>
+                {t("review.procedureType")}:{" "}
+                {translatedTreatment?.category || proc.category}
+              </span>
             </div>
           </div>
           {/* 시술 날짜 표시 및 수정 */}
@@ -2296,7 +2314,7 @@ function ProcedureCardComponent({
                     }}
                     className="px-2 py-1 bg-primary-main text-white rounded text-xs hover:bg-primary-main/90"
                   >
-                    저장
+                    {t("common.save")}
                   </button>
                   <button
                     onClick={(e) => {
@@ -2305,19 +2323,19 @@ function ProcedureCardComponent({
                     }}
                     className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
                   >
-                    취소
+                    {t("common.cancel")}
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <span>{formatDateWithDay(proc.procedureDate)}</span>
+                  <span>{formatDateWithDay(proc.procedureDate, language)}</span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onEditDate(proc.id);
                     }}
                     className="p-1 hover:bg-primary-light/20 rounded transition-colors"
-                    title="날짜 수정"
+                    title={t("schedule.editDate")}
                   >
                     <FiEdit2 className="text-primary-main text-xs" />
                   </button>
@@ -2361,7 +2379,9 @@ function RecoveryCardComponent({
   const { t, language } = useLanguage();
   const router = useRouter();
   const [recoveryText, setRecoveryText] = useState<string | null>(null);
-  const [recoveryGuides, setRecoveryGuides] = useState<Record<string, string | null> | undefined>(undefined);
+  const [recoveryGuides, setRecoveryGuides] = useState<
+    Record<string, string | null> | undefined
+  >(undefined);
   const [loadingRecoveryText, setLoadingRecoveryText] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   // 번역된 시술 정보
@@ -2429,7 +2449,10 @@ function RecoveryCardComponent({
             setTranslatedTreatment({
               procedureName: treatment.treatment_name || rec.procedureName,
               hospital: treatment.hospital_name || rec.hospital,
-              category: treatment.category_mid || treatment.category_large || rec.category,
+              category:
+                treatment.category_mid ||
+                treatment.category_large ||
+                rec.category,
             });
           }
         })
@@ -2445,14 +2468,14 @@ function RecoveryCardComponent({
     const loadRecoveryInfo = async () => {
       // category_small이 있으면 우선 사용
       let recoveryInfo = null;
-      
+
       if (rec.categorySmall) {
         recoveryInfo = await getRecoveryInfoByCategorySmall(
           rec.categorySmall,
           language
         );
       }
-      
+
       // category_small로 못 찾았거나 없으면 category_mid로 fallback
       if (!recoveryInfo && rec.categoryMid) {
         recoveryInfo = await getRecoveryInfoByCategoryMid(
@@ -2460,7 +2483,7 @@ function RecoveryCardComponent({
           language
         );
       }
-      
+
       // treatmentId가 있고 category_small이 없으면 시술 데이터에서 가져오기
       if (!recoveryInfo && rec.treatmentId && !rec.categorySmall) {
         try {
@@ -2498,7 +2521,7 @@ function RecoveryCardComponent({
       // 언어 변경 시 즉시 초기화 (이전 언어 데이터 제거)
       setRecoveryText(null);
       setRecoveryGuides(undefined);
-      
+
       loadRecoveryInfo()
         .catch((error) => {
           // 회복 기간 정보 로드 실패 시 무시
@@ -2526,9 +2549,7 @@ function RecoveryCardComponent({
 
       // categorySmall이 없고 treatmentId가 있으면 원본 시술 데이터에서 가져오기
       if (!categorySmall && rec.treatmentId) {
-        const { loadTreatmentById } = await import(
-          "@/lib/api/beautripApi"
-        );
+        const { loadTreatmentById } = await import("@/lib/api/beautripApi");
         // 현재 언어로 시술 데이터 가져오기
         const treatment = await loadTreatmentById(rec.treatmentId, language);
         if (treatment?.category_small) {
@@ -2693,7 +2714,7 @@ function RecoveryCardComponent({
         className={`absolute top-3 right-3 p-1.5 bg-white rounded-full shadow-sm transition-colors z-10 ${
           isOutsideTravel ? "hover:bg-red-50" : "hover:bg-yellow-50"
         }`}
-        title="삭제"
+        title={t("common.delete")}
       >
         <FiX
           className={`text-sm ${
@@ -2787,7 +2808,7 @@ export default function MySchedulePage() {
   const { t, language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // URL 쿼리 파라미터에서 초기 탭 확인
   const initialTab = searchParams.get("tab") === "saved" ? "saved" : "schedule";
   const [activeTab, setActiveTab] = useState<"schedule" | "saved">(initialTab);
@@ -2810,14 +2831,15 @@ export default function MySchedulePage() {
     if (activeTab === "saved" && !hasTrackedSavedScheduleView.current) {
       // 현재 경로 기준으로 entry_source 구분
       // /mypage에 있으면 "mypage", /schedule에 있으면 "schedule"
-      const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+      const pathname =
+        typeof window !== "undefined" ? window.location.pathname : "";
       const entrySource = pathname.includes("/mypage") ? "mypage" : "schedule";
-      
-      console.log("[GTM] saved_schedule_view 이벤트 트리거:", { 
-        entrySource, 
+
+      console.log("[GTM] saved_schedule_view 이벤트 트리거:", {
+        entrySource,
         pathname,
         activeTab,
-        referrer: typeof window !== "undefined" ? document.referrer : ""
+        referrer: typeof window !== "undefined" ? document.referrer : "",
       });
       trackSavedScheduleView(entrySource);
       hasTrackedSavedScheduleView.current = true;
@@ -2944,7 +2966,9 @@ export default function MySchedulePage() {
             ? (() => {
                 // parseProcedureTime을 사용하여 숫자로 변환 (이미 "분"이 포함되어 있을 수 있음)
                 const timeInMinutes = parseProcedureTime(s.procedureTime);
-                return timeInMinutes > 0 ? `${timeInMinutes}${t("common.readTime")}` : s.procedureTime;
+                return timeInMinutes > 0
+                  ? `${timeInMinutes}${t("common.readTime")}`
+                  : s.procedureTime;
               })()
             : undefined,
           treatmentId: s.treatmentId || undefined, // 시술 ID 추가
@@ -2981,7 +3005,10 @@ export default function MySchedulePage() {
                   procedureName: s.procedureName,
                 });
                 // 특정 treatment_id로 직접 조회
-                const treatment = await loadTreatmentById(s.treatmentId, language);
+                const treatment = await loadTreatmentById(
+                  s.treatmentId,
+                  language
+                );
                 if (treatment?.category_small) {
                   console.log(
                     "✅ [일정 로드] categorySmall 찾음:",
@@ -3043,13 +3070,19 @@ export default function MySchedulePage() {
             // ✅ category_small이 있으면 우선 사용
             let info = null;
             if (s.categorySmall) {
-              info = await getRecoveryInfoByCategorySmall(s.categorySmall, language);
+              info = await getRecoveryInfoByCategorySmall(
+                s.categorySmall,
+                language
+              );
             }
             // category_small로 못 찾았거나 없으면 category_mid로 fallback
             if (!info && s.categoryMid) {
-              info = await getRecoveryInfoByCategoryMid(s.categoryMid, language);
+              info = await getRecoveryInfoByCategoryMid(
+                s.categoryMid,
+                language
+              );
             }
-            
+
             if (info) {
               return {
                 ...s,
@@ -3646,7 +3679,9 @@ export default function MySchedulePage() {
 
       {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between border-b border-gray-100">
-        <h1 className="text-xl font-bold text-gray-900">내 일정</h1>
+        <h1 className="text-xl font-bold text-gray-900">
+          {t("schedule.mySchedule")}
+        </h1>
       </div>
 
       {/* 여행 기간 표시 */}
@@ -3702,8 +3737,11 @@ export default function MySchedulePage() {
         <div className="flex items-center gap-6 px-4 py-3">
           <button
             onClick={() => {
-              const pathname = typeof window !== "undefined" ? window.location.pathname : "";
-              const basePath = pathname.includes("/mypage") ? "/mypage" : "/schedule";
+              const pathname =
+                typeof window !== "undefined" ? window.location.pathname : "";
+              const basePath = pathname.includes("/mypage")
+                ? "/mypage"
+                : "/schedule";
               router.push(`${basePath}?tab=schedule`);
               setActiveTab("schedule");
             }}
@@ -3721,8 +3759,11 @@ export default function MySchedulePage() {
           </button>
           <button
             onClick={() => {
-              const pathname = typeof window !== "undefined" ? window.location.pathname : "";
-              const basePath = pathname.includes("/mypage") ? "/mypage" : "/schedule";
+              const pathname =
+                typeof window !== "undefined" ? window.location.pathname : "";
+              const basePath = pathname.includes("/mypage")
+                ? "/mypage"
+                : "/schedule";
               router.push(`${basePath}?tab=saved`);
               setActiveTab("saved");
             }}
@@ -3893,7 +3934,7 @@ export default function MySchedulePage() {
             )}
             {travelPeriod && savedSchedules.length === 0 && (
               <p className="text-xs text-gray-500 mt-2 text-center">
-                저장할 일정이 없습니다.
+                {t("schedule.noScheduleToSave")}
               </p>
             )}
           </div>
@@ -4275,7 +4316,7 @@ export default function MySchedulePage() {
                       JSON.stringify(updatedSchedules)
                     );
                     window.dispatchEvent(new Event("scheduleAdded"));
-                    alert("일정이 삭제되었습니다.");
+                    alert(t("schedule.scheduleDeleted"));
                   };
 
                   return (
@@ -4333,7 +4374,7 @@ export default function MySchedulePage() {
               <div className="mt-6 text-center py-8">
                 <FiCalendar className="text-gray-300 text-4xl mx-auto mb-2" />
                 <p className="text-gray-500 text-sm">
-                  선택한 날짜에 일정이 없습니다.
+                  {t("schedule.noScheduleForDate")}
                 </p>
               </div>
             )}

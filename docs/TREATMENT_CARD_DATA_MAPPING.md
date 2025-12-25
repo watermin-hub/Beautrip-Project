@@ -478,3 +478,4 @@ const koreanCategory = await convertCategoryNameToKorean(
 모든 페이지에서 **언어별 데이터**는 `v_treatment_i18n_v2`에서 가져오며, **로직/그룹핑**은 `category_mid_key`(한글 고정)를 사용합니다.
 
 
+

@@ -167,3 +167,4 @@ const guideId = await getRecoveryGuideIdByCategory("쌍수");
 **결론: 회복 가이드 ID는 `category_toggle_map` 테이블에서 찾습니다!**
 
 
+

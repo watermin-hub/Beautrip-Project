@@ -352,6 +352,11 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.add": "추가하기",
     "schedule.relatedProcedures": "연관 시술 추천",
     "schedule.similarProcedures": "{name}와(과) 비슷한 시술이에요",
+    "schedule.mySchedule": "내 일정",
+    "schedule.editDate": "날짜 수정",
+    "schedule.scheduleDeleted": "일정이 삭제되었습니다.",
+    "schedule.noScheduleForDate": "선택한 날짜에 일정이 없습니다.",
+    "schedule.noScheduleToSave": "저장할 일정이 없습니다.",
 
     // Explore
     "explore.title": "탐색",
@@ -738,8 +743,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.tab.allProcedures": "전체 시술",
     "explore.tab.allHospitals": "전체 병원",
     "explore.loading.ranking": "랭킹 데이터를 불러오는 중...",
-    "explore.loading.rankingError": "랭킹 데이터를 불러오는 중 오류가 발생했습니다.",
-    "explore.procedure.description": "{categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.",
+    "explore.loading.rankingError":
+      "랭킹 데이터를 불러오는 중 오류가 발생했습니다.",
+    "explore.procedure.description":
+      "{categoryMid}을 통해 피부와 외모를 개선할 수 있는 시술이에요.",
     "common.reviewCount": "리뷰 {count}개",
     "explore.filter.category": "카테고리별",
     "explore.filter.hospital": "병원별",
@@ -1110,13 +1117,20 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.add": "Add",
     "schedule.relatedProcedures": "Related Procedure Recommendations",
     "schedule.similarProcedures": "Similar procedures to {name}",
+    "schedule.mySchedule": "My Schedule",
+    "schedule.editDate": "Edit Date",
+    "schedule.scheduleDeleted": "Schedule deleted.",
+    "schedule.noScheduleForDate": "No schedule for the selected date.",
+    "schedule.noScheduleToSave": "No schedule to save.",
     // Explore tabs
     "explore.tab.ranking": "Ranking",
     "explore.tab.allProcedures": "All Procedures",
     "explore.tab.allHospitals": "All Hospitals",
     "explore.loading.ranking": "Loading ranking data...",
-    "explore.loading.rankingError": "An error occurred while loading ranking data.",
-    "explore.procedure.description": "A procedure that can improve skin and appearance through {categoryMid}.",
+    "explore.loading.rankingError":
+      "An error occurred while loading ranking data.",
+    "explore.procedure.description":
+      "A procedure that can improve skin and appearance through {categoryMid}.",
     "common.reviewCount": "{count} reviews",
     "explore.filter.category": "By Category",
     "explore.filter.hospital": "By Hospital",
@@ -1937,6 +1951,11 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.add": "追加",
     "schedule.relatedProcedures": "関連施術推薦",
     "schedule.similarProcedures": "{name}と似ている施術です",
+    "schedule.mySchedule": "マイスケジュール",
+    "schedule.editDate": "日付を編集",
+    "schedule.scheduleDeleted": "スケジュールが削除されました。",
+    "schedule.noScheduleForDate": "選択した日付にスケジュールがありません。",
+    "schedule.noScheduleToSave": "保存するスケジュールがありません。",
 
     // Explore
     "explore.title": "探す",
@@ -2324,8 +2343,10 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.tab.allProcedures": "全施術",
     "explore.tab.allHospitals": "全病院",
     "explore.loading.ranking": "ランキングデータを読み込み中...",
-    "explore.loading.rankingError": "ランキングデータの読み込み中にエラーが発生しました。",
-    "explore.procedure.description": "{categoryMid}を通じて肌と外見を改善できる施術です。",
+    "explore.loading.rankingError":
+      "ランキングデータの読み込み中にエラーが発生しました。",
+    "explore.procedure.description":
+      "{categoryMid}を通じて肌と外見を改善できる施術です。",
     "common.reviewCount": "レビュー{count}件",
     "explore.filter.category": "カテゴリ別",
     "explore.filter.hospital": "病院別",
@@ -2701,6 +2722,11 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "schedule.add": "添加",
     "schedule.relatedProcedures": "相关疗程推荐",
     "schedule.similarProcedures": "与{name}相似的疗程",
+    "schedule.mySchedule": "我的日程",
+    "schedule.editDate": "编辑日期",
+    "schedule.scheduleDeleted": "日程已删除。",
+    "schedule.noScheduleForDate": "所选日期没有日程。",
+    "schedule.noScheduleToSave": "没有要保存的日程。",
 
     // Explore
     "explore.title": "探索",
@@ -3075,7 +3101,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
     "explore.tab.allHospitals": "全部医院",
     "explore.loading.ranking": "正在加载排名数据...",
     "explore.loading.rankingError": "加载排名数据时发生错误。",
-    "explore.procedure.description": "通过{categoryMid}可以改善皮肤和外貌的疗程。",
+    "explore.procedure.description":
+      "通过{categoryMid}可以改善皮肤和外貌的疗程。",
     "common.reviewCount": "{count}条评论",
     "explore.filter.category": "按类别",
     "explore.filter.hospital": "按医院",

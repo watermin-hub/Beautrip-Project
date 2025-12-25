@@ -152,3 +152,4 @@ if (category_mid_key === 'skin_booster') ✅
 **이제 프론트에서는 "조인은 key / 표시는 label" 원칙만 지키면 안정적으로 동작한다.**
 
 
+

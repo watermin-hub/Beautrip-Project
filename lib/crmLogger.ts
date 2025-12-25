@@ -6,6 +6,7 @@ interface CrmEventPayload {
   nickname: string;
   content?: string;      // 후기 내용 (회원가입이면 없어도 됨)
   event_time?: string;   // ISO 문자열, 없으면 내부에서 now() 사용
+  lang?: string;         // 언어 코드 (KR, JP, CN, EN)
 }
 
 /**

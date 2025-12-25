@@ -385,7 +385,7 @@ export default function HospitalReviewForm({
         const finalImageUrls = imageUrls || existingImageUrls;
 
         // 언어별 카테고리를 한국어로 변환 (DB CHECK 제약조건에 한국어만 허용)
-        const koreanCategoryLarge = convertCategoryToKorean(categoryLarge);
+        const koreanCategoryLarge = await convertCategoryToKorean(categoryLarge, language);
 
         console.log("=== [HospitalReviewForm] category_large 변환 (수정 모드) ===");
         console.log("원본 category_large (선택된 값):", categoryLarge);
@@ -435,7 +435,7 @@ export default function HospitalReviewForm({
       } else {
         // 작성 모드
         // 언어별 카테고리를 한국어로 변환 (DB CHECK 제약조건에 한국어만 허용)
-        const koreanCategoryLarge = convertCategoryToKorean(categoryLarge);
+        const koreanCategoryLarge = await convertCategoryToKorean(categoryLarge, language);
 
         console.log("=== [HospitalReviewForm] category_large 변환 (작성 모드) ===");
         console.log("원본 category_large (선택된 값):", categoryLarge);

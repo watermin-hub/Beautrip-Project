@@ -410,7 +410,7 @@ export default function ProcedureReviewForm({
         // 사용자 화폐를 원화 만원 단위로 변환
         const costInKRWManwon = convertToKRWManwon(cost, currency);
         // 번역된 카테고리를 한국어 원본값으로 변환 (CHECK 제약조건 위반 방지)
-        const koreanCategory = convertCategoryToKorean(category);
+        const koreanCategory = await convertCategoryToKorean(category, language);
 
         const result = await updateProcedureReview(editData.id, {
           category: koreanCategory,
@@ -445,7 +445,7 @@ export default function ProcedureReviewForm({
         // 사용자 화폐를 원화 만원 단위로 변환
         const costInKRWManwon = convertToKRWManwon(cost, currency);
         // 번역된 카테고리를 한국어 원본값으로 변환 (CHECK 제약조건 위반 방지)
-        const koreanCategory = convertCategoryToKorean(category);
+        const koreanCategory = await convertCategoryToKorean(category, language);
 
         console.log("=== [ProcedureReviewForm] category 변환 ===");
         console.log("원본 category (선택된 값):", category);

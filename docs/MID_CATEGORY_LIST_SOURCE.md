@@ -170,3 +170,4 @@ setMidCategoriesList(sorted);
 **결론: RPC 결과에서 `category_mid`를 추출하여 중복 제거 후 정렬하여 필터바에 표시합니다!**
 
 
+

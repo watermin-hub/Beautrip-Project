@@ -1,12 +1,13 @@
 // Beautrip API 관련 유틸리티 함수
 import { supabase } from "../supabase";
 import { logCrmEventToSheet } from "../crmLogger";
+import { normalizeLang } from "../utils/normalizeLang";
 
 // 언어 코드 타입
 export type LanguageCode = "KR" | "EN" | "JP" | "CN";
 
 // Supabase 테이블 이름
-const TABLE_NAMES = {
+export const TABLE_NAMES = {
   TREATMENT_MASTER: "treatment_master",
   TREATMENT_MASTER_EN: "treatment_master_en",
   TREATMENT_MASTER_CN: "treatment_master_cn",
@@ -186,7 +187,7 @@ export function getCategoryTreatTimeRecoveryTableName(
 // Supabase 클라이언트 안전 접근 헬퍼
 // 환경변수가 없어서 supabase가 초기화되지 않은 경우
 // 런타임 TypeError 대신 빈 결과를 반환하도록 각 함수에서 사용합니다.
-function getSupabaseOrNull() {
+export function getSupabaseOrNull() {
   if (!supabase) {
     if (typeof window !== "undefined") {
       console.warn(
@@ -415,18 +416,12 @@ export async function getCategoryLargeList(
       uniqueCategories
     );
 
-    // 영어 카테고리 매핑 확인을 위한 로깅
+    // 영어 카테고리 목록 로깅 (category_i18n 테이블 사용으로 매핑 확인 불필요)
     if (language === "EN") {
       console.log(
-        "[getCategoryLargeList] 영어 카테고리 목록 (매핑 확인용):",
+        "[getCategoryLargeList] 영어 카테고리 목록:",
         uniqueCategories
       );
-      const { CATEGORY_MAP } = await import("@/lib/utils/categoryMapper");
-      uniqueCategories.forEach((cat) => {
-        const mapped =
-          CATEGORY_MAP[cat] || CATEGORY_MAP[cat.toLowerCase()] || "매핑 없음";
-        console.log(`  - "${cat}" → "${mapped}"`);
-      });
     }
 
     // 카테고리가 5개 미만이면 기본 카테고리 사용 (데이터 부족으로 판단)
@@ -3554,10 +3549,10 @@ export async function saveProcedureReview(
 
     // CRM 로그: 후기 작성 이벤트를 스프레드시트에 기록
     try {
-      // user_profiles에서 email, nickname 조회
+      // user_profiles에서 email, nickname, preferred_language 조회
       const { data: profile } = await supabase
         .from("user_profiles")
-        .select("login_id, nickname")
+        .select("login_id, nickname, preferred_language")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -3567,11 +3562,15 @@ export async function saveProcedureReview(
       } = await supabase.auth.getUser();
 
       if (profile || user?.email) {
+        // 언어 코드 정규화 (user_profiles.preferred_language 우선, 없으면 기본값)
+        const lang = normalizeLang(profile?.preferred_language);
+
         await logCrmEventToSheet({
           event_type: "review",
           email: profile?.login_id || user?.email || "",
           nickname: profile?.nickname || user?.email?.split("@")[0] || "사용자",
           content: data.content,
+          lang,
         });
       }
     } catch (crmError) {
@@ -3642,10 +3641,10 @@ export async function saveHospitalReview(
 
     // CRM 로그: 후기 작성 이벤트를 스프레드시트에 기록
     try {
-      // user_profiles에서 email, nickname 조회
+      // user_profiles에서 email, nickname, preferred_language 조회
       const { data: profile } = await supabase
         .from("user_profiles")
-        .select("login_id, nickname")
+        .select("login_id, nickname, preferred_language")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -3655,11 +3654,15 @@ export async function saveHospitalReview(
       } = await supabase.auth.getUser();
 
       if (profile || user?.email) {
+        // 언어 코드 정규화 (user_profiles.preferred_language 우선, 없으면 기본값)
+        const lang = normalizeLang(profile?.preferred_language);
+
         await logCrmEventToSheet({
           event_type: "review",
           email: profile?.login_id || user?.email || "",
           nickname: profile?.nickname || user?.email?.split("@")[0] || "사용자",
           content: data.content,
+          lang,
         });
       }
     } catch (crmError) {

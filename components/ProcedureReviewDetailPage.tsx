@@ -29,6 +29,13 @@ import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
 import { maskNickname } from "@/lib/utils/nicknameMask";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { convertCategoryFromKorean } from "@/lib/utils/categoryMapper";
+import {
+  formatPrice,
+  getCurrencyFromLanguage,
+  getCurrencyFromStorage,
+} from "@/lib/utils/currency";
+import { formatDateWithDay } from "@/lib/utils/dateFormat";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import CommentForm from "./CommentForm";
@@ -43,7 +50,7 @@ export default function ProcedureReviewDetailPage({
   reviewId,
 }: ProcedureReviewDetailPageProps) {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [review, setReview] = useState<ProcedureReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
@@ -57,6 +64,13 @@ export default function ProcedureReviewDetailPage({
   const [userLocale, setUserLocale] = useState<string | null>(null);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [translatedCategory, setTranslatedCategory] = useState<string | null>(
+    null
+  );
+
+  // 통화 설정
+  const currency =
+    getCurrencyFromStorage() || getCurrencyFromLanguage(language);
 
   // 로그인 상태 확인
   useEffect(() => {
@@ -104,6 +118,23 @@ export default function ProcedureReviewDetailPage({
         });
         setReview(data);
 
+        // 카테고리 번역
+        if (data?.category && language !== "KR") {
+          try {
+            const translated = await convertCategoryFromKorean(
+              data.category,
+              language,
+              "large"
+            );
+            setTranslatedCategory(translated);
+          } catch (error) {
+            console.error("카테고리 번역 실패:", error);
+            setTranslatedCategory(data.category);
+          }
+        } else {
+          setTranslatedCategory(data?.category || null);
+        }
+
         if (data) {
           // 좋아요 상태 및 개수 로드
           const [liked, count] = await Promise.all([
@@ -112,11 +143,14 @@ export default function ProcedureReviewDetailPage({
           ]);
           setIsLiked(liked);
           setLikeCount(count);
-          
+
           // 댓글 수 로드
-          const commentCountResult = await getCommentCount(reviewId, "procedure");
+          const commentCountResult = await getCommentCount(
+            reviewId,
+            "procedure"
+          );
           setCommentCount(commentCountResult);
-          
+
           // 조회수 증가 및 조회
           await incrementViewCount(reviewId, "procedure");
           const views = await getViewCount(reviewId, "procedure");
@@ -205,13 +239,15 @@ export default function ProcedureReviewDetailPage({
           >
             <FiArrowLeft className="text-gray-700 text-xl" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">{t("review.treatmentReview")}</h1>
+          <h1 className="text-lg font-bold text-gray-900">
+            {t("review.treatmentReview")}
+          </h1>
         </div>
 
         {/* 카테고리 태그 */}
         <div className="px-4 pt-16 pb-2">
           <span className="inline-flex items-center bg-gradient-to-r from-primary-light/20 to-primary-main/10 text-primary-main px-4 py-2 rounded-full text-xs font-semibold border border-primary-main/20">
-            {review.category}
+            {translatedCategory || review.category}
           </span>
         </div>
 
@@ -229,7 +265,7 @@ export default function ProcedureReviewDetailPage({
             </div>
             <div className="text-xs text-gray-500 space-y-0.5">
               <div className="font-medium">
-                {formatTimeAgo(review.created_at)}
+                {formatTimeAgo(review.created_at, t)}
               </div>
               {review.created_at && (
                 <div className="text-xs text-gray-400">
@@ -273,7 +309,9 @@ export default function ProcedureReviewDetailPage({
             {/* 만족도 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="text-xs text-gray-500">{t("label.procedureSatisfaction")}</span>
+                <span className="text-xs text-gray-500">
+                  {t("label.procedureSatisfaction")}
+                </span>
                 <div className="flex items-center gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
@@ -292,7 +330,9 @@ export default function ProcedureReviewDetailPage({
               </div>
 
               <div>
-                <span className="text-xs text-gray-500">{t("label.hospitalSatisfaction")}</span>
+                <span className="text-xs text-gray-500">
+                  {t("label.hospitalSatisfaction")}
+                </span>
                 <div className="flex items-center gap-1 mt-1">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <FiStar
@@ -314,7 +354,9 @@ export default function ProcedureReviewDetailPage({
             {/* 성별 & 연령대 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="text-xs text-gray-500">{t("label.gender")}</span>
+                <span className="text-xs text-gray-500">
+                  {t("label.gender")}
+                </span>
                 <p className="text-base text-gray-900 mt-1">
                   {review.gender === "남"
                     ? t("label.genderMale")
@@ -334,7 +376,9 @@ export default function ProcedureReviewDetailPage({
                       const ageKey = `label.age${ageMatch[1]}s`;
                       const translated = t(ageKey);
                       // 번역 키가 존재하면 사용, 없으면 원본 반환
-                      return translated !== ageKey ? translated : review.age_group;
+                      return translated !== ageKey
+                        ? translated
+                        : review.age_group;
                     }
                     return review.age_group;
                   })()}
@@ -347,7 +391,7 @@ export default function ProcedureReviewDetailPage({
               <div>
                 <span className="text-xs text-gray-500">{t("label.cost")}</span>
                 <p className="text-base text-gray-900 mt-1">
-                  {review.cost.toLocaleString()}만원
+                  {formatPrice(review.cost * 10000, currency, t)}
                 </p>
               </div>
             )}
@@ -355,15 +399,13 @@ export default function ProcedureReviewDetailPage({
             {/* 시술 날짜 */}
             {review.surgery_date && (
               <div>
-                <span className="text-xs text-gray-500">{t("label.surgeryDate")}</span>
+                <span className="text-xs text-gray-500">
+                  {t("label.surgeryDate")}
+                </span>
                 <div className="flex items-center gap-1 mt-1">
                   <FiCalendar className="text-gray-400 text-sm" />
                   <p className="text-base text-gray-900">
-                    {new Date(review.surgery_date).toLocaleDateString("ko-KR", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {formatDateWithDay(review.surgery_date, language)}
                   </p>
                 </div>
               </div>
@@ -504,7 +546,10 @@ export default function ProcedureReviewDetailPage({
               try {
                 if (navigator.share) {
                   await navigator.share({
-                    title: t("review.shareTitle").replace("{procedureName}", review.procedure_name),
+                    title: t("review.shareTitle").replace(
+                      "{procedureName}",
+                      review.procedure_name
+                    ),
                     text: review.content.slice(0, 100),
                     url: window.location.href,
                   });
@@ -528,7 +573,7 @@ export default function ProcedureReviewDetailPage({
           <h3 className="text-lg font-bold text-gray-900 mb-4">
             {t("comment.title")} ({commentCount})
           </h3>
-          
+
           {/* 댓글 작성 폼 */}
           <div className="mb-6">
             <CommentForm
@@ -552,7 +597,10 @@ export default function ProcedureReviewDetailPage({
       {/* 로그인 필요 팝업 */}
       {showLoginRequiredPopup && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-[100]" onClick={() => setShowLoginRequiredPopup(false)} />
+          <div
+            className="fixed inset-0 bg-black/60 z-[100]"
+            onClick={() => setShowLoginRequiredPopup(false)}
+          />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
               <div className="text-center">

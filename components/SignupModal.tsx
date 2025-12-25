@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useRouter } from "next/navigation";
 import type { LanguageCode } from "@/contexts/LanguageContext";
 import { logCrmEventToSheet } from "@/lib/crmLogger";
+import { normalizeLang } from "@/lib/utils/normalizeLang";
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -205,10 +206,14 @@ export default function SignupModal({
 
       // 2-1. CRM 로그: 회원가입 이벤트를 스프레드시트에 기록
       try {
+        // 언어 코드 정규화 (selectedLanguage는 이미 LanguageCode 타입이지만 normalizeLang으로 정규화)
+        const lang = normalizeLang(selectedLanguage);
+        
         await logCrmEventToSheet({
           event_type: "signup",
           email: email.trim(),
           nickname: email.trim().split("@")[0], // 이메일 @ 앞부분을 nickname으로 사용
+          lang,
         });
       } catch (crmError) {
         // CRM 전송 실패해도 회원가입은 성공한 것으로 처리
