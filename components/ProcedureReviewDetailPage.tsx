@@ -36,6 +36,7 @@ import {
   getCurrencyFromStorage,
 } from "@/lib/utils/currency";
 import { formatDateWithDay } from "@/lib/utils/dateFormat";
+import { translateText } from "@/lib/utils/translation";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import CommentForm from "./CommentForm";
@@ -67,6 +68,8 @@ export default function ProcedureReviewDetailPage({
   const [translatedCategory, setTranslatedCategory] = useState<string | null>(
     null
   );
+  const [translatedProcedureName, setTranslatedProcedureName] = useState<string | null>(null);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
 
   // 통화 설정
   const currency =
@@ -133,6 +136,32 @@ export default function ProcedureReviewDetailPage({
           }
         } else {
           setTranslatedCategory(data?.category || null);
+        }
+
+        // 시술명 번역 (DeepL API 사용)
+        if (data?.procedure_name && language !== "KR") {
+          try {
+            const result = await translateText(data.procedure_name, language, "KR");
+            setTranslatedProcedureName(result.text);
+          } catch (error) {
+            console.error("시술명 번역 실패:", error);
+            setTranslatedProcedureName(data.procedure_name);
+          }
+        } else {
+          setTranslatedProcedureName(data?.procedure_name || null);
+        }
+
+        // 본문 번역 (DeepL API 사용)
+        if (data?.content && language !== "KR") {
+          try {
+            const result = await translateText(data.content, language, "KR");
+            setTranslatedContent(result.text);
+          } catch (error) {
+            console.error("본문 번역 실패:", error);
+            setTranslatedContent(data.content);
+          }
+        } else {
+          setTranslatedContent(data?.content || null);
         }
 
         if (data) {
@@ -290,7 +319,7 @@ export default function ProcedureReviewDetailPage({
                   {t("label.procedureName")}
                 </span>
                 <p className="text-base font-semibold text-gray-900 mt-1">
-                  {review.procedure_name}
+                  {translatedProcedureName || review.procedure_name}
                 </p>
               </div>
 
@@ -416,7 +445,7 @@ export default function ProcedureReviewDetailPage({
         {/* 글 내용 */}
         <div className="px-4 py-6 border-b border-gray-100">
           <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
-            {review.content}
+            {translatedContent || review.content}
           </p>
         </div>
 

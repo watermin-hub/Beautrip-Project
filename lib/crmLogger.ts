@@ -7,6 +7,7 @@ interface CrmEventPayload {
   content?: string;      // 후기 내용 (회원가입이면 없어도 됨)
   event_time?: string;   // ISO 문자열, 없으면 내부에서 now() 사용
   lang?: string;         // 언어 코드 (KR, JP, CN, EN)
+  review_type?: string;  // 후기 타입 (review 이벤트일 때 "review"로 설정)
 }
 
 /**
@@ -34,16 +35,22 @@ export async function logCrmEventToSheet(payload: CrmEventPayload) {
     const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/plain;charset=utf-8',
       },
       body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-      console.error('CRM Webhook 호출 실패', res.status, await res.text());
+      try {
+        const errorText = await res.text();
+        console.warn('CRM webhook failed', res.status, errorText);
+      } catch (textError) {
+        console.warn('CRM webhook failed', res.status);
+      }
     }
   } catch (err) {
-    console.error('CRM Webhook 호출 중 오류', err);
+    // CRM은 비동기/보조 기능이므로 실패해도 UX를 막지 않음
+    console.warn('CRM webhook failed', err);
   }
 }
 

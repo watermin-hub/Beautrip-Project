@@ -205,6 +205,7 @@ export default function SignupModal({
       }
 
       // 2-1. CRM 로그: 회원가입 이벤트를 스프레드시트에 기록
+      // CRM은 비동기/보조 기능이므로 실패해도 UX를 막지 않음
       try {
         // 언어 코드 정규화 (selectedLanguage는 이미 LanguageCode 타입이지만 normalizeLang으로 정규화)
         const lang = normalizeLang(selectedLanguage);
@@ -217,7 +218,7 @@ export default function SignupModal({
         });
       } catch (crmError) {
         // CRM 전송 실패해도 회원가입은 성공한 것으로 처리
-        console.error("CRM 로그 전송 실패:", crmError);
+        console.warn("CRM webhook failed", crmError);
       }
 
       // 3. 세션이 없으면 (이메일 인증 필요 시) 자동으로 로그인 시도

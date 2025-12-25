@@ -3571,11 +3571,13 @@ export async function saveProcedureReview(
           nickname: profile?.nickname || user?.email?.split("@")[0] || "사용자",
           content: data.content,
           lang,
+          review_type: "review",
         });
       }
     } catch (crmError) {
       // CRM 전송 실패해도 후기 저장은 성공한 것으로 처리
-      console.error("CRM 로그 전송 실패:", crmError);
+      // CRM은 비동기/보조 기능이므로 실패해도 UX를 막지 않음
+      console.warn("CRM webhook failed", crmError);
     }
 
     return { success: true, id: insertedData?.id };
@@ -3663,11 +3665,13 @@ export async function saveHospitalReview(
           nickname: profile?.nickname || user?.email?.split("@")[0] || "사용자",
           content: data.content,
           lang,
+          review_type: "review",
         });
       }
     } catch (crmError) {
       // CRM 전송 실패해도 후기 저장은 성공한 것으로 처리
-      console.error("CRM 로그 전송 실패:", crmError);
+      // CRM은 비동기/보조 기능이므로 실패해도 UX를 막지 않음
+      console.warn("CRM webhook failed", crmError);
     }
 
     return { success: true, id: insertedData?.id };
