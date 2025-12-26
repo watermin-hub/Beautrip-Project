@@ -6684,9 +6684,15 @@ export async function getMidCategoryRankings(
         // 카테고리 순서 기록 (첫 등장 순서 유지)
         categoryOrder.push(categoryKey);
 
+        // ✅ RPC에서 category_rank, category_score 등 집계 필드를 받아오기 (소분류와 동일하게)
         groupedByCategory.set(categoryKey, {
           category_mid: item.category_mid,
           category_mid_key: item.category_mid_key || item.category_mid,
+          category_rank: item.category_rank || 0, // RPC에서 제공하는 랭킹 순서
+          category_score: item.category_score || 0, // RPC에서 제공하는 랭킹 점수
+          average_rating: item.average_rating || 0, // RPC에서 제공하는 평균 평점
+          total_reviews: item.total_reviews || 0, // RPC에서 제공하는 총 리뷰 수
+          treatment_count: item.treatment_count || 0, // RPC에서 제공하는 시술 개수
           treatments: [],
         });
       }
@@ -6707,30 +6713,45 @@ export async function getMidCategoryRankings(
       groupedByCategory.get(categoryKey)!.treatments.push(treatment);
     });
 
-    // MidCategoryRanking 형태로 변환 (카테고리 순서 유지)
+    // MidCategoryRanking 형태로 변환 (RPC에서 받은 집계 필드 사용)
     const processedData: MidCategoryRanking[] = categoryOrder.map((key) => {
       const group = groupedByCategory.get(key)!;
+      
+      // ✅ RPC에서 받은 집계 필드가 있으면 사용, 없으면 계산 (하위 호환성)
+      const categoryRank = group.category_rank || 0;
+      const categoryScore = group.category_score || 0;
+      const averageRating = group.average_rating || 
+        (group.treatments.reduce((sum: number, t: Treatment) => sum + (t.rating || 0), 0) / group.treatments.length || 0);
+      const totalReviews = group.total_reviews || 
+        group.treatments.reduce((sum: number, t: Treatment) => sum + (t.review_count || 0), 0);
+      const treatmentCount = group.treatment_count || group.treatments.length;
+      
       return {
         category_mid: group.category_mid,
         category_mid_key: group.category_mid_key,
-        category_rank: 0, // RPC에서 제공하지 않음 (중분류 랭킹은 없음)
-        treatment_count: group.treatments.length,
-        total_reviews: group.treatments.reduce(
-          (sum: number, t: Treatment) => sum + (t.review_count || 0),
-          0
-        ),
-        average_rating:
-          group.treatments.reduce(
-            (sum: number, t: Treatment) => sum + (t.rating || 0),
-            0
-          ) / group.treatments.length || 0,
-        category_score: 0, // RPC에서 제공하지 않음
-        treatments: group.treatments, // 이미 정렬된 순서
+        category_rank: categoryRank, // RPC에서 받은 값 사용
+        treatment_count: treatmentCount,
+        total_reviews: totalReviews, // RPC에서 받은 값 사용 (없으면 계산)
+        average_rating: averageRating, // RPC에서 받은 값 사용 (없으면 계산)
+        category_score: categoryScore || (averageRating * totalReviews), // RPC에서 받은 값 우선, 없으면 계산
+        treatments: group.treatments,
       };
     });
 
+    // ✅ RPC에서 category_rank를 제공하면 그대로 사용, 없으면 category_score로 정렬
+    if (processedData.some((r) => r.category_rank > 0)) {
+      // RPC에서 category_rank를 제공하는 경우: category_rank 기준으로 정렬
+      processedData.sort((a, b) => (a.category_rank || 0) - (b.category_rank || 0));
+    } else {
+      // RPC에서 category_rank를 제공하지 않는 경우: category_score로 정렬
+      processedData.sort((a, b) => (b.category_score || 0) - (a.category_score || 0));
+      processedData.forEach((r, index) => {
+        r.category_rank = index + 1;
+      });
+    }
+
     console.log(
-      `✅ [중분류 랭킹] ${processedData.length}개 중분류, 총 ${cleanedData.length}개 시술 처리 완료`
+      `✅ [중분류 랭킹] ${processedData.length}개 중분류, 총 ${cleanedData.length}개 시술 처리 완료 (랭킹 순서로 정렬됨)`
     );
 
     return { success: true, data: processedData };
@@ -6963,7 +6984,7 @@ export async function getSmallCategoryRankings(
       }
     });
 
-    // SmallCategoryRanking 형태로 변환 (카테고리 순서 유지)
+    // SmallCategoryRanking 형태로 변환
     const processedData: SmallCategoryRanking[] = categoryOrder.map((key) => {
       const group = groupedByCategory.get(key)!;
       return {
@@ -6977,8 +6998,18 @@ export async function getSmallCategoryRankings(
       };
     });
 
+    // ✅ 랭킹 순서로 정렬 (category_rank 기준, 없으면 category_score 기준)
+    processedData.sort((a, b) => {
+      // category_rank가 있으면 우선 사용
+      if (a.category_rank && b.category_rank) {
+        return a.category_rank - b.category_rank;
+      }
+      // category_rank가 없으면 category_score로 정렬
+      return (b.category_score || 0) - (a.category_score || 0);
+    });
+
     console.log(
-      `✅ [소분류 랭킹] ${processedData.length}개 소분류, 총 ${cleanedData.length}개 시술 처리 완료`
+      `✅ [소분류 랭킹] ${processedData.length}개 소분류, 총 ${cleanedData.length}개 시술 처리 완료 (랭킹 순서로 정렬됨)`
     );
 
     // 디버깅: 처리된 데이터 구조 확인
