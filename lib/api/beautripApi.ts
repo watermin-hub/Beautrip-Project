@@ -8282,18 +8282,25 @@ export async function getHomeScheduleRecommendations(
 
               if (!groupedByCategory.has(categoryKey)) {
                 categoryOrder.push(categoryKey);
+                
+                // ✅ 백엔드에서 내려주는 평균 정보는 category_mid_key 기준
+                // surgery_time: 평균 시술시간 (분), downtime: 평균 회복기간 (일)
+                const surgeryTime = row.surgery_time != null ? Number(row.surgery_time) : undefined;
+                const downtime = row.downtime != null ? Number(row.downtime) : undefined;
+                
                 groupedByCategory.set(categoryKey, {
                   categoryMid: categoryMid,
                   category_mid: categoryMid,
                   category_mid_key: row.category_mid_key || categoryKey,
                   category_large: categoryLarge,
                   treatments: [],
-                  averageRecoveryPeriod: undefined,
-                  averageRecoveryPeriodMin: undefined,
-                  averageRecoveryPeriodMax: undefined,
-                  averageProcedureTime: undefined,
-                  averageProcedureTimeMin: undefined,
-                  averageProcedureTimeMax: undefined,
+                  // ✅ 백엔드에서 내려주는 평균 정보 매핑 (category_mid_key 기준)
+                  averageProcedureTime: surgeryTime,
+                  averageProcedureTimeMin: undefined, // 백엔드에서 제공하지 않음
+                  averageProcedureTimeMax: undefined, // 백엔드에서 제공하지 않음
+                  averageRecoveryPeriod: downtime,
+                  averageRecoveryPeriodMin: undefined, // 백엔드에서 제공하지 않음
+                  averageRecoveryPeriodMax: undefined, // 백엔드에서 제공하지 않음
                   treatment_rank: undefined,
                 });
               }
@@ -8384,20 +8391,24 @@ export async function getHomeScheduleRecommendations(
         // 카테고리 순서 기록 (첫 등장 순서 유지)
         categoryOrder.push(categoryKey);
 
+        // ✅ 백엔드에서 내려주는 평균 정보는 category_mid_key 기준
+        // surgery_time: 평균 시술시간 (분), downtime: 평균 회복기간 (일)
+        const surgeryTime = row.surgery_time != null ? Number(row.surgery_time) : undefined;
+        const downtime = row.downtime != null ? Number(row.downtime) : undefined;
+
         groupedByCategory.set(categoryKey, {
           categoryMid: categoryMid, // 컴포넌트 호환성 (표시용)
           category_mid: categoryMid, // RPC 결과 (표시용 카테고리명, 언어별)
           category_mid_key: row.category_mid_key || categoryKey, // 카테고리 key (항상 한글 기준 고정)
           category_large: categoryLarge,
           treatments: [],
-          // 쿼리에서 반환하지 않는 집계 필드들은 undefined로 처리
-          // (하위 호환성을 위해 필드는 유지하되 값은 undefined)
-          averageRecoveryPeriod: undefined,
-          averageRecoveryPeriodMin: undefined,
-          averageRecoveryPeriodMax: undefined,
-          averageProcedureTime: undefined,
-          averageProcedureTimeMin: undefined,
-          averageProcedureTimeMax: undefined,
+          // ✅ 백엔드에서 내려주는 평균 정보 매핑 (category_mid_key 기준)
+          averageProcedureTime: surgeryTime,
+          averageProcedureTimeMin: undefined, // 백엔드에서 제공하지 않음
+          averageProcedureTimeMax: undefined, // 백엔드에서 제공하지 않음
+          averageRecoveryPeriod: downtime,
+          averageRecoveryPeriodMin: undefined, // 백엔드에서 제공하지 않음
+          averageRecoveryPeriodMax: undefined, // 백엔드에서 제공하지 않음
           treatment_rank: undefined, // 카테고리 레벨에는 treatment_rank 없음 (시술 레벨에만 있음)
         });
       }
