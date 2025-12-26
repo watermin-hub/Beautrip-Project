@@ -517,7 +517,8 @@ export default function ProcedureRecommendation({
         }
       });
 
-      if (duplicates.length > 0) {
+      // 중복 체크는 개발 환경에서만 로깅
+      if (duplicates.length > 0 && process.env.NODE_ENV === "development") {
         console.warn(
           "⚠️ 데이터 상 중분류 중복 발견 (다른 대분류에 같은 중분류 이름 존재):",
           duplicates
@@ -591,37 +592,16 @@ export default function ProcedureRecommendation({
             // 그 외에는 null로 유지 (전체 카테고리)
           }
 
-          // ✅ 초기 로드 시 현재 언어로 로드 (처음부터 다른 언어로 시작해도 작동)
-          // ⚠️ 언어 변경은 번역 로직에서 처리하므로, 여기서는 일정/카테고리 변경 시에만 로드
-          // 일정이나 카테고리가 변경되면 항상 로드 (언어는 현재 언어 사용)
-          console.log("🔍 [일정 기반 추천] 초기 로드:", {
-            start: scheduleData.travelPeriod.start,
-            end: scheduleData.travelPeriod.end,
-            category: categoryToUse,
-            language: language,
-            isScheduleChanged: isScheduleDataChanged,
-            isCategoryChanged: isCategoryOnlyChanged,
-          });
-
           // ✅ 백엔드 스펙에 맞춤: 권장값 사용 (카테고리 3, 카테고리당 5)
           const scheduleRecs = await getHomeScheduleRecommendations(
             scheduleData.travelPeriod.start,
             scheduleData.travelPeriod.end,
             categoryToUse,
-            language, // ✅ 현재 언어로 로드
+            language,
             {
               limitCategories: 3, // 백엔드 권장값
               limitPerCategory: 5, // 백엔드 권장값
             }
-          );
-
-          console.log(
-            `✅ [일정 기반 추천] 결과: ${
-              scheduleRecs.length
-            }개 중분류, 총 ${scheduleRecs.reduce(
-              (sum, rec) => sum + rec.treatments.length,
-              0
-            )}개 시술`
           );
           setRecommendations(scheduleRecs);
         } else {
@@ -653,9 +633,9 @@ export default function ProcedureRecommendation({
     }
 
     // 초기 로드 또는 일정/카테고리 변경 시 실행
-    // ⚠️ language는 제외: 언어 변경은 번역 로직에서 처리
+    // language는 제외: 언어 변경은 별도 useEffect에서 처리
     fetchInitialData();
-  }, [scheduleData, selectedCategoryId, mainCategories]); // language 제외: 번역 로직에서 처리
+  }, [scheduleData, selectedCategoryId, mainCategories]); // language 제외: 별도 useEffect에서 처리
 
   // 로그인 상태 확인 및 리뷰 작성 이력 확인
   useEffect(() => {
@@ -705,9 +685,9 @@ export default function ProcedureRecommendation({
     scheduleData.travelPeriod.end,
   ]); // language 제외: 번역 로직에서 처리
 
-  // ✅ 언어 변경 시 번역만 적용 (이미 로드된 데이터가 있고, 언어만 변경된 경우)
+  // ✅ 언어 변경 시 RPC를 다시 호출 (번역 대신 백엔드에서 언어별 데이터 가져오기)
   useEffect(() => {
-    async function translateData() {
+    async function reloadWithNewLanguage() {
       // 초기 로드가 완료되지 않았거나, 데이터가 없으면 스킵
       if (recommendations.length === 0 || !initialLanguageLoaded) {
         return;
@@ -718,39 +698,49 @@ export default function ProcedureRecommendation({
         return;
       }
 
+      // 일정이 없으면 스킵
+      if (!scheduleData.travelPeriod.start || !scheduleData.travelPeriod.end) {
+        return;
+      }
+
       try {
         setLoading(true);
-        // 같은 treatment_id로 lang만 바꿔서 번역 데이터 가져오기
-        const { translateTreatments } = await import(
-          "@/lib/utils/translateTreatments"
+        
+        // 카테고리 선택 상태 유지
+        let categoryToUse: string | null = null;
+        if (selectedCategoryId === null) {
+          categoryToUse = null;
+        } else if (selectedCategoryId !== undefined) {
+          const selectedCategory = mainCategories.find(
+            (cat) => cat.id === selectedCategoryId
+          );
+          categoryToUse = selectedCategory?.id || selectedCategoryId;
+        }
+
+        // RPC를 다시 호출하여 새로운 언어로 데이터 가져오기
+        const scheduleRecs = await getHomeScheduleRecommendations(
+          scheduleData.travelPeriod.start,
+          scheduleData.travelPeriod.end,
+          categoryToUse,
+          language,
+          {
+            limitCategories: 3,
+            limitPerCategory: 5,
+          }
         );
 
-        // 각 중분류별로 시술 번역
-        const translated = await Promise.all(
-          recommendations.map(async (rec) => {
-            const translatedTreatments = await translateTreatments(
-              rec.treatments,
-              language
-            );
-            return {
-              ...rec,
-              treatments: translatedTreatments,
-            };
-          })
-        );
-
-        setRecommendations(translated);
+        setRecommendations(scheduleRecs);
         setInitialLanguageLoaded(language);
       } catch (error) {
-        console.error("시술 번역 실패:", error);
+        console.error("언어 변경 시 데이터 로드 실패:", error);
       } finally {
         setLoading(false);
       }
     }
 
-    // 초기 로드가 완료된 후에만 번역 적용
+    // 초기 로드가 완료된 후에만 언어 변경 처리
     if (initialLanguageLoaded && initialLanguageLoaded !== language) {
-      translateData();
+      reloadWithNewLanguage();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, initialLanguageLoaded]); // language와 initialLanguageLoaded 변경 시 실행

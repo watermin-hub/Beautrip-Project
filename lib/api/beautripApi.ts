@@ -1022,8 +1022,8 @@ export async function getRecoveryInfoByCategoryMid(
       };
     });
 
-    // 디버깅: 매칭 시도 전 로그 (한번만 찍기)
-    if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+    // 디버깅: 매칭 시도 전 로그 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development" && !recoveryLogPrinted.has(categoryMidTrimmed)) {
       console.log(`🔍 [매칭 시도] category_mid: "${categoryMidTrimmed}"`);
       console.log(`🔍 [매칭 시도] 정규화된 값: "${normalizedCategoryMid}"`);
       console.log(`🔍 [전체 데이터] 총 ${recoveryData.length}개 항목`);
@@ -1039,6 +1039,7 @@ export async function getRecoveryInfoByCategoryMid(
     });
 
     if (
+      process.env.NODE_ENV === "development" &&
       relatedItems.length > 0 &&
       !recoveryLogPrinted.has(categoryMidTrimmed)
     ) {
@@ -1128,14 +1129,16 @@ export async function getRecoveryInfoByCategoryMid(
         vlineItems.length > 0 &&
         !recoveryLogPrinted.has(categoryMidTrimmed)
       ) {
-        console.log(
-          `🔍 [V라인 관련 항목] ${vlineItems.length}개 발견:`,
-          vlineItems.map((item) => ({
-            중분류: item.중분류,
-            정규화: normalize(item.중분류 || ""),
-            "권장체류일수(일)": item["권장체류일수(일)"] ?? item.권장체류일수,
-          }))
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            `🔍 [V라인 관련 항목] ${vlineItems.length}개 발견:`,
+            vlineItems.map((item) => ({
+              중분류: item.중분류,
+              정규화: normalize(item.중분류 || ""),
+              "권장체류일수(일)": item["권장체류일수(일)"] ?? item.권장체류일수,
+            }))
+          );
+        }
       }
 
       recoveryLogPrinted.add(categoryMidTrimmed);
@@ -1143,7 +1146,7 @@ export async function getRecoveryInfoByCategoryMid(
     }
 
     // 실제 컬럼명: 회복기간_min(일), 회복기간_max(일), 시술시간_min(분), 시술시간_max(분)
-    if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
+    if (process.env.NODE_ENV === "development" && !recoveryLogPrinted.has(categoryMidTrimmed)) {
       console.log("🔍 매칭된 객체의 모든 키:", Object.keys(matched));
       console.log("🔍 매칭된 객체에서 회복기간 값 확인:", {
         "회복기간_max(일)": matched["회복기간_max(일)"],
@@ -1169,9 +1172,11 @@ export async function getRecoveryInfoByCategoryMid(
       0;
     const procedureTimeMin = m["시술시간_min(분)"] ?? m["시술시간_min"] ?? 0;
 
-    console.log(
-      `✅ 매칭 성공! category_mid: "${categoryMidTrimmed}", 회복기간_max: ${recoveryMax}, 회복기간_min: ${recoveryMin}`
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `✅ 매칭 성공! category_mid: "${categoryMidTrimmed}", 회복기간_max: ${recoveryMax}, 회복기간_min: ${recoveryMin}`
+      );
+    }
 
     if (recoveryMax === 0 && recoveryMin === 0) {
       console.warn(
@@ -1208,7 +1213,9 @@ export async function getRecoveryInfoByCategoryMid(
         m["권장체류일수(일)"] ?? m["권장체류일수"] ?? m.권장체류일수;
       if (typeof direct === "number" && !isNaN(direct) && direct > 0) {
         if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
-          console.log(`✅ [권장체류일수] 직접 매칭: ${direct}일`);
+          if (process.env.NODE_ENV === "development") {
+            console.log(`✅ [권장체류일수] 직접 매칭: ${direct}일`);
+          }
         }
         return direct;
       }
@@ -1221,19 +1228,23 @@ export async function getRecoveryInfoByCategoryMid(
         const value = m[dynamicKey];
         if (typeof value === "number" && !isNaN(value) && value > 0) {
           if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
-            console.log(
-              `✅ [권장체류일수] 동적 키 매칭 (${dynamicKey}): ${value}일`
-            );
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                `✅ [권장체류일수] 동적 키 매칭 (${dynamicKey}): ${value}일`
+              );
+            }
           }
           return value;
         }
       }
 
       if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
-        console.warn(
-          `⚠️ [권장체류일수] 찾을 수 없음. category_mid: "${categoryMidTrimmed}"`
-        );
-        console.log("🔍 [매칭된 객체의 모든 키]:", Object.keys(matched));
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `⚠️ [권장체류일수] 찾을 수 없음. category_mid: "${categoryMidTrimmed}"`
+          );
+          console.log("🔍 [매칭된 객체의 모든 키]:", Object.keys(matched));
+        }
       }
       return 0;
     })();
@@ -1245,9 +1256,11 @@ export async function getRecoveryInfoByCategoryMid(
       recommendedStayDays > 0 ? recommendedStayDays : recoveryMin;
 
     if (!recoveryLogPrinted.has(categoryMidTrimmed)) {
-      console.log(
-        `✅ [최종 회복 기간] category_mid: "${categoryMidTrimmed}", 권장체류일수: ${recommendedStayDays}일, 회복기간_max: ${recoveryMax}일, 최종 사용: ${finalRecoveryMax}일`
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `✅ [최종 회복 기간] category_mid: "${categoryMidTrimmed}", 권장체류일수: ${recommendedStayDays}일, 회복기간_max: ${recoveryMax}일, 최종 사용: ${finalRecoveryMax}일`
+        );
+      }
     }
 
     const result = {
@@ -1365,11 +1378,13 @@ export async function getRecoveryInfoByCategorySmall(
         if (validMatches.length > 0) {
           // 가장 높은 점수 선택
           matched = validMatches.sort((a, b) => b.score - a.score)[0].item;
-          console.log(
-            `✅ [category_small 부분 일치] "${categorySmallTrimmed}" → "${
-              matched._small
-            }" (점수: ${validMatches[0].score.toFixed(2)})`
-          );
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              `✅ [category_small 부분 일치] "${categorySmallTrimmed}" → "${
+                matched._small
+              }" (점수: ${validMatches[0].score.toFixed(2)})`
+            );
+          }
         }
       }
     }
@@ -1387,14 +1402,16 @@ export async function getRecoveryInfoByCategorySmall(
       return null;
     }
 
-    // 매칭 성공 로그
-    console.log(
-      `✅ [category_small 매칭 성공] "${categorySmallTrimmed}" → "${
-        matched._small
-      }" (${currentLanguage} 테이블, category_mid: ${
-        matched.category_mid || matched.중분류 || "N/A"
-      })`
-    );
+    // 매칭 성공 로그 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `✅ [category_small 매칭 성공] "${categorySmallTrimmed}" → "${
+          matched._small
+        }" (${currentLanguage} 테이블, category_mid: ${
+          matched.category_mid || matched.중분류 || "N/A"
+        })`
+      );
+    }
 
     // 데이터 추출
     const recoveryMin =
@@ -8131,12 +8148,11 @@ export async function getHomeScheduleRecommendations(
       }
     );
 
-    // 성능 모니터링: 응답 시간 로깅 (개발 환경에서만)
+    // 성능 모니터링: 응답 시간 계산
     const responseTime = performance.now() - startTime;
-    if (
-      process.env.NODE_ENV === "development" ||
-      typeof window !== "undefined"
-    ) {
+    
+    // 성능 모니터링: 응답 시간 로깅 (개발 환경에서만)
+    if (process.env.NODE_ENV === "development") {
       console.log(
         `[일정 기반 추천] 응답 시간: ${responseTime.toFixed(
           2
@@ -8145,59 +8161,82 @@ export async function getHomeScheduleRecommendations(
     }
 
     if (error) {
+      // 에러 객체가 실제로 비어있는지 확인
+      const errorKeys = error && typeof error === "object" ? Object.keys(error) : [];
+      const hasErrorContent = 
+        errorKeys.length > 0 ||
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        error?.code ||
+        (String(error) && String(error) !== "[object Object]");
+
       // 에러 메시지 추출 (Supabase 에러 형식)
       const errorMessage =
         error?.message ||
         error?.details ||
         error?.hint ||
         error?.code ||
-        String(error) ||
-        "알 수 없는 오류";
+        (String(error) !== "[object Object]" ? String(error) : null) ||
+        null;
       const errorCode = error?.code;
 
-      // 에러 객체를 안전하게 직렬화 (Supabase 에러 객체는 직렬화가 어려울 수 있음)
-      const errorDetails = {
-        message: errorMessage,
-        code: errorCode,
-        details: error?.details,
-        hint: error?.hint,
-        // 에러 객체의 모든 속성을 안전하게 추출
-        ...(typeof error === "object" && error !== null
-          ? Object.fromEntries(
-              Object.entries(error).map(([key, value]) => [
-                key,
-                typeof value === "object" && value !== null
-                  ? JSON.stringify(value)
-                  : value,
-              ])
-            )
-          : {}),
-      };
+      // 빈 에러 객체 감지: 에러 객체가 비어있거나 응답 시간이 5초 이상이면 타임아웃으로 간주
+      const isEmptyError = 
+        !hasErrorContent ||
+        (!errorMessage && !errorCode && responseTime > 5000);
 
-      // 에러 정보를 더 명확하게 로깅
-      console.error("rpc_home_schedule_recommendations 오류:", {
-        message: errorMessage,
-        code: errorCode,
-        details: error?.details,
-        hint: error?.hint,
-        errorString: String(error),
-        errorType: typeof error,
-        errorKeys: error && typeof error === "object" ? Object.keys(error) : [],
-        fullErrorDetails: errorDetails,
-      });
+      // 타임아웃 감지: 응답 시간이 5초 이상이거나 명시적인 타임아웃 에러
+      const isTimeout = 
+        isEmptyError ||
+        responseTime > 5000 ||
+        (errorMessage && (
+          errorMessage.includes("timeout") ||
+          errorMessage.includes("canceling statement") ||
+          errorMessage.includes("cancelled")
+        )) ||
+        errorCode === "57014" ||
+        errorCode === "PGRST301";
 
-      // 원본 에러 객체도 로깅 (디버깅용)
-      console.error("전체 에러 객체 (원본):", error);
+      // 개발 환경에서만 에러 로깅 (빈 에러 객체는 조용히 처리)
+      if (process.env.NODE_ENV === "development" && hasErrorContent && errorMessage) {
+        const errorDetails = {
+          message: errorMessage,
+          code: errorCode,
+          details: error?.details,
+          hint: error?.hint,
+          responseTime: `${responseTime.toFixed(2)}ms`,
+          // 에러 객체의 모든 속성을 안전하게 추출
+          ...(typeof error === "object" && error !== null && errorKeys.length > 0
+            ? Object.fromEntries(
+                errorKeys.map((key) => {
+                  const value = (error as any)[key];
+                  return [
+                    key,
+                    typeof value === "object" && value !== null
+                      ? JSON.stringify(value)
+                      : value,
+                  ];
+                })
+              )
+            : {}),
+        };
 
-      // timeout 에러인 경우 더 작은 limit으로 재시도
-      if (
-        errorMessage?.includes("timeout") ||
-        errorMessage?.includes("canceling statement") ||
-        errorCode === "57014"
-      ) {
+        console.error("rpc_home_schedule_recommendations 오류:", errorDetails);
+      } else if (process.env.NODE_ENV === "development" && isEmptyError) {
+        // 빈 에러 객체지만 타임아웃으로 의심되는 경우
         console.warn(
-          "rpc_home_schedule_recommendations timeout 발생, 더 작은 limit으로 재시도..."
+          `rpc_home_schedule_recommendations 타임아웃 의심 (${responseTime.toFixed(2)}ms, 빈 에러 객체)`
         );
+      }
+
+      // 타임아웃 에러인 경우 더 작은 limit으로 재시도
+      if (isTimeout) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            `rpc_home_schedule_recommendations timeout 발생 (${responseTime.toFixed(2)}ms), 더 작은 limit으로 재시도...`
+          );
+        }
 
         // 재시도: limit을 더 줄임
         try {
@@ -8217,9 +8256,11 @@ export async function getHomeScheduleRecommendations(
           );
 
           if (!retryError && retryData) {
-            console.log(
-              `✅ 재시도 성공: ${retryLimitCategories}개 카테고리, 카테고리당 ${retryLimitPerCategory}개`
-            );
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                `✅ 재시도 성공: ${retryLimitCategories}개 카테고리, 카테고리당 ${retryLimitPerCategory}개`
+              );
+            }
             // 재시도 성공 시 데이터 처리 로직으로 진행
             // 아래의 data 처리 로직을 재사용하기 위해 data에 할당
             const processedData = retryData;
@@ -8288,29 +8329,38 @@ export async function getHomeScheduleRecommendations(
             return result;
           }
         } catch (retryError) {
-          console.warn("재시도도 실패:", retryError);
+          if (process.env.NODE_ENV === "development") {
+            console.warn("재시도도 실패:", retryError);
+          }
         }
 
-        // 재시도 실패 시 빈 배열 반환
-        console.warn(
-          "rpc_home_schedule_recommendations timeout으로 인해 빈 배열 반환"
-        );
+        // 재시도 실패 시 빈 배열 반환 (조용히 처리)
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "rpc_home_schedule_recommendations timeout으로 인해 빈 배열 반환"
+          );
+        }
         return [];
       }
 
       // RPC 함수가 아직 준비되지 않은 경우
       if (errorMessage?.includes("function") || errorCode === "42883") {
-        console.warn(
-          "⚠️ rpc_home_schedule_recommendations 함수가 아직 생성되지 않았을 수 있습니다."
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "⚠️ rpc_home_schedule_recommendations 함수가 아직 생성되지 않았을 수 있습니다."
+          );
+        }
         return [];
       }
 
       // 에러가 발생해도 빈 배열 반환 (앱이 계속 작동하도록)
-      console.warn(
-        "rpc_home_schedule_recommendations 오류로 인해 빈 배열 반환:",
-        errorMessage
-      );
+      // 개발 환경에서만 로깅
+      if (process.env.NODE_ENV === "development") {
+        console.warn(
+          "rpc_home_schedule_recommendations 오류로 인해 빈 배열 반환:",
+          errorMessage
+        );
+      }
       return [];
     }
 
