@@ -12,6 +12,7 @@ import {
   FiCalendar,
   FiUser,
   FiX,
+  FiGlobe,
 } from "react-icons/fi";
 import Image from "next/image";
 import {
@@ -29,6 +30,7 @@ import { formatTimeAgo, formatAbsoluteTime } from "@/lib/utils/timeFormat";
 import { maskNickname } from "@/lib/utils/nicknameMask";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { translateText, detectLanguage, type LanguageCode } from "@/lib/utils/translation";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import CommentForm from "./CommentForm";
@@ -43,7 +45,7 @@ export default function HospitalReviewDetailPage({
   reviewId,
 }: HospitalReviewDetailPageProps) {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [review, setReview] = useState<HospitalReviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
@@ -57,6 +59,11 @@ export default function HospitalReviewDetailPage({
   const [userLocale, setUserLocale] = useState<string | null>(null);
   const [showLoginRequiredPopup, setShowLoginRequiredPopup] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [translatedHospitalName, setTranslatedHospitalName] = useState<string | null>(null);
+  const [translatedProcedureName, setTranslatedProcedureName] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslated, setIsTranslated] = useState(false);
 
   // 로그인 상태 확인
   useEffect(() => {
@@ -164,6 +171,63 @@ export default function HospitalReviewDetailPage({
     }
   };
 
+  // 언어 변경 시 번역 상태 초기화
+  useEffect(() => {
+    setIsTranslated(false);
+    setTranslatedContent(null);
+    setTranslatedHospitalName(null);
+    setTranslatedProcedureName(null);
+  }, [language]);
+
+  // 번역 버튼 클릭 핸들러
+  const handleTranslate = async () => {
+    if (!review || isTranslating) return;
+
+    setIsTranslating(true);
+    try {
+      const targetLang = language as LanguageCode;
+      const contentText = review.content || "";
+      const hospitalNameText = review.hospital_name || "";
+      const procedureNameText = review.procedure_name || "";
+      const detectedSourceLang = detectLanguage(contentText || hospitalNameText || procedureNameText);
+
+      // 원본 언어와 목표 언어가 같으면 번역 불필요
+      if (detectedSourceLang === targetLang) {
+        setIsTranslated(false);
+        setTranslatedContent(null);
+        setTranslatedHospitalName(null);
+        setTranslatedProcedureName(null);
+        setIsTranslating(false);
+        return;
+      }
+
+      // 병원명, 시술명, 본문을 동시에 번역
+      const [translatedHospitalNameResult, translatedProcedureNameResult, translatedContentResult] =
+        await Promise.all([
+          hospitalNameText
+            ? translateText(hospitalNameText, targetLang, null)
+            : Promise.resolve({ text: "" }),
+          procedureNameText
+            ? translateText(procedureNameText, targetLang, null)
+            : Promise.resolve({ text: "" }),
+          translateText(contentText, targetLang, null),
+        ]);
+
+      setTranslatedHospitalName(translatedHospitalNameResult.text);
+      setTranslatedProcedureName(translatedProcedureNameResult.text);
+      setTranslatedContent(translatedContentResult.text);
+      setIsTranslated(true);
+    } catch (error) {
+      console.error("번역 실패:", error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleShowOriginal = () => {
+    setIsTranslated(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -193,14 +257,54 @@ export default function HospitalReviewDetailPage({
       <Header />
       <div className="max-w-md mx-auto w-full bg-white">
         {/* 헤더 */}
-        <div className="sticky top-[48px] bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center gap-3 shadow-sm">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiArrowLeft className="text-gray-700 text-xl" />
-          </button>
-          <h1 className="text-lg font-bold text-gray-900">{t("review.hospitalReview")}</h1>
+        <div className="sticky top-[48px] bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiArrowLeft className="text-gray-700 text-xl" />
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">{t("review.hospitalReview")}</h1>
+          </div>
+          {/* 번역 버튼 */}
+          {review &&
+            (() => {
+              const contentText = review.content || "";
+              const hospitalNameText = review.hospital_name || "";
+              const procedureNameText = review.procedure_name || "";
+              const textToDetect = contentText || hospitalNameText || procedureNameText;
+              const detectedSourceLang = textToDetect
+                ? detectLanguage(textToDetect)
+                : null;
+              const targetLang = language as LanguageCode;
+
+              const needsTranslation =
+                detectedSourceLang !== null &&
+                detectedSourceLang !== targetLang &&
+                textToDetect.length > 0;
+
+              return needsTranslation ? (
+                <button
+                  onClick={isTranslated ? handleShowOriginal : handleTranslate}
+                  disabled={isTranslating}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    isTranslated
+                      ? "bg-primary-main text-white hover:bg-primary-main/90"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <FiGlobe className="text-base" />
+                  <span>
+                    {isTranslating
+                      ? t("post.translating")
+                      : isTranslated
+                      ? t("post.showOriginal")
+                      : t("post.translate")}
+                  </span>
+                </button>
+              ) : null;
+            })()}
         </div>
 
         {/* 카테고리 태그 */}
@@ -249,7 +353,9 @@ export default function HospitalReviewDetailPage({
                   {t("label.hospitalName")}
                 </span>
                 <p className="text-lg font-bold text-gray-900 mt-2">
-                  {review.hospital_name}
+                  {isTranslated && translatedHospitalName
+                    ? translatedHospitalName
+                    : review.hospital_name}
                 </p>
               </div>
 
@@ -259,7 +365,9 @@ export default function HospitalReviewDetailPage({
                     {t("label.procedureName")}
                   </span>
                   <p className="text-base font-semibold text-gray-900 mt-2">
-                    {review.procedure_name}
+                    {isTranslated && translatedProcedureName
+                      ? translatedProcedureName
+                      : review.procedure_name}
                   </p>
                 </div>
               )}
@@ -374,8 +482,16 @@ export default function HospitalReviewDetailPage({
         {/* 글 내용 */}
         <div className="px-4 py-6 border-b border-gray-100">
           <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
-            {review.content}
+            {isTranslated && translatedContent ? translatedContent : review.content}
           </p>
+          {isTranslated && (
+            <button
+              onClick={handleShowOriginal}
+              className="mt-2 text-xs text-primary-main hover:text-primary-main/80 underline"
+            >
+              {t("post.showOriginal")}
+            </button>
+          )}
         </div>
 
         {/* 이미지 */}

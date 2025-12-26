@@ -12,6 +12,7 @@ import {
   FiCalendar,
   FiUser,
   FiX,
+  FiGlobe,
 } from "react-icons/fi";
 import Image from "next/image";
 import {
@@ -36,7 +37,7 @@ import {
   getCurrencyFromStorage,
 } from "@/lib/utils/currency";
 import { formatDateWithDay } from "@/lib/utils/dateFormat";
-import { translateText } from "@/lib/utils/translation";
+import { translateText, detectLanguage, type LanguageCode } from "@/lib/utils/translation";
 import Header from "./Header";
 import BottomNavigation from "./BottomNavigation";
 import CommentForm from "./CommentForm";
@@ -70,6 +71,8 @@ export default function ProcedureReviewDetailPage({
   );
   const [translatedProcedureName, setTranslatedProcedureName] = useState<string | null>(null);
   const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslated, setIsTranslated] = useState(false);
 
   // 통화 설정
   const currency =
@@ -138,31 +141,9 @@ export default function ProcedureReviewDetailPage({
           setTranslatedCategory(data?.category || null);
         }
 
-        // 시술명 번역 (DeepL API 사용)
-        if (data?.procedure_name && language !== "KR") {
-          try {
-            const result = await translateText(data.procedure_name, language, "KR");
-            setTranslatedProcedureName(result.text);
-          } catch (error) {
-            console.error("시술명 번역 실패:", error);
-            setTranslatedProcedureName(data.procedure_name);
-          }
-        } else {
-          setTranslatedProcedureName(data?.procedure_name || null);
-        }
-
-        // 본문 번역 (DeepL API 사용)
-        if (data?.content && language !== "KR") {
-          try {
-            const result = await translateText(data.content, language, "KR");
-            setTranslatedContent(result.text);
-          } catch (error) {
-            console.error("본문 번역 실패:", error);
-            setTranslatedContent(data.content);
-          }
-        } else {
-          setTranslatedContent(data?.content || null);
-        }
+        // 시술명과 본문은 번역 버튼으로 번역 (자동 번역 제거)
+        setTranslatedProcedureName(data?.procedure_name || null);
+        setTranslatedContent(data?.content || null);
 
         if (data) {
           // 좋아요 상태 및 개수 로드
@@ -232,6 +213,56 @@ export default function ProcedureReviewDetailPage({
     }
   };
 
+  // 언어 변경 시 번역 상태 초기화
+  useEffect(() => {
+    setIsTranslated(false);
+    setTranslatedProcedureName(null);
+    setTranslatedContent(null);
+  }, [language]);
+
+  // 번역 버튼 클릭 핸들러
+  const handleTranslate = async () => {
+    if (!review || isTranslating) return;
+
+    setIsTranslating(true);
+    try {
+      const targetLang = language as LanguageCode;
+      const contentText = review.content || "";
+      const procedureNameText = review.procedure_name || "";
+      const detectedSourceLang = detectLanguage(contentText || procedureNameText);
+
+      // 원본 언어와 목표 언어가 같으면 번역 불필요
+      if (detectedSourceLang === targetLang) {
+        setIsTranslated(false);
+        setTranslatedProcedureName(null);
+        setTranslatedContent(null);
+        setIsTranslating(false);
+        return;
+      }
+
+      // 시술명과 본문을 동시에 번역
+      const [translatedProcedureNameResult, translatedContentResult] =
+        await Promise.all([
+          procedureNameText
+            ? translateText(procedureNameText, targetLang, null)
+            : Promise.resolve({ text: "" }),
+          translateText(contentText, targetLang, null),
+        ]);
+
+      setTranslatedProcedureName(translatedProcedureNameResult.text);
+      setTranslatedContent(translatedContentResult.text);
+      setIsTranslated(true);
+    } catch (error) {
+      console.error("번역 실패:", error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const handleShowOriginal = () => {
+    setIsTranslated(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -261,16 +292,55 @@ export default function ProcedureReviewDetailPage({
       <Header />
       <div className="max-w-md mx-auto w-full bg-white">
         {/* 헤더 */}
-        <div className="sticky top-[48px] bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center gap-3 shadow-sm">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <FiArrowLeft className="text-gray-700 text-xl" />
-          </button>
-          <h1 className="text-lg font-bold text-gray-900">
-            {t("review.treatmentReview")}
-          </h1>
+        <div className="sticky top-[48px] bg-white/95 backdrop-blur-sm border-b border-gray-200 z-10 px-4 py-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiArrowLeft className="text-gray-700 text-xl" />
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">
+              {t("review.treatmentReview")}
+            </h1>
+          </div>
+          {/* 번역 버튼 */}
+          {review &&
+            (() => {
+              const contentText = review.content || "";
+              const procedureNameText = review.procedure_name || "";
+              const textToDetect = contentText || procedureNameText;
+              const detectedSourceLang = textToDetect
+                ? detectLanguage(textToDetect)
+                : null;
+              const targetLang = language as LanguageCode;
+
+              const needsTranslation =
+                detectedSourceLang !== null &&
+                detectedSourceLang !== targetLang &&
+                textToDetect.length > 0;
+
+              return needsTranslation ? (
+                <button
+                  onClick={isTranslated ? handleShowOriginal : handleTranslate}
+                  disabled={isTranslating}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    isTranslated
+                      ? "bg-primary-main text-white hover:bg-primary-main/90"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <FiGlobe className="text-base" />
+                  <span>
+                    {isTranslating
+                      ? t("post.translating")
+                      : isTranslated
+                      ? t("post.showOriginal")
+                      : t("post.translate")}
+                  </span>
+                </button>
+              ) : null;
+            })()}
         </div>
 
         {/* 카테고리 태그 */}
@@ -319,7 +389,9 @@ export default function ProcedureReviewDetailPage({
                   {t("label.procedureName")}
                 </span>
                 <p className="text-base font-semibold text-gray-900 mt-1">
-                  {translatedProcedureName || review.procedure_name}
+                  {isTranslated && translatedProcedureName
+                    ? translatedProcedureName
+                    : review.procedure_name}
                 </p>
               </div>
 
@@ -445,8 +517,18 @@ export default function ProcedureReviewDetailPage({
         {/* 글 내용 */}
         <div className="px-4 py-6 border-b border-gray-100">
           <p className="text-gray-800 leading-relaxed whitespace-pre-wrap text-base">
-            {translatedContent || review.content}
+            {isTranslated && translatedContent
+              ? translatedContent
+              : review.content}
           </p>
+          {isTranslated && (
+            <button
+              onClick={handleShowOriginal}
+              className="mt-2 text-xs text-primary-main hover:text-primary-main/80 underline"
+            >
+              {t("post.showOriginal")}
+            </button>
+          )}
         </div>
 
         {/* 이미지 */}
