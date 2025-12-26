@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiHeart,
@@ -80,8 +80,8 @@ export default function HospitalInfoPage() {
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
 
-  // 데이터 로드 (페이지네이션)
-  const loadData = async (page: number = 1, reset: boolean = false) => {
+  // ✅ 데이터 로드 (페이지네이션) - useCallback으로 메모이제이션하여 language 변경 시 재생성
+  const loadData = useCallback(async (page: number = 1, reset: boolean = false) => {
     try {
       if (reset) {
         setLoading(true);
@@ -117,10 +117,19 @@ export default function HospitalInfoPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [searchTerm, filterCategory, language]); // ✅ language를 의존성에 포함
 
   // 검색 실행 상태 (자동완성 선택 또는 엔터 입력 시에만 true)
   const [shouldExecuteSearch, setShouldExecuteSearch] = useState(false);
+
+  // ✅ 언어 변경 시 데이터 초기화 및 재로드
+  useEffect(() => {
+    // 언어가 변경되면 기존 데이터를 초기화하고 새로 로드
+    setHospitals([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setTotalCount(0);
+  }, [language]);
 
   // 초기 데이터 로드 및 필터 변경 시 재로드
   useEffect(() => {
@@ -145,7 +154,7 @@ export default function HospitalInfoPage() {
       loadData(1, true);
       setShouldExecuteSearch(false); // 검색 실행 후 플래그 리셋
     }
-  }, [shouldExecuteSearch, searchTerm, filterCategory]);
+  }, [shouldExecuteSearch, searchTerm, filterCategory, language, loadData]); // ✅ loadData를 의존성에 추가
 
   // 카테고리 변경 시에는 자동으로 검색 실행
   useEffect(() => {

@@ -1511,23 +1511,8 @@ export async function getHospitals(
     // 언어별 병원 테이블 선택
     const tableName = getHospitalTableName(lang);
 
-    let query = client.from(tableName).select(
-      `
-        platform,
-        hospital_id_rd,
-        hospital_name,
-        hospital_address,
-        opening_hours,
-        hospital_departments,
-        hospital_intro,
-        hospital_info_raw,
-        hospital_img_url,
-        hospital_rating,
-        review_count,
-        hospital_phone_safe,
-        hospital_language_support
-      `
-    );
+    // ✅ 모든 컬럼 가져오기 (번역 데이터 포함)
+    let query = client.from(tableName).select("*");
 
     // 필터 적용
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {
@@ -1776,25 +1761,10 @@ export async function loadHospitalByKey(
     const lang = language || "KR";
     const tableName = getHospitalTableName(lang);
 
+    // ✅ 모든 컬럼 가져오기 (번역 데이터 포함)
     const { data, error } = await client
       .from(tableName)
-      .select(
-        `
-        platform,
-        hospital_id_rd,
-        hospital_name,
-        hospital_address,
-        opening_hours,
-        hospital_departments,
-        hospital_intro,
-        hospital_info_raw,
-        hospital_img_url,
-        hospital_rating,
-        review_count,
-        hospital_phone_safe,
-        hospital_language_support
-      `
-      )
+      .select("*")
       .eq("platform", platform)
       .eq("hospital_id_rd", hospitalIdRd)
       .maybeSingle();
@@ -1828,32 +1798,35 @@ export async function loadHospitalByIdRd(
     const lang = language || "KR";
     const tableName = getHospitalTableName(lang);
 
-    // hospital_id_rd로 조회 (여러 platform 결과 중 첫 번째 사용)
+    // ✅ hospital_id_rd로 조회 - 모든 컬럼 가져오기 (번역 데이터 포함)
     const { data, error } = await client
       .from(tableName)
-      .select(
-        `
-        platform,
-        hospital_id_rd,
-        hospital_name,
-        hospital_address,
-        opening_hours,
-        hospital_departments,
-        hospital_intro,
-        hospital_info_raw,
-        hospital_img_url,
-        hospital_rating,
-        review_count,
-        hospital_phone_safe,
-        hospital_language_support
-      `
-      )
+      .select("*")
       .eq("hospital_id_rd", hospitalIdRd)
       .limit(1)
       .maybeSingle();
 
     if (error) {
       throw new Error(`Supabase 오류: ${error.message}`);
+    }
+
+    // ✅ 현재 언어에서 데이터를 찾지 못한 경우, 기본 언어(KR)로 fallback 시도
+    if (!data && lang !== "KR") {
+      const krTableName = getHospitalTableName("KR");
+      const { data: krData, error: krError } = await client
+        .from(krTableName)
+        .select("*") // ✅ 모든 컬럼 가져오기
+        .eq("hospital_id_rd", hospitalIdRd)
+        .limit(1)
+        .maybeSingle();
+
+      if (krError) {
+        console.warn(`병원 데이터 로드 실패 (KR fallback): ${krError.message}`);
+      }
+
+      if (krData) {
+        return cleanData<HospitalI18nRow>([krData])[0];
+      }
     }
 
     if (!data) {
@@ -1957,24 +1930,8 @@ export async function loadHospitalsPaginated(
     const lang = filters?.language || "KR";
     const tableName = getHospitalTableName(lang);
 
-    let query = client.from(tableName).select(
-      `
-        platform,
-        hospital_id_rd,
-        hospital_name,
-        hospital_address,
-        opening_hours,
-        hospital_departments,
-        hospital_intro,
-        hospital_info_raw,
-        hospital_img_url,
-        hospital_rating,
-        review_count,
-        hospital_phone_safe,
-        hospital_language_support
-      `,
-      { count: "exact" }
-    );
+    // ✅ 모든 컬럼 가져오기 (번역 데이터 포함)
+    let query = client.from(tableName).select("*", { count: "exact" });
 
     // 필터 적용 (최소 2글자 이상일 때만 검색)
     if (filters?.searchTerm && filters.searchTerm.trim().length >= 2) {

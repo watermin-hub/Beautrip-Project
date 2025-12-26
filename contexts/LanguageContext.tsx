@@ -3164,8 +3164,8 @@ const translations: Record<LanguageCode, Record<string, string>> = {
 };
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // 초기값은 항상 "KR"로 설정하여 서버/클라이언트 일치 보장
-  const [language, setLanguageState] = useState<LanguageCode>("KR");
+  // ✅ 초기값을 "EN"으로 설정하여 페이지 처음 들어오면 영어로 표시
+  const [language, setLanguageState] = useState<LanguageCode>("EN");
   const [isMounted, setIsMounted] = useState(false);
 
   // 클라이언트에서만 localStorage 읽기
@@ -3179,6 +3179,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       ) {
         setLanguageState(saved);
       }
+      // localStorage에 저장된 언어가 없으면 기본값 "EN" 사용 (이미 초기값으로 설정됨)
     }
   }, []);
 
