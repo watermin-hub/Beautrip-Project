@@ -3163,23 +3163,117 @@ const translations: Record<LanguageCode, Record<string, string>> = {
   },
 };
 
+// 언어 코드를 HTML lang 속성 형식으로 변환하는 맵
+const langMap: Record<LanguageCode, string> = {
+  KR: "ko",
+  EN: "en",
+  JP: "ja",
+  CN: "zh",
+};
+
+/**
+ * 브라우저 언어를 기반으로 기본 언어 코드를 감지합니다
+ * @returns 감지된 언어 코드 (기본값: "EN")
+ */
+function detectLanguageFromBrowser(): LanguageCode {
+  if (typeof window === "undefined") return "EN";
+
+  // navigator.language 또는 navigator.languages 사용
+  const browserLang = navigator.language || navigator.languages?.[0] || "";
+  const langLower = browserLang.toLowerCase();
+
+  // 한국어 감지 (ko, ko-KR 등)
+  if (langLower.startsWith("ko")) {
+    return "KR";
+  }
+  // 일본어 감지 (ja, ja-JP 등)
+  if (langLower.startsWith("ja")) {
+    return "JP";
+  }
+  // 중국어 감지 (zh, zh-CN, zh-TW 등)
+  if (langLower.startsWith("zh")) {
+    return "CN";
+  }
+
+  // 그 외는 영어
+  return "EN";
+}
+
+/**
+ * IP 기반으로 국가를 감지하여 언어를 추론합니다 (선택적)
+ * @returns 감지된 언어 코드 또는 null
+ */
+async function detectLanguageFromIP(): Promise<LanguageCode | null> {
+  try {
+    // 무료 IP geolocation API 사용 (예: ipapi.co)
+    const response = await fetch("https://ipapi.co/json/", {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const countryCode = data.country_code?.toUpperCase();
+
+    // 국가 코드를 언어 코드로 매핑
+    if (countryCode === "KR") return "KR";
+    if (countryCode === "JP") return "JP";
+    if (countryCode === "CN" || countryCode === "TW" || countryCode === "HK") return "CN";
+
+    return null;
+  } catch (error) {
+    // API 호출 실패 시 무시 (브라우저 언어 감지로 fallback)
+    console.debug("[Language] IP geolocation failed, using browser language");
+    return null;
+  }
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  // ✅ 초기값을 "EN"으로 설정하여 페이지 처음 들어오면 영어로 표시
-  const [language, setLanguageState] = useState<LanguageCode>("EN");
+  // 초기값: 브라우저 언어로 감지 (서버 사이드에서는 "EN"으로 fallback)
+  // useState의 lazy initialization 사용하여 초기 렌더링 시에만 함수 실행
+  const [language, setLanguageState] = useState<LanguageCode>(() => {
+    if (typeof window === "undefined") return "EN";
+    return detectLanguageFromBrowser();
+  });
   const [isMounted, setIsMounted] = useState(false);
 
-  // 클라이언트에서만 localStorage 읽기
+  // 클라이언트에서만 localStorage 읽기 및 국가별 기본 언어 감지
   useEffect(() => {
     setIsMounted(true);
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("language") as LanguageCode;
+      
+      // localStorage에 저장된 언어가 있으면 그것 사용
       if (
         saved &&
         (saved === "KR" || saved === "EN" || saved === "JP" || saved === "CN")
       ) {
         setLanguageState(saved);
+        document.documentElement.lang = langMap[saved] || "en";
+        return;
       }
-      // localStorage에 저장된 언어가 없으면 기본값 "EN" 사용 (이미 초기값으로 설정됨)
+
+      // 저장된 언어가 없으면 국가별 기본 언어 감지
+      // (브라우저 언어는 이미 초기값으로 설정됨)
+      const detectAndSetLanguage = async () => {
+        // IP 기반 geolocation으로 더 정확한 언어 감지 시도
+        // (브라우저 언어보다 우선순위가 높음)
+        const ipLang = await detectLanguageFromIP();
+        if (ipLang) {
+          const currentLang = language;
+          // IP 기반 언어가 브라우저 언어와 다르면 업데이트
+          if (ipLang !== currentLang) {
+            setLanguageState(ipLang);
+            document.documentElement.lang = langMap[ipLang] || "en";
+          }
+        }
+        // IP 기반 감지 실패 시 이미 설정된 브라우저 언어 사용
+      };
+
+      detectAndSetLanguage();
     }
   }, []);
 
@@ -3190,6 +3284,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       window.dispatchEvent(
         new CustomEvent("languageChanged", { detail: language })
       );
+      // HTML lang 속성 동적 업데이트
+      document.documentElement.lang = langMap[language] || "en";
     }
   }, [language, isMounted]);
 
