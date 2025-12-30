@@ -50,28 +50,15 @@ const formatTimeAgo = (dateString?: string): string => {
   return `${Math.floor(diffDays / 7)}주 전`;
 };
 
-// 인기글 점수 계산 함수 (PostList와 동일)
+// 인기글 점수 계산 함수 (조회수, 좋아요, 댓글만으로 계산)
 const calculatePopularityScore = (
   viewCount: number,
   likeCount: number,
   commentCount: number,
-  createdAt?: string
+  createdAt?: string // 파라미터는 유지하되 사용하지 않음 (호환성)
 ): number => {
-  const baseScore = viewCount * 1 + likeCount * 3 + commentCount * 2;
-  let timeMultiplier = 1.0;
-  if (createdAt) {
-    const postDate = new Date(createdAt);
-    const now = new Date();
-    const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
-    if (hoursDiff <= 24) {
-      timeMultiplier = 1.5;
-    } else if (hoursDiff <= 168) {
-      timeMultiplier = 1.3;
-    } else if (hoursDiff <= 720) {
-      timeMultiplier = 1.1;
-    }
-  }
-  return baseScore * timeMultiplier;
+  // 시간 가중치 제외: 순수하게 조회수, 좋아요, 댓글만으로 계산
+  return viewCount * 1 + likeCount * 3 + commentCount * 2;
 };
 
 export default function PopularReviewsSection() {
@@ -120,7 +107,8 @@ export default function PopularReviewsSection() {
             timestamp: formatTimeAgo(review.created_at),
             upvotes: 0,
             comments: 0,
-            views: 0,
+            // ✅ procedure_reviews 테이블의 views 컬럼 직접 사용
+            views: review.views || 0,
             reviewType: "procedure" as const,
             procedure_name: review.procedure_name,
             hospital_name: review.hospital_name,
@@ -140,7 +128,8 @@ export default function PopularReviewsSection() {
             timestamp: formatTimeAgo(review.created_at),
             upvotes: 0,
             comments: 0,
-            views: 0,
+            // ✅ hospital_reviews 테이블의 views 컬럼 직접 사용
+            views: review.views || 0,
             reviewType: "hospital" as const,
             hospital_name: review.hospital_name,
             procedure_name: review.procedure_name,
@@ -157,7 +146,13 @@ export default function PopularReviewsSection() {
           allReviews.map(async (post) => {
             const postId = String(post.id);
             if (!uuidRegex.test(postId)) {
-              return { ...post, likeCount: 0, commentCount: 0, viewCount: 0 };
+              // ✅ 이미 가져온 views 값 사용 (별도 API 호출 불필요)
+              return { 
+                ...post, 
+                likeCount: 0, 
+                commentCount: 0, 
+                viewCount: post.views || 0 
+              };
             }
 
             const postType =
@@ -166,31 +161,36 @@ export default function PopularReviewsSection() {
                 : "hospital_review";
 
             try {
-              const [likeCount, commentCount, viewCount] = await Promise.all([
+              // ✅ views는 이미 가져왔으므로 좋아요와 댓글만 추가로 가져오기
+              const [likeCount, commentCount] = await Promise.all([
                 getPostLikeCount(postId, postType),
                 getCommentCount(
                   postId,
                   post.reviewType === "procedure" ? "procedure" : "hospital"
                 ),
-                getViewCount(
-                  postId,
-                  post.reviewType === "procedure" ? "procedure" : "hospital"
-                ),
+                // getViewCount() 제거 - 이미 review.views로 가져왔음
               ]);
 
               return {
                 ...post,
                 likes: likeCount,
                 comments: commentCount,
-                views: viewCount,
+                // ✅ 이미 가져온 views 값 사용 (별도 API 호출 불필요)
+                views: post.views || 0,
                 upvotes: likeCount,
                 likeCount,
                 commentCount,
-                viewCount,
+                viewCount: post.views || 0, // 인기도 계산용
               };
             } catch (error) {
               console.error(`통계 로드 실패 (${postId}):`, error);
-              return { ...post, likeCount: 0, commentCount: 0, viewCount: 0 };
+              // ✅ 에러 시에도 이미 가져온 views 값 사용
+              return { 
+                ...post, 
+                likeCount: 0, 
+                commentCount: 0, 
+                viewCount: post.views || 0 
+              };
             }
           })
         );

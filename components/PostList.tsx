@@ -708,35 +708,11 @@ export default function PostList({
     viewCount: number,
     likeCount: number,
     commentCount: number,
-    createdAt?: string
+    createdAt?: string // 파라미터는 유지하되 사용하지 않음 (호환성)
   ): number => {
-    const postId = String(post.id);
-    
-    // 기본 점수 계산 (가중치 적용)
+    // 시간 가중치 제외: 순수하게 조회수, 좋아요, 댓글만으로 계산
     // 조회수: 가중치 1, 좋아요: 가중치 3, 댓글: 가중치 2
-    const baseScore = 
-      viewCount * 1 + 
-      likeCount * 3 + 
-      commentCount * 2;
-
-    // 시간 가중치: 최근 글일수록 가산점
-    // 24시간 이내: +50%, 7일 이내: +30%, 30일 이내: +10%
-    let timeMultiplier = 1.0;
-    if (createdAt) {
-      const postDate = new Date(createdAt);
-      const now = new Date();
-      const hoursDiff = (now.getTime() - postDate.getTime()) / (1000 * 60 * 60);
-      
-      if (hoursDiff <= 24) {
-        timeMultiplier = 1.5; // 24시간 이내: 50% 가산점
-      } else if (hoursDiff <= 168) { // 7일
-        timeMultiplier = 1.3; // 7일 이내: 30% 가산점
-      } else if (hoursDiff <= 720) { // 30일
-        timeMultiplier = 1.1; // 30일 이내: 10% 가산점
-      }
-    }
-
-    return baseScore * timeMultiplier;
+    return viewCount * 1 + likeCount * 3 + commentCount * 2;
   };
 
   // 로그인 상태 확인

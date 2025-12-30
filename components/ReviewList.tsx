@@ -181,7 +181,8 @@ export default function ReviewList() {
               edited: false,
               upvotes: 0,
               comments: 0,
-              views: 0,
+              // ✅ procedure_reviews 테이블의 views 컬럼 직접 사용
+              views: review.views || 0,
               postType: "treatment_review" as const,
             };
           });
@@ -211,7 +212,8 @@ export default function ReviewList() {
               edited: false,
               upvotes: 0,
               comments: 0,
-              views: 0,
+              // ✅ hospital_reviews 테이블의 views 컬럼 직접 사용
+              views: review.views || 0,
               postType: "hospital_review" as const,
             };
           });

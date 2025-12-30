@@ -3378,6 +3378,7 @@ export interface ProcedureReviewData {
   user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
+  views?: number; // 조회수 (procedure_reviews 테이블의 views 컬럼)
 }
 
 // 병원후기 데이터 인터페이스
@@ -3396,6 +3397,7 @@ export interface HospitalReviewData {
   user_id?: string; // Supabase Auth UUID
   created_at?: string; // ISO timestamp
   updated_at?: string; // ISO timestamp
+  views?: number; // 조회수 (hospital_reviews 테이블의 views 컬럼)
 }
 
 // 고민글 데이터 인터페이스
