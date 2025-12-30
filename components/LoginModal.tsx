@@ -402,17 +402,39 @@ export default function LoginModal({
         localStorage.setItem("auth_returnTo", returnTo);
         console.log("🔗 [Google OAuth] 원래 페이지 저장:", returnTo);
         
-        // 리다이렉트 URL 설정 (window.location.origin 사용으로 포트 변경에도 안전)
-        const redirectUrl = `${window.location.origin}/auth/callback`;
+        // 리다이렉트 URL 설정 (브라우저 호환성 고려)
+        // 프로토콜과 호스트를 명확히 지정
+        let redirectUrl: string;
+        try {
+          const protocol = window.location.protocol;
+          const host = window.location.host;
+          redirectUrl = `${protocol}//${host}/auth/callback`;
+        } catch (e) {
+          // window.location 접근 실패 시 fallback
+          console.error("❌ [Google OAuth] window.location 접근 실패:", e);
+          redirectUrl = `${window.location.origin}/auth/callback`;
+        }
+        
         console.log("🔗 [Google OAuth] 리다이렉트 URL:", redirectUrl);
         console.log("🔗 [Google OAuth] 현재 origin:", window.location.origin);
+        console.log("🔗 [Google OAuth] User-Agent:", navigator.userAgent);
+        
+        // 브라우저 감지 (디버깅용)
+        const isSamsungBrowser = /SamsungBrowser/i.test(navigator.userAgent);
+        const isMobile = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+        if (isSamsungBrowser) {
+          console.log("⚠️ [Google OAuth] 삼성 인터넷 브라우저 감지됨");
+        }
+        if (isMobile) {
+          console.log("📱 [Google OAuth] 모바일 브라우저 감지됨");
+        }
 
-        // Supabase Google OAuth 로그인 (queryParams 제거 - Supabase가 자동 처리)
+        // Supabase Google OAuth 로그인
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
             redirectTo: redirectUrl,
-            // queryParams 제거: Supabase가 자동으로 처리하며, 잘못된 파라미터가 400 에러를 일으킬 수 있음
+            skipBrowserRedirect: false, // 브라우저 리다이렉트 허용
           },
         });
 

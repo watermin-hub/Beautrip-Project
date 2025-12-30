@@ -76,11 +76,11 @@ export default function RankingBanner() {
               </span>
               <IoChevronUp className="text-primary-main text-sm" />
             </div>
-            <span className="text-gray-800 text-sm font-medium truncate">
+            <span className="text-gray-800 text-sm font-medium truncate" suppressHydrationWarning>
               {t(currentRanking.nameKey)}
             </span>
             {currentRanking.status === "best" && (
-              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap ml-1">
+              <span className="bg-primary-light/20 text-primary-main px-2 py-0.5 rounded text-xs font-semibold whitespace-nowrap ml-1" suppressHydrationWarning>
                 {t("banner.ranking.best")}
               </span>
             )}
@@ -115,7 +115,7 @@ export default function RankingBanner() {
           style={{ height: "420px" }}
         >
           <div className="bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between">
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-base font-bold text-gray-900" suppressHydrationWarning>
               {t("banner.ranking.title")}
             </h2>
             <button
@@ -151,7 +151,7 @@ export default function RankingBanner() {
                   </span>
                   <IoChevronUp className="text-primary-main text-xs" />
                 </div>
-                <span className="text-gray-800 text-xs font-medium flex-1">
+                <span className="text-gray-800 text-xs font-medium flex-1" suppressHydrationWarning>
                   {t(item.nameKey)}
                 </span>
                 {item.status === "best" && (

@@ -268,10 +268,11 @@ export default function SignupModal({
           provider: profile?.provider || "local",
         };
 
-        // localStorage에 사용자 정보 저장
+        // localStorage에 사용자 정보 저장 (세션 유지를 위해 userId도 저장)
         if (typeof window !== "undefined") {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("userInfo", JSON.stringify(userInfo));
+          localStorage.setItem("userId", authData.user.id); // userId 저장 (세션 유지용)
         }
 
         // 로그인 성공 콜백 호출 (SignupModal이 LoginModal의 onLoginSuccess를 받을 수 있도록)

@@ -159,3 +159,4 @@ NEXT_PUBLIC_GAS_WEBHOOK_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/ex
 - 에러 처리 적절
 
 **다만, 후기 작성 시 user_profiles 조회가 추가로 필요**하므로, 이를 고려한 구현이 필요합니다.
+

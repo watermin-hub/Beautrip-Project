@@ -149,3 +149,4 @@ SELECT * FROM rpc_home_schedule_recommendations(
 - 인덱스 추가는 즉각적인 효과를 볼 수 있습니다
 - 쿼리 최적화는 실행 계획 분석 후 진행하는 것이 좋습니다
 
+

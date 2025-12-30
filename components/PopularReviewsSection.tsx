@@ -223,11 +223,7 @@ export default function PopularReviewsSection() {
   }, []);
 
   const handleReviewClick = (post: ReviewPost) => {
-    if (!isLoggedIn) {
-      setShowLoginRequiredPopup(true);
-      return;
-    }
-    
+    // 후기 조회는 로그인 없이도 가능해야 함
     if (post.reviewType && post.id) {
       const postId = String(post.id);
       if (post.reviewType === "procedure") {
@@ -242,10 +238,7 @@ export default function PopularReviewsSection() {
 
   const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isLoggedIn) {
-      setShowLoginRequiredPopup(true);
-      return;
-    }
+    // 후기 목록 조회는 로그인 없이도 가능해야 함
     router.push("/community?tab=popular");
   };
 
