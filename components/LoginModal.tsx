@@ -2,12 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiGlobe, FiEye, FiEyeOff } from "react-icons/fi";
+import { FiArrowLeft, FiGlobe, FiEye, FiEyeOff, FiExternalLink } from "react-icons/fi";
 import Image from "next/image";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { trackLoginStart, trackLoginSuccess } from "@/lib/gtm";
+import {
+  isInAppBrowser,
+  getInAppBrowserType,
+  openInExternalBrowser,
+  getInAppBrowserMessage,
+} from "@/lib/utils/browser";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -48,6 +54,11 @@ export default function LoginModal({
   ];
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showInAppBrowserWarning, setShowInAppBrowserWarning] = useState(false);
+  
+  // 인앱 브라우저 감지
+  const inAppBrowser = isInAppBrowser();
+  const inAppBrowserType = getInAppBrowserType();
 
   // Supabase Auth 상태 감지 (OAuth 콜백 처리)
   useEffect(() => {
@@ -386,6 +397,12 @@ export default function LoginModal({
   ];
 
   const handleSocialLogin = async (provider: string) => {
+    // 구글 로그인 시 인앱 브라우저 체크
+    if (provider === "google" && inAppBrowser) {
+      setShowInAppBrowserWarning(true);
+      return;
+    }
+
     // GTM: 로그인 시작 이벤트
     trackLoginStart(provider === "google" ? "google" : "local");
 
@@ -471,9 +488,28 @@ export default function LoginModal({
       }
     } catch (error: any) {
       console.error(`${provider} 로그인 오류:`, error);
+      
+      // Google OAuth 인앱 브라우저 에러 감지
+      if (
+        provider === "google" &&
+        (error.message?.includes("disallowed_useragent") ||
+          error.message?.includes("403") ||
+          error.code === "403")
+      ) {
+        setShowInAppBrowserWarning(true);
+        setIsLoading(false);
+        return;
+      }
+      
       alert(`${provider} 로그인 중 오류가 발생했습니다: ${error.message}`);
       setIsLoading(false);
     }
+  };
+
+  // 외부 브라우저로 열기 핸들러
+  const handleOpenInExternalBrowser = () => {
+    const currentUrl = window.location.href;
+    openInExternalBrowser(currentUrl);
   };
 
   const handleIdLogin = async () => {
@@ -665,36 +701,54 @@ export default function LoginModal({
           {!showIdLogin && (
             <>
               <div className="space-y-3 mb-6">
-                {mainProviders.map((provider) => (
-                  <button
-                    key={provider.id}
-                    onClick={() => handleSocialLogin(provider.id)}
-                    disabled={isLoading}
-                    className={`w-full ${provider.bgColor} ${provider.hoverColor} ${provider.textColor} py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {provider.iconUrl ? (
-                      provider.iconUrl.endsWith(".svg") ? (
-                        <img
-                          src={provider.iconUrl}
-                          alt={provider.name}
-                          className="w-6 h-6 object-contain flex-shrink-0"
-                        />
-                      ) : (
-                        <Image
-                          src={provider.iconUrl}
-                          alt={provider.name}
-                          width={24}
-                          height={24}
-                          className="object-contain flex-shrink-0"
-                          unoptimized
-                        />
-                      )
-                    ) : (
-                      <span className="text-xl">{provider.icon}</span>
-                    )}
-                    <span>{provider.name}</span>
-                  </button>
-                ))}
+                {mainProviders.map((provider) => {
+                  // 구글 로그인 버튼이고 인앱 브라우저인 경우 비활성화
+                  const isGoogleInInApp = provider.id === "google" && inAppBrowser;
+                  
+                  return (
+                    <div key={provider.id} className="relative">
+                      <button
+                        onClick={() => handleSocialLogin(provider.id)}
+                        disabled={isLoading || isGoogleInInApp}
+                        className={`w-full ${provider.bgColor} ${provider.hoverColor} ${provider.textColor} py-4 rounded-xl font-semibold transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          isGoogleInInApp ? "opacity-60" : ""
+                        }`}
+                      >
+                        {provider.iconUrl ? (
+                          provider.iconUrl.endsWith(".svg") ? (
+                            <img
+                              src={provider.iconUrl}
+                              alt={provider.name}
+                              className="w-6 h-6 object-contain flex-shrink-0"
+                            />
+                          ) : (
+                            <Image
+                              src={provider.iconUrl}
+                              alt={provider.name}
+                              width={24}
+                              height={24}
+                              className="object-contain flex-shrink-0"
+                              unoptimized
+                            />
+                          )
+                        ) : (
+                          <span className="text-xl">{provider.icon}</span>
+                        )}
+                        <span>{provider.name}</span>
+                      </button>
+                      {/* 인앱 브라우저 안내 (구글 버튼 위에 표시) */}
+                      {isGoogleInInApp && (
+                        <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <p className="text-xs text-yellow-800 text-center">
+                            {language === "KR"
+                              ? "⚠️ 카카오톡/네이버 앱에서는 구글 로그인이 불가능합니다"
+                              : "⚠️ Google login is not available in in-app browsers"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
                 {/* 아이디로 로그인 버튼 (구글과 같은 사이즈, 아이콘 없음) */}
                 <button
@@ -919,6 +973,46 @@ export default function LoginModal({
           )}
         </div>
       </div>
+
+      {/* 인앱 브라우저 경고 모달 */}
+      {showInAppBrowserWarning && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 z-[120]"
+            onClick={() => setShowInAppBrowserWarning(false)}
+          />
+          <div className="fixed inset-0 z-[121] flex items-center justify-center p-4 pointer-events-none">
+            <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+              <div className="text-center">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
+                  {language === "KR"
+                    ? "구글 로그인 불가"
+                    : "Google Login Unavailable"}
+                </h3>
+                <p className="text-sm text-gray-600 mb-6 whitespace-pre-line">
+                  {getInAppBrowserMessage(inAppBrowserType)}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowInAppBrowserWarning(false)}
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    onClick={handleOpenInExternalBrowser}
+                    className="flex-1 py-2.5 px-4 bg-primary-main hover:bg-primary-main/90 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FiExternalLink className="text-sm" />
+                    {language === "KR" ? "외부 브라우저로 열기" : "Open in Browser"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
