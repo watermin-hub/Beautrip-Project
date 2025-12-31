@@ -3,7 +3,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import LoginModal from "./LoginModal";
 import SignupModal from "./SignupModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface LoginRequiredPopupProps {
   isOpen: boolean;
@@ -19,6 +19,18 @@ export default function LoginRequiredPopup({
   const { t } = useLanguage();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+
+  // ✅ 팝업이 열려있을 때 body 스크롤 방지 및 뒤의 클릭 차단
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isOpen]);
 
   // 로그인 모달이 열리면 팝업 닫기
   const handleOpenLogin = () => {
@@ -36,8 +48,20 @@ export default function LoginRequiredPopup({
       {isOpen && !showLoginModal && !showSignupModal && (
         <>
           <div
-            className="fixed inset-0 bg-black/60 z-[100]"
-            onClick={onClose}
+            className="fixed inset-0 bg-black/60 z-[100] pointer-events-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClose();
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
           />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">

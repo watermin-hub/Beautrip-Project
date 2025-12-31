@@ -41,16 +41,12 @@ import {
 } from "@/lib/utils/currency";
 
 // 대분류 카테고리 ID와 번역 키 매핑
+// ✅ "안면윤곽/양악"은 마지막에 배치하여 2칸 차지
 export const getMainCategories = (t: (key: string) => string) => [
   { id: null, name: t("category.all"), nameKey: "category.all" },
   { id: "눈성형", name: t("category.eyes"), nameKey: "category.eyes" },
   { id: "리프팅", name: t("category.lifting"), nameKey: "category.lifting" },
   { id: "보톡스", name: t("category.botox"), nameKey: "category.botox" },
-  {
-    id: "안면윤곽/양악",
-    name: t("category.facial"),
-    nameKey: "category.facial",
-  },
   {
     id: "제모",
     name: t("category.hairRemoval"),
@@ -65,6 +61,12 @@ export const getMainCategories = (t: (key: string) => string) => [
   { id: "피부", name: t("category.skin"), nameKey: "category.skin" },
   { id: "필러", name: t("category.filler"), nameKey: "category.filler" },
   { id: "가슴성형", name: t("category.breast"), nameKey: "category.breast" },
+  // ✅ "안면윤곽/양악"을 마지막에 배치 (2칸 차지)
+  {
+    id: "안면윤곽/양악",
+    name: t("category.facial"),
+    nameKey: "category.facial",
+  },
 ];
 
 interface CategoryRankingPageProps {
@@ -141,6 +143,8 @@ export default function CategoryRankingPage({
   const [showCommunityWriteModal, setShowCommunityWriteModal] = useState(false);
   // 로그인 성공 후 실행할 동작 저장
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  // ✅ 팝업 상태를 동기적으로 체크하기 위한 ref
+  const popupOpenRef = useRef(false);
   // 스크롤 버튼 클릭 횟수 추적 (카테고리별)
   const [scrollButtonClickCount, setScrollButtonClickCount] = useState<
     Record<string, number>
@@ -157,6 +161,11 @@ export default function CategoryRankingPage({
     []
   ); // 중분류 목록 유지용
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ 팝업 상태 ref 동기화
+  useEffect(() => {
+    popupOpenRef.current = showReviewRequiredPopup;
+  }, [showReviewRequiredPopup]);
 
   // 로그인 상태 확인
   useEffect(() => {
@@ -1032,42 +1041,7 @@ export default function CategoryRankingPage({
                     }
                   };
 
-                  const handleScrollRight = async () => {
-                    // 비로그인 시 바로 ReviewRequiredPopup 표시
-                    if (!isLoggedIn) {
-                      // 스크롤 동작을 저장하고 팝업 표시
-                      setPendingAction(() => {
-                        const element =
-                          scrollRefs.current[ranking.category_small_key];
-                        if (element) {
-                          element.scrollBy({ left: 300, behavior: "smooth" });
-                        }
-                      });
-                      setShowReviewRequiredPopup(true);
-                      return; // 스크롤 실행하지 않음
-                    }
-
-                    // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
-                    if (!hasWrittenReview) {
-                      // 스크롤 동작을 저장하고 팝업 표시
-                      setPendingAction(() => {
-                        const element =
-                          scrollRefs.current[ranking.category_small_key];
-                        if (element) {
-                          element.scrollBy({ left: 300, behavior: "smooth" });
-                        }
-                      });
-                      setShowReviewRequiredPopup(true);
-                      return; // 스크롤 실행하지 않음
-                    }
-
-                    // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
-                    const element =
-                      scrollRefs.current[ranking.category_small_key];
-                    if (element) {
-                      element.scrollBy({ left: 300, behavior: "smooth" });
-                    }
-                  };
+                  // ✅ handleScrollRight 함수 제거: 버튼 onClick에서 직접 처리
 
                   return (
                     <div
@@ -1312,10 +1286,57 @@ export default function CategoryRankingPage({
                           {/* 우측 스크롤 버튼 */}
                           {scrollState.canScrollRight && (
                             <button
-                              onClick={(e) => {
+                              type="button"
+                              onClick={async (e) => {
+                                // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                                 e.stopPropagation();
                                 e.preventDefault();
-                                handleScrollRight();
+                                if (e.nativeEvent) {
+                                  e.nativeEvent.stopImmediatePropagation();
+                                }
+
+                                // ✅ 즉시 팝업 상태 체크: 이미 팝업이 열려있으면 아무것도 하지 않음
+                                if (showReviewRequiredPopup) {
+                                  return;
+                                }
+
+                                // ✅ 조건을 먼저 체크하고, 조건이 맞을 때만 스크롤 실행
+                                // 후기 작성 이력 다시 확인 (최신 상태 확인)
+                                let currentHasWrittenReview = hasWrittenReview;
+                                if (isLoggedIn) {
+                                  const {
+                                    data: { session },
+                                  } = await supabase.auth.getSession();
+                                  if (session?.user) {
+                                    currentHasWrittenReview = await hasUserWrittenReview(
+                                      session.user.id
+                                    );
+                                    setHasWrittenReview(currentHasWrittenReview);
+                                  }
+                                }
+
+                                // ✅ 비로그인 또는 후기 미작성: 팝업을 먼저 열고 즉시 종료 (스크롤 절대 실행 안 함)
+                                if (!isLoggedIn || !currentHasWrittenReview) {
+                                  // ✅ 팝업을 먼저 열고 (동기적으로)
+                                  setShowReviewRequiredPopup(true);
+                                  // pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
+                                  setPendingAction(() => {
+                                    const element =
+                                      scrollRefs.current[ranking.category_small_key];
+                                    if (element) {
+                                      element.scrollBy({ left: 300, behavior: "smooth" });
+                                    }
+                                  });
+                                  // 즉시 종료 (아래 스크롤 코드 절대 실행 안 됨)
+                                  return; // ✅ 여기서 완전히 종료
+                                }
+
+                                // ✅ 후기 작성한 사용자만 여기서 스크롤 실행
+                                const element =
+                                  scrollRefs.current[ranking.category_small_key];
+                                if (element && (isLoggedIn && currentHasWrittenReview)) {
+                                  element.scrollBy({ left: 300, behavior: "smooth" });
+                                }
                               }}
                               onMouseDown={(e) => {
                                 e.stopPropagation();
@@ -1340,11 +1361,46 @@ export default function CategoryRankingPage({
               {smallCategoryRankings.length > visibleCategoriesCount && (
                 <div className="text-center pt-4">
                   <button
+                    type="button"
                     onClick={async (e) => {
+                      // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                       e.stopPropagation();
                       e.preventDefault();
+                      if (e.nativeEvent) {
+                        e.nativeEvent.stopImmediatePropagation();
+                      }
 
-                      // 후기 작성 이력 다시 확인 (최신 상태 확인)
+                      // ✅ ref로 팝업 상태 동기 체크: 이미 팝업이 열려있으면 아무것도 하지 않음
+                      if (popupOpenRef.current || showReviewRequiredPopup) {
+                        return;
+                      }
+
+                      // ✅ 조건을 먼저 체크 (비동기 호출 전에)
+                      // 조건이 맞지 않으면 여기서 즉시 종료하고 팝업만 열기
+                      if (!isLoggedIn || !hasWrittenReview) {
+                        // 후기 작성 이력 확인 (팝업을 열기 전에 빠르게 확인)
+                        let shouldOpenPopup = true;
+                        if (isLoggedIn) {
+                          // 빠른 확인: 이미 체크된 상태면 팝업 열기
+                          if (hasWrittenReview) {
+                            shouldOpenPopup = false;
+                          }
+                        }
+
+                        if (shouldOpenPopup) {
+                          // ✅ 팝업 열기 및 ref 업데이트
+                          popupOpenRef.current = true;
+                          setShowReviewRequiredPopup(true);
+                          // pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                          setPendingAction(() => {
+                            setVisibleCategoriesCount((prev) => prev + 5);
+                          });
+                        }
+                        // 즉시 종료 (아래 더보기 코드 절대 실행 안 됨)
+                        return; // ✅ 여기서 완전히 종료
+                      }
+
+                      // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
                       let currentHasWrittenReview = hasWrittenReview;
                       if (isLoggedIn) {
                         const {
@@ -1355,20 +1411,23 @@ export default function CategoryRankingPage({
                             session.user.id
                           );
                           setHasWrittenReview(currentHasWrittenReview);
+                          // 다시 체크: 확인 후에도 조건이 맞지 않으면 팝업 열기
+                          if (!currentHasWrittenReview) {
+                            popupOpenRef.current = true;
+                            setShowReviewRequiredPopup(true);
+                            setPendingAction(() => {
+                              setVisibleCategoriesCount((prev) => prev + 5);
+                            });
+                            return;
+                          }
                         }
                       }
 
-                      // 비로그인 또는 후기 미작성: 팝업만 표시
-                      if (!isLoggedIn || !currentHasWrittenReview) {
-                        setPendingAction(() => {
-                          setVisibleCategoriesCount((prev) => prev + 5);
-                        });
-                        setShowReviewRequiredPopup(true);
-                        return; // 여기서 함수 종료 - 다른 동작 실행 안 함
+                      // ✅ 후기 작성한 사용자만 여기서 더보기 동작 실행 (5개씩 추가)
+                      // 조건 재확인 (이중 체크)
+                      if (isLoggedIn && currentHasWrittenReview) {
+                        setVisibleCategoriesCount((prev) => prev + 5);
                       }
-
-                      // 후기 작성한 사용자: 팝업 없이 동작만 실행
-                      setVisibleCategoriesCount((prev) => prev + 5);
                     }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                   >
@@ -1415,39 +1474,7 @@ export default function CategoryRankingPage({
                   }
                 };
 
-                const handleScrollRight = async () => {
-                  // 비로그인 시 바로 ReviewRequiredPopup 표시
-                  if (!isLoggedIn) {
-                    // 스크롤 동작을 저장하고 팝업 표시
-                    setPendingAction(() => {
-                      const element = scrollRefs.current[ranking.category_mid];
-                      if (element) {
-                        element.scrollBy({ left: 300, behavior: "smooth" });
-                      }
-                    });
-                    setShowReviewRequiredPopup(true);
-                    return; // 스크롤 실행하지 않음
-                  }
-
-                  // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
-                  if (!hasWrittenReview) {
-                    // 스크롤 동작을 저장하고 팝업 표시
-                    setPendingAction(() => {
-                      const element = scrollRefs.current[ranking.category_mid];
-                      if (element) {
-                        element.scrollBy({ left: 300, behavior: "smooth" });
-                      }
-                    });
-                    setShowReviewRequiredPopup(true);
-                    return; // 스크롤 실행하지 않음
-                  }
-
-                  // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행
-                  const element = scrollRefs.current[ranking.category_mid];
-                  if (element) {
-                    element.scrollBy({ left: 300, behavior: "smooth" });
-                  }
-                };
+                // ✅ handleScrollRight 함수 제거: 버튼 onClick에서 직접 처리
 
                 return (
                   <div
@@ -1667,10 +1694,79 @@ export default function CategoryRankingPage({
                       {/* 우측 스크롤 버튼 */}
                       {scrollState.canScrollRight && (
                         <button
-                          onClick={(e) => {
+                          type="button"
+                          onClick={async (e) => {
+                            // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                             e.stopPropagation();
                             e.preventDefault();
-                            handleScrollRight();
+                            if (e.nativeEvent) {
+                              e.nativeEvent.stopImmediatePropagation();
+                            }
+
+                            // ✅ ref로 팝업 상태 동기 체크: 이미 팝업이 열려있으면 아무것도 하지 않음
+                            if (popupOpenRef.current || showReviewRequiredPopup) {
+                              return;
+                            }
+
+                            // ✅ 조건을 먼저 체크 (비동기 호출 전에)
+                            // 조건이 맞지 않으면 여기서 즉시 종료하고 팝업만 열기
+                            if (!isLoggedIn || !hasWrittenReview) {
+                              // 후기 작성 이력 확인 (팝업을 열기 전에 빠르게 확인)
+                              let shouldOpenPopup = true;
+                              if (isLoggedIn) {
+                                // 빠른 확인: 이미 체크된 상태면 팝업 열기
+                                if (hasWrittenReview) {
+                                  shouldOpenPopup = false;
+                                }
+                              }
+
+                              if (shouldOpenPopup) {
+                                // ✅ 팝업 열기 및 ref 업데이트
+                                popupOpenRef.current = true;
+                                setShowReviewRequiredPopup(true);
+                                // pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
+                                setPendingAction(() => {
+                                  const element = scrollRefs.current[ranking.category_mid];
+                                  if (element) {
+                                    element.scrollBy({ left: 300, behavior: "smooth" });
+                                  }
+                                });
+                              }
+                              // 즉시 종료 (아래 스크롤 코드 절대 실행 안 됨)
+                              return; // ✅ 여기서 완전히 종료
+                            }
+
+                            // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
+                            let currentHasWrittenReview = hasWrittenReview;
+                            if (isLoggedIn) {
+                              const {
+                                data: { session },
+                              } = await supabase.auth.getSession();
+                              if (session?.user) {
+                                currentHasWrittenReview = await hasUserWrittenReview(
+                                  session.user.id
+                                );
+                                setHasWrittenReview(currentHasWrittenReview);
+                                // 다시 체크: 확인 후에도 조건이 맞지 않으면 팝업 열기
+                                if (!currentHasWrittenReview) {
+                                  popupOpenRef.current = true;
+                                  setShowReviewRequiredPopup(true);
+                                  setPendingAction(() => {
+                                    const element = scrollRefs.current[ranking.category_mid];
+                                    if (element) {
+                                      element.scrollBy({ left: 300, behavior: "smooth" });
+                                    }
+                                  });
+                                  return;
+                                }
+                              }
+                            }
+
+                            // ✅ 후기 작성한 사용자만 여기서 스크롤 실행
+                            const element = scrollRefs.current[ranking.category_mid];
+                            if (element && (isLoggedIn && currentHasWrittenReview)) {
+                              element.scrollBy({ left: 300, behavior: "smooth" });
+                            }
                           }}
                           onMouseDown={(e) => {
                             e.stopPropagation();
@@ -1695,10 +1791,44 @@ export default function CategoryRankingPage({
               <div className="text-center pt-4">
                 <button
                   onClick={async (e) => {
+                    // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                     e.stopPropagation();
                     e.preventDefault();
+                    if (e.nativeEvent) {
+                      e.nativeEvent.stopImmediatePropagation();
+                    }
 
-                    // 후기 작성 이력 다시 확인 (최신 상태 확인)
+                    // ✅ ref로 팝업 상태 동기 체크: 이미 팝업이 열려있으면 아무것도 하지 않음
+                    if (popupOpenRef.current || showReviewRequiredPopup) {
+                      return;
+                    }
+
+                    // ✅ 조건을 먼저 체크 (비동기 호출 전에)
+                    // 조건이 맞지 않으면 여기서 즉시 종료하고 팝업만 열기
+                    if (!isLoggedIn || !hasWrittenReview) {
+                      // 후기 작성 이력 확인 (팝업을 열기 전에 빠르게 확인)
+                      let shouldOpenPopup = true;
+                      if (isLoggedIn) {
+                        // 빠른 확인: 이미 체크된 상태면 팝업 열기
+                        if (hasWrittenReview) {
+                          shouldOpenPopup = false;
+                        }
+                      }
+
+                      if (shouldOpenPopup) {
+                        // ✅ 팝업 열기 및 ref 업데이트
+                        popupOpenRef.current = true;
+                        setShowReviewRequiredPopup(true);
+                        // pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                        setPendingAction(() => {
+                          setVisibleCategoriesCount((prev) => prev + 5);
+                        });
+                      }
+                      // 즉시 종료 (아래 더보기 코드 절대 실행 안 됨)
+                      return; // ✅ 여기서 완전히 종료
+                    }
+
+                    // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
                     let currentHasWrittenReview = hasWrittenReview;
                     if (isLoggedIn) {
                       const {
@@ -1709,20 +1839,23 @@ export default function CategoryRankingPage({
                           session.user.id
                         );
                         setHasWrittenReview(currentHasWrittenReview);
+                        // 다시 체크: 확인 후에도 조건이 맞지 않으면 팝업 열기
+                        if (!currentHasWrittenReview) {
+                          popupOpenRef.current = true;
+                          setShowReviewRequiredPopup(true);
+                          setPendingAction(() => {
+                            setVisibleCategoriesCount((prev) => prev + 5);
+                          });
+                          return;
+                        }
                       }
                     }
 
-                    // 비로그인 또는 후기 미작성: 팝업만 표시
-                    if (!isLoggedIn || !currentHasWrittenReview) {
-                      setPendingAction(() => {
-                        setVisibleCategoriesCount((prev) => prev + 5);
-                      });
-                      setShowReviewRequiredPopup(true);
-                      return; // 여기서 함수 종료 - 다른 동작 실행 안 함
+                    // ✅ 후기 작성한 사용자만 여기서 더보기 동작 실행 (5개씩 추가)
+                    // 조건 재확인 (이중 체크)
+                    if (isLoggedIn && currentHasWrittenReview) {
+                      setVisibleCategoriesCount((prev) => prev + 5);
                     }
-
-                    // 후기 작성한 사용자: 팝업 없이 동작만 실행
-                    setVisibleCategoriesCount((prev) => prev + 5);
                   }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
                 >
@@ -1754,12 +1887,19 @@ export default function CategoryRankingPage({
       {/* 로그인 필요 팝업 */}
       <LoginRequiredPopup
         isOpen={showLoginRequiredPopup}
-        onClose={() => setShowLoginRequiredPopup(false)}
+        onClose={() => {
+          setShowLoginRequiredPopup(false);
+          setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
+        }}
         onLoginSuccess={() => {
           setShowLoginRequiredPopup(false);
           setIsLoggedIn(true);
-          // 로그인 성공 후 더보기 기능 자동 실행
-          setVisibleCategoriesCount((prev) => prev + 5);
+          // ✅ 로그인 성공 후 pendingAction이 있으면 실행, 없으면 아무것도 하지 않음
+          // (더보기 자동 실행 안 함 - 사용자가 다시 클릭해야 함)
+          if (pendingAction) {
+            pendingAction();
+            setPendingAction(null);
+          }
         }}
       />
 
@@ -1767,6 +1907,7 @@ export default function CategoryRankingPage({
       <ReviewRequiredPopup
         isOpen={showReviewRequiredPopup}
         onClose={() => {
+          popupOpenRef.current = false; // ✅ ref도 업데이트
           setShowReviewRequiredPopup(false);
           setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
         }}
@@ -1840,14 +1981,19 @@ export function CategoryFilterBar({
           </button>
         </div>
 
-        {/* 카테고리 버튼들 - 텍스트만 5개씩 2줄 그리드 */}
-        <div className="grid grid-cols-5 gap-x-2 gap-y-3">
+        {/* 카테고리 버튼들 - 텍스트만 4개씩 2줄 그리드 */}
+        {/* ✅ "안면윤곽/양악"은 마지막에 배치되어 2칸 차지 */}
+        <div className="grid grid-cols-4 gap-x-2 gap-y-3">
           {mainCategories
             .filter((cat) => cat.id !== null)
-            .map((category) => {
+            .map((category, index, array) => {
               const isSelected = selectedCategory === category.id;
-              // 영어일 때는 3줄까지 허용, 다른 언어는 한 줄
+              // 영어일 때는 2줄까지 허용, 다른 언어는 한 줄
               const isEnglish = language === "EN";
+              // ✅ "안면윤곽/양악" (facial) 카테고리는 마지막 항목이므로 2칸 차지
+              const isFacialCategory = category.id === "안면윤곽/양악" || category.nameKey === "category.facial";
+              const isLastItem = index === array.length - 1;
+              
               return (
                 <button
                   key={category.id || "all"}
@@ -1855,13 +2001,13 @@ export function CategoryFilterBar({
                     onCategoryChange(category.id);
                     onMidCategoryChange(null);
                   }}
-                  className={`text-xs font-medium transition-colors ${
-                    isEnglish ? "line-clamp-3 break-words" : "truncate"
+                  className={`text-xs font-medium transition-colors overflow-hidden ${
+                    isEnglish ? "line-clamp-2 break-words" : "truncate"
                   } ${
                     isSelected
                       ? "text-primary-main font-bold"
                       : "text-gray-500 hover:text-gray-700"
-                  }`}
+                  } ${isFacialCategory && isLastItem ? "col-span-2" : ""}`}
                   title={category.name}
                 >
                   {category.name}

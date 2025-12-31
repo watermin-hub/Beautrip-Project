@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { EntrySource } from "@/lib/gtm";
 import CommunityWriteModal from "./CommunityWriteModal";
 
@@ -33,16 +33,62 @@ export default function ReviewRequiredPopup({
     onClose();
   };
 
+  // ✅ 팝업이 열려있을 때 body 스크롤 방지 및 뒤의 클릭 차단
+  useEffect(() => {
+    if (isOpen) {
+      // body 스크롤 방지
+      document.body.style.overflow = "hidden";
+      // 뒤의 모든 클릭 이벤트 차단을 위한 이벤트 리스너 추가
+      const handleOverlayClick = (e: MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        // 오버레이를 클릭했을 때만 닫기
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      };
+      
+      const overlay = document.querySelector('.review-popup-overlay');
+      if (overlay) {
+        overlay.addEventListener('click', handleOverlayClick, true);
+      }
+      
+      return () => {
+        document.body.style.overflow = "";
+        if (overlay) {
+          overlay.removeEventListener('click', handleOverlayClick, true);
+        }
+      };
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/60 z-[100]"
-        onClick={onClose}
+        className="review-popup-overlay fixed inset-0 bg-black/60 z-[100] pointer-events-auto"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onClose();
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
       />
       <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-        <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto">
+        <div 
+          className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="text-center">
             <h3 className="text-lg font-bold text-gray-900 mb-3">
               {t("common.reviewRequired")}

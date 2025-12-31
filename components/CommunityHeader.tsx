@@ -3,6 +3,7 @@
 import { FiEdit3 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useState, useEffect } from "react";
 
 type CommunityTab = "popular" | "latest" | "info" | "consultation";
 
@@ -17,6 +18,13 @@ export default function CommunityHeader({
 }: CommunityHeaderProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const [isClient, setIsClient] = useState(false);
+
+  // ✅ Hydration 에러 방지: 클라이언트에서만 렌더링
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const tabs = [
     { id: "popular" as const, labelKey: "community.tab.popular" },
     { id: "latest" as const, labelKey: "community.tab.latest" },
@@ -39,7 +47,7 @@ export default function CommunityHeader({
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {t(tab.labelKey)}
+              {isClient ? t(tab.labelKey) : tab.labelKey}
               {activeTab === tab.id && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-main"></span>
               )}

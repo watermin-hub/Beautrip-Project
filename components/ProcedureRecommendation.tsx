@@ -1049,60 +1049,15 @@ export default function ProcedureRecommendation({
 
   // 스크롤 핸들러
   // ⚠️ 핵심: 로직은 category_mid_key 사용 (한글 고정)
+  // ✅ 3개 제한 제거: 전체 스크롤 가능
   const handleScroll = (categoryMidKey: string) => {
     const element = scrollRefs.current[categoryMidKey];
     if (!element) return;
 
-    // 최대 표시 가능한 카드 수 (3개)
-    const MAX_VISIBLE_CARDS = 3;
-
-    // 실제 카드 요소들을 통해 정확한 너비 계산
-    const cardElements = element.querySelectorAll(
-      '[class*="w-\\[150px\\]"], .flex-shrink-0'
-    );
-    let maxScrollWidth = 0;
-
-    if (cardElements.length >= MAX_VISIBLE_CARDS) {
-      // 첫 번째 카드의 위치
-      const firstCard = cardElements[0] as HTMLElement;
-      // 세 번째 카드의 끝 위치
-      const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1] as HTMLElement;
-      const firstCardRect = firstCard.getBoundingClientRect();
-      const thirdCardRect = thirdCard.getBoundingClientRect();
-      const containerRect = element.getBoundingClientRect();
-
-      // 세 번째 카드의 끝이 컨테이너의 시작점에서 얼마나 떨어져 있는지
-      maxScrollWidth =
-        thirdCardRect.right - containerRect.left - element.clientWidth;
-
-      // 안전하게 음수 방지 및 카드 너비 기준으로 재계산
-      if (maxScrollWidth < 0 || !firstCardRect.width) {
-        // fallback: 카드 너비 150px + gap 8px 기준
-        const cardWidth = firstCardRect.width || 150;
-        const gap = 8;
-        maxScrollWidth = (cardWidth + gap) * (MAX_VISIBLE_CARDS - 1);
-      }
-    } else {
-      // 카드가 3개 미만이면 스크롤 제한 없음 (기존 로직)
-      maxScrollWidth = element.scrollWidth;
-    }
-
     const scrollLeft = element.scrollLeft;
-
-    // 3개 카드 이상 스크롤되지 않도록 제한 (모바일 스크롤도 방지)
-    if (scrollLeft > maxScrollWidth) {
-      element.scrollTo({ left: maxScrollWidth, behavior: "auto" });
-      // 강제로 스크롤 위치 재설정 (이중 체크)
-      requestAnimationFrame(() => {
-        if (element.scrollLeft > maxScrollWidth) {
-          element.scrollLeft = maxScrollWidth;
-        }
-      });
-      return;
-    }
+    const maxScrollWidth = element.scrollWidth - element.clientWidth;
 
     const canScrollLeft = scrollLeft > 0;
-    // 최대 3개만 보이도록 제한하므로, 스크롤 가능 여부도 제한된 너비 기준으로 계산
     const canScrollRight = scrollLeft < maxScrollWidth - 1; // 1px 여유
 
     setScrollPositions((prev) => ({
@@ -1121,25 +1076,8 @@ export default function ProcedureRecommendation({
           if (element) {
             const scrollLeft = element.scrollLeft;
 
-            // 최대 스크롤 위치 계산 (3개 카드 제한)
-            const MAX_VISIBLE_CARDS = 3;
-            const children = Array.from(element.children) as HTMLElement[];
-            const cardElements = children.filter(
-              (child) =>
-                child.classList.contains("flex-shrink-0") &&
-                child.classList.contains("w-[150px]")
-            );
-
-            let maxScrollWidth = element.scrollWidth - element.clientWidth;
-            if (cardElements.length >= MAX_VISIBLE_CARDS) {
-              const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
-              if (thirdCard) {
-                const thirdCardRight =
-                  thirdCard.offsetLeft + thirdCard.offsetWidth;
-                maxScrollWidth = thirdCardRight - element.clientWidth;
-              }
-            }
-
+            // ✅ 3개 제한 제거: 전체 스크롤 가능
+            const maxScrollWidth = element.scrollWidth - element.clientWidth;
             const canScrollLeft = scrollLeft > 0;
             const canScrollRight = scrollLeft < maxScrollWidth - 1;
 
@@ -1372,113 +1310,21 @@ export default function ProcedureRecommendation({
           }
         };
 
-        const handleScrollRight = async () => {
-          const element = scrollRefs.current[categoryMidKey];
-          if (!element) return;
-
-          // 최대 스크롤 위치 계산 (3개 카드 제한)
-          const MAX_VISIBLE_CARDS = 3;
-          const children = Array.from(element.children) as HTMLElement[];
-          const cardElements = children.filter(
-            (child) =>
-              child.classList.contains("flex-shrink-0") &&
-              child.classList.contains("w-[150px]")
-          );
-
-          let maxScrollWidth = element.scrollWidth;
-          if (cardElements.length >= MAX_VISIBLE_CARDS) {
-            const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
-            if (thirdCard) {
-              const thirdCardRight =
-                thirdCard.offsetLeft + thirdCard.offsetWidth;
-              maxScrollWidth = thirdCardRight - element.clientWidth;
-            }
-          }
-
-          // 이미 최대 스크롤 위치에 도달했으면 스크롤하지 않음
-          if (element.scrollLeft >= maxScrollWidth - 1) {
-            return;
-          }
-
-          // 비로그인 시 바로 ReviewRequiredPopup 표시
-          if (!isLoggedIn) {
-            // 스크롤 동작을 저장하고 팝업 표시
-            setPendingAction(() => {
-              const element = scrollRefs.current[categoryMidKey];
-              if (element) {
-                const newScrollLeft = Math.min(
-                  element.scrollLeft + 300,
-                  maxScrollWidth
-                );
-                element.scrollTo({ left: newScrollLeft, behavior: "smooth" });
-              }
-            });
-            setShowReviewRequiredPopup(true);
-            return;
-          }
-
-          // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
-          if (!hasWrittenReview) {
-            // 스크롤 동작을 저장하고 팝업 표시
-            setPendingAction(() => {
-              const element = scrollRefs.current[categoryMidKey];
-              if (element) {
-                const newScrollLeft = Math.min(
-                  element.scrollLeft + 300,
-                  maxScrollWidth
-                );
-                element.scrollTo({ left: newScrollLeft, behavior: "smooth" });
-              }
-            });
-            setShowReviewRequiredPopup(true);
-            return;
-          }
-
-          // 로그인 상태이고 리뷰를 작성한 경우 스크롤 실행 (3개 제한 내에서)
-          const newScrollLeft = Math.min(
-            element.scrollLeft + 300,
-            maxScrollWidth
-          );
-          element.scrollTo({ left: newScrollLeft, behavior: "smooth" });
-        };
+        // ✅ handleScrollRight 함수 제거: 클릭 핸들러에서 직접 처리
+        // (3개 제한 제거로 더 이상 필요 없음)
 
         // 더보기 기능 (10개 카드 추가)
-        const handleShowMore = async () => {
-          // 비로그인 시 바로 ReviewRequiredPopup 표시
-          if (!isLoggedIn) {
-            // 더보기 동작을 저장하고 팝업 표시
-            setPendingAction(() => {
-              setVisibleTreatmentsCount((prev) => ({
-                ...prev,
-                [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
-              }));
-            });
-            setShowReviewRequiredPopup(true);
-            return;
-          }
-
-          // 로그인 상태이지만 리뷰를 작성하지 않은 경우 ReviewRequiredPopup 표시
-          if (!hasWrittenReview) {
-            // 더보기 동작을 저장하고 팝업 표시
-            setPendingAction(() => {
-              setVisibleTreatmentsCount((prev) => ({
-                ...prev,
-                [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
-              }));
-            });
-            setShowReviewRequiredPopup(true);
-            return;
-          }
-
-          // 로그인 상태이고 리뷰를 작성한 경우 더보기 실행
+        // ✅ handleShowMore: 조건 체크는 클릭 핸들러에서 이미 완료되었으므로 여기서는 실행만
+        const handleShowMore = () => {
           setVisibleTreatmentsCount((prev) => ({
             ...prev,
-            [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
+            [categoryMidKey]: (prev[categoryMidKey] || 10) + 10,
           }));
         };
 
         // 현재 표시된 카드 수
-        const currentVisibleCount = visibleTreatmentsCount[categoryMidKey] || 3;
+        // ✅ 3개 제한 제거: 초기값을 10으로 설정 (더 많이 보여주기)
+        const currentVisibleCount = visibleTreatmentsCount[categoryMidKey] || 10;
         const hasMoreTreatments = rec.treatments.length > currentVisibleCount;
         // 우측 버튼 표시 조건: 스크롤 가능하거나 더보기 가능할 때
         const shouldShowRightButton =
@@ -1545,133 +1391,12 @@ export default function ProcedureRecommendation({
               <div
                 ref={(el) => {
                   scrollRefs.current[categoryMidKey] = el;
-
-                  // 스크롤 제한을 위한 이벤트 리스너 (모바일 터치 스크롤 방지)
-                  if (el) {
-                    const limitScroll = () => {
-                      const MAX_VISIBLE_CARDS = 3;
-                      // 카드 요소 찾기 (flex-shrink-0 클래스와 w-[150px] 클래스를 가진 요소)
-                      const children = Array.from(el.children) as HTMLElement[];
-                      const cardElements = children.filter(
-                        (child) =>
-                          child.classList.contains("flex-shrink-0") &&
-                          child.classList.contains("w-[150px]")
-                      );
-
-                      if (cardElements.length >= MAX_VISIBLE_CARDS) {
-                        const firstCard = cardElements[0];
-                        const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
-
-                        if (firstCard && thirdCard) {
-                          // 첫 번째 카드의 시작 위치 (상대적)
-                          const firstCardLeft = firstCard.offsetLeft;
-                          // 세 번째 카드의 끝 위치
-                          const thirdCardRight =
-                            thirdCard.offsetLeft + thirdCard.offsetWidth;
-                          // 최대 스크롤 위치 = 세 번째 카드의 끝 - 컨테이너 너비
-                          const maxScrollWidth =
-                            thirdCardRight - el.clientWidth;
-
-                          if (el.scrollLeft > maxScrollWidth) {
-                            el.scrollLeft = maxScrollWidth;
-                          }
-                        }
-                      }
-                    };
-
-                    // touchmove와 scroll 이벤트로 모바일 스크롤 제한
-                    const handleTouchMove = (e: TouchEvent) => {
-                      limitScroll();
-                      // 스크롤이 제한되었으면 기본 동작 방지 (필요시)
-                      if (
-                        el.scrollLeft >=
-                        el.scrollWidth - el.clientWidth - 50
-                      ) {
-                        const MAX_VISIBLE_CARDS = 3;
-                        const children = Array.from(
-                          el.children
-                        ) as HTMLElement[];
-                        const cardElements = children.filter(
-                          (child) =>
-                            child.classList.contains("flex-shrink-0") &&
-                            child.classList.contains("w-[150px]")
-                        );
-                        if (cardElements.length >= MAX_VISIBLE_CARDS) {
-                          const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
-                          if (thirdCard) {
-                            const thirdCardRight =
-                              thirdCard.offsetLeft + thirdCard.offsetWidth;
-                            const maxScrollWidth =
-                              thirdCardRight - el.clientWidth;
-                            if (el.scrollLeft > maxScrollWidth) {
-                              e.preventDefault();
-                            }
-                          }
-                        }
-                      }
-                    };
-
-                    el.addEventListener("touchmove", handleTouchMove, {
-                      passive: false,
-                    });
-                    el.addEventListener("scroll", limitScroll, {
-                      passive: true,
-                    });
-
-                    // cleanup을 위한 저장
-                    (el as any)._scrollLimitHandler = limitScroll;
-                    (el as any)._touchMoveHandler = handleTouchMove;
-
-                    // 초기 체크
-                    setTimeout(limitScroll, 100);
-                  }
-
-                  // cleanup 함수 반환
-                  return () => {
-                    if (el) {
-                      if ((el as any)._scrollLimitHandler) {
-                        el.removeEventListener(
-                          "scroll",
-                          (el as any)._scrollLimitHandler
-                        );
-                      }
-                      if ((el as any)._touchMoveHandler) {
-                        el.removeEventListener(
-                          "touchmove",
-                          (el as any)._touchMoveHandler
-                        );
-                      }
-                    }
-                  };
+                  // ✅ 3개 제한 제거: 스크롤 제한 로직 제거
                 }}
                 className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-3"
-                onScroll={(e) => {
+                onScroll={() => {
                   handleScroll(categoryMidKey);
-                  // 스크롤 제한 재확인
-                  const element = e.currentTarget;
-                  const MAX_VISIBLE_CARDS = 3;
-                  const children = Array.from(
-                    element.children
-                  ) as HTMLElement[];
-                  const cardElements = children.filter(
-                    (child) =>
-                      child.classList.contains("flex-shrink-0") &&
-                      child.classList.contains("w-[150px]")
-                  );
-
-                  if (cardElements.length >= MAX_VISIBLE_CARDS) {
-                    const thirdCard = cardElements[MAX_VISIBLE_CARDS - 1];
-                    if (thirdCard) {
-                      const thirdCardRight =
-                        thirdCard.offsetLeft + thirdCard.offsetWidth;
-                      const maxScrollWidth =
-                        thirdCardRight - element.clientWidth;
-
-                      if (element.scrollLeft > maxScrollWidth) {
-                        element.scrollLeft = maxScrollWidth;
-                      }
-                    }
-                  }
+                  // ✅ 3개 제한 제거: 스크롤 제한 로직 제거
                 }}
                 onClick={(e) => {
                   // 버튼 클릭이 아닌 경우에만 이벤트 전파 허용
@@ -1683,7 +1408,7 @@ export default function ProcedureRecommendation({
                 }}
               >
                 {rec.treatments
-                  .slice(0, visibleTreatmentsCount[categoryMidKey] || 3)
+                  .slice(0, visibleTreatmentsCount[categoryMidKey] || 10)
                   .map((treatment) => {
                     const recoveryPeriod = parseRecoveryPeriod(
                       treatment.downtime
@@ -1860,9 +1585,12 @@ export default function ProcedureRecommendation({
               {shouldShowRightButton && (
                 <button
                   onClick={async (e) => {
-                    // 이벤트 전파 방지 (카드 스크롤 방지)
+                    // ✅ 이벤트 전파 및 기본 동작 완전 차단
                     e.stopPropagation();
                     e.preventDefault();
+                    if (e.nativeEvent) {
+                      e.nativeEvent.stopImmediatePropagation();
+                    }
 
                     // 후기 작성 이력 다시 확인 (최신 상태 확인)
                     let currentHasWrittenReview = hasWrittenReview;
@@ -1878,65 +1606,55 @@ export default function ProcedureRecommendation({
                       }
                     }
 
-                    // 비로그인 또는 후기 미작성: 팝업만 표시
+                    // ✅ 비로그인 또는 후기 미작성: 팝업만 표시하고 즉시 종료 (동작 절대 실행 안 함)
                     if (!isLoggedIn || !currentHasWrittenReview) {
                       if (hasMoreTreatments) {
                         setPendingAction(() => {
                           setVisibleTreatmentsCount((prev) => ({
                             ...prev,
-                            [categoryMidKey]: (prev[categoryMidKey] || 3) + 10,
+                            [categoryMidKey]: (prev[categoryMidKey] || 10) + 10,
                           }));
                         });
                       } else if (scrollState.canScrollRight) {
-                        const element = scrollRefs.current[categoryMidKey];
-                        if (element) {
-                          const MAX_VISIBLE_CARDS = 3;
-                          const children = Array.from(
-                            element.children
-                          ) as HTMLElement[];
-                          const cardElements = children.filter(
-                            (child) =>
-                              child.classList.contains("flex-shrink-0") &&
-                              child.classList.contains("w-[150px]")
-                          );
-                          let maxScrollWidth =
-                            element.scrollWidth - element.clientWidth;
-                          if (cardElements.length >= MAX_VISIBLE_CARDS) {
-                            const thirdCard =
-                              cardElements[MAX_VISIBLE_CARDS - 1];
-                            if (thirdCard) {
-                              const thirdCardRight =
-                                thirdCard.offsetLeft + thirdCard.offsetWidth;
-                              maxScrollWidth =
-                                thirdCardRight - element.clientWidth;
-                            }
+                        // ✅ 3개 제한 제거: 전체 스크롤 가능 (pendingAction에만 저장, 실행 안 함)
+                        setPendingAction(() => {
+                          const element = scrollRefs.current[categoryMidKey];
+                          if (element) {
+                            const newScrollLeft = Math.min(
+                              element.scrollLeft + 300,
+                              element.scrollWidth - element.clientWidth
+                            );
+                            element.scrollTo({
+                              left: newScrollLeft,
+                              behavior: "smooth",
+                            });
                           }
-                          setPendingAction(() => {
-                            const element = scrollRefs.current[categoryMidKey];
-                            if (element) {
-                              const newScrollLeft = Math.min(
-                                element.scrollLeft + 300,
-                                maxScrollWidth
-                              );
-                              element.scrollTo({
-                                left: newScrollLeft,
-                                behavior: "smooth",
-                              });
-                            }
-                          });
-                        }
+                        });
                       }
+                      // 팝업만 표시하고 즉시 종료 (아래 코드 절대 실행 안 됨)
                       setShowReviewRequiredPopup(true);
-                      return; // 여기서 함수 종료 - 다른 동작 실행 안 함
+                      return; // ✅ 여기서 완전히 종료
                     }
 
-                    // 후기 작성한 사용자: 팝업 없이 동작만 실행
-                    if (hasMoreTreatments) {
+                    // ✅ 후기 작성한 사용자만 여기서 동작 실행
+                    if (hasMoreTreatments && (isLoggedIn && currentHasWrittenReview)) {
                       handleShowMore();
-                    } else if (scrollState.canScrollRight) {
-                      handleScrollRight();
+                    } else if (scrollState.canScrollRight && (isLoggedIn && currentHasWrittenReview)) {
+                      // ✅ 직접 스크롤 실행 (조건 재확인)
+                      const element = scrollRefs.current[categoryMidKey];
+                      if (element) {
+                        const newScrollLeft = Math.min(
+                          element.scrollLeft + 300,
+                          element.scrollWidth - element.clientWidth
+                        );
+                        element.scrollTo({
+                          left: newScrollLeft,
+                          behavior: "smooth",
+                        });
+                      }
                     }
                   }}
+                  type="button"
                   onMouseDown={(e) => {
                     // 마우스 다운 시에도 이벤트 전파 방지 (스크롤 방지)
                     e.stopPropagation();
