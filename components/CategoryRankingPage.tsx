@@ -1287,6 +1287,7 @@ export default function CategoryRankingPage({
                           {scrollState.canScrollRight && (
                             <button
                               type="button"
+                              disabled={showReviewRequiredPopup} // ✅ 팝업이 열려있으면 버튼 비활성화
                               onClick={async (e) => {
                                 // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                                 e.stopPropagation();
@@ -1331,11 +1332,20 @@ export default function CategoryRankingPage({
                                   return; // ✅ 여기서 완전히 종료
                                 }
 
-                                // ✅ 후기 작성한 사용자만 여기서 스크롤 실행
-                                const element =
-                                  scrollRefs.current[ranking.category_small_key];
-                                if (element && (isLoggedIn && currentHasWrittenReview)) {
-                                  element.scrollBy({ left: 300, behavior: "smooth" });
+                                // ✅ 후기 작성한 사용자만 여기서 스크롤 실행 + ref 체크
+                                console.log('[스크롤 버튼-소분류] 최종 체크', { popupOpen: popupOpenRef.current, isLoggedIn, currentHasWrittenReview });
+                                if (!popupOpenRef.current && isLoggedIn && currentHasWrittenReview) {
+                                  console.log('[스크롤 버튼-소분류] ✅ 조건 충족 - 스크롤 실행', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
+                                  const element =
+                                    scrollRefs.current[ranking.category_small_key];
+                                  if (element) {
+                                    console.log('[스크롤 버튼-소분류] ✅ element.scrollBy 실행');
+                                    element.scrollBy({ left: 300, behavior: "smooth" });
+                                  } else {
+                                    console.log('[스크롤 버튼-소분류] ⚠️ element 없음');
+                                  }
+                                } else {
+                                  console.log('[스크롤 버튼-소분류] ❌ 조건 불충족 또는 팝업 열림 - 스크롤 차단', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
                                 }
                               }}
                               onMouseDown={(e) => {
@@ -1362,7 +1372,10 @@ export default function CategoryRankingPage({
                 <div className="text-center pt-4">
                   <button
                     type="button"
+                    disabled={showReviewRequiredPopup || popupOpenRef.current} // ✅ 팝업이 열려있으면 버튼 비활성화
                     onClick={async (e) => {
+                      console.log('[더보기 버튼-소분류] 클릭됨', { showReviewRequiredPopup, popupOpen: popupOpenRef.current });
+                      
                       // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                       e.stopPropagation();
                       e.preventDefault();
@@ -1372,6 +1385,7 @@ export default function CategoryRankingPage({
 
                       // ✅ ref로 팝업 상태 동기 체크: 이미 팝업이 열려있으면 아무것도 하지 않음
                       if (popupOpenRef.current || showReviewRequiredPopup) {
+                        console.log('[더보기 버튼-소분류] 팝업이 이미 열려있음 - 실행 차단');
                         return;
                       }
 
@@ -1388,15 +1402,18 @@ export default function CategoryRankingPage({
                         }
 
                         if (shouldOpenPopup) {
-                          // ✅ 팝업 열기 및 ref 업데이트
+                          console.log('[더보기 버튼-소분류] 팝업 열기 - 더보기 동작 실행 안 함');
+                          // ✅ 팝업 열기 및 ref 업데이트 (동기적으로)
                           popupOpenRef.current = true;
                           setShowReviewRequiredPopup(true);
-                          // pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                          // ⚠️ pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                          // 이 함수는 나중에만 실행되어야 하고, 지금은 실행 안 됨
                           setPendingAction(() => {
+                            console.log('[더보기 버튼-소분류] pendingAction 실행 - 이건 나중에 실행되어야 함');
                             setVisibleCategoriesCount((prev) => prev + 5);
                           });
                         }
-                        // 즉시 종료 (아래 더보기 코드 절대 실행 안 됨)
+                        // ⚠️ 즉시 종료 - 아래 setVisibleCategoriesCount 절대 실행 안 됨
                         return; // ✅ 여기서 완전히 종료
                       }
 
@@ -1413,20 +1430,25 @@ export default function CategoryRankingPage({
                           setHasWrittenReview(currentHasWrittenReview);
                           // 다시 체크: 확인 후에도 조건이 맞지 않으면 팝업 열기
                           if (!currentHasWrittenReview) {
+                            console.log('[더보기 버튼-소분류] 비동기 확인 후 조건 불충족 - 팝업 열기');
                             popupOpenRef.current = true;
                             setShowReviewRequiredPopup(true);
                             setPendingAction(() => {
+                              console.log('[더보기 버튼-소분류] pendingAction 실행 - 이건 나중에 실행되어야 함');
                               setVisibleCategoriesCount((prev) => prev + 5);
                             });
-                            return;
+                            return; // ✅ 여기서 종료
                           }
                         }
                       }
 
                       // ✅ 후기 작성한 사용자만 여기서 더보기 동작 실행 (5개씩 추가)
-                      // 조건 재확인 (이중 체크)
-                      if (isLoggedIn && currentHasWrittenReview) {
+                      // 조건 재확인 (이중 체크) + ref 체크
+                      if (isLoggedIn && currentHasWrittenReview && !popupOpenRef.current) {
+                        console.log('[더보기 버튼] 조건 충족 - 실행 허용', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
                         setVisibleCategoriesCount((prev) => prev + 5);
+                      } else {
+                        console.log('[더보기 버튼] 조건 불충족 또는 팝업 열림 - 실행 차단', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
                       }
                     }}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
@@ -1695,7 +1717,10 @@ export default function CategoryRankingPage({
                       {scrollState.canScrollRight && (
                         <button
                           type="button"
+                          disabled={showReviewRequiredPopup || popupOpenRef.current} // ✅ 팝업이 열려있으면 버튼 비활성화
                           onClick={async (e) => {
+                            console.log('[스크롤 버튼-중분류] 클릭됨', { showReviewRequiredPopup, popupOpen: popupOpenRef.current, isLoggedIn, hasWrittenReview });
+                            
                             // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                             e.stopPropagation();
                             e.preventDefault();
@@ -1705,12 +1730,16 @@ export default function CategoryRankingPage({
 
                             // ✅ ref로 팝업 상태 동기 체크: 이미 팝업이 열려있으면 아무것도 하지 않음
                             if (popupOpenRef.current || showReviewRequiredPopup) {
+                              console.log('[스크롤 버튼-중분류] 팝업이 이미 열려있음 - 실행 차단');
                               return;
                             }
+
+                            console.log('[스크롤 버튼-중분류] 조건 체크 시작', { isLoggedIn, hasWrittenReview });
 
                             // ✅ 조건을 먼저 체크 (비동기 호출 전에)
                             // 조건이 맞지 않으면 여기서 즉시 종료하고 팝업만 열기
                             if (!isLoggedIn || !hasWrittenReview) {
+                              console.log('[스크롤 버튼-중분류] 조건 불충족 - 팝업 열기 시작');
                               // 후기 작성 이력 확인 (팝업을 열기 전에 빠르게 확인)
                               let shouldOpenPopup = true;
                               if (isLoggedIn) {
@@ -1721,20 +1750,29 @@ export default function CategoryRankingPage({
                               }
 
                               if (shouldOpenPopup) {
-                                // ✅ 팝업 열기 및 ref 업데이트
+                                console.log('[스크롤 버튼-중분류] 팝업 열기 실행');
+                                // ✅ 팝업 열기 및 ref 업데이트 (동기적으로 먼저)
                                 popupOpenRef.current = true;
+                                console.log('[스크롤 버튼-중분류] ref 업데이트 완료', { popupOpen: popupOpenRef.current });
                                 setShowReviewRequiredPopup(true);
+                                console.log('[스크롤 버튼-중분류] 상태 업데이트 완료');
                                 // pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
+                                // ⚠️ 주의: 이 함수는 나중에만 실행되고, 지금은 실행 안 됨
                                 setPendingAction(() => {
+                                  console.log('[스크롤 버튼-중분류] ⚠️ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
                                   const element = scrollRefs.current[ranking.category_mid];
                                   if (element) {
                                     element.scrollBy({ left: 300, behavior: "smooth" });
                                   }
                                 });
+                                console.log('[스크롤 버튼-중분류] return 전 - 여기서 종료되어야 함');
                               }
-                              // 즉시 종료 (아래 스크롤 코드 절대 실행 안 됨)
+                              // ⚠️ 즉시 종료 (아래 스크롤 코드 절대 실행 안 됨)
+                              console.log('[스크롤 버튼-중분류] return 실행 - 함수 종료');
                               return; // ✅ 여기서 완전히 종료
                             }
+
+                            console.log('[스크롤 버튼-중분류] 조건 충족 - 비동기 확인 시작');
 
                             // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
                             let currentHasWrittenReview = hasWrittenReview;
@@ -1762,10 +1800,19 @@ export default function CategoryRankingPage({
                               }
                             }
 
-                            // ✅ 후기 작성한 사용자만 여기서 스크롤 실행
-                            const element = scrollRefs.current[ranking.category_mid];
-                            if (element && (isLoggedIn && currentHasWrittenReview)) {
-                              element.scrollBy({ left: 300, behavior: "smooth" });
+                            // ✅ 후기 작성한 사용자만 여기서 스크롤 실행 + ref 체크
+                            console.log('[스크롤 버튼-중분류] 최종 체크', { popupOpen: popupOpenRef.current, isLoggedIn, currentHasWrittenReview });
+                            if (!popupOpenRef.current && isLoggedIn && currentHasWrittenReview) {
+                              console.log('[스크롤 버튼-중분류] ✅ 조건 충족 - 스크롤 실행', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
+                              const element = scrollRefs.current[ranking.category_mid];
+                              if (element) {
+                                console.log('[스크롤 버튼-중분류] ✅ element.scrollBy 실행');
+                                element.scrollBy({ left: 300, behavior: "smooth" });
+                              } else {
+                                console.log('[스크롤 버튼-중분류] ⚠️ element 없음');
+                              }
+                            } else {
+                              console.log('[스크롤 버튼-중분류] ❌ 조건 불충족 또는 팝업 열림 - 스크롤 차단', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
                             }
                           }}
                           onMouseDown={(e) => {
@@ -1790,6 +1837,8 @@ export default function CategoryRankingPage({
             {midCategoryRankings.length > visibleCategoriesCount && (
               <div className="text-center pt-4">
                 <button
+                  type="button"
+                  disabled={showReviewRequiredPopup} // ✅ 팝업이 열려있으면 버튼 비활성화
                   onClick={async (e) => {
                     // ✅ 이벤트 전파 및 기본 동작 완전 차단 (먼저 실행)
                     e.stopPropagation();
@@ -1852,9 +1901,12 @@ export default function CategoryRankingPage({
                     }
 
                     // ✅ 후기 작성한 사용자만 여기서 더보기 동작 실행 (5개씩 추가)
-                    // 조건 재확인 (이중 체크)
-                    if (isLoggedIn && currentHasWrittenReview) {
+                    // 조건 재확인 (이중 체크) + ref 체크
+                    if (isLoggedIn && currentHasWrittenReview && !popupOpenRef.current) {
+                      console.log('[더보기 버튼-중분류] 조건 충족 - 실행 허용', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
                       setVisibleCategoriesCount((prev) => prev + 5);
+                    } else {
+                      console.log('[더보기 버튼-중분류] 조건 불충족 또는 팝업 열림 - 실행 차단', { isLoggedIn, currentHasWrittenReview, popupOpen: popupOpenRef.current });
                     }
                   }}
                   className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-colors"
@@ -1907,6 +1959,7 @@ export default function CategoryRankingPage({
       <ReviewRequiredPopup
         isOpen={showReviewRequiredPopup}
         onClose={() => {
+          console.log('[ReviewRequiredPopup] 팝업 닫기');
           popupOpenRef.current = false; // ✅ ref도 업데이트
           setShowReviewRequiredPopup(false);
           setPendingAction(null); // 팝업 닫을 때 저장된 동작 초기화
