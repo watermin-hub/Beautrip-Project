@@ -1,0 +1,6 @@
+# 기본: 텍스트는 LF로 관리
+* text=auto eol=lf
+
+# 윈도우에서만 실행되는 스크립트면 예외로 CRLF 허용하고 싶을 때만 추가
+*.bat text eol=crlf
+*.cmd text eol=crlf
