@@ -204,6 +204,7 @@ export default function PromotionBanner({
                 className="object-cover rounded-xl"
                 priority={index === 0}
                 unoptimized
+                suppressHydrationWarning
               />
             </div>
           ))}

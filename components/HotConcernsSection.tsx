@@ -412,7 +412,7 @@ export default function HotConcernsSection() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
           <FiTrendingUp className="text-primary-main" />
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-gray-900" suppressHydrationWarning>
             {t("home.hotConcerns")}
           </h3>
         </div>
@@ -433,7 +433,7 @@ export default function HotConcernsSection() {
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-4">
         <FiTrendingUp className="text-primary-main" />
-        <h3 className="text-lg font-bold text-gray-900">
+        <h3 className="text-lg font-bold text-gray-900" suppressHydrationWarning>
           {t("home.hotConcerns")}
         </h3>
       </div>

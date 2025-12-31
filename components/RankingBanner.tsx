@@ -101,6 +101,7 @@ export default function RankingBanner() {
                     : "bg-gray-300 w-1.5 hover:bg-gray-400"
                 }`}
                 aria-label={`${index + 1}순위: ${t(rankings[index].nameKey)}`}
+                suppressHydrationWarning
               />
             ))}
           </div>

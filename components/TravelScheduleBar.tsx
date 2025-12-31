@@ -188,6 +188,7 @@ export default function TravelScheduleBar({
           onClick={handleModalOpen}
           readOnly
           className={`w-full pl-10 ${selectedStartDate && selectedEndDate ? 'pr-20' : 'pr-10'} py-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent cursor-pointer`}
+          suppressHydrationWarning
         />
         {selectedStartDate && selectedEndDate && (
           <button

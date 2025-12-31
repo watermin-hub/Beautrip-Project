@@ -710,9 +710,10 @@ export default function PostList({
     commentCount: number,
     createdAt?: string // 파라미터는 유지하되 사용하지 않음 (호환성)
   ): number => {
-    // 시간 가중치 제외: 순수하게 조회수, 좋아요, 댓글만으로 계산
-    // 조회수: 가중치 1, 좋아요: 가중치 3, 댓글: 가중치 2
-    return viewCount * 1 + likeCount * 3 + commentCount * 2;
+    // 조회수를 우선 기준으로 하되, 좋아요와 댓글로 보조 점수 추가
+    // 조회수: 가중치 10 (우선순위), 좋아요: 가중치 3, 댓글: 가중치 2
+    // 이렇게 하면 조회수가 높은 게시물이 우선적으로 표시됨
+    return viewCount * 10 + likeCount * 3 + commentCount * 2;
   };
 
   // 로그인 상태 확인
@@ -1018,9 +1019,10 @@ export default function PostList({
           setLoading(true);
 
           // Supabase에서 모든 후기 가져오기 (인기글은 추후 좋아요/조회수 기준으로 정렬 예정)
+          // 인기 탭에서는 더 많은 데이터를 가져와서 필터링 후 정렬
           const [procedureReviews, hospitalReviews] = await Promise.all([
-            loadProcedureReviews(20),
-            loadHospitalReviews(20),
+            loadProcedureReviews(100),
+            loadHospitalReviews(100),
           ]);
 
           // 시술 후기 변환
@@ -1102,13 +1104,42 @@ export default function PostList({
               return {
                 ...post,
                 popularityScore: score,
+                viewCount,
+                likeCount,
+                commentCount,
               };
             })
-            .sort((a, b) => {
-              // 점수가 높은 순으로 정렬
-              return (b as any).popularityScore - (a as any).popularityScore;
+            .filter((post) => {
+              // 인기 탭에서는 조회수, 좋아요, 댓글 중 하나라도 있으면 표시
+              // 모든 값이 0인 게시물만 제외
+              const viewCount = (post as any).viewCount ?? 0;
+              const likeCount = (post as any).likeCount ?? 0;
+              const commentCount = (post as any).commentCount ?? 0;
+              return viewCount > 0 || likeCount > 0 || commentCount > 0;
             })
-            .map(({ popularityScore, ...rest }) => rest); // popularityScore 제거
+            .sort((a, b) => {
+              // 0순위: 이미지가 있는 게시물 우선 (이미지 개수 많은 순)
+              const aHasImages = a.images && a.images.length > 0;
+              const bHasImages = b.images && b.images.length > 0;
+              if (aHasImages && !bHasImages) return -1;
+              if (!aHasImages && bHasImages) return 1;
+              if (aHasImages && bHasImages) {
+                const imageDiff = (b.images?.length || 0) - (a.images?.length || 0);
+                if (imageDiff !== 0) return imageDiff;
+              }
+              
+              // 1순위: 조회수 높은 순
+              const viewDiff = (b as any).viewCount - (a as any).viewCount;
+              if (viewDiff !== 0) return viewDiff;
+              
+              // 2순위: 조회수가 같으면 좋아요 많은 순
+              const likeDiff = (b as any).likeCount - (a as any).likeCount;
+              if (likeDiff !== 0) return likeDiff;
+              
+              // 3순위: 좋아요도 같으면 댓글 많은 순
+              return (b as any).commentCount - (a as any).commentCount;
+            })
+            .map(({ popularityScore, viewCount, likeCount, commentCount, ...rest }) => rest); // popularityScore 및 임시 필드 제거
 
           setSupabaseReviews(sortedPopularReviews);
         } catch (error) {
