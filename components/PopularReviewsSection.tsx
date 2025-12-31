@@ -50,17 +50,6 @@ const formatTimeAgo = (dateString?: string): string => {
   return `${Math.floor(diffDays / 7)}주 전`;
 };
 
-// 인기글 점수 계산 함수 (조회수, 좋아요, 댓글만으로 계산)
-const calculatePopularityScore = (
-  viewCount: number,
-  likeCount: number,
-  commentCount: number,
-  createdAt?: string // 파라미터는 유지하되 사용하지 않음 (호환성)
-): number => {
-  // 시간 가중치 제외: 순수하게 조회수, 좋아요, 댓글만으로 계산
-  return viewCount * 1 + likeCount * 3 + commentCount * 2;
-};
-
 export default function PopularReviewsSection() {
   const router = useRouter();
   const { t } = useLanguage();
@@ -89,10 +78,10 @@ export default function PopularReviewsSection() {
       try {
         setLoading(true);
 
-        // Supabase에서 모든 후기 가져오기
+        // Supabase에서 모든 후기 가져오기 (인기글은 더 많은 데이터를 가져와서 필터링 후 정렬)
         const [procedureReviews, hospitalReviews] = await Promise.all([
-          loadProcedureReviews(20),
-          loadHospitalReviews(20),
+          loadProcedureReviews(100),
+          loadHospitalReviews(100),
         ]);
 
         // 시술 후기 변환
@@ -195,20 +184,40 @@ export default function PopularReviewsSection() {
           })
         );
 
-        // 인기글 점수 계산 및 정렬
+        // 인기글 정렬 (커뮤니티 인기글과 동일한 로직)
         const sortedReviews = reviewsWithStats
-          .map((post: any) => {
-            const score = calculatePopularityScore(
-              post.viewCount || 0,
-              post.likeCount || 0,
-              post.commentCount || 0,
-              post.created_at
-            );
-            return { ...post, popularityScore: score };
+          .filter((post: any) => {
+            // 인기 탭에서는 조회수, 좋아요, 댓글 중 하나라도 있으면 표시
+            // 모든 값이 0인 게시물만 제외
+            const viewCount = post.viewCount ?? 0;
+            const likeCount = post.likeCount ?? 0;
+            const commentCount = post.commentCount ?? 0;
+            return viewCount > 0 || likeCount > 0 || commentCount > 0;
           })
-          .sort((a: any, b: any) => b.popularityScore - a.popularityScore)
+          .sort((a: any, b: any) => {
+            // 0순위: 이미지가 있는 게시물 우선 (이미지 개수 많은 순)
+            const aHasImages = a.images && a.images.length > 0;
+            const bHasImages = b.images && b.images.length > 0;
+            if (aHasImages && !bHasImages) return -1;
+            if (!aHasImages && bHasImages) return 1;
+            if (aHasImages && bHasImages) {
+              const imageDiff = (b.images?.length || 0) - (a.images?.length || 0);
+              if (imageDiff !== 0) return imageDiff;
+            }
+            
+            // 1순위: 조회수 높은 순
+            const viewDiff = b.viewCount - a.viewCount;
+            if (viewDiff !== 0) return viewDiff;
+            
+            // 2순위: 조회수가 같으면 좋아요 많은 순
+            const likeDiff = b.likeCount - a.likeCount;
+            if (likeDiff !== 0) return likeDiff;
+            
+            // 3순위: 좋아요도 같으면 댓글 많은 순
+            return b.commentCount - a.commentCount;
+          })
           .slice(0, 4) // 상위 4개만
-          .map(({ popularityScore, likeCount, commentCount, viewCount, created_at, ...rest }: any) => rest);
+          .map(({ likeCount, commentCount, viewCount, created_at, ...rest }: any) => rest);
 
         setPopularReviews(sortedReviews);
       } catch (error) {
@@ -274,21 +283,48 @@ export default function PopularReviewsSection() {
             {/* 이미지 영역 */}
             <div className="w-full h-40 bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden">
               {review.images && review.images.length > 0 ? (
-                <img
-                  src={review.images[0]}
-                  alt={review.content.substring(0, 20)}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
+                review.images.length === 2 ? (
+                  // 이미지가 2장일 때 좌우로 나눠서 표시
+                  <div className="w-full h-full flex gap-0.5">
+                    <div className="flex-1 relative overflow-hidden">
+                      <img
+                        src={review.images[0]}
+                        alt={review.content.substring(0, 20)}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 relative overflow-hidden">
+                      <img
+                        src={review.images[1]}
+                        alt={review.content.substring(0, 20)}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  // 이미지가 1장이거나 3장 이상일 때 첫 번째 이미지만 표시
+                  <img
+                    src={review.images[0]}
+                    alt={review.content.substring(0, 20)}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                )
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
                   {t("common.noData")}
                 </div>
               )}
               {/* 카테고리 태그 */}
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-3 left-3 z-10">
                 <span className="bg-primary-main text-white px-2 py-1 rounded-full text-xs font-medium">
                   {review.category}
                 </span>

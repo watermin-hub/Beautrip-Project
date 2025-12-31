@@ -1320,14 +1320,17 @@ export default function CategoryRankingPage({
                                 if (!isLoggedIn || !currentHasWrittenReview) {
                                   // ✅ 팝업을 먼저 열고 (동기적으로)
                                   setShowReviewRequiredPopup(true);
-                                  // pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
-                                  setPendingAction(() => {
+                                  // ✅ pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
+                                  // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                                  const scrollAction = () => {
+                                    console.log('[스크롤 버튼-소분류] ✅ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
                                     const element =
                                       scrollRefs.current[ranking.category_small_key];
                                     if (element) {
                                       element.scrollBy({ left: 300, behavior: "smooth" });
                                     }
-                                  });
+                                  };
+                                  setPendingAction(scrollAction); // 함수 직접 저장
                                   // 즉시 종료 (아래 스크롤 코드 절대 실행 안 됨)
                                   return; // ✅ 여기서 완전히 종료
                                 }
@@ -1406,12 +1409,13 @@ export default function CategoryRankingPage({
                           // ✅ 팝업 열기 및 ref 업데이트 (동기적으로)
                           popupOpenRef.current = true;
                           setShowReviewRequiredPopup(true);
-                          // ⚠️ pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
-                          // 이 함수는 나중에만 실행되어야 하고, 지금은 실행 안 됨
-                          setPendingAction(() => {
-                            console.log('[더보기 버튼-소분류] pendingAction 실행 - 이건 나중에 실행되어야 함');
+                          // ✅ pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                          // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                          const moreAction = () => {
+                            console.log('[더보기 버튼-소분류] ✅ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
                             setVisibleCategoriesCount((prev) => prev + 5);
-                          });
+                          };
+                          setPendingAction(moreAction); // 함수 직접 저장
                         }
                         // ⚠️ 즉시 종료 - 아래 setVisibleCategoriesCount 절대 실행 안 됨
                         return; // ✅ 여기서 완전히 종료
@@ -1433,10 +1437,13 @@ export default function CategoryRankingPage({
                             console.log('[더보기 버튼-소분류] 비동기 확인 후 조건 불충족 - 팝업 열기');
                             popupOpenRef.current = true;
                             setShowReviewRequiredPopup(true);
-                            setPendingAction(() => {
-                              console.log('[더보기 버튼-소분류] pendingAction 실행 - 이건 나중에 실행되어야 함');
+                            // ✅ pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                            // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                            const moreAction = () => {
+                              console.log('[더보기 버튼-소분류] ✅ pendingAction 실행됨 (비동기 확인 후) - 이건 나중에 실행되어야 함');
                               setVisibleCategoriesCount((prev) => prev + 5);
-                            });
+                            };
+                            setPendingAction(moreAction); // 함수 직접 저장
                             return; // ✅ 여기서 종료
                           }
                         }
@@ -1756,15 +1763,16 @@ export default function CategoryRankingPage({
                                 console.log('[스크롤 버튼-중분류] ref 업데이트 완료', { popupOpen: popupOpenRef.current });
                                 setShowReviewRequiredPopup(true);
                                 console.log('[스크롤 버튼-중분류] 상태 업데이트 완료');
-                                // pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
-                                // ⚠️ 주의: 이 함수는 나중에만 실행되고, 지금은 실행 안 됨
-                                setPendingAction(() => {
-                                  console.log('[스크롤 버튼-중분류] ⚠️ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
+                                // ✅ pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
+                                // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                                const scrollAction = () => {
+                                  console.log('[스크롤 버튼-중분류] ✅ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
                                   const element = scrollRefs.current[ranking.category_mid];
                                   if (element) {
                                     element.scrollBy({ left: 300, behavior: "smooth" });
                                   }
-                                });
+                                };
+                                setPendingAction(scrollAction); // 함수 직접 저장
                                 console.log('[스크롤 버튼-중분류] return 전 - 여기서 종료되어야 함');
                               }
                               // ⚠️ 즉시 종료 (아래 스크롤 코드 절대 실행 안 됨)
@@ -1789,12 +1797,16 @@ export default function CategoryRankingPage({
                                 if (!currentHasWrittenReview) {
                                   popupOpenRef.current = true;
                                   setShowReviewRequiredPopup(true);
-                                  setPendingAction(() => {
+                                  // ✅ pendingAction에 스크롤 동작 저장 (나중에 리뷰 작성 후 실행)
+                                  // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                                  const scrollAction = () => {
+                                    console.log('[스크롤 버튼-중분류] ✅ pendingAction 실행됨 (비동기 확인 후) - 이건 나중에 실행되어야 함');
                                     const element = scrollRefs.current[ranking.category_mid];
                                     if (element) {
                                       element.scrollBy({ left: 300, behavior: "smooth" });
                                     }
-                                  });
+                                  };
+                                  setPendingAction(scrollAction); // 함수 직접 저장
                                   return;
                                 }
                               }
@@ -1868,10 +1880,13 @@ export default function CategoryRankingPage({
                         // ✅ 팝업 열기 및 ref 업데이트
                         popupOpenRef.current = true;
                         setShowReviewRequiredPopup(true);
-                        // pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
-                        setPendingAction(() => {
+                        // ✅ pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                        // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                        const moreAction = () => {
+                          console.log('[더보기 버튼-중분류] ✅ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
                           setVisibleCategoriesCount((prev) => prev + 5);
-                        });
+                        };
+                        setPendingAction(moreAction); // 함수 직접 저장
                       }
                       // 즉시 종료 (아래 더보기 코드 절대 실행 안 됨)
                       return; // ✅ 여기서 완전히 종료
@@ -1892,9 +1907,13 @@ export default function CategoryRankingPage({
                         if (!currentHasWrittenReview) {
                           popupOpenRef.current = true;
                           setShowReviewRequiredPopup(true);
-                          setPendingAction(() => {
+                          // ✅ pendingAction에 더보기 동작 저장 (나중에 리뷰 작성 후 실행)
+                          // 함수를 직접 저장 (함수형 업데이트 패턴 사용 안 함)
+                          const moreAction = () => {
+                            console.log('[더보기 버튼-중분류] ✅ pendingAction 실행됨 - 이건 나중에 실행되어야 함');
                             setVisibleCategoriesCount((prev) => prev + 5);
-                          });
+                          };
+                          setPendingAction(moreAction); // 함수 직접 저장
                           return;
                         }
                       }
