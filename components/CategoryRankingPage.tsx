@@ -1303,7 +1303,7 @@ export default function CategoryRankingPage({
 
                                 // ✅ 조건을 먼저 체크하고, 조건이 맞을 때만 스크롤 실행
                                 // 후기 작성 이력 다시 확인 (최신 상태 확인)
-                                let currentHasWrittenReview = hasWrittenReview;
+                                let currentHasWrittenReview: boolean = hasWrittenReview;
                                 if (isLoggedIn) {
                                   const {
                                     data: { session },
@@ -1418,7 +1418,7 @@ export default function CategoryRankingPage({
                       }
 
                       // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
-                      let currentHasWrittenReview = hasWrittenReview;
+                      let currentHasWrittenReview: boolean = hasWrittenReview;
                       if (isLoggedIn) {
                         const {
                           data: { session },
@@ -1775,7 +1775,7 @@ export default function CategoryRankingPage({
                             console.log('[스크롤 버튼-중분류] 조건 충족 - 비동기 확인 시작');
 
                             // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
-                            let currentHasWrittenReview = hasWrittenReview;
+                            let currentHasWrittenReview: boolean = hasWrittenReview;
                             if (isLoggedIn) {
                               const {
                                 data: { session },
@@ -1878,7 +1878,7 @@ export default function CategoryRankingPage({
                     }
 
                     // ✅ 후기 작성 이력 다시 확인 (최신 상태 확인) - 조건이 맞을 때만
-                    let currentHasWrittenReview = hasWrittenReview;
+                    let currentHasWrittenReview: boolean = hasWrittenReview;
                     if (isLoggedIn) {
                       const {
                         data: { session },

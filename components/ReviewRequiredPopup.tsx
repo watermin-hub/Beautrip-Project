@@ -39,7 +39,7 @@ export default function ReviewRequiredPopup({
       // body 스크롤 방지
       document.body.style.overflow = "hidden";
       // 뒤의 모든 클릭 이벤트 차단을 위한 이벤트 리스너 추가
-      const handleOverlayClick = (e: MouseEvent) => {
+      const handleOverlayClick = (e: Event) => {
         e.stopPropagation();
         e.preventDefault();
         // 오버레이를 클릭했을 때만 닫기
